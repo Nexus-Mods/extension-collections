@@ -1,0 +1,29 @@
+#modpack-edit-dialog .modal-dialog {
+  width: 80vw;
+
+  .modal-body {
+    height: 80vh;
+  }
+}
+
+#modpack-edit-dialog .header-version,
+#modpack-edit-dialog .header-source,
+#modpack-edit-dialog .header-required,
+#modpack-edit-dialog .header-action {
+  width: 200px;
+}
+
+#modpack-edit-tabs {
+  height: 100%;
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .tab-content {
+    overflow-y: hidden;
+    flex: 1 1 0;
+    > div {
+      height: 100%;
+    }
+  }
+}

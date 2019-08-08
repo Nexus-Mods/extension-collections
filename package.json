@@ -1,0 +1,37 @@
+{
+  "name": "modpacks",
+  "description": "Allows creation of installation of mod packs (meta mods that install a bunch of other mods)",
+  "version": "0.0.1",
+  "main": "./out/index.js",
+  "license": "GPL-3.0",
+  "scripts": {
+    "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --display-error-details --progress --profile --color",
+    "copy_7z": "copyfiles -u 1 -f node_modules/7z-bin/win/7z.* dist/win",
+    "copy_css": "copyfiles -f style.scss dist",
+    "build": "npm run webpack && npm run copy_css && npm run copy_7z && extractInfo"
+  },
+  "devDependencies": {
+    "@types/i18next": "^11.6.0",
+    "@types/node": "^8.9.4",
+    "@types/react": "16.8.2",
+    "@types/react-bootstrap": "^0.32.16",
+    "@types/react-i18next": "^8.1.0",
+    "@types/react-redux": "7.0.1",
+    "@types/redux": "3.6.0",
+    "bluebird": "^3.5.3",
+    "copyfiles": "^2.1.0",
+    "i18next": "^11.6.0",
+    "node-7z": "Nexus-Mods/node-7z",
+    "react-bootstrap": "^0.32.0",
+    "react-i18next": "^7.6.1",
+    "react-redux": "^6.0.0",
+    "redux": "4.0.1",
+    "redux-act": "^1.7.4",
+    "semver": "^5.6.0",
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.3.3",
+    "vortex-api": "Nexus-Mods/vortex-api",
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.2.3"
+  }
+}
