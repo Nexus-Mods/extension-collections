@@ -40,12 +40,18 @@ export interface IModPackModSource {
   browse?: ISourceBrowse;
 }
 
+export interface IFileListItem {
+  path: string;
+  md5: string;
+}
+
 export interface IModPackMod {
   name: string;
   version: string;
   optional: boolean;
   game_id: string;
   source: IModPackModSource;
+  hashes?: IFileListItem[];
 }
 
 export interface IModPackModRule {
@@ -58,4 +64,8 @@ export interface IModPack {
   info: IModPackInfo;
   mods: IModPackMod[];
   modRules: IModPackModRule[];
+}
+
+export interface IModPackAttributes {
+  freshInstall?: { [modId: string]: boolean };
 }

@@ -9,6 +9,7 @@
 #modpack-edit-dialog .header-version,
 #modpack-edit-dialog .header-source,
 #modpack-edit-dialog .header-required,
+#modpack-edit-dialog .header-install-type,
 #modpack-edit-dialog .header-action {
   width: 200px;
 }
@@ -26,4 +27,9 @@
       height: 100%;
     }
   }
+}
+
+#modpack-edit-tabs-pane-mod-rules .list-group {
+  height: 100%;
+  overflow-y: scroll;
 }

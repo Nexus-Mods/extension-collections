@@ -2,7 +2,8 @@ import EditDialog from './views/EditDialog';
 
 import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
-import { modPackModToRule, modToPack } from './util/modpack';
+import { createModpackFromProfile, modPackModToRule, modToPack } from './util/modpack';
+import { makeProgressFunction } from './util/util';
 
 import * as PromiseBB from 'bluebird';
 global.Promise = Promise;
@@ -11,18 +12,6 @@ import Zip = require('node-7z');
 import * as path from 'path';
 import { fs, selectors, types, util } from 'vortex-api';
 import { IModPack } from './types/IModPack';
-
-function createRulesFromProfile(profile: types.IProfile,
-                                mods: {[modId: string]: types.IMod}): types.IModRule[] {
-  return Object.keys(profile.modState)
-    .filter(modId => profile.modState[modId].enabled && (mods[modId] !== undefined))
-    .map(modId => ({
-      type: 'requires',
-      reference: {
-        id: modId,
-      },
-    }) as any);
-}
 
 async function zip(zipPath: string, sourcePath: string): Promise<void> {
   const zipper = new Zip();
@@ -74,7 +63,7 @@ async function install(files: string[],
           type: 'rule' as any,
           value: 'requires',
           rule: modPackModToRule(mod),
-      })),
+        })),
     ],
   });
 }
@@ -88,6 +77,29 @@ function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   return state.persistent.mods[gameMode][modIds[0]].type === 'modpack';
 }
 
+function doExport(api: types.IExtensionApi, modId: string) {
+    const state: types.IState = api.store.getState();
+
+    const { progress, progressEnd } = makeProgressFunction(api);
+
+    generateModPack(state, modId, progress)
+      .then((zipPath: string) => {
+        api.sendNotification({
+          id: 'modpack-exported',
+          title: 'Modpack exported',
+          message: zipPath,
+          type: 'success',
+        });
+      })
+      .catch(err => {
+        api.showErrorNotification('Failed to export modpack', err);
+      })
+      .finally(() => {
+        progressEnd();
+      });
+
+}
+
 function init(context: types.IExtensionContext): boolean {
   context.registerReducer(['session', 'modpack'], sessionReducer);
   context.registerDialog('modpack-edit', EditDialog, () => ({
@@ -97,55 +109,9 @@ function init(context: types.IExtensionContext): boolean {
                           () => undefined, () => PromiseBB.resolve(false));
   context.registerAction('mods-action-icons', 50, 'modpack', {}, 'Export Modpack',
                          (modIds: string[]) => {
-    const state: types.IState = context.api.store.getState();
-
-    const notiId = context.api.sendNotification({
-      type: 'activity',
-      title: 'Building Modpack',
-      message: '',
-      progress: 0,
-    });
-
-    let notiPerc = 0;
-    let notiText = '';
-
-    const progress = (percent?: number, text?: string) => {
-      let change = false;
-      if ((percent !== undefined) && (percent > notiPerc)) {
-        change = true;
-        notiPerc = percent;
-      }
-      if ((text !== undefined) && (text !== notiText)) {
-        change = true;
-        notiText = text;
-      }
-      if (change) {
-        context.api.sendNotification({
-          id: notiId,
-          type: 'activity',
-          title: 'Building Modpack',
-          progress: notiPerc,
-          message: notiText,
-        });
-      }
-    };
-
-    generateModPack(state, modIds[0], progress)
-      .then((zipPath: string) => {
-        context.api.sendNotification({
-          id: 'modpack-exported',
-          title: 'Modpack exported',
-          message: zipPath,
-          type: 'success',
-        });
-      })
-      .catch(err => {
-        context.api.showErrorNotification('Failed to export modpack', err);
-      })
-      .finally(() => {
-        context.api.dismissNotification(notiId);
-      });
+    doExport(context.api, modIds[0]);
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
+
   context.registerAction('mods-action-icons', 25, '', {}, 'Edit Modpack',
                          (modIds: string[]) => {
       context.api.store.dispatch(startEditModPack(modIds[0]));
@@ -153,37 +119,7 @@ function init(context: types.IExtensionContext): boolean {
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Modpack',
     (profileIds: string[]) => {
-      const state: types.IState = context.api.store.getState();
-      const profile = state.persistent.profiles[profileIds[0]];
-
-      const id = `vortex_modpack_${profile.id}`;
-      const name = `Modpack: ${profile.name}`;
-
-      const mod: types.IMod = {
-        id,
-        type: 'modpack',
-        state: 'installed',
-        attributes: {
-          name,
-          version: '1.0.0',
-          installTime: new Date(),
-          author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
-        },
-        installationPath: id,
-        rules: createRulesFromProfile(profile, state.persistent.mods[profile.gameId]),
-      };
-
-      context.api.events.emit('create-mod', profile.gameId, mod, (error: Error) => {
-        if (error !== null) {
-          context.api.showErrorNotification('Failed to create mod pack', error);
-        }
-      });
-      context.api.sendNotification({
-        type: 'success',
-        id: 'modpack-created',
-        title: 'Modpack created',
-        message: name,
-      });
+      createModpackFromProfile(context.api, profileIds[0]);
     }, (profileIds: string[]) => {
       return true;
     });

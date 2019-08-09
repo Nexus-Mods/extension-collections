@@ -1,4 +1,4 @@
-import { IModPack, IModPackInfo, IModPackMod,
+import { IFileListItem, IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackModSource } from '../types/IModPack';
 
 import { createHash } from 'crypto';
@@ -58,10 +58,35 @@ async function calcMD5(filePath: string): Promise<string> {
     .digest('hex');
 }
 
+/*
+async function calculateHashes(entries: IEntry[], req: NodeRequireFunction)
+                               : Promise<Array<{ path: string, md5: string }>> {
+  const fsWorker = req('fs');
+  const { createHash } = req('crypto');
+
+  const calcMD5 = async (filePath: string) => new Promise<string>((resolve, reject) => {
+    fsWorker.readFile(filePath, (err, data) => {
+      if (err !== null) {
+        return reject(err);
+      }
+      resolve(createHash('md5')
+        .update(data)
+        .digest('hex'));
+    });
+  });
+
+  return Promise.all(entries.map(async iter => ({
+    path: iter.filePath,
+    md5: await calcMD5(iter.filePath),
+  })));
+}
+*/
+
 async function rulesToModPackMods(rules: types.IModRule[],
                                   mods: { [modId: string]: types.IMod },
                                   stagingPath: string,
                                   gameId: string,
+                                  modpackInfo: IModPackAttributes,
                                   onProgress: (percent: number, text: string) => void)
                                   : Promise<IModPackMod[]> {
   rules = rules.filter(rule => mods[rule.reference.id]);
@@ -70,23 +95,37 @@ async function rulesToModPackMods(rules: types.IModRule[],
   const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
     const mod = mods[rule.reference.id];
 
+    const modName = util.renderModName(mod, { version: false });
+
+    let hashes: IFileListItem[];
+
     let entries: IEntry[] = [];
-    await turbowalk(path.join(stagingPath, mod.installationPath), input => {
-      entries = [].concat(entries, input);
-    }, {});
+    if (!util.getSafe(modpackInfo, ['freshInstall', mod.id], true)) {
+      await turbowalk(path.join(stagingPath, mod.installationPath), input => {
+        entries = [].concat(entries, input);
+      }, {});
 
-    onProgress(undefined, util.renderModName(mod, { version: false }));
+      onProgress(undefined, modName);
 
-    const hashes = await Promise.all(entries
-      .filter(iter => !iter.isDirectory)
-      .map(async iter => ({ path: iter.filePath, md5: await calcMD5(iter.filePath) })));
+      /* use multiple threads to calculate hashes. This causes electron to crash,
+         no clue why. The electron docs claim node.js are supposed to work but I think
+         that may not be true for crypto
 
-    onProgress(Math.floor((idx / total) * 100), undefined);
+      const hashes = await
+        util.runThreaded(calculateHashes, __dirname, entries.filter(iter => !iter.isDirectory));
+      */
+
+      hashes = await Promise.all(entries
+        .filter(iter => !iter.isDirectory)
+        .map(async iter => ({ path: iter.filePath, md5: await calcMD5(iter.filePath) })));
+    }
+
+    onProgress(Math.floor((idx / total) * 100), modName);
 
     return {
-      name: util.renderModName(mod),
+      name: modName,
       version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
-      optional: false,
+      optional: rule.type === 'recommends',
       game_id: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
       source: deduceSource(mod),
       hashes,
@@ -128,20 +167,70 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
 
 export async function modToPack(gameId: string,
                                 stagingPath: string,
-                                mod: types.IMod,
+                                modpack: types.IMod,
                                 mods: { [modId: string]: types.IMod },
                                 onProgress: (percent?: number, text?: string) => void)
                                 : Promise<IModPack> {
   return {
     info: {
-      author: util.getSafe(mod.attributes, ['author'], 'Anonymous'),
-      author_url: util.getSafe(mod.attributes, ['author_url'], ''),
-      name: util.renderModName(mod),
-      version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
-      description: util.getSafe(mod.attributes, ['description'], ''),
+      author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
+      author_url: util.getSafe(modpack.attributes, ['author_url'], ''),
+      name: util.renderModName(modpack),
+      version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
+      description: util.getSafe(modpack.attributes, ['description'], ''),
       game_id: gameId,
     },
-    mods: await rulesToModPackMods(mod.rules, mods, stagingPath, gameId, onProgress),
-    modRules: extractModRules(mod.rules, mods),
+    mods: await rulesToModPackMods(modpack.rules, mods, stagingPath, gameId,
+                                   util.getSafe(modpack.attributes, ['modpack'], {}),
+                                   onProgress),
+    modRules: extractModRules(modpack.rules, mods),
   };
+}
+
+function createRulesFromProfile(profile: types.IProfile,
+                                mods: {[modId: string]: types.IMod}): types.IModRule[] {
+  return Object.keys(profile.modState)
+    .filter(modId => profile.modState[modId].enabled
+                  && (mods[modId] !== undefined)
+                  && (mods[modId].attributes['generated'] !== true))
+    .map(modId => ({
+      type: 'requires',
+      reference: {
+        id: modId,
+      },
+    }) as any);
+}
+
+export function createModpackFromProfile(api: types.IExtensionApi, profileId: string): void {
+  const state: types.IState = api.store.getState();
+  const profile = state.persistent.profiles[profileId];
+
+  const id = `vortex_modpack_${profileId}`;
+  const name = `Modpack: ${profile.name}`;
+
+  const mod: types.IMod = {
+    id,
+    type: 'modpack',
+    state: 'installed',
+    attributes: {
+      name,
+      version: '1.0.0',
+      installTime: new Date(),
+      author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
+    },
+    installationPath: id,
+    rules: createRulesFromProfile(profile, state.persistent.mods[profile.gameId]),
+  };
+
+  api.events.emit('create-mod', profile.gameId, mod, (error: Error) => {
+    if (error !== null) {
+      api.showErrorNotification('Failed to create mod pack', error);
+    }
+  });
+  api.sendNotification({
+    type: 'success',
+    id: 'modpack-created',
+    title: 'Modpack created',
+    message: name,
+  });
 }

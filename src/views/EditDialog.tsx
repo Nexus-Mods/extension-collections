@@ -1,4 +1,5 @@
 import { IModPackInfo, IModPackMod, IModPackModRule } from '../types/IModPack';
+import findModByRef from '../util/findModByRef';
 import { generateModPack, initModPackMod, makeBiDirRule } from '../util/modpack';
 
 import InfoPage from './InfoPage';
@@ -12,17 +13,7 @@ import { Button, Modal, Tab, Tabs } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, ComponentEx, fs, selectors, Steps, types, util } from 'vortex-api';
-
-function findModByRef(reference: types.IReference, state: types.IState): string {
-  // TODO: support non-hash references
-  const gameMode = selectors.activeGameId(state);
-  const mods = state.persistent.mods[gameMode];
-  const existing: string = Object.keys(mods).find((modId: string): boolean => {
-    return util.getSafe(mods[modId], ['attributes', 'fileMD5'], undefined) === reference.fileMD5;
-  });
-  return existing;
-}
+import { actions, ComponentEx, fs, selectors, types, util } from 'vortex-api';
 
 export interface IEditDialogProps {
   onClose: () => void;
@@ -36,7 +27,10 @@ interface IConnectedProps {
 }
 
 interface IActionProps {
+  onSetModAttribute: (gameId: string, modId: string, key: string, value: any) => void;
   onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) => void;
+  onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
+  onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
 }
 
 type IProps = IEditDialogProps & IConnectedProps & IActionProps;
@@ -61,7 +55,8 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
   }
 
   public componentWillReceiveProps(newProps: IProps) {
-    if (newProps.modpack !== this.props.modpack) {
+    if (util.getSafe(newProps.modpack, ['id'], undefined)
+        !== util.getSafe(this.props.modpack, ['id'], undefined)) {
       this.nextState.page = 'info';
       if (newProps.modpack !== undefined) {
         const {modpack, mods} = newProps;
@@ -69,8 +64,8 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
         const includedMods: { [modId: string]: types.IMod } = modpack.rules
           .filter(rule => rule.type === 'requires')
           .reduce((prev, rule) => {
-            const modId = findModByRef(rule.reference, this.context.api.store.getState());
-            prev[modId] = mods[modId];
+            const mod = findModByRef(rule.reference, mods);
+            prev[mod.id] = mod;
             return prev;
           }, {});
         this.nextState.modPackMods = includedMods;
@@ -99,16 +94,19 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
             <Tab key='info' eventKey='info' title={t('Info')}>
               <InfoPage
                 t={t}
-                mod={modpack}
+                modpack={modpack}
                 onSetModPackInfo={this.setModPackInfo}
               />
             </Tab>
             <Tab key='mods' eventKey='mods' title={t('Mods')}>
               <ModsPage
-                profile={profile}
                 mods={mods}
+                modpack={modpack}
                 t={t}
                 onSetModVersion={null}
+                onAddRule={this.addRule}
+                onRemoveRule={this.removeRule}
+                onSetModpackAttribute={this.setModpackAttribute}
               />
             </Tab>
             <Tab key='mod-rules' eventKey='mod-rules' title={t('Mod Rules')}>
@@ -153,7 +151,6 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
   private setModPackInfo = (key: string, value: any) => {
     const { gameMode, modpack, onSetModAttributes } = this.props;
     onSetModAttributes(gameMode, modpack.id, { [key]: value });
-    // this.nextState.modPackInfo[key] = value;
   }
 
   private setCurrentPage = (page: any) => {
@@ -179,6 +176,23 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
         return fs.writeFileAsync(outputPath,
           JSON.stringify(modPackData, undefined, 2));
         });
+  }
+
+  private addRule = (rule: types.IModRule) => {
+    const { gameMode, modpack } = this.props;
+    this.props.onAddRule(gameMode, modpack.id, rule);
+  }
+
+  private removeRule = (rule: types.IModRule) => {
+    const { gameMode, modpack } = this.props;
+    this.props.onRemoveRule(gameMode, modpack.id, rule);
+  }
+
+  private setModpackAttribute = (attrPath: string[], value: any) => {
+    const { gameMode, modpack } = this.props;
+    const attr = util.getSafe(modpack.attributes, ['modpack'], {});
+    this.props.onSetModAttribute(gameMode, modpack.id, 'modpack',
+      util.setSafe(attr, attrPath, value));
   }
 
   private hide = () => {
@@ -222,8 +236,14 @@ function mapStateToProps(state: any): IConnectedProps {
 
 function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
   return {
+    onSetModAttribute: (gameId: string, modId: string, key: string, value: any) =>
+      dispatch(actions.setModAttribute(gameId, modId, key, value)),
     onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) =>
       dispatch(actions.setModAttributes(gameId, modId, attributes)),
+    onAddRule: (gameId: string, modId: string, rule: types.IModRule) =>
+      dispatch(actions.addModRule(gameId, modId, rule)),
+    onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
+      dispatch(actions.removeModRule(gameId, modId, rule)),
   };
 }
 

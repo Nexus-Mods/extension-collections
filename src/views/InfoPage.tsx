@@ -9,7 +9,7 @@ import { ComponentEx, FormInput, types, util } from 'vortex-api';
 
 export interface IInfoPageProps {
   t: TranslationFunction;
-  mod: types.IMod;
+  modpack: types.IMod;
   onSetModPackInfo: (key: string, value: any) => void;
 }
 
@@ -29,16 +29,16 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
   }
 
   public render(): React.ReactNode {
-    const { t, mod } = this.props;
+    const { t, modpack } = this.props;
 
-    if (mod === undefined) {
+    if (modpack === undefined) {
       return null;
     }
 
-    const author = util.getSafe(mod.attributes, ['author'], '');
-    const authorUrl = util.getSafe(mod.attributes, ['author_url'], '');
-    const name = util.getSafe(mod.attributes, ['customFileName'], '');
-    const version = util.getSafe(mod.attributes, ['version'], '');
+    const author = util.getSafe(modpack.attributes, ['author'], '');
+    const authorUrl = util.getSafe(modpack.attributes, ['author_url'], '');
+    const name = util.getSafe(modpack.attributes, ['customFileName'], '');
+    const version = util.getSafe(modpack.attributes, ['version'], '');
 
     const authorValid = (author.length >= 2) ? 'success' : 'error';
     const nameValid =  (name.length >= 4) ? 'success' : 'error';
@@ -74,7 +74,7 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
         <FormGroup controlId='description'>
           <ControlLabel>{t('Description')}</ControlLabel>
           <FormInput
-            value={mod.attributes['shortDescription']}
+            value={modpack.attributes['shortDescription']}
             onChange={this.setter('shortDescription')}
           />
         </FormGroup>

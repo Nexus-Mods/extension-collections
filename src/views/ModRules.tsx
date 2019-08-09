@@ -1,9 +1,9 @@
 import { TranslationFunction } from 'i18next';
-import { IReference } from 'modmeta-db';
 import * as React from 'react';
 import { ListGroup, ListGroupItem } from 'react-bootstrap';
 import { ComponentEx, ITableRowAction, Table, Toggle, types, util } from 'vortex-api';
 import { IModPackMod, IModPackModRule } from '../types/IModPack';
+import findModByRef from '../util/findModByRef';
 
 export interface IModsPageProps {
   t: TranslationFunction;
@@ -58,8 +58,9 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     // nop
   }
 
-  private renderReference(ref: IReference): string {
-    return ref.logicalFileName || ref.fileExpression || ref.fileMD5;
+  private renderReference(ref: types.IModReference): string {
+    const mod = findModByRef(ref, this.props.mods);
+    return (util as any).renderModReference(ref, mod);
   }
 }
 
