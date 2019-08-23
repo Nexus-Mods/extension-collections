@@ -169,11 +169,12 @@ function extractModRules(rules: types.IModRule[],
 
 export function modPackModToRule(mod: IModPackMod): types.IModRule {
   return {
-    type: 'requires',
+    type: mod.optional ? 'recommends' : 'requires',
     reference: {
       fileMD5: mod.source.md5.hash,
     },
-  };
+    fileList: mod.hashes,
+  } as any;
 }
 
 export async function modToPack(gameId: string,
