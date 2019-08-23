@@ -3,7 +3,7 @@ import findModByRef from '../util/findModByRef';
 import { TranslationFunction } from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { ComponentEx, ITableRowAction, Table, types, util } from 'vortex-api';
+import { ComponentEx, Icon, ITableRowAction, Table, types, util } from 'vortex-api';
 
 export interface IModsPageProps {
   t: TranslationFunction;
@@ -37,6 +37,30 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       edit: {},
       isDefaultSort: true,
       isSortable: true,
+    }, {
+      id: 'highlight',
+      name: '',
+      description: 'Mod Highlights',
+      customRenderer: (mod: IModEntry) => {
+        const color = util.getSafe(mod.mod.attributes, ['color'], '');
+        const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
+        if (!color && !icon) {
+          return null;
+        }
+        return (
+          <Icon
+            className={'highlight-base ' + (color !== '' ? color : 'highlight-default')}
+            name={icon !== '' ? icon : 'highlight'}
+          />);
+      },
+      calc: (mod: IModEntry) => {
+        const color = util.getSafe(mod.mod.attributes, ['color'], '');
+        const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
+
+        return `${color} - ${icon}`;
+      },
+      placement: 'table',
+      edit: {},
     }, {
       id: 'version',
       name: 'Version',

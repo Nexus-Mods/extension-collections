@@ -14,6 +14,17 @@
   width: 200px;
 }
 
+#modpack-edit-dialog .modpack-edit-export {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  > button {
+    margin: $half-gutter;
+  }
+}
+
 #modpack-edit-tabs {
   height: 100%;
   overflow-y: hidden;
@@ -29,7 +40,27 @@
   }
 }
 
-#modpack-edit-tabs-pane-mod-rules .list-group {
+#modpack-edit-tabs-pane-mod-rules > div {
   height: 100%;
-  overflow-y: scroll;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  > .list-group {
+    height: 100%;
+    overflow-y: scroll;
+  }
+}
+
+.listitem-tweak {
+  display: flex;
+  align-items: flex-end;
+}
+
+.table-modpack-mods .highlight-base {
+  width: 2em;
+  height: 2em;
+  &:hover {
+    color: inherit;
+  }
 }
