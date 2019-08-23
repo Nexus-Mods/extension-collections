@@ -1,4 +1,7 @@
+import { getIniFiles } from '../util/gameSupport';
+
 import * as Promise from 'bluebird';
+import { TranslationFunction } from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
 import { Button, ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
@@ -33,6 +36,8 @@ interface IComponentState {
 }
 
 interface ITweakProps {
+  t: TranslationFunction;
+  tweaksPath: string;
   fileName: string;
   enabled: boolean;
   onToggle: (fileName: string, enabled: boolean) => void;
@@ -53,7 +58,7 @@ function validateFilenameInput(content: types.IDialogContent): types.IConditionR
 
 class Tweak extends PureComponentEx<ITweakProps, {}> {
   public render(): JSX.Element {
-    const { enabled, fileName } = this.props;
+    const { t, enabled, fileName } = this.props;
     const match = fileName.match(/(.*)\[(.*)\]\.ini/);
 
     if (!match || (match.length < 2)) {
@@ -63,8 +68,15 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
     return (
       <ListGroupItem className='listitem-tweak'>
         <Toggle checked={enabled} onToggle={this.toggle}>{match[1]}</Toggle>
+        {' '}
+        <a onClick={this.edit}>{t('Edit')} ...</a>
       </ListGroupItem>
     );
+  }
+
+  private edit = () => {
+    const { tweaksPath, fileName } = this.props;
+    util.opn(path.join(tweaksPath, fileName)).catch(() => null);
   }
 
   private toggle = (enabled: boolean) => {
@@ -83,20 +95,16 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   public componentWillMount() {
-    const { mod, modsPath } = this.props;
-
-    if ((mod !== undefined) && (mod.installationPath !== undefined)) {
-      fs.readdirAsync(path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH))
-        .then((files: string[]) => {
-          this.nextState.tweaks = files;
-        })
-        .catch(() => undefined);
-    }
+    this.refreshTweaks();
   }
 
   public render(): JSX.Element {
-    const { t } = this.props;
+    const { t, mod } = this.props;
     const { tweaks } = this.state;
+
+    if (mod === undefined) {
+      return null;
+    }
 
     return (
       <div>
@@ -121,12 +129,18 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private addIniTweak = () => {
-    const { mod, modsPath } = this.props;
+    const { gameMode, mod, modsPath } = this.props;
+    const files = getIniFiles(gameMode);
     this.context.api.showDialog('question', 'Name', {
       text: 'Please enter a name for the ini tweak',
       input: [
         { id: 'name', type: 'text' },
       ],
+      choices: files.map((fileName, idx) => ({
+        text: fileName,
+        value: idx === 0,
+        id: fileName,
+      })),
       condition: validateFilenameInput,
     }, [
       { label: 'Cancel' },
@@ -134,8 +148,18 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
     ]).then(res => {
       if (res.action === 'Confirm') {
         const tweaksPath = path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH);
+        let selectedIni = Object.keys(res.input)
+          .find(key => (path.extname(key) === '.ini') && res.input[key] === true);
+        if (selectedIni === undefined) {
+          // shouldn't be possible since it's radiobuttons and one is preset so
+          // one should always be selected.
+          return Promise.reject(new Error('No ini file selected'));
+        }
+        selectedIni = path.basename(selectedIni, path.extname(selectedIni));
+        const fileName = `${res.input['name']} [${selectedIni}].ini`;
         return fs.ensureDirWritableAsync(tweaksPath, () => Promise.resolve())
-          .then(() => fs.writeFileAsync(path.join(tweaksPath, res.input['name'] + '.ini'), ''));
+          .then(() => fs.writeFileAsync(path.join(tweaksPath, fileName), ''))
+          .then(() => this.refreshTweaks());
       } else {
         return Promise.resolve();
       }
@@ -143,15 +167,29 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderTweak = (fileName: string): JSX.Element => {
-    const { mod } = this.props;
+    const { t, mod, modsPath } = this.props;
     const isEnabled = util.getSafe(mod, ['enabledINITweaks'], []).indexOf(fileName) !== -1;
     return (
       <Tweak
+        t={t}
         key={`tweak-${fileName}`}
+        tweaksPath={path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH)}
         fileName={fileName}
         enabled={isEnabled}
         onToggle={this.toggle}
       />);
+  }
+
+  private refreshTweaks = () => {
+    const { mod, modsPath } = this.props;
+
+    if ((mod !== undefined) && (mod.installationPath !== undefined)) {
+      fs.readdirAsync(path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH))
+        .then((files: string[]) => {
+          this.nextState.tweaks = files;
+        })
+        .catch(() => undefined);
+    }
   }
 
   private toggle = (fileName: string, enabled: boolean) => {

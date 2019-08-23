@@ -30,6 +30,13 @@ async function generateModPack(state: types.IState, modId: string,
   await fs.ensureDirWritableAsync(outputPath, () => PromiseBB.resolve());
   await fs.writeFileAsync(path.join(outputPath, 'modpack.json'),
     JSON.stringify(await modToPack(gameMode, stagingPath, mod, mods, progress), undefined, 2));
+  try {
+    await fs.copyAsync(path.join(modPath, 'INI Tweaks'), path.join(outputPath, 'INI Tweaks'));
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      throw  err;
+    } // else: no ini tweak, no problem
+  }
   const zipPath = path.join(modPath,
                             `modpack_${util.getSafe(mod.attributes, ['version'], '1.0.0')}.7z`);
   await zip(zipPath, outputPath);
@@ -52,16 +59,24 @@ async function install(files: string[],
                                              { encoding: 'utf-8' });
   const modpack: IModPack = JSON.parse(modPackData);
 
+  const filesToCopy = files
+    .filter(filePath => (filePath !== 'modpack.json')
+                     && filePath.endsWith(path.sep));
+
   return Promise.resolve({
     instructions: [
       {
         type: 'setmodtype' as any,
         value: 'modpack',
       },
+      ...filesToCopy.map(filePath => ({
+        type: 'copy' as any,
+        source: filePath,
+        destination: filePath,
+      })),
       ...modpack.mods.map(mod => (
         {
           type: 'rule' as any,
-          value: 'requires',
           rule: modPackModToRule(mod),
         })),
     ],

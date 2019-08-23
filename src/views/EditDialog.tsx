@@ -1,6 +1,7 @@
 import { IModPackInfo, IModPackMod, IModPackModRule } from '../types/IModPack';
 import findModByRef from '../util/findModByRef';
-import { generateModPack, initModPackMod, makeBiDirRule } from '../util/modpack';
+import { getIniFiles } from '../util/gameSupport';
+import { makeBiDirRule } from '../util/modpack';
 
 import InfoPage from './InfoPage';
 import IniTweaks from './IniTweaks';
@@ -84,6 +85,8 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
 
     const name = modpack !== undefined ? modpack.attributes['name'] : '';
 
+    const iniFiles = getIniFiles(profile.gameId);
+
     return (
       <Modal id='modpack-edit-dialog' show={modpack !== undefined} onHide={undefined}>
         <Modal.Header>
@@ -112,7 +115,7 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
             <Tab key='mod-rules' eventKey='mod-rules' title={t('Mod Rules')}>
               <ModRules t={t} mods={mods} rules={this.state.modPackRules} />
             </Tab>
-            {this.isGamebryoGame() ? (
+            {(iniFiles.length > 0) ? (
               <Tab key='ini-tweaks' eventKey='ini-tweaks' title={t('Ini Tweaks')}>
                 <IniTweaks modId={modpack !== undefined ? modpack.id : undefined} />
               </Tab>
