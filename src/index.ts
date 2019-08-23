@@ -107,12 +107,13 @@ function init(context: types.IExtensionContext): boolean {
   }));
   context.registerModType('modpack', 200, () => true,
                           () => undefined, () => PromiseBB.resolve(false));
-  context.registerAction('mods-action-icons', 50, 'modpack', {}, 'Export Modpack',
+
+  context.registerAction('mods-action-icons', 50, 'modpack-export', {}, 'Export Modpack',
                          (modIds: string[]) => {
     doExport(context.api, modIds[0]);
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
-  context.registerAction('mods-action-icons', 25, '', {}, 'Edit Modpack',
+  context.registerAction('mods-action-icons', 25, 'modpack-edit', {}, 'Edit Modpack',
                          (modIds: string[]) => {
       context.api.store.dispatch(startEditModPack(modIds[0]));
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
@@ -128,6 +129,8 @@ function init(context: types.IExtensionContext): boolean {
 
   context.once(() => {
     context.api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
+
+    return (util as any).installIconSet('modpacks', path.join(__dirname, 'icons.svg'));
   });
   return true;
 }
