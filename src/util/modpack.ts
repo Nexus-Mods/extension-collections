@@ -1,4 +1,4 @@
-import { IFileListItem, IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
+import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackModSource } from '../types/IModPack';
 
 import { createHash } from 'crypto';
@@ -100,13 +100,22 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
     const modName = util.renderModName(mod, { version: false });
 
-    let hashes: IFileListItem[];
+    // let hashes: types.IFileListItem[];
+    let hashes: any;
 
     let entries: IEntry[] = [];
     if (!util.getSafe(modpackInfo, ['freshInstall', mod.id], true)) {
-      await turbowalk(path.join(stagingPath, mod.installationPath), input => {
+      const modPath = path.join(stagingPath, mod.installationPath);
+      await turbowalk(modPath, async input => {
         entries = [].concat(entries, input);
       }, {});
+
+      hashes = await Promise.all(entries
+        .filter(iter => !iter.isDirectory)
+        .map(async iter => ({
+          path: path.relative(modPath, iter.filePath),
+          md5: await calcMD5(iter.filePath),
+        })));
 
       onProgress(undefined, modName);
 
