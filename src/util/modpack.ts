@@ -2,9 +2,10 @@ import { IFileListItem, IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackModSource } from '../types/IModPack';
 
 import { createHash } from 'crypto';
+import * as _ from 'lodash';
 import * as path from 'path';
 import turbowalk, { IEntry } from 'turbowalk';
-import { fs, types, util } from 'vortex-api';
+import { actions, fs, types, util } from 'vortex-api';
 
 function deduceSource(mod: types.IMod): IModPackModSource {
   const res: IModPackModSource = {};
@@ -90,7 +91,9 @@ async function rulesToModPackMods(rules: types.IModRule[],
                                   onProgress: (percent: number, text: string) => void)
                                   : Promise<IModPackMod[]> {
   rules = rules.filter(rule => mods[rule.reference.id]);
-  const total = rules.length;
+  let total = rules.length;
+
+  let finished = 0;
 
   const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
     const mod = mods[rule.reference.id];
@@ -114,13 +117,12 @@ async function rulesToModPackMods(rules: types.IModRule[],
       const hashes = await
         util.runThreaded(calculateHashes, __dirname, entries.filter(iter => !iter.isDirectory));
       */
-
-      hashes = await Promise.all(entries
-        .filter(iter => !iter.isDirectory)
-        .map(async iter => ({ path: iter.filePath, md5: await calcMD5(iter.filePath) })));
+      ++finished;
+    } else {
+      --total;
     }
 
-    onProgress(Math.floor((idx / total) * 100), modName);
+    onProgress(Math.floor((finished / total) * 100), modName);
 
     return {
       name: modName,
@@ -201,12 +203,14 @@ function createRulesFromProfile(profile: types.IProfile,
     }) as any);
 }
 
-export function createModpackFromProfile(api: types.IExtensionApi, profileId: string): void {
-  const state: types.IState = api.store.getState();
-  const profile = state.persistent.profiles[profileId];
+export function makeModpackId(profileId: string): string {
+  return `vortex_modpack_${profileId}`;
+}
 
-  const id = `vortex_modpack_${profileId}`;
-  const name = `Modpack: ${profile.name}`;
+function createModpack(api: types.IExtensionApi, gameId: string,
+                       id: string, name: string,
+                       rules: types.IModRule[]) {
+  const state: types.IState = api.store.getState();
 
   const mod: types.IMod = {
     id,
@@ -219,18 +223,42 @@ export function createModpackFromProfile(api: types.IExtensionApi, profileId: st
       author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
     },
     installationPath: id,
-    rules: createRulesFromProfile(profile, state.persistent.mods[profile.gameId]),
+    rules,
   };
 
-  api.events.emit('create-mod', profile.gameId, mod, (error: Error) => {
+  api.events.emit('create-mod', gameId, mod, (error: Error) => {
     if (error !== null) {
       api.showErrorNotification('Failed to create mod pack', error);
     }
   });
-  api.sendNotification({
-    type: 'success',
-    id: 'modpack-created',
-    title: 'Modpack created',
-    message: name,
+}
+
+function updateModpack(api: types.IExtensionApi, gameId: string,
+                       mod: types.IMod, newRules: types.IModRule[]) {
+  mod.rules.forEach(rule => {
+    if (newRules.find(iter => _.isEqual(rule, iter) === undefined)) {
+      api.store.dispatch(actions.removeModRule(gameId, mod.id, rule));
+    }
   });
+}
+
+export function createModpackFromProfile(api: types.IExtensionApi,
+                                         profileId: string)
+                                         : { id: string, name: string } {
+  const state: types.IState = api.store.getState();
+  const profile = state.persistent.profiles[profileId];
+
+  const id = makeModpackId(profileId);
+  const name = `Modpack: ${profile.name}`;
+  const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId]);
+
+  const mod: types.IMod = state.persistent.mods[profile.gameId][id];
+
+  if (mod === undefined) {
+    createModpack(api, profile.gameId, id, name, rules);
+  } else {
+    updateModpack(api, profile.gameId, mod, rules);
+  }
+
+  return { id, name };
 }

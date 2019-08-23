@@ -18,6 +18,7 @@ import { actions, ComponentEx, fs, selectors, types, util } from 'vortex-api';
 
 export interface IEditDialogProps {
   onClose: () => void;
+  onExport: (modpackId: string) => void;
 }
 
 interface IConnectedProps {
@@ -66,7 +67,9 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
           .filter(rule => rule.type === 'requires')
           .reduce((prev, rule) => {
             const mod = findModByRef(rule.reference, mods);
-            prev[mod.id] = mod;
+            if (mod !== undefined) {
+              prev[mod.id] = mod;
+            }
             return prev;
           }, {});
         this.nextState.modPackMods = includedMods;
@@ -147,6 +150,9 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
         <Button onClick={this.export}>
           {t('Export to file')}
         </Button>
+        <Button disabled={true}>
+          {t('Upload to NexusMods')}
+        </Button>
       </div>
     );
   }
@@ -167,18 +173,9 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
   }
 
   private export = () => {
-    const { t } = this.props;
-    const { modPackInfo, modPackMods } = this.state;
-    this.context.api.selectDir({
-      title: t('Select folder to save modpack to'),
-    } as any)
-      .then(modpackPath => {
-        const outputPath = path.join(modpackPath, this.genName());
-        const modPackData = generateModPack(modPackInfo,
-            Object.values(modPackMods).map(mod => initModPackMod(mod)), []);
-        return fs.writeFileAsync(outputPath,
-          JSON.stringify(modPackData, undefined, 2));
-        });
+    const { modpack, onClose, onExport } = this.props;
+    onExport(modpack.id);
+    onClose();
   }
 
   private addRule = (rule: types.IModRule) => {

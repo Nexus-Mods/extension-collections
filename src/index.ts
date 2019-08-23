@@ -2,7 +2,8 @@ import EditDialog from './views/EditDialog';
 
 import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
-import { createModpackFromProfile, modPackModToRule, modToPack } from './util/modpack';
+import { createModpackFromProfile, makeModpackId, modPackModToRule,
+         modToPack } from './util/modpack';
 import { makeProgressFunction } from './util/util';
 
 import * as PromiseBB from 'bluebird';
@@ -89,7 +90,11 @@ function bbProm<T>(func: (...args: any[]) => Promise<T>): (...args: any[]) => Pr
 
 function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
-  return state.persistent.mods[gameMode][modIds[0]].type === 'modpack';
+  const mod = state.persistent.mods[gameMode][modIds[0]];
+  if (mod === undefined) {
+    return false;
+  }
+  return mod.type === 'modpack';
 }
 
 function doExport(api: types.IExtensionApi, modId: string) {
@@ -104,6 +109,15 @@ function doExport(api: types.IExtensionApi, modId: string) {
           title: 'Modpack exported',
           message: zipPath,
           type: 'success',
+          actions: [
+            { title: 'Open', action: () => {
+              const stagingPath = selectors.installPath(state);
+              const gameMode = selectors.activeGameId(state);
+              const mods = state.persistent.mods[gameMode];
+              const mod: types.IMod = mods[modId];
+              util.opn(path.join(stagingPath, mod.installationPath)).catch(() => null);
+            } },
+          ],
         });
       })
       .catch(err => {
@@ -112,14 +126,42 @@ function doExport(api: types.IExtensionApi, modId: string) {
       .finally(() => {
         progressEnd();
       });
+}
 
+function initFromProfile(api: types.IExtensionApi, profileId: string, update: boolean) {
+  const { id, name } = createModpackFromProfile(api, profileId);
+  api.sendNotification({
+    type: 'success',
+    id: 'modpack-created',
+    title: update ? 'Modpack updated' : 'Modpack created',
+    message: name,
+    actions: [
+      {
+        title: 'Configure',
+        action: dismiss => {
+          api.store.dispatch(startEditModPack(id));
+          dismiss();
+        },
+      },
+    ],
+  });
+}
+
+function profileModpackExists(api: types.IExtensionApi, profileId: string) {
+  const state = api.store.getState();
+  const gameMode = selectors.activeGameId(state);
+  const mods = state.persistent.mods[gameMode];
+  return mods[makeModpackId(profileId)] !== undefined;
 }
 
 function init(context: types.IExtensionContext): boolean {
   context.registerReducer(['session', 'modpack'], sessionReducer);
+
   context.registerDialog('modpack-edit', EditDialog, () => ({
     onClose: () => context.api.store.dispatch(startEditModPack(undefined)),
+    onExport: (modpackId: string) => doExport(context.api, modpackId),
   }));
+
   context.registerModType('modpack', 200, () => true,
                           () => undefined, () => PromiseBB.resolve(false));
 
@@ -133,12 +175,30 @@ function init(context: types.IExtensionContext): boolean {
       context.api.store.dispatch(startEditModPack(modIds[0]));
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
+  context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
+                         (modIds: string[]) => {
+      const state = context.api.store.getState();
+      const profile: types.IProfile = selectors.activeProfile(state);
+      context.api.events.emit('install-recommendations', profile.id, modIds);
+    }, (modIds: string[]) => {
+      const state = context.api.store.getState();
+      const gameMode = selectors.activeGameId(state);
+      const mod = state.persistent.mods[gameMode][modIds[0]];
+      if (mod === undefined) {
+        return false;
+      }
+      return mod.type === 'modpack';
+    });
+
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Modpack',
     (profileIds: string[]) => {
-      createModpackFromProfile(context.api, profileIds[0]);
-    }, (profileIds: string[]) => {
-      return true;
-    });
+      initFromProfile(context.api, profileIds[0], false);
+    }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
+
+  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update Modpack',
+    (profileIds: string[]) => {
+      initFromProfile(context.api, profileIds[0], true);
+    }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
 
   context.registerInstaller('modpack', 5, testSupported, bbProm(install));
 

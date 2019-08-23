@@ -1,8 +1,8 @@
 import { TranslationFunction } from 'i18next';
 import * as React from 'react';
-import { ListGroup, ListGroupItem } from 'react-bootstrap';
-import { ComponentEx, ITableRowAction, Table, Toggle, types, util } from 'vortex-api';
-import { IModPackMod, IModPackModRule } from '../types/IModPack';
+import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { ComponentEx, Toggle, types, util } from 'vortex-api';
+import { IModPackModRule } from '../types/IModPack';
 import findModByRef from '../util/findModByRef';
 
 export interface IModsPageProps {
@@ -31,12 +31,23 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   public render(): React.ReactNode {
-    const { rules } = this.props;
+    const { t, rules } = this.props;
 
     return (
-      <ListGroup>
-        {rules.map((rule, idx) => this.renderRule(rule, idx))}
-      </ListGroup>
+      <div>
+        <ControlLabel>
+          <p>
+            {t('By default the modpack will replicate all your custom rules dictate '
+               + 'the deployment order of mods.')}
+            &nbsp;
+            {t('If you disable rules here your modpack may produce unsolved file conflicts '
+               + 'that the user has to resolve.')}
+          </p>
+        </ControlLabel>
+        <ListGroup>
+          {rules.map((rule, idx) => this.renderRule(rule, idx))}
+        </ListGroup>
+      </div>
     );
   }
 
