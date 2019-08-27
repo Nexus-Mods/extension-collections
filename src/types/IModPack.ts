@@ -50,9 +50,11 @@ export interface IModPackMod {
   hashes?: any;
 }
 
+export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';
+
 export interface IModPackModRule {
   source: types.IModReference;
-  type: string;
+  type: RuleType;
   reference: types.IModReference;
 }
 

@@ -1,3 +1,5 @@
+import { IModPack } from './types/IModPack';
+import findModByRef from './util/findModByRef';
 import EditDialog from './views/EditDialog';
 
 import { startEditModPack } from './actions/session';
@@ -11,8 +13,7 @@ global.Promise = Promise;
 
 import Zip = require('node-7z');
 import * as path from 'path';
-import { fs, selectors, types, util } from 'vortex-api';
-import { IModPack } from './types/IModPack';
+import { actions, fs, selectors, types, util } from 'vortex-api';
 
 async function zip(zipPath: string, sourcePath: string): Promise<void> {
   const zipper = new Zip();
@@ -61,8 +62,7 @@ async function install(files: string[],
   const modpack: IModPack = JSON.parse(modPackData);
 
   const filesToCopy = files
-    .filter(filePath => (filePath !== 'modpack.json')
-                     && filePath.endsWith(path.sep));
+    .filter(filePath => !filePath.endsWith(path.sep));
 
   return Promise.resolve({
     instructions: [
@@ -204,6 +204,28 @@ function init(context: types.IExtensionContext): boolean {
 
   context.once(() => {
     context.api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
+
+    context.api.events.on('did-install-dependencies',
+                          async (profileId: string, modId: string, recommendations: boolean) => {
+      const { store } = context.api;
+      const state: types.IState = store.getState();
+      const profile = selectors.profileById(state, profileId);
+      const stagingPath = selectors.installPathForGame(state, profile.gameId);
+      const mods = state.persistent.mods[profile.gameId];
+      const mod = mods[modId];
+      if ((mod !== undefined) && (mod.type === 'modpack')) {
+        const modPackData = await fs.readFileAsync(
+          path.join(stagingPath, mod.installationPath, 'modpack.json'),
+          { encoding: 'utf-8' });
+        const modpack: IModPack = JSON.parse(modPackData);
+        modpack.modRules.forEach(rule => {
+          const sourceMod = findModByRef(rule.source, mods);
+          if (sourceMod !== undefined) {
+            store.dispatch(actions.addModRule(profile.gameId, sourceMod.id, rule));
+          }
+        });
+      }
+    });
 
     return (util as any).installIconSet('modpacks', path.join(__dirname, 'icons.svg'));
   });

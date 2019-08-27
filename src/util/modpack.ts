@@ -171,7 +171,9 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   return {
     type: mod.optional ? 'recommends' : 'requires',
     reference: {
+      description: mod.name,
       fileMD5: mod.source.md5.hash,
+      gameId: mod.game_id,
     },
     fileList: mod.hashes,
   } as any;
