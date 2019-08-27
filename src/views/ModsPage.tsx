@@ -239,7 +239,9 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       .filter(rule => ['requires', 'recommends'].indexOf(rule.type) !== -1)
       .reduce((prev, rule) => {
         const mod = findModByRef(rule.reference, mods);
-        prev[mod.id] = { rule, mod };
+        if (mod !== undefined) {
+          prev[mod.id] = { rule, mod };
+        }
         return prev;
       }, {});
   }
