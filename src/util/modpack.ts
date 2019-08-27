@@ -245,9 +245,16 @@ function createModpack(api: types.IExtensionApi, gameId: string,
 
 function updateModpack(api: types.IExtensionApi, gameId: string,
                        mod: types.IMod, newRules: types.IModRule[]) {
+  // remove rules not found in newRules
   mod.rules.forEach(rule => {
-    if (newRules.find(iter => _.isEqual(rule, iter) === undefined)) {
+    if (newRules.find(iter => _.isEqual(rule, iter)) === undefined) {
       api.store.dispatch(actions.removeModRule(gameId, mod.id, rule));
+    }
+  });
+  // add rules not found in the old list
+  newRules.forEach(rule => {
+    if (mod.rules.find(iter => _.isEqual(rule, iter)) === undefined) {
+      api.store.dispatch(actions.addModRule(gameId, mod.id, rule));
     }
   });
 }
