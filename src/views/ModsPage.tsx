@@ -3,7 +3,7 @@ import findModByRef from '../util/findModByRef';
 import { TranslationFunction } from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { ComponentEx, Icon, ITableRowAction, Table, types, util } from 'vortex-api';
+import { ComponentEx, Icon, ITableRowAction, Table, types, Usage, util } from 'vortex-api';
 
 export interface IModsPageProps {
   t: TranslationFunction;
@@ -215,9 +215,11 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   public render(): React.ReactNode {
+    const { t } = this.props;
     const { entries } = this.state;
 
     return (
+      <div className='modpack-mods-container'>
       <Table
         tableId='modpack-mods'
         data={entries}
@@ -225,6 +227,22 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         actions={this.mActions}
         showDetails={false}
       />
+      <Usage infoId='modpack-mods'>
+        <p>{t('Here you can configure which mods to install and how.')}</p>
+        <p>{t('Version: Choose whether the modpack will install exactly the version you '
+           + 'have yourself or whatever is current on Nexus Mods.')}</p>
+        <p>{t('Required: Select whether the user has to install the mod or whether it\'s just '
+           + 'a recommendation.')}</p>
+        <p>{t('Install: "Fresh Install" will install the mod as Vortex would usually do, installer '
+           + 'dialog and everything. "Replicate" will extract only the files you have extracted '
+           + 'yourself, in exactly the same location. This basically ensures the user gets the '
+           + 'same options as you without having to pick them but it only works when you have '
+           + 'selected "Exact version" in the Version column. It will also considerably increase '
+           + 'the time it takes to build the pack.')}</p>
+        <p>{t('Source: Decides how the user downloads the mod. "Nexus Mods" is easiest, use the '
+           + 'other options when the mod in only hosted on a different source.')}</p>
+      </Usage>
+      </div>
     );
   }
 

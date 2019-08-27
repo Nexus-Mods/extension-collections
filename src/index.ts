@@ -13,7 +13,7 @@ global.Promise = Promise;
 
 import Zip = require('node-7z');
 import * as path from 'path';
-import { actions, fs, selectors, types, util } from 'vortex-api';
+import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
 async function zip(zipPath: string, sourcePath: string): Promise<void> {
   const zipper = new Zip();
@@ -214,16 +214,21 @@ function init(context: types.IExtensionContext): boolean {
       const mods = state.persistent.mods[profile.gameId];
       const mod = mods[modId];
       if ((mod !== undefined) && (mod.type === 'modpack')) {
-        const modPackData = await fs.readFileAsync(
-          path.join(stagingPath, mod.installationPath, 'modpack.json'),
-          { encoding: 'utf-8' });
-        const modpack: IModPack = JSON.parse(modPackData);
-        modpack.modRules.forEach(rule => {
-          const sourceMod = findModByRef(rule.source, mods);
-          if (sourceMod !== undefined) {
-            store.dispatch(actions.addModRule(profile.gameId, sourceMod.id, rule));
-          }
-        });
+        try {
+          const modPackData = await fs.readFileAsync(
+            path.join(stagingPath, mod.installationPath, 'modpack.json'),
+            { encoding: 'utf-8' });
+          const modpack: IModPack = JSON.parse(modPackData);
+          modpack.modRules.forEach(rule => {
+            const sourceMod = findModByRef(rule.source, mods);
+            if (sourceMod !== undefined) {
+              store.dispatch(actions.addModRule(profile.gameId, sourceMod.id, rule));
+            }
+          });
+        } catch (err) {
+          log('info', 'Failed to apply mod rules from pack. This is normal if this is the '
+                    + 'platform where the pack has been created.');
+        }
       }
     });
 
