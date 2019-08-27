@@ -27,6 +27,9 @@ interface IModsPageState {
 type IProps = IModsPageProps;
 
 class ModsPage extends ComponentEx<IProps, IModsPageState> {
+  private mLang: string;
+  private mCollator: Intl.Collator;
+
   private mColumns: Array<types.ITableAttribute<IModEntry>> = [
     {
       id: 'name',
@@ -37,6 +40,13 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       edit: {},
       isDefaultSort: true,
       isSortable: true,
+      sortFunc: (lhs: string, rhs: string, locale: string): number => {
+        if ((this.mCollator === undefined) || (locale !== this.mLang)) {
+          this.mLang = locale;
+          this.mCollator = new Intl.Collator(locale, { sensitivity: 'base' });
+        }
+        return this.mCollator.compare(lhs, rhs);
+      },
     }, {
       id: 'highlight',
       name: '',
