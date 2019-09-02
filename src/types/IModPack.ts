@@ -11,33 +11,29 @@ export interface IModPackInfo {
 
 export type UpdatePolicy = 'exact' | 'latest';
 
-export interface ISourceNexus {
-  mod_id: number;
-  file_id: number;
-  update_policy: UpdatePolicy;
-}
+/*
+  nexus: 'Nexus Mods',
+  direct: 'Direct download',
+  browse: 'Browse a website',
+  pack: 'Bundle with modpack',
+  manual: 'Manual',
+*/
 
-export interface ISourceMD5 {
-  hash: string;
-}
+export type SourceType = 'browse' | 'manual' | 'direct' | 'nexus';
 
-export interface ISourceManual {
-
-}
-
-export interface ISourceDirect {
-  url: string;
-}
-
-export interface ISourceBrowse {
-  url: string;
-}
-
-export interface IModPackModSource {
-  nexus?: ISourceNexus;
-  md5?: ISourceMD5;
-  direct_download?: ISourceDirect;
-  browse?: ISourceBrowse;
+export interface IModPackSourceInfo {
+  id: SourceType;
+  md5?: string;
+  url?: string;
+  instructions?: string;
+  mod_id?: string;
+  file_id?: string;
+  // determines which file to get if there is an update compared to what's in the mod pack
+  update_policy?: UpdatePolicy;
+  file_size?: number;
+  version?: string;
+  logical_filename?: string;
+  file_expression?: string;
 }
 
 export interface IModPackMod {
@@ -45,7 +41,7 @@ export interface IModPackMod {
   version: string;
   optional: boolean;
   game_id: string;
-  source: IModPackModSource;
+  source: IModPackSourceInfo;
   // hashes?: types.IFileListItem[];
   hashes?: any;
 }

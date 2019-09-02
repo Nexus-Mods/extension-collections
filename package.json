@@ -8,7 +8,8 @@
     "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --display-error-details --progress --profile --color",
     "copy_7z": "copyfiles -u 1 -f node_modules/7z-bin/win/7z.* dist/win",
     "copy_assets": "copyfiles -f src/icons.svg dist && copyfiles -f style.scss dist",
-    "build": "npm run webpack && npm run copy_assets && npm run copy_7z && extractInfo"
+    "copy_native": "copyfiles -f ./node_modules/vortexmt/build/Release/vortexmt.node ./dist",
+    "build": "npm run webpack && npm run copy_native && npm run copy_assets && npm run copy_7z && extractInfo"
   },
   "devDependencies": {
     "@types/i18next": "^11.6.0",
@@ -31,6 +32,7 @@
     "ts-loader": "^5.3.3",
     "typescript": "^3.3.3",
     "vortex-api": "Nexus-Mods/vortex-api",
+    "vortexmt": "Nexus-Mods/node-vortexmt",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.2.3"
   }

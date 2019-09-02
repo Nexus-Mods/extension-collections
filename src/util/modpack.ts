@@ -1,37 +1,73 @@
 import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
-         IModPackModRule, IModPackModSource } from '../types/IModPack';
+         IModPackModRule, IModPackSourceInfo } from '../types/IModPack';
 
 import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import * as path from 'path';
 import turbowalk, { IEntry } from 'turbowalk';
-import { actions, fs, types, util } from 'vortex-api';
+import { actions, fs, log, types, util } from 'vortex-api';
+import { fileMD5 } from 'vortexmt';
+import findModByRef from './findModByRef';
 
-function deduceSource(mod: types.IMod): IModPackModSource {
-  const res: IModPackModSource = {};
+const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
+  fileMD5(fileName, (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result));
+});
 
-  if (util.getSafe(mod.attributes, ['source'], undefined) === 'nexus') {
+function sanitizeExpression(fileName: string): string {
+  // drop extension and anything like ".1" or " (1)" at the end which probaby
+  // indicates duplicate downloads (either in our own format or common browser
+  // style)
+  return path.basename(fileName, path.extname(fileName))
+    .replace(/\.\d+$/, '')
+    .replace(/ \(\d+\)$/, '');
+}
+
+function deduceSource(mod: types.IMod,
+                      sourceInfo: IModPackSourceInfo,
+                      versionMatcher: string)
+                      : IModPackSourceInfo {
+  const res: IModPackSourceInfo = (sourceInfo !== undefined)
+    ? {...sourceInfo}
+    : { id: 'nexus' };
+
+  if (res.id === 'nexus') {
+    if (util.getSafe(mod.attributes, ['source'], undefined) !== 'nexus') {
+      throw new Error(`"${mod.id}" doesn't have Nexus as it's source`);
+    }
     const modId = util.getSafe(mod, ['attributes', 'modId'], undefined);
     const fileId = util.getSafe(mod, ['attributes', 'fileId'], undefined);
-
-    if ((modId !== undefined) && (fileId !== undefined)) {
-      res.nexus = {
-        update_policy: 'exact',
-        mod_id: modId,
-        file_id: fileId,
-      };
+    if ((modId === undefined) || (fileId === undefined)) {
+      throw new Error(`"${mod.id}" is missing mod id or file id`);
     }
+
+    res.mod_id = modId;
+    res.file_id = fileId;
   }
 
-  const md5 = util.getSafe(mod.attributes, ['fileMD5'], undefined);
-  if (md5 !== undefined) {
-    res.md5 = {
-      hash: md5,
-    };
+  const assign = (obj: any, key: string, value: any) => {
+    if (obj[key] === undefined) {
+      obj[key] = value;
+    }
+  };
+
+  assign(res, 'md5', util.getSafe(mod.attributes, ['fileMD5'], undefined));
+  assign(res, 'file_size', util.getSafe(mod.attributes, ['fileSize'], undefined));
+  assign(res, 'logical_filename', util.getSafe(mod.attributes, ['logicalFileName'], undefined));
+  if (sourceInfo !== undefined) {
+    assign(res, 'update_policy', sourceInfo.update_policy);
   }
+
+  if ((res.md5 === undefined)
+      && (res.logical_filename === undefined)
+      && (res.file_expression === undefined)) {
+    assign(res, 'file_expression',
+      sanitizeExpression(util.getSafe(mod.attributes, ['fileName'], undefined)));
+  }
+
   return res;
 }
 
+/*
 export function initModPackMod(input: types.IMod): IModPackMod {
   return {
     name: util.renderModName(input),
@@ -41,6 +77,7 @@ export function initModPackMod(input: types.IMod): IModPackMod {
     source: deduceSource(input),
   };
 }
+*/
 
 export function generateModPack(info: IModPackInfo,
                                 mods: IModPackMod[],
@@ -63,14 +100,14 @@ async function calcMD5(filePath: string): Promise<string> {
 async function calculateHashes(entries: IEntry[], req: NodeRequireFunction)
                                : Promise<Array<{ path: string, md5: string }>> {
   const fsWorker = req('fs');
-  const { createHash } = req('crypto');
+  const { createHash: ch } = req('crypto');
 
-  const calcMD5 = async (filePath: string) => new Promise<string>((resolve, reject) => {
+  const cMD5 = async (filePath: string) => new Promise<string>((resolve, reject) => {
     fsWorker.readFile(filePath, (err, data) => {
       if (err !== null) {
         return reject(err);
       }
-      resolve(createHash('md5')
+      resolve(ch('md5')
         .update(data)
         .digest('hex'));
     });
@@ -78,7 +115,7 @@ async function calculateHashes(entries: IEntry[], req: NodeRequireFunction)
 
   return Promise.all(entries.map(async iter => ({
     path: iter.filePath,
-    md5: await calcMD5(iter.filePath),
+    md5: await cMD5(iter.filePath),
   })));
 }
 */
@@ -88,7 +125,8 @@ async function rulesToModPackMods(rules: types.IModRule[],
                                   stagingPath: string,
                                   gameId: string,
                                   modpackInfo: IModPackAttributes,
-                                  onProgress: (percent: number, text: string) => void)
+                                  onProgress: (percent: number, text: string) => void,
+                                  onError: (message: string, replace: any) => void)
                                   : Promise<IModPackMod[]> {
   rules = rules.filter(rule => mods[rule.reference.id]);
   let total = rules.length;
@@ -98,60 +136,128 @@ async function rulesToModPackMods(rules: types.IModRule[],
   const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
     const mod = mods[rule.reference.id];
 
-    const modName = util.renderModName(mod, { version: false });
-
-    // let hashes: types.IFileListItem[];
-    let hashes: any;
-
-    let entries: IEntry[] = [];
-    if (!util.getSafe(modpackInfo, ['freshInstall', mod.id], true)) {
-      const modPath = path.join(stagingPath, mod.installationPath);
-      await turbowalk(modPath, async input => {
-        entries = [].concat(entries, input);
-      }, {});
-
-      hashes = await Promise.all(entries
-        .filter(iter => !iter.isDirectory)
-        .map(async iter => ({
-          path: path.relative(modPath, iter.filePath),
-          md5: await calcMD5(iter.filePath),
-        })));
-
-      onProgress(undefined, modName);
-
-      /* use multiple threads to calculate hashes. This causes electron to crash,
-         no clue why. The electron docs claim node.js are supposed to work but I think
-         that may not be true for crypto
-
-      const hashes = await
-        util.runThreaded(calculateHashes, __dirname, entries.filter(iter => !iter.isDirectory));
-      */
-      ++finished;
-    } else {
-      --total;
-    }
-
-    onProgress(Math.floor((finished / total) * 100), modName);
-
-    return {
-      name: modName,
-      version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
-      optional: rule.type === 'recommends',
-      game_id: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
-      source: deduceSource(mod),
-      hashes,
+    let start = Date.now();
+    const passed = () => {
+      const now = Date.now();
+      const t = now - start;
+      start = now;
+      return t;
     };
+
+    const modName = util.renderModName(mod, { version: false });
+    try {
+      // This call is relatively likely to fail to do it before the hash calculation to
+      // save the user time in case it does fail
+      const source = deduceSource(mod,
+                                  util.getSafe(modpackInfo, ['source', mod.id], undefined),
+                                  rule.reference.versionMatch);
+
+      // let hashes: types.IFileListItem[];
+      let hashes: any;
+
+      let entries: IEntry[] = [];
+      if (!util.getSafe(modpackInfo, ['freshInstall', mod.id], true)) {
+        const modPath = path.join(stagingPath, mod.installationPath);
+        await turbowalk(modPath, async input => {
+          console.log('entries', idx, passed());
+          entries = [].concat(entries, input);
+        }, {});
+
+        console.log('readdir done', idx, passed());
+
+        hashes = await Promise.all(entries
+          .filter(iter => !iter.isDirectory)
+          .map(async iter => ({
+            path: path.relative(modPath, iter.filePath),
+            md5: await fileMD5Async(iter.filePath),
+          })));
+
+        console.log('finished', idx, passed());
+
+        onProgress(undefined, modName);
+
+        /* use multiple threads to calculate hashes. This causes electron to crash,
+           no clue why. The electron docs claim node.js modules are supposed to work but I think
+           that may not be true for crypto
+
+        const hashes = await
+          util.runThreaded(calculateHashes, __dirname, entries.filter(iter => !iter.isDirectory));
+        */
+        ++finished;
+      } else {
+        --total;
+      }
+
+      onProgress(Math.floor((finished / total) * 100), modName);
+
+      return {
+        name: modName,
+        version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
+        optional: rule.type === 'recommends',
+        game_id: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
+        source,
+        hashes,
+      };
+    } catch (err) {
+      --total;
+
+      onError('failed to pack "{{modName}}": {{error}}', {
+        modName, error: err.message,
+      });
+
+      return undefined;
+    }
   }));
 
   return result.filter(mod => (mod !== undefined) && (Object.keys(mod.source).length > 0));
 }
 
 export function makeBiDirRule(mod: types.IMod, rule: types.IModRule): IModPackModRule {
+  if (rule === undefined) {
+    return undefined;
+  }
+
+  const source: types.IModReference = (util as any).makeModReference(mod);
+
   return {
     type: rule.type,
     reference: rule.reference,
-    source: (util as any).makeModReference(mod),
+    source,
   };
+}
+
+function makeTransferrable(mods: { [modId: string]: types.IMod },
+                           rule: types.IModRule): types.IModRule {
+  if ((rule.reference.fileMD5 !== undefined)
+      || (rule.reference.logicalFileName !== undefined)
+      || (rule.reference.fileExpression !== undefined)) {
+    // ok unmodified
+    return rule;
+  }
+  if (rule.reference.id === undefined) {
+    // rule unusable
+    log('warn', 'invalid rule couldn\'t be included in the mod pack', JSON.stringify(rule));
+    return undefined;
+  }
+
+  // a rule that doesn't contain any of the above markers will likely not be able to match
+  // anything on a different system
+
+  const mod = findModByRef(rule.reference, mods);
+
+  if (mod === undefined) {
+    log('warn', 'mod enabled in mod pack isn\'t installed', JSON.stringify(rule));
+    return undefined;
+  }
+
+  const newRef: types.IModReference = (util as any).makeModReference(mod);
+
+  return {
+    type: rule.type,
+    fileList: (rule as any).fileList,
+    comment: rule.comment,
+    reference: newRef,
+  } as any;
 }
 
 function extractModRules(rules: types.IModRule[],
@@ -163,19 +269,33 @@ function extractModRules(rules: types.IModRule[],
     }
 
     return [].concat(prev, (mod.rules || []).map((input: types.IModRule): IModPackModRule =>
-      makeBiDirRule(mod, input)));
-  }, []);
+      makeBiDirRule(mod, makeTransferrable(mods, input))));
+  }, [])
+  // throw out rules that couldn't be converted
+  .filter(rule => rule !== undefined);
 }
 
 export function modPackModToRule(mod: IModPackMod): types.IModRule {
+  const downloadHint = ['manual', 'browse', 'direct'].indexOf(mod.source.id) !== -1
+    ? {
+      url: mod.source.url,
+      instructions: mod.source.instructions,
+      mode: mod.source.id,
+    }
+    : undefined;
   return {
     type: mod.optional ? 'recommends' : 'requires',
     reference: {
       description: mod.name,
-      fileMD5: mod.source.md5.hash,
+      fileMD5: mod.source.md5,
       gameId: mod.game_id,
+      fileSize: mod.source.file_size,
+      versionMatch: mod.version,
+      logicalFileName: mod.source.logical_filename,
+      fileExpression: mod.source.file_expression,
     },
     fileList: mod.hashes,
+    downloadHint,
   } as any;
 }
 
@@ -183,8 +303,11 @@ export async function modToPack(gameId: string,
                                 stagingPath: string,
                                 modpack: types.IMod,
                                 mods: { [modId: string]: types.IMod },
-                                onProgress: (percent?: number, text?: string) => void)
+                                onProgress: (percent?: number, text?: string) => void,
+                                onError: (message: string, replace: any) => void)
                                 : Promise<IModPack> {
+  const modRules = extractModRules(modpack.rules, mods);
+
   return {
     info: {
       author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
@@ -196,8 +319,8 @@ export async function modToPack(gameId: string,
     },
     mods: await rulesToModPackMods(modpack.rules, mods, stagingPath, gameId,
                                    util.getSafe(modpack.attributes, ['modpack'], {}),
-                                   onProgress),
-    modRules: extractModRules(modpack.rules, mods),
+                                   onProgress, onError),
+    modRules,
   };
 }
 

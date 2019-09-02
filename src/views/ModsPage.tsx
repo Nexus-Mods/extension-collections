@@ -4,6 +4,7 @@ import { TranslationFunction } from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { ComponentEx, Icon, ITableRowAction, Table, types, Usage, util } from 'vortex-api';
+import { IModPackSourceInfo } from '../types/IModPack';
 
 export interface IModsPageProps {
   t: TranslationFunction;
@@ -25,6 +26,14 @@ interface IModsPageState {
 }
 
 type IProps = IModsPageProps;
+
+const SOURCES = {
+  nexus: 'Nexus Mods',
+  direct: 'Direct download',
+  browse: 'Browse a website',
+  pack: 'Bundle with modpack',
+  manual: 'Manual',
+};
 
 class ModsPage extends ComponentEx<IProps, IModsPageState> {
   private mLang: string;
@@ -151,28 +160,58 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         onChangeValue: (entry: IModEntry, value: any) => {
           this.props.onSetModpackAttribute(
             ['freshInstall', entry.mod.id], value === 'Fresh Install');
-          // nop
         },
       },
     }, {
       id: 'source',
       name: 'Source',
-      description: 'How the user gets the mod',
-      calc: (mod: IModEntry) => {
-        return 'Nexus Mods';
+      description: 'How the user acquires the mod',
+      calc: (entry: IModEntry) => {
+        const { modpack } = this.props;
+        const id = util.getSafe(modpack,
+                                ['attributes', 'modpack', 'source', entry.mod.id, 'id'],
+                                'nexus');
+        return SOURCES[id];
       },
       placement: 'table',
       edit: {
         inline: true,
         actions: false,
-        choices: () => [
-          { key: 'nexus', text: 'Nexus Mods' },
-          { key: 'direct', text: 'Direct download' },
-          { key: 'browse', text: 'Browse a website' },
-          { key: 'manual', text: 'Manual (please include instructions)' },
-        ],
-        onChangeValue: (source: IModEntry, value: any) => {
-          // nop
+        choices: () => Object.keys(SOURCES).map(key => ({ key, text: SOURCES[key] })),
+        onChangeValue: (entry: IModEntry, value: any) => {
+          const { modpack } = this.props;
+          const src: IModPackSourceInfo = util.getSafe(modpack,
+            ['attributes', 'modpack', 'source', entry.mod.id], { id: value });
+          const input: types.IInput[] = [];
+
+          if (['direct', 'browse'].indexOf(value) !== -1) {
+            input.push({ id: 'url', type: 'url', label: 'URL', value: src.url });
+          }
+
+          if (['browse', 'manual'].indexOf(value) !== -1) {
+            input.push({
+              id: 'instructions', type: 'text', label: 'Instructions',
+              value: src.instructions,
+            });
+          }
+
+          if (input.length > 0) {
+            // query details for direct/browse/manual
+            this.context.api.showDialog('question',
+              'Please provide information the user needs to find the mod', {
+              input,
+            }, [
+              { label: 'Save' },
+            ]).then((result => {
+              this.props.onSetModpackAttribute(['source', entry.mod.id], {
+                id: value,
+                url: result.input.url,
+                instructions: result.input.instructions,
+              });
+            }));
+          } else {
+            this.props.onSetModpackAttribute(['source', entry.mod.id], { id: value });
+          }
         },
       },
     },
@@ -240,7 +279,14 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
            + 'selected "Exact version" in the Version column. It will also considerably increase '
            + 'the time it takes to build the pack.')}</p>
         <p>{t('Source: Decides how the user downloads the mod. "Nexus Mods" is easiest, use the '
-           + 'other options when the mod in only hosted on a different source.')}</p>
+           + 'other options when the mod in only hosted on a different source. '
+           + 'The options also include "pack" which bundles the mod directly into the mod pack. '
+           + 'Do this only for stuff created during setup (e.g. generated LODs, '
+           + 'customized configuration files and such). '
+           + 'You must not include any material you don\'t hold the copyright to. '
+           + 'Also Do not provide direct download links unless you have express permission to '
+           + 'do so.')}
+         </p>
       </Usage>
       </div>
     );

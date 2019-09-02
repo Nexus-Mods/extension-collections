@@ -1,3 +1,6 @@
-let webpack = require('vortex-api/bin/webpack').default;
+const webpack = require('vortex-api/bin/webpack').default;
 
-module.exports = webpack('modpacks', __dirname, 4);
+const config = webpack('modpacks', __dirname, 4);
+config.externals['./build/Release/vortexmt'] = './vortexmt';
+
+module.exports = config;
