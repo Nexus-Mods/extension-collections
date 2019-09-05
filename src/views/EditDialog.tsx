@@ -256,4 +256,4 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 export default
   withTranslation(['common'])(
     connect(mapStateToProps, mapDispatchToProps)(
-      EditDialog) as any) as React.ComponentClass<{}>;
+      EditDialog) as any) as React.ComponentClass<IEditDialogProps>;

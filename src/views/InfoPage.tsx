@@ -1,6 +1,6 @@
 import { IModPackInfo } from '../types/IModPack';
 
-import { TranslationFunction } from 'i18next';
+import I18next from 'i18next';
 import * as React from 'react';
 import { ControlLabel, Form, FormGroup } from 'react-bootstrap';
 import * as semver from 'semver';
@@ -8,7 +8,7 @@ import * as url from 'url';
 import { ComponentEx, FormInput, types, util } from 'vortex-api';
 
 export interface IInfoPageProps {
-  t: TranslationFunction;
+  t: I18next.TFunction;
   modpack: types.IMod;
   onSetModPackInfo: (key: string, value: any) => void;
 }

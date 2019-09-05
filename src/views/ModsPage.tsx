@@ -1,13 +1,13 @@
 import findModByRef from '../util/findModByRef';
 
-import { TranslationFunction } from 'i18next';
+import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { ComponentEx, Icon, ITableRowAction, Table, types, Usage, util } from 'vortex-api';
 import { IModPackSourceInfo } from '../types/IModPack';
 
 export interface IModsPageProps {
-  t: TranslationFunction;
+  t: I18next.TFunction;
   modpack: types.IMod;
   mods: { [modId: string]: types.IMod };
   onSetModVersion: (modId: string, version: 'exact' | 'newest') => void;

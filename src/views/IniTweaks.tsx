@@ -1,7 +1,7 @@
 import { getIniFiles } from '../util/gameSupport';
 
 import * as Promise from 'bluebird';
-import { TranslationFunction } from 'i18next';
+import I18next from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
 import { Button, ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
@@ -36,7 +36,7 @@ interface IComponentState {
 }
 
 interface ITweakProps {
-  t: TranslationFunction;
+  t: I18next.TFunction;
   tweaksPath: string;
   fileName: string;
   enabled: boolean;

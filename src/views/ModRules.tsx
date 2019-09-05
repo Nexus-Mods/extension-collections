@@ -1,4 +1,4 @@
-import { TranslationFunction } from 'i18next';
+import I18next from 'i18next';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { ComponentEx, Toggle, types, util } from 'vortex-api';
@@ -6,7 +6,7 @@ import { IModPackModRule } from '../types/IModPack';
 import findModByRef from '../util/findModByRef';
 
 export interface IModsPageProps {
-  t: TranslationFunction;
+  t: I18next.TFunction;
   mods: { [modId: string]: types.IMod };
   rules: IModPackModRule[];
 }
