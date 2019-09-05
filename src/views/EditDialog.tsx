@@ -86,6 +86,10 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
     const { t, mods, modpack, profile } = this.props;
     const { page } = this.state;
 
+    if (profile === undefined) {
+      return null;
+    }
+
     const name = modpack !== undefined ? modpack.attributes['name'] : '';
 
     const iniFiles = getIniFiles(profile.gameId);
@@ -214,7 +218,9 @@ const emptyModPackInfo: IModPackInfo = {
 function mapStateToProps(state: any): IConnectedProps {
   const { modId } = state.session.modpack;
   const profile = selectors.activeProfile(state);
-  const gameMode = profile.gameId;
+  const gameMode = profile !== undefined
+    ? profile.gameId
+    : undefined;
 
   if (modId !== undefined) {
     const modpack = state.persistent.mods[gameMode][modId];

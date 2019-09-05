@@ -5,7 +5,7 @@ import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import * as path from 'path';
 import turbowalk, { IEntry } from 'turbowalk';
-import { actions, fs, log, types, util } from 'vortex-api';
+import { actions, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
 import findModByRef from './findModByRef';
 
@@ -28,9 +28,9 @@ function deduceSource(mod: types.IMod,
                       : IModPackSourceInfo {
   const res: IModPackSourceInfo = (sourceInfo !== undefined)
     ? {...sourceInfo}
-    : { id: 'nexus' };
+    : { type: 'nexus' };
 
-  if (res.id === 'nexus') {
+  if (res.type === 'nexus') {
     if (util.getSafe(mod.attributes, ['source'], undefined) !== 'nexus') {
       throw new Error(`"${mod.id}" doesn't have Nexus as it's source`);
     }
@@ -89,37 +89,6 @@ export function generateModPack(info: IModPackInfo,
   };
 }
 
-async function calcMD5(filePath: string): Promise<string> {
-  const buf = await fs.readFileAsync(filePath);
-  return createHash('md5')
-    .update(buf)
-    .digest('hex');
-}
-
-/*
-async function calculateHashes(entries: IEntry[], req: NodeRequireFunction)
-                               : Promise<Array<{ path: string, md5: string }>> {
-  const fsWorker = req('fs');
-  const { createHash: ch } = req('crypto');
-
-  const cMD5 = async (filePath: string) => new Promise<string>((resolve, reject) => {
-    fsWorker.readFile(filePath, (err, data) => {
-      if (err !== null) {
-        return reject(err);
-      }
-      resolve(ch('md5')
-        .update(data)
-        .digest('hex'));
-    });
-  });
-
-  return Promise.all(entries.map(async iter => ({
-    path: iter.filePath,
-    md5: await cMD5(iter.filePath),
-  })));
-}
-*/
-
 async function rulesToModPackMods(rules: types.IModRule[],
                                   mods: { [modId: string]: types.IMod },
                                   stagingPath: string,
@@ -128,21 +97,13 @@ async function rulesToModPackMods(rules: types.IModRule[],
                                   onProgress: (percent: number, text: string) => void,
                                   onError: (message: string, replace: any) => void)
                                   : Promise<IModPackMod[]> {
-  rules = rules.filter(rule => mods[rule.reference.id]);
+  rules = rules.filter(rule => mods[rule.reference.id] !== undefined);
   let total = rules.length;
 
   let finished = 0;
 
   const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
     const mod = mods[rule.reference.id];
-
-    let start = Date.now();
-    const passed = () => {
-      const now = Date.now();
-      const t = now - start;
-      start = now;
-      return t;
-    };
 
     const modName = util.renderModName(mod, { version: false });
     try {
@@ -159,11 +120,8 @@ async function rulesToModPackMods(rules: types.IModRule[],
       if (!util.getSafe(modpackInfo, ['freshInstall', mod.id], true)) {
         const modPath = path.join(stagingPath, mod.installationPath);
         await turbowalk(modPath, async input => {
-          console.log('entries', idx, passed());
           entries = [].concat(entries, input);
         }, {});
-
-        console.log('readdir done', idx, passed());
 
         hashes = await Promise.all(entries
           .filter(iter => !iter.isDirectory)
@@ -172,17 +130,8 @@ async function rulesToModPackMods(rules: types.IModRule[],
             md5: await fileMD5Async(iter.filePath),
           })));
 
-        console.log('finished', idx, passed());
-
         onProgress(undefined, modName);
 
-        /* use multiple threads to calculate hashes. This causes electron to crash,
-           no clue why. The electron docs claim node.js modules are supposed to work but I think
-           that may not be true for crypto
-
-        const hashes = await
-          util.runThreaded(calculateHashes, __dirname, entries.filter(iter => !iter.isDirectory));
-        */
         ++finished;
       } else {
         --total;
@@ -276,11 +225,11 @@ function extractModRules(rules: types.IModRule[],
 }
 
 export function modPackModToRule(mod: IModPackMod): types.IModRule {
-  const downloadHint = ['manual', 'browse', 'direct'].indexOf(mod.source.id) !== -1
+  const downloadHint = ['manual', 'browse', 'direct'].indexOf(mod.source.type) !== -1
     ? {
       url: mod.source.url,
       instructions: mod.source.instructions,
-      mode: mod.source.id,
+      mode: mod.source.type,
     }
     : undefined;
   return {
@@ -306,6 +255,11 @@ export async function modToPack(gameId: string,
                                 onProgress: (percent?: number, text?: string) => void,
                                 onError: (message: string, replace: any) => void)
                                 : Promise<IModPack> {
+  if (selectors.activeGameId(state) !== gameId) {
+    // this would be a bug
+    return Promise.reject(new Error('Can only export mod pack for the active profile'));
+  }
+
   const modRules = extractModRules(modpack.rules, mods);
 
   return {

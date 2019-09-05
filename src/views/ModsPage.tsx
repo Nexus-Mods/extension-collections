@@ -168,10 +168,10 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       description: 'How the user acquires the mod',
       calc: (entry: IModEntry) => {
         const { modpack } = this.props;
-        const id = util.getSafe(modpack,
-                                ['attributes', 'modpack', 'source', entry.mod.id, 'id'],
-                                'nexus');
-        return SOURCES[id];
+        const type = util.getSafe(modpack,
+                                  ['attributes', 'modpack', 'source', entry.mod.id, 'type'],
+                                  'nexus');
+        return SOURCES[type];
       },
       placement: 'table',
       edit: {
@@ -181,7 +181,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         onChangeValue: (entry: IModEntry, value: any) => {
           const { modpack } = this.props;
           const src: IModPackSourceInfo = util.getSafe(modpack,
-            ['attributes', 'modpack', 'source', entry.mod.id], { id: value });
+            ['attributes', 'modpack', 'source', entry.mod.id], { type: value });
           const input: types.IInput[] = [];
 
           if (['direct', 'browse'].indexOf(value) !== -1) {
@@ -204,7 +204,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
               { label: 'Save' },
             ]).then((result => {
               this.props.onSetModpackAttribute(['source', entry.mod.id], {
-                id: value,
+                type: value,
                 url: result.input.url,
                 instructions: result.input.instructions,
               });

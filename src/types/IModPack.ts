@@ -11,18 +11,10 @@ export interface IModPackInfo {
 
 export type UpdatePolicy = 'exact' | 'latest';
 
-/*
-  nexus: 'Nexus Mods',
-  direct: 'Direct download',
-  browse: 'Browse a website',
-  pack: 'Bundle with modpack',
-  manual: 'Manual',
-*/
-
 export type SourceType = 'browse' | 'manual' | 'direct' | 'nexus';
 
 export interface IModPackSourceInfo {
-  id: SourceType;
+  type: SourceType;
   md5?: string;
   url?: string;
   instructions?: string;
