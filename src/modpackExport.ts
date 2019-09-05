@@ -23,7 +23,7 @@ async function generateModPack(state: types.IState, modId: string,
   const outputPath = path.join(modPath, 'build');
   await fs.ensureDirWritableAsync(outputPath, () => PromiseBB.resolve());
   await fs.writeFileAsync(path.join(outputPath, 'modpack.json'), JSON.stringify(
-    await modToPack(gameMode, stagingPath, mod, mods, progress, error), undefined, 2));
+    await modToPack(state, gameMode, stagingPath, mod, mods, progress, error), undefined, 2));
   try {
     await fs.copyAsync(path.join(modPath, 'INI Tweaks'), path.join(outputPath, 'INI Tweaks'));
   } catch (err) {

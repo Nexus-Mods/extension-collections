@@ -1,4 +1,5 @@
 import { types } from 'vortex-api';
+import { IModPackGamebryo } from '../util/gameSupport/gamebryo';
 
 export interface IModPackInfo {
   author: string;
@@ -46,7 +47,7 @@ export interface IModPackModRule {
   reference: types.IModReference;
 }
 
-export interface IModPack {
+export interface IModPack extends Partial<IModPackGamebryo> {
   info: IModPackInfo;
   mods: IModPackMod[];
   modRules: IModPackModRule[];

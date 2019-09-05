@@ -1,13 +1,13 @@
 import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackSourceInfo } from '../types/IModPack';
 
-import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import * as path from 'path';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
 import findModByRef from './findModByRef';
+import { generateGameSpecifics } from './gameSupport';
 
 const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
   fileMD5(fileName, (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result));
@@ -248,7 +248,8 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   } as any;
 }
 
-export async function modToPack(gameId: string,
+export async function modToPack(state: types.IState,
+                                gameId: string,
                                 stagingPath: string,
                                 modpack: types.IMod,
                                 mods: { [modId: string]: types.IMod },
@@ -261,6 +262,10 @@ export async function modToPack(gameId: string,
   }
 
   const modRules = extractModRules(modpack.rules, mods);
+
+  const includedMods = (modpack.rules as types.IModRule[]).map(rule => rule.reference.id);
+
+  const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
   return {
     info: {
@@ -275,6 +280,7 @@ export async function modToPack(gameId: string,
                                    util.getSafe(modpack.attributes, ['modpack'], {}),
                                    onProgress, onError),
     modRules,
+    ...gameSpecific,
   };
 }
 

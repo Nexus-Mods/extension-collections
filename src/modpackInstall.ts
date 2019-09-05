@@ -1,5 +1,6 @@
 import { IModPack } from './types/IModPack';
 import findModByRef from './util/findModByRef';
+import { parseGameSpecifics } from './util/gameSupport';
 import { modPackModToRule } from './util/modpack';
 
 import * as path from 'path';
@@ -75,4 +76,6 @@ export async function postprocessPack(api: types.IExtensionApi,
         actions.setModAttribute(profile.gameId, mod.id, 'customFileName', iter.name));
     }
   });
+
+  parseGameSpecifics(api, profile.gameId, modpack);
 }
