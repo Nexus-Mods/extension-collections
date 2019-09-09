@@ -32,7 +32,7 @@ function deduceSource(mod: types.IMod,
 
   if (res.type === 'nexus') {
     if (util.getSafe(mod.attributes, ['source'], undefined) !== 'nexus') {
-      throw new Error(`"${mod.id}" doesn't have Nexus as it's source`);
+      throw new Error(`"${util.renderModName(mod)}" doesn't have Nexus as its source`);
     }
     const modId = util.getSafe(mod, ['attributes', 'modId'], undefined);
     const fileId = util.getSafe(mod, ['attributes', 'fileId'], undefined);
@@ -104,6 +104,11 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
   const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
     const mod = mods[rule.reference.id];
+
+    if (mod.type === 'modpack') {
+      // don't include the modpack itself (or any other modpack for that matter)
+      return undefined;
+    }
 
     const modName = util.renderModName(mod, { version: false });
     try {
