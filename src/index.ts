@@ -4,6 +4,7 @@ import EditDialog from './views/EditDialog';
 import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
 import { makeModpackId } from './util/modpack';
+import { bbProm } from './util/util';
 
 import { initFromProfile } from './modpackCreate';
 import doExport from './modpackExport';
@@ -13,8 +14,9 @@ import * as PromiseBB from 'bluebird';
 global.Promise = Promise;
 
 import * as path from 'path';
-import { fs, log, selectors, types, util } from 'vortex-api';
-import { bbProm } from './util/util';
+import { actions, fs, log, selectors, types, util } from 'vortex-api';
+
+const MOD_TYPE = 'modpack';
 
 function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -22,7 +24,7 @@ function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   if (mod === undefined) {
     return false;
   }
-  return mod.type === 'modpack';
+  return mod.type === MOD_TYPE;
 }
 
 function profileModpackExists(api: types.IExtensionApi, profileId: string) {
@@ -40,7 +42,7 @@ function init(context: types.IExtensionContext): boolean {
     onExport: (modpackId: string) => doExport(context.api, modpackId),
   }));
 
-  context.registerModType('modpack', 200, () => true,
+  context.registerModType(MOD_TYPE, 200, () => true,
                           () => undefined, () => PromiseBB.resolve(false));
 
   context.registerAction('mods-action-icons', 50, 'modpack-export', {}, 'Export Modpack',
@@ -65,7 +67,7 @@ function init(context: types.IExtensionContext): boolean {
       if (mod === undefined) {
         return false;
       }
-      return mod.type === 'modpack';
+      return mod.type === MOD_TYPE;
     });
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Modpack',
@@ -83,6 +85,21 @@ function init(context: types.IExtensionContext): boolean {
   context.once(() => {
     context.api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
+    context.api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
+      // automatically enable modpacks once they're installed
+      const { store } = context.api;
+      const state: types.IState = store.getState();
+      const profileId = selectors.lastActiveProfileForGame(state, gameId);
+      const profile = selectors.profileById(state, profileId);
+      if (profile === undefined) {
+        return;
+      }
+      const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
+      if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
+        store.dispatch(actions.setModEnabled(profile.id, modId, true));
+      }
+    });
+
     context.api.events.on('did-install-dependencies',
                           async (profileId: string, modId: string, recommendations: boolean) => {
       const { store } = context.api;
@@ -91,7 +108,7 @@ function init(context: types.IExtensionContext): boolean {
       const stagingPath = selectors.installPathForGame(state, profile.gameId);
       const mods = state.persistent.mods[profile.gameId];
       const mod = mods[modId];
-      if ((mod !== undefined) && (mod.type === 'modpack')) {
+      if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
         const modPackData = await fs.readFileAsync(
           path.join(stagingPath, mod.installationPath, 'modpack.json'),
           { encoding: 'utf-8' });
