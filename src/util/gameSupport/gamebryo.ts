@@ -96,9 +96,19 @@ export async function parser(api: types.IExtensionApi, gameId: string, modpack: 
     },
   });
 
-  const state = api.store.getState();
+  const state: types.IState = api.store.getState();
+
+  // dismiss all "mod x contains multiple plugins" notifications because we're enabling plugins
+  // automatically.
+  // this is a bit nasty because a) we're string-matching part of the notification id and b) this
+  // doesn't take into account the notification may be triggered by a mod _not_ installed through
+  // the pack.
+  state.session.notifications.notifications
+    .filter(noti => noti.id.startsWith('multiple-plugins-'))
+    .forEach(noti => api.dismissNotification(noti.id));
+
   modpack.pluginRules.plugins.forEach(plugin => {
-    const existing = state.userlist.plugins.find(plug =>
+    const existing = (state as any).userlist.plugins.find(plug =>
       plug.name.toUpperCase() === plugin.name.toUpperCase());
 
     ['requires', 'incompatible', 'after'].forEach(type => {
