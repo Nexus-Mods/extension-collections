@@ -37,6 +37,8 @@ export interface IModPackMod {
   source: IModPackSourceInfo;
   // hashes?: types.IFileListItem[];
   hashes?: any;
+  // installer-specific data to replicate the choices the author made
+  choices?: any;
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';

@@ -120,9 +120,13 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
       // let hashes: types.IFileListItem[];
       let hashes: any;
+      let choices: any;
 
       let entries: IEntry[] = [];
-      if (!util.getSafe(modpackInfo, ['freshInstall', mod.id], true)) {
+
+      const installMode: string = util.getSafe(modpackInfo, ['installMode', mod.id], 'fresh');
+
+      if (installMode === 'clone') {
         const modPath = path.join(stagingPath, mod.installationPath);
         await turbowalk(modPath, async input => {
           entries = [].concat(entries, input);
@@ -138,6 +142,9 @@ async function rulesToModPackMods(rules: types.IModRule[],
         onProgress(undefined, modName);
 
         ++finished;
+      } else if (installMode === 'choices') {
+        choices = util.getSafe(mod, ['attributes', 'installerChoices'], undefined);
+        --total;
       } else {
         --total;
       }
@@ -151,6 +158,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
         game_id: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
         source,
         hashes,
+        choices,
       };
     } catch (err) {
       --total;
@@ -249,6 +257,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
       fileExpression: mod.source.file_expression,
     },
     fileList: mod.hashes,
+    installerChoices: mod.choices,
     downloadHint,
   } as any;
 }
