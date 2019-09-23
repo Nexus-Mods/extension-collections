@@ -14,6 +14,14 @@
   width: 200px;
 }
 
+#modpack-edit-dialog .cell-source {
+  padding-right: 0;
+}
+
+#modpack-edit-dialog .cell-edit-source {
+  padding-left: 0;
+}
+
 #modpack-edit-dialog .cell-highlight {
   display: flex !important;
   align-items: center;
@@ -77,4 +85,58 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+#modpack-install-dialog {
+  .modal-dialog {
+    width: 80vw;
+    .modal-body {
+      height: 60vh;
+    }
+  }
+
+  .modpack-flex-start {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modpack-flex-disclaimer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modpack-flex-installing {
+    .carousel-control {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .carousel-caption {
+      background-color: rgba($gray-lighter, 0.5);
+    }
+
+    .carousel-inner > .item > img {
+      height: 55vh;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .icon-spinner {
+      margin-right: 0.5em;
+    }
+  }
+
+  .modpack-disclaimer-intro {
+    font-size: large;
+  }
+}
+
+.modpack-description-popover {
+  max-width: 60vw;
+  .popover-content {
+    max-height: 50vh;
+    overflow: auto;
+  }
 }

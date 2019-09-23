@@ -1,8 +1,10 @@
 import { IModPack } from './types/IModPack';
 import EditDialog from './views/EditDialog';
+import InstallDialog from './views/InstallDialog';
 
 import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
+import InstallDriver from './util/InstallDriver';
 import { makeModpackId } from './util/modpack';
 import { bbProm } from './util/util';
 
@@ -34,12 +36,18 @@ function profileModpackExists(api: types.IExtensionApi, profileId: string) {
   return mods[makeModpackId(profileId)] !== undefined;
 }
 
+let driver: InstallDriver;
+
 function init(context: types.IExtensionContext): boolean {
   context.registerReducer(['session', 'modpack'], sessionReducer);
 
   context.registerDialog('modpack-edit', EditDialog, () => ({
     onClose: () => context.api.store.dispatch(startEditModPack(undefined)),
     onExport: (modpackId: string) => doExport(context.api, modpackId),
+  }));
+
+  context.registerDialog('modpack-install', InstallDialog, () => ({
+    driver,
   }));
 
   context.registerModType(MOD_TYPE, 200, () => true,
@@ -83,6 +91,7 @@ function init(context: types.IExtensionContext): boolean {
   context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));
 
   context.once(() => {
+    driver = new InstallDriver(context.api);
     context.api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
     context.api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
@@ -96,7 +105,7 @@ function init(context: types.IExtensionContext): boolean {
       }
       const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
       if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
-        store.dispatch(actions.setModEnabled(profile.id, modId, true));
+        driver.start(profile, mod);
       }
     });
 
