@@ -1,10 +1,9 @@
-import { IModPackSourceInfo } from '../types/IModPack';
+import { IModPackSourceInfo, SourceType } from '../types/IModPack';
 import findModByRef from '../util/findModByRef';
 
 import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import * as semver from 'semver';
 import { ComponentEx, Icon, ITableRowAction, Table, tooltip, types, Usage, util } from 'vortex-api';
 
 export interface IModsPageProps {
@@ -192,40 +191,34 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         actions: false,
         choices: () => Object.keys(SOURCES).map(key => ({ key, text: SOURCES[key] })),
         onChangeValue: (source: IModEntry, value: any) => {
-          const { modpack } = this.props;
-          const src: IModPackSourceInfo = util.getSafe(modpack,
-            ['attributes', 'modpack', 'source', source.mod.id], { type: value });
-          const input: types.IInput[] = [];
-
-          if (['direct', 'browse'].indexOf(value) !== -1) {
-            input.push({ id: 'url', type: 'url', label: 'URL', value: src.url });
-          }
-
-          if (['browse', 'manual'].indexOf(value) !== -1) {
-            input.push({
-              id: 'instructions', type: 'text', label: 'Instructions',
-              value: src.instructions,
-            });
-          }
-
-          if (input.length > 0) {
-            // query details for direct/browse/manual
-            this.context.api.showDialog('question',
-              'Please provide information the user needs to find the mod', {
-              input,
-            }, [
-              { label: 'Save' },
-            ]).then((result => {
-              this.props.onSetModpackAttribute(['source', source.mod.id], {
-                type: value,
-                url: result.input.url,
-                instructions: result.input.instructions,
-              });
-            }));
-          } else {
-            this.props.onSetModpackAttribute(['source', source.mod.id], { id: value });
-          }
+          this.querySource(source.mod.id, value);
         },
+      },
+    }, {
+      id: 'edit-source',
+      placement: 'table',
+      edit: {},
+      calc: (entry: IModEntry) => {
+        const { modpack } = this.props;
+        const type = util.getSafe(modpack,
+                                  ['attributes', 'modpack', 'source', entry.mod.id, 'type'],
+                                  'nexus');
+        return SOURCES[type];
+      },
+      customRenderer: (entry: IModEntry) => {
+        const { t, modpack } = this.props;
+        const type = util.getSafe(modpack,
+                                  ['attributes', 'modpack', 'source', entry.mod.id, 'type'],
+                                  'nexus');
+        return (
+          <tooltip.IconButton
+            icon='edit'
+            disabled={['nexus', 'pack'].indexOf(type) !== -1}
+            tooltip={t('Edit Source')}
+            data-modid={entry.mod.id}
+            onClick={this.onQuerySource}
+          />
+        );
       },
     },
   ];
@@ -375,6 +368,51 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     }
 
     return res;
+  }
+
+  private querySource(modId: string, type: SourceType) {
+    const { modpack } = this.props;
+    const src: IModPackSourceInfo = util.getSafe(modpack,
+      ['attributes', 'modpack', 'source', modId], { type });
+    const input: types.IInput[] = [];
+
+    if (['direct', 'browse'].indexOf(type) !== -1) {
+      input.push({ id: 'url', type: 'url', label: 'URL', value: src.url });
+    }
+
+    if (['browse', 'manual'].indexOf(type) !== -1) {
+      input.push({
+        id: 'instructions', type: 'text', label: 'Instructions',
+        value: src.instructions,
+      });
+    }
+
+    if (input.length > 0) {
+      // query details for direct/browse/manual
+      this.context.api.showDialog('question',
+        'Please provide information the user needs to find the mod', {
+        input,
+      }, [
+        { label: 'Save' },
+      ]).then((result => {
+        this.props.onSetModpackAttribute(['source', modId], {
+          type,
+          url: result.input.url,
+          instructions: result.input.instructions,
+        });
+      }));
+    } else {
+      this.props.onSetModpackAttribute(['source', modId], { id: type });
+    }
+  }
+
+  private onQuerySource = (evt: React.MouseEvent<any>) => {
+    const { modpack } = this.props;
+    const modId = evt.currentTarget.getAttribute('data-modid');
+    const type = util.getSafe(modpack,
+      ['attributes', 'modpack', 'source', modId, 'type'],
+      'nexus');
+    return this.querySource(modId, type);
   }
 }
 
