@@ -136,7 +136,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
         <InstallDialogDisclaimer t={t} driver={driver} />
       );
       case 'installing': return (
-        <InstallDialogInstalling t={t} i18n={i18n} tReady={tReady} driver={driver} />
+        <InstallDialogInstalling driver={driver} />
       );
       case 'review': return <InstallDialogReview t={t} driver={driver} />;
       default: return null;

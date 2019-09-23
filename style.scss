@@ -134,9 +134,10 @@
 }
 
 .modpack-description-popover {
+  min-width: 60vw;
   max-width: 60vw;
   .popover-content {
-    max-height: 50vh;
+    height: 50vh;
     overflow: auto;
   }
 }

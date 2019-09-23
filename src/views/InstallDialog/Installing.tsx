@@ -5,11 +5,8 @@ import InstallProgress from './InstallProgress';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Button, Carousel, OverlayTrigger, Popover } from 'react-bootstrap';
-import { WithTranslation } from 'react-i18next';
+import { WithTranslation, withTranslation } from 'react-i18next';
 import { FlexLayout, Icon, types, util } from 'vortex-api';
-
-// tslint:disable-next-line:no-var-requires
-const { ErrorBoundary } = require('vortex-api');
 
 // const CYCLE_INTERVAL = 10 * 1000;
 const CYCLE_INTERVAL = null;
@@ -17,6 +14,21 @@ const CYCLE_INTERVAL = null;
 interface IInstallDialogInstallingProps extends WithTranslation {
   driver: InstallDriver;
 }
+
+interface IDescriptionPopoverProps extends WithTranslation {
+  description: string;
+}
+
+function DescriptionPopover(props: IDescriptionPopoverProps) {
+  return (
+    <>
+      <h3>{name}</h3>
+      <div>{(util as any).renderBBCode(props.description)}</div>
+    </>
+  );
+}
+
+const DescriptionPopoverTrans = withTranslation(['common'])(DescriptionPopover) as any;
 
 class InstallDialogInstalling extends React.Component<IInstallDialogInstallingProps, {}> {
   public render(): JSX.Element {
@@ -55,8 +67,7 @@ class InstallDialogInstalling extends React.Component<IInstallDialogInstallingPr
           id={`modpack-mod-description-${mod.id}`}
           className='modpack-description-popover'
       >
-        <h3>{name}</h3>
-        <div>{(util as any).renderBBCode(description)}</div>
+        <DescriptionPopoverTrans description={description} />
       </Popover>
     ) : null;
 
@@ -82,4 +93,4 @@ class InstallDialogInstalling extends React.Component<IInstallDialogInstallingPr
   }
 }
 
-export default InstallDialogInstalling;
+export default withTranslation(['common'])(InstallDialogInstalling);
