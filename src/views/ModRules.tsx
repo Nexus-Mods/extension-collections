@@ -7,6 +7,7 @@ import findModByRef from '../util/findModByRef';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
+  modpack: types.IMod;
   mods: { [modId: string]: types.IMod };
   rules: IModPackModRule[];
 }
@@ -31,7 +32,9 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   public render(): React.ReactNode {
-    const { t, rules } = this.props;
+    const { t, modpack, rules } = this.props;
+
+    const filtered = rules.filter(rule => !util.testModReference(modpack, rule.source));
 
     return (
       <div>
@@ -45,7 +48,7 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
           </p>
         </ControlLabel>
         <ListGroup>
-          {rules.map((rule, idx) => this.renderRule(rule, idx))}
+          {filtered.map((rule, idx) => this.renderRule(rule, idx))}
         </ListGroup>
       </div>
     );

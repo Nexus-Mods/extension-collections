@@ -120,7 +120,7 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
               />
             </Tab>
             <Tab key='mod-rules' eventKey='mod-rules' title={t('Mod Rules')}>
-              <ModRules t={t} mods={mods} rules={this.state.modPackRules} />
+              <ModRules t={t} modpack={modpack} mods={mods} rules={this.state.modPackRules} />
             </Tab>
             {(iniFiles.length > 0) ? (
               <Tab key='ini-tweaks' eventKey='ini-tweaks' title={t('Ini Tweaks')}>
