@@ -118,11 +118,11 @@ function init(context: types.IExtensionContext): boolean {
       const mods = state.persistent.mods[profile.gameId];
       const mod = mods[modId];
       if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
-        const modPackData = await fs.readFileAsync(
-          path.join(stagingPath, mod.installationPath, 'modpack.json'),
-          { encoding: 'utf-8' });
-        const modpack: IModPack = JSON.parse(modPackData);
         try {
+          const modPackData = await fs.readFileAsync(
+            path.join(stagingPath, mod.installationPath, 'modpack.json'),
+            { encoding: 'utf-8' });
+          const modpack: IModPack = JSON.parse(modPackData);
           postprocessPack(context.api, profile, modpack, mods);
         } catch (err) {
           log('info', 'Failed to apply mod rules from pack. This is normal if this is the '

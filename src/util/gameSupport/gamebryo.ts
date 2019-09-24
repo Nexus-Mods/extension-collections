@@ -12,6 +12,7 @@ function getEnabledPlugins(state: types.IState,
                            : Array<{ name: string, enabled: boolean }> {
   const gamebryoLO: { [id: string]: IGamebryoLO } = state['loadOrder'];
   return plugins.map(pluginName => gamebryoLO[pluginName.toLowerCase()])
+    .filter(lo => lo !== undefined)
     .sort((lhs, rhs) => lhs.loadOrder - rhs.loadOrder)
     .map(lo => ({ name: lo.name, enabled: lo.enabled }));
 }
@@ -53,7 +54,9 @@ export async function generate(state: types.IState,
                                : Promise<IModPackGamebryo> {
   const includedPlugins: string[] = [];
 
-  const extensions = new Set(['.esp', '.esm', '.esl']);
+  const extensions = ['fallout4', 'skyrimse'].indexOf(gameId) === -1
+    ? new Set(['.esp', '.esm', '.esl'])
+    : new Set(['.esp', '.esm']);
 
   await Promise.all(modIds.map(async modId => {
     const files = await fs.readdirAsync(path.join(stagingPath, mods[modId].installationPath));
