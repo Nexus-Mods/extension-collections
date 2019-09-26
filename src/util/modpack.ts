@@ -265,7 +265,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     type: mod.optional ? 'recommends' : 'requires',
     reference: {
       description: mod.name,
-      fileMD5: mod.source.md5,
+      fileMD5: mod.source.update_policy === 'exact' ? mod.source.md5 : undefined,
       gameId: mod.game_id,
       fileSize: mod.source.file_size,
       versionMatch: mod.source.update_policy === 'exact' ? mod.version : '*',
