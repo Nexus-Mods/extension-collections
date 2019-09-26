@@ -87,6 +87,9 @@ function refName(iter: string | { name: string }): string {
 }
 
 export async function parser(api: types.IExtensionApi, gameId: string, modpack: IModPackGamebryo) {
+  const state: types.IState = api.store.getState();
+
+  /*
   api.store.dispatch({
     type: 'SET_PLUGIN_ORDER',
     payload: modpack.plugins.map(plugin => plugin.name),
@@ -98,8 +101,14 @@ export async function parser(api: types.IExtensionApi, gameId: string, modpack: 
       setEnabled: true,
     },
   });
+  */
 
-  const state: types.IState = api.store.getState();
+  modpack.plugins.forEach(plugin => {
+    api.store.dispatch({ type: 'SET_PLUGIN_ENABLED', payload: {
+      pluginName: plugin.name,
+      enabled: plugin.enabled,
+    } });
+  });
 
   // dismiss all "mod x contains multiple plugins" notifications because we're enabling plugins
   // automatically.
