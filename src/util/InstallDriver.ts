@@ -1,7 +1,7 @@
 import findModByRef from './findModByRef';
 
 import * as Promise from 'bluebird';
-import { actions, types, util } from 'vortex-api';
+import { actions, log, types, util } from 'vortex-api';
 
 export type Step = 'start' | 'disclaimer' | 'installing' | 'review';
 
@@ -79,9 +79,15 @@ class InstallDriver {
       ],
     });
 
-    this.mRequiredMods = modpack.rules
-      .filter(rule => rule.type === 'requires')
+    const required = modpack.rules
+      .filter(rule => rule.type === 'requires');
+    this.mRequiredMods = required
       .filter(rule => findModByRef(rule.reference, mods) === undefined);
+
+    log('info', 'starting install of mod pack', {
+      totalMods: required.length,
+      missing: this.mRequiredMods.length,
+    });
 
     this.triggerUpdate();
   }

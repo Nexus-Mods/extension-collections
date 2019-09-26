@@ -38,7 +38,7 @@ class InstallDialogDisclaimer extends React.Component<IInstallDialogDisclaimerPr
                    + 'Many mod authors will also appreciate donations or sponsoring through '
                    + 'Patreon and similar.')}</li>
               <li>{t('Modding can be a complex process. A mod pack is intended to save you '
-                   + 'menial task of downloading and installing a lot of mods and helps you '
+                   + 'the menial task of downloading and installing a lot of mods and helps you '
                    + 'find mods that work well together but it can\'t remove the complexity '
                    + 'entirely.')}</li>
               <li>{t('Nexus Mods has tens of thousands of mods, check them out and really make '
