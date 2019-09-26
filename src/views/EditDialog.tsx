@@ -139,14 +139,6 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
     );
   }
 
-  private isGamebryoGame(): boolean {
-    const { gameMode } = this.props;
-    return [
-      'fallout3', 'falloutnv', 'fallout4', 'fallout4vr',
-      'oblivion', 'skyrim', 'skyrimse', 'skyrimvr',
-    ].indexOf(gameMode) !== -1;
-  }
-
   private renderExport(): React.ReactNode {
     const { t } = this.props;
     return (

@@ -24,7 +24,6 @@ export interface IModPackSourceInfo {
   // determines which file to get if there is an update compared to what's in the mod pack
   update_policy?: UpdatePolicy;
   file_size?: number;
-  version?: string;
   logical_filename?: string;
   file_expression?: string;
 }

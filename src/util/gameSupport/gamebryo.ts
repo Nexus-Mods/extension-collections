@@ -12,7 +12,7 @@ function getEnabledPlugins(state: types.IState,
                            : Array<{ name: string, enabled: boolean }> {
   const gamebryoLO: { [id: string]: IGamebryoLO } = state['loadOrder'];
   return plugins.map(pluginName => gamebryoLO[pluginName.toLowerCase()])
-    .filter(lo => lo !== undefined)
+    .filter(lo => (lo !== undefined) && (lo.name !== undefined))
     .sort((lhs, rhs) => lhs.loadOrder - rhs.loadOrder)
     .map(lo => ({ name: lo.name, enabled: lo.enabled }));
 }

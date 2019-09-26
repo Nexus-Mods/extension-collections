@@ -70,11 +70,12 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       customRenderer: (mod: IModEntry) => {
         const color = util.getSafe(mod.mod.attributes, ['color'], '');
         const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
-        if (!color && !icon) {
-          return null;
-        }
         const hasProblem = (this.state.problems[mod.mod.id] !== undefined)
                         && (this.state.problems[mod.mod.id].length > 0);
+
+        if (!color && !icon  && !hasProblem) {
+          return null;
+        }
         return (
           <>
             <Icon
@@ -93,8 +94,9 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       calc: (mod: IModEntry) => {
         const color = util.getSafe(mod.mod.attributes, ['color'], '');
         const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
+        const problems = this.state.problems[mod.mod.id] || [];
 
-        return `${color} - ${icon}`;
+        return `${color} - ${icon} - ${problems.join(',')}`;
       },
       placement: 'table',
       edit: {},
@@ -103,7 +105,8 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       name: 'Version',
       description: 'The version to install',
       calc: (mod: IModEntry) => {
-        if (mod.rule.reference.versionMatch === '*') {
+        if ((mod.rule.reference.versionMatch === undefined)
+            || (mod.rule.reference.versionMatch === '*')) {
           return 'Latest available update';
         } else {
           return 'Exactly this version';
@@ -352,8 +355,8 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
 
     if (source === 'pack') {
       res.push(t('Mods are copyright protected, only pack mods if you are sure you '
-               + 'have the right to do so (e.g. if it\'s dynamically generated content, '
-               + 'if it\'s your own mod or if you have (written) permission to do so.)'));
+               + 'have the right to do so, e.g. if it\'s dynamically generated content, '
+               + 'if it\'s your own mod or if you have (written) permission to do so.'));
     } else if (source === 'direct') {
       res.push(t('Most websites don\'t allow direct downloads, Plese make sure you are '
                + 'allowed to use direct links to the specified page.'));
@@ -365,6 +368,13 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
                + 'This currently only works with xml-based fomods installed with '
                + 'Vortex 1.1.0 or later. '
                + 'You may have to reinstall the mod for this to work.'));
+    }
+
+    if (mod.rule.reference.versionMatch === '') {
+      res.push(t('The mod has no version number set. This isn\'t strictly necessary, we use the '
+               + 'file id to identify the exact version but for the purpose of informing the '
+               + 'user it would be nicer if a version was specified. '
+               + '(Please don\'t forget to update the modpack)'));
     }
 
     return res;

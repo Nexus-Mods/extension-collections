@@ -55,6 +55,13 @@ function deduceSource(mod: types.IMod,
   assign(res, 'logical_filename', util.getSafe(mod.attributes, ['logicalFileName'], undefined));
   if (sourceInfo !== undefined) {
     assign(res, 'update_policy', sourceInfo.update_policy);
+  } else {
+    if ((versionMatcher === '*') || (versionMatcher === undefined)) {
+      assign(res, 'update_policy', 'latest');
+    } else {
+      assign(res, 'update_policy', 'exact');
+      assign(res, 'version', versionMatcher);
+    }
   }
 
   if ((res.md5 === undefined)
@@ -189,6 +196,7 @@ export function makeBiDirRule(mod: types.IMod, rule: types.IModRule): IModPackMo
 }
 
 function makeTransferrable(mods: { [modId: string]: types.IMod },
+                           modpack: types.IMod,
                            rule: types.IModRule): types.IModRule {
   if ((rule.reference.fileMD5 !== undefined)
       || (rule.reference.logicalFileName !== undefined)
@@ -214,6 +222,13 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 
   const newRef: types.IModReference = (util as any).makeModReference(mod);
 
+  // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
+  // the rules referencing it apply to newer versions
+  const mpRule = modpack.rules.find(iter => util.testModReference(mod, iter.reference));
+  if ((mpRule !== undefined) && (mpRule.reference.versionMatch === '*')) {
+    newRef.versionMatch = '*';
+  }
+
   return {
     type: rule.type,
     fileList: (rule as any).fileList,
@@ -223,15 +238,16 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 }
 
 function extractModRules(rules: types.IModRule[],
+                         modpack: types.IMod,
                          mods: { [modId: string]: types.IMod }): IModPackModRule[] {
   return rules.reduce((prev: IModPackModRule[], rule: types.IModRule) => {
     const mod = mods[rule.reference.id];
-    if (mod === undefined) {
+    if ((mod === undefined) || (mod.id === modpack.id)) {
       return prev;
     }
 
     return [].concat(prev, (mod.rules || []).map((input: types.IModRule): IModPackModRule =>
-      makeBiDirRule(mod, makeTransferrable(mods, input))));
+      makeBiDirRule(mod, makeTransferrable(mods, modpack, input))));
   }, [])
   // throw out rules that couldn't be converted
   .filter(rule => rule !== undefined);
@@ -252,7 +268,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
       fileMD5: mod.source.md5,
       gameId: mod.game_id,
       fileSize: mod.source.file_size,
-      versionMatch: mod.version,
+      versionMatch: mod.source.update_policy === 'exact' ? mod.version : '*',
       logicalFileName: mod.source.logical_filename,
       fileExpression: mod.source.file_expression,
     },
@@ -275,7 +291,7 @@ export async function modToPack(state: types.IState,
     return Promise.reject(new Error('Can only export mod pack for the active profile'));
   }
 
-  const modRules = extractModRules(modpack.rules, mods);
+  const modRules = extractModRules(modpack.rules, modpack, mods);
 
   const includedMods = (modpack.rules as types.IModRule[]).map(rule => rule.reference.id);
 
@@ -299,17 +315,32 @@ export async function modToPack(state: types.IState,
 }
 
 function createRulesFromProfile(profile: types.IProfile,
-                                mods: {[modId: string]: types.IMod}): types.IModRule[] {
+                                mods: {[modId: string]: types.IMod},
+                                existingRules: types.IModRule[]): types.IModRule[] {
   return Object.keys(profile.modState)
     .filter(modId => profile.modState[modId].enabled
                   && (mods[modId] !== undefined)
                   && (mods[modId].attributes['generated'] !== true))
-    .map(modId => ({
-      type: 'requires',
-      reference: {
-        id: modId,
-      },
-    }) as any);
+    .map(modId => {
+      // don't forget what we set up regarding version matching
+      let versionMatch: string;
+
+      const oldRule = existingRules
+        .find(iter => util.testModReference(mods[modId], iter.reference));
+      if ((oldRule !== undefined) && (oldRule.reference.versionMatch !== undefined)) {
+        versionMatch = (oldRule.reference.versionMatch === '*')
+          ? '*'
+          : mods[modId].attributes.version;
+      }
+
+      return {
+        type: 'requires',
+        reference: {
+          id: modId,
+          versionMatch,
+        },
+      } as any;
+    });
 }
 
 export function makeModpackId(profileId: string): string {
@@ -342,11 +373,23 @@ function createModpack(api: types.IExtensionApi, gameId: string,
   });
 }
 
+/*function equalWithoutVersion(lhs: types.IModRule, rhs: types.IModRule): boolean {
+  return (lhs.type === rhs.type)
+      && (lhs.reference.fileExpression === rhs.reference.fileExpression)
+      && (lhs.reference.fileMD5 === rhs.reference.fileMD5)
+      && (lhs.reference.fileSize === rhs.reference.fileSize)
+      && (lhs.reference.gameId === rhs.reference.gameId)
+      && (lhs.reference.id === rhs.reference.id)
+      && (lhs.reference.logicalFileName === rhs.reference.logicalFileName);
+}*/
+
 function updateModpack(api: types.IExtensionApi, gameId: string,
                        mod: types.IMod, newRules: types.IModRule[]) {
+  const removedRules: types.IModRule[] = [];
   // remove rules not found in newRules
   mod.rules.forEach(rule => {
     if (newRules.find(iter => _.isEqual(rule, iter)) === undefined) {
+      removedRules.push(rule);
       api.store.dispatch(actions.removeModRule(gameId, mod.id, rule));
     }
   });
@@ -366,9 +409,10 @@ export function createModpackFromProfile(api: types.IExtensionApi,
 
   const id = makeModpackId(profileId);
   const name = `Modpack: ${profile.name}`;
-  const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId]);
-
   const mod: types.IMod = state.persistent.mods[profile.gameId][id];
+
+  const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],
+                                       (mod !== undefined) ? mod.rules : []);
 
   if (mod === undefined) {
     createModpack(api, profile.gameId, id, name, rules);
