@@ -34,7 +34,7 @@ class InstallDialogStart extends React.Component<IInstallDialogStartProps, {}> {
             })}
           </div>
           <div className='modpack-instructions'>
-            {t('When you click continue Vortex will download and install the {{count}} '
+            {t('When you click "Next", Vortex will download and install the {{count}} '
               + 'mods included in this pack.', {
               count: numMods,
             })}

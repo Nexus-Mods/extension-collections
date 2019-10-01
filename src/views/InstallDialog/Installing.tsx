@@ -5,7 +5,7 @@ import InstallProgress from './InstallProgress';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Button, Carousel, OverlayTrigger, Popover } from 'react-bootstrap';
-import { WithTranslation, withTranslation } from 'react-i18next';
+import { WithTranslation, withTranslation, I18nextProvider } from 'react-i18next';
 import { FlexLayout, Icon, types, util } from 'vortex-api';
 
 // const CYCLE_INTERVAL = 10 * 1000;
@@ -54,20 +54,22 @@ class InstallDialogInstalling extends React.Component<IInstallDialogInstallingPr
   }
 
   private renderItem(mod: types.IMod): JSX.Element {
-    const { t } = this.props;
+    const { t, i18n } = this.props;
 
-    const name = util.renderModName(mod);
-    const author = util.getSafe(mod, ['attributes', 'author'], '<Unknown>');
-    const short = util.getSafe(mod, ['attributes', 'shortDescription'], '');
-    const description = util.getSafe(mod, ['attributes', 'description'], undefined);
-    const url = util.getSafe(mod, ['attributes', 'pictureUrl'], undefined);
+    const name: string = util.renderModName(mod);
+    const author: string = util.getSafe(mod, ['attributes', 'author'], '<Unknown>');
+    const short: string = util.getSafe(mod, ['attributes', 'shortDescription'], '');
+    const description: string = util.getSafe(mod, ['attributes', 'description'], undefined);
+    const url: string = util.getSafe(mod, ['attributes', 'pictureUrl'], undefined);
 
-    const popover = !!description ? (
+    const popover: JSX.Element = !!description ? (
       <Popover
           id={`modpack-mod-description-${mod.id}`}
           className='modpack-description-popover'
       >
-        <DescriptionPopoverTrans description={description} />
+        <I18nextProvider i18n={i18n}>
+          <DescriptionPopoverTrans description={description} />
+        </I18nextProvider>
       </Popover>
     ) : null;
 
