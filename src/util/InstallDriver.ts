@@ -20,7 +20,7 @@ class InstallDriver {
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
-    api.onAsync('will-install-mod', (gameId, archiveId, modId, modInfo) => {
+    api.onAsync('will-install-mod', (gameId, archiveId, modId) => {
       const state: types.IState = api.store.getState();
       const download = state.persistent.downloads.files[archiveId];
       if (download !== undefined) {
@@ -84,6 +84,10 @@ class InstallDriver {
     this.mRequiredMods = required
       .filter(rule => findModByRef(rule.reference, mods) === undefined);
 
+    if (this.mRequiredMods.length === 0) {
+      this.mInstallDone = false;
+    }
+
     log('info', 'starting install of mod pack', {
       totalMods: required.length,
       missing: this.mRequiredMods.length,
@@ -146,7 +150,7 @@ class InstallDriver {
     if (this.mStep === 'installing') {
       return this.mInstallDone;
     } else if (this.mStep === 'disclaimer') {
-      return this.mInstalledMods.length > 0;
+      return (this.mInstalledMods.length > 0) || this.mInstallDone;
     } else {
       return true;
     }

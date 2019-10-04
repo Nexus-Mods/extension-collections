@@ -105,9 +105,10 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       name: 'Version',
       description: 'The version to install',
       calc: (mod: IModEntry) => {
-        if ((mod.rule.reference.versionMatch === undefined)
-            || (mod.rule.reference.versionMatch === '*')) {
+        if (mod.rule.reference.versionMatch === '*') {
           return 'Latest available update';
+        } else if (mod.rule.reference.versionMatch.endsWith('+prefer')) {
+          return 'Prefer this version';
         } else {
           return 'Exactly this version';
         }
@@ -118,12 +119,15 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         actions: false,
         choices: () => [
           { key: 'exact', text: 'Exactly this version' },
+          { key: 'prefer', text: 'Prefer this version' },
           { key: 'newest', text: 'Latest available update' }],
         onChangeValue: (source: IModEntry, value: any) => {
           this.props.onRemoveRule(source.rule);
           const newRule = _.cloneDeep(source.rule);
           newRule.reference.versionMatch = (value === 'exact')
             ? source.mod.attributes['version']
+            : (value === 'prefer')
+            ? '>=' + source.mod.attributes['version'] + '+prefer'
             : '*';
           this.props.onAddRule(newRule);
         },

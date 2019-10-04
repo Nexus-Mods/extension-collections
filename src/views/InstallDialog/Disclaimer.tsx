@@ -25,10 +25,10 @@ class InstallDialogDisclaimer extends React.Component<IInstallDialogDisclaimerPr
             </div>
             {t('A few things you should note:')}
             <ul>
-              <li>{t('Mod packs usually contain mods from various authors, they probably '
+              <li>{t('Mod packs usually contain mods from various authors who probably '
                    + 'have no association with the creator of the pack.')}</li>
               <li>{t('Mod authors provide their own instructions on how to install their '
-                   + 'mods. If an individial mod doesn\'t work please don\'t complain to '
+                   + 'mods. If an individual mod doesn\'t work, please don\'t complain to '
                    + 'its author or ask for help without first applying their instructions.')}</li>
               <li>{t('Mods are provided for free. If you paid money for this pack '
                    + 'that money probably only went to the creator of the pack, it didn\'t go '

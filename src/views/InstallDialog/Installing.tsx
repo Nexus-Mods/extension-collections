@@ -38,13 +38,17 @@ class InstallDialogInstalling extends React.Component<IInstallDialogInstallingPr
     return (
       <FlexLayout type='column' className='modpack-flex-installing'>
         <FlexLayout.Flex>
-          <Carousel
-            interval={CYCLE_INTERVAL}
-            prevIcon={<Icon name='nav-back'/>}
-            nextIcon={<Icon name='nav-forward'/>}
-          >
-            {installedMods.map(mod => this.renderItem(mod))}
-          </Carousel>
+          {installedMods.length > 0 ? (
+            <Carousel
+              interval={CYCLE_INTERVAL}
+              prevIcon={<Icon name='nav-back' />}
+              nextIcon={<Icon name='nav-forward' />}
+            >
+              {installedMods.map(mod => this.renderItem(mod))}
+            </Carousel>
+          ) : (
+            <div>{t('Nothing installed')}</div>
+          )}
         </FlexLayout.Flex>
         <FlexLayout.Fixed style={{ width: '90%' }}>
           <InstallProgress t={t} driver={driver} />

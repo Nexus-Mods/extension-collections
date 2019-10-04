@@ -56,8 +56,11 @@ function deduceSource(mod: types.IMod,
   if (sourceInfo !== undefined) {
     assign(res, 'update_policy', sourceInfo.update_policy);
   } else {
-    if ((versionMatcher === '*') || (versionMatcher === undefined)) {
+    if (versionMatcher === '*') {
       assign(res, 'update_policy', 'latest');
+    } else if (versionMatcher.endsWith('+prefer')
+               || (versionMatcher === undefined)) {
+      assign(res, 'update_policy', 'prefer');
     } else {
       assign(res, 'update_policy', 'exact');
       assign(res, 'version', versionMatcher);
@@ -261,6 +264,13 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
       mode: mod.source.type,
     }
     : undefined;
+
+  let versionMatch = `>=${mod.version}+prefer`;
+  if (mod.source.update_policy === 'exact') {
+    versionMatch = mod.version;
+  } else if (mod.source.update_policy === 'latest') {
+    versionMatch = '*';
+  }
   return {
     type: mod.optional ? 'recommends' : 'requires',
     reference: {
@@ -268,7 +278,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
       fileMD5: mod.source.md5,
       gameId: mod.game_id,
       fileSize: mod.source.file_size,
-      versionMatch: mod.source.update_policy === 'exact' ? mod.version : '*',
+      versionMatch,
       logicalFileName: mod.source.logical_filename,
       fileExpression: mod.source.file_expression,
     },
