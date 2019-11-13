@@ -1,3 +1,7 @@
+$border-radius: 4px;
+$collection-thumbnail-width: 180px;
+$collection-thumbnail-height: 320px;
+
 #modpack-edit-dialog .modal-dialog {
   width: 80vw;
 
@@ -156,5 +160,151 @@
   .popover-content {
     height: 50vh;
     overflow: auto;
+  }
+}
+
+.collection-create-btn {
+  position: relative;
+
+  &.panel {
+    border: 0;
+    border-radius: $border-radius;
+    margin: $half-gutter !important;
+    border: 2px dotted $gray;
+
+    width: $collection-thumbnail-width;
+    height: $collection-thumbnail-height;
+  }
+
+  > .panel-body {
+    padding: 0;
+    margin-bottom: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    > * {
+      margin-bottom: $half-gutter;
+    }
+
+    > .icon {
+      width: 32px;
+      height: 32px;
+
+      color: $brand-primary;
+    }
+  }
+
+  .collection-create-label {
+    @extend .h4;
+  }
+}
+
+.collection-thumbnail {
+  position: relative;
+  width: $collection-thumbnail-width;
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.35);
+
+  > .collection-thumbnail-body.panel-body {
+    padding: 0;
+  }
+
+  &.panel {
+    border: 0;
+    border-radius: $border-radius;
+    margin: $half-gutter;
+  }
+
+  .gradient {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7) 70%, rgba(0, 0, 0, 0.9) 93%);
+    border-radius: $border-radius;
+  }
+
+  .thumbnail-img {
+    width: 100%;
+    height: 100%;
+    border-radius: $border-radius;
+  }
+
+  .bottom {
+    position: absolute;
+    bottom: 6%;
+    left: 0;
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .name {
+      @extend .h3;
+    }
+
+    .active-mods {
+      @extend .h5;
+    }
+
+    .author {
+      img {
+        width: 16px;
+        height: 16px;
+        margin-right: 0.5em;
+      }
+    }
+  }
+
+  .collection-status-container {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+
+    .collection-status {
+      background-color: $brand-primary;
+      text-transform: uppercase;
+      padding: 0 0.5em;
+    }
+  }
+
+  .collection-version-container {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    line-height: 1;
+
+    .collection-version {
+      color: $text-color-disabled;
+    }
+  }
+
+  .hover-content {
+    border-radius: $border-radius;
+    display: flex;
+
+    > .btn-group-vertical {
+      width: 128px;
+      align-items: center;
+      margin-left: auto;
+      margin-right: auto;
+      justify-content: center;
+      > btn {
+        justify-content: center;
+      }
+    }
+  }
+}
+
+.collection-list {
+  display: flex;
+  flex-wrap: wrap;
+
+  > .placeholder {
+    margin: auto;
   }
 }

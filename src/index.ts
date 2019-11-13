@@ -1,24 +1,22 @@
-import { IModPack } from './types/IModPack';
-import EditDialog from './views/EditDialog';
-import InstallDialog from './views/InstallDialog';
-
 import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
+import { IModPack } from './types/IModPack';
 import InstallDriver from './util/InstallDriver';
 import { makeModpackId } from './util/modpack';
 import { bbProm } from './util/util';
+import CollectionsPage from './views/CollectionPage';
+import EditDialog from './views/EditDialog';
+import InstallDialog from './views/InstallDialog';
 
+import { MOD_TYPE } from './constants';
 import { initFromProfile } from './modpackCreate';
 import doExport from './modpackExport';
 import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
-global.Promise = Promise;
 
 import * as path from 'path';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
-
-const MOD_TYPE = 'modpack';
 
 function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -49,6 +47,11 @@ function init(context: types.IExtensionContext): boolean {
   context.registerDialog('modpack-install', InstallDialog, () => ({
     driver,
   }));
+
+  context.registerMainPage('collection', 'Collections', CollectionsPage, {
+    hotkey: 'C',
+    group: 'per-game',
+  });
 
   context.registerModType(MOD_TYPE, 200, () => true,
                           () => undefined, () => PromiseBB.resolve(false));

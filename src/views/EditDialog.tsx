@@ -3,6 +3,8 @@ import findModByRef from '../util/findModByRef';
 import { getIniFiles } from '../util/gameSupport';
 import { makeBiDirRule } from '../util/modpack';
 
+import { NAMESPACE } from '../constants';
+
 import InfoPage from './InfoPage';
 import IniTweaks from './IniTweaks';
 import ModRules from './ModRules';
@@ -246,6 +248,6 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 }
 
 export default
-  withTranslation(['common'])(
+  withTranslation(['common', NAMESPACE])(
     connect(mapStateToProps, mapDispatchToProps)(
       EditDialog) as any) as React.ComponentClass<IEditDialogProps>;

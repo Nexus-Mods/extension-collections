@@ -1,3 +1,4 @@
+import { NAMESPACE } from '../../constants';
 import InstallDriver, { Step } from '../../util/InstallDriver';
 
 import InstallDialogDisclaimer from './Disclaimer';
@@ -194,6 +195,6 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 }
 
 export default
-  withTranslation(['common', 'modpack'])(
+  withTranslation(['common', NAMESPACE])(
     connect(mapStateToProps, mapDispatchToProps)(
       InstallDialog) as any) as React.ComponentClass<IInstallDialogProps>;

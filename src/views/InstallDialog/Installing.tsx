@@ -1,11 +1,11 @@
+import { NAMESPACE } from '../../constants';
 import InstallDriver from '../../util/InstallDriver';
 
 import InstallProgress from './InstallProgress';
 
-import i18next from 'i18next';
 import * as React from 'react';
 import { Button, Carousel, OverlayTrigger, Popover } from 'react-bootstrap';
-import { WithTranslation, withTranslation, I18nextProvider } from 'react-i18next';
+import { I18nextProvider, WithTranslation, withTranslation } from 'react-i18next';
 import { FlexLayout, Icon, types, util } from 'vortex-api';
 
 // const CYCLE_INTERVAL = 10 * 1000;
@@ -99,4 +99,4 @@ class InstallDialogInstalling extends React.Component<IInstallDialogInstallingPr
   }
 }
 
-export default withTranslation(['common'])(InstallDialogInstalling);
+export default withTranslation(['common', NAMESPACE])(InstallDialogInstalling);

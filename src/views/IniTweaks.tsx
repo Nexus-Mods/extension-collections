@@ -1,3 +1,4 @@
+import { NAMESPACE } from '../constants';
 import { getIniFiles } from '../util/gameSupport';
 
 import * as Promise from 'bluebird';
@@ -217,7 +218,7 @@ function mapDispatchToProps(dispatch: ThunkDispatch<types.IState, null, Redux.Ac
   };
 }
 
-const TweakListConnected = withTranslation(['common'])(
+const TweakListConnected = withTranslation(['common', NAMESPACE])(
   connect(mapStateToProps, mapDispatchToProps)(
     TweakList) as any) as React.ComponentClass<IBaseProps>;
 
