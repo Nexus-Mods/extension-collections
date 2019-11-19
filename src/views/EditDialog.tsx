@@ -1,5 +1,5 @@
 import { IModPackInfo, IModPackMod, IModPackModRule } from '../types/IModPack';
-import findModByRef from '../util/findModByRef';
+import { findModByRef } from '../util/findModByRef';
 import { getIniFiles } from '../util/gameSupport';
 import { makeBiDirRule } from '../util/modpack';
 

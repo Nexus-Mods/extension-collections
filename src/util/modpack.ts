@@ -6,7 +6,7 @@ import * as path from 'path';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
-import findModByRef from './findModByRef';
+import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';
 
 const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {

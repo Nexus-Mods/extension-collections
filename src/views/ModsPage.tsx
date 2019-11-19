@@ -1,5 +1,5 @@
 import { IModPackSourceInfo, SourceType } from '../types/IModPack';
-import findModByRef from '../util/findModByRef';
+import { findModByRef } from '../util/findModByRef';
 
 import I18next from 'i18next';
 import * as _ from 'lodash';

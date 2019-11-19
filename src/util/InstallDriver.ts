@@ -1,4 +1,4 @@
-import findModByRef from './findModByRef';
+import { findModByRef } from './findModByRef';
 
 import * as Promise from 'bluebird';
 import { actions, log, types, util } from 'vortex-api';

@@ -5,11 +5,13 @@ import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { Icon, IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
+import { AUTHOR_UNKNOWN } from '../../constants';
 
 export interface IBaseProps {
   t: I18next.TFunction;
   gameId: string;
-  mod: types.IMod;
+  collection: types.IMod;
+  onView?: (modId: string) => void;
 }
 
 interface IConnectedProps {
@@ -20,12 +22,17 @@ interface IConnectedProps {
 type IProps = IBaseProps & IConnectedProps;
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
-  private mActions: types.IActionDefinition[] = [
-    {
-      title: 'View',
-      icon: 'show',
-      action: (instanceIds: string[]) => console.log('view', instanceIds),
-    },
+  private mActions: types.IActionDefinition[] = [];
+
+  public componentWillMount() {
+    if (this.props.onView) {
+      this.mActions.push({
+        title: 'View',
+        icon: 'show',
+        action: (instanceIds: string[]) => this.props.onView(instanceIds[0]),
+      });
+    }
+    /*
     {
       title: 'Edit',
       icon: 'edit',
@@ -36,10 +43,11 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       icon: 'clone',
       action: (instanceIds: string[]) => console.log('publish', instanceIds),
     },
-  ];
+    */
+  }
 
   public render(): JSX.Element {
-    const { t, mod, profile, stagingPath } = this.props;
+    const { t, collection: mod, profile, stagingPath } = this.props;
 
     const logoPath = path.join(stagingPath, mod.installationPath, 'logo.jpg');
     const active = util.getSafe(profile, ['modState', mod.id, 'enabled'], false);
@@ -74,19 +82,21 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                 src='assets/images/noavatar.png'
                 circle
               />
-              {util.getSafe(mod.attributes, ['author'], undefined) || `<${t('Unknown Author')}>`}
+              {util.getSafe(mod.attributes, ['author'], undefined) || `${t(AUTHOR_UNKNOWN)}`}
             </div>
           </div>
-          <div className='hover-menu'>
-            {this.renderMenu()}
-          </div>
+          {this.mActions.length > 0 ? (
+            <div className='hover-menu'>
+              {this.renderMenu()}
+            </div>
+          ) : null}
         </Panel.Body>
       </Panel>
     );
   }
 
   private renderMenu(): JSX.Element[] {
-    const { t, mod } = this.props;
+    const { t, collection: mod } = this.props;
 
     return [(
       <div key='primary-buttons' className='hover-content'>

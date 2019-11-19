@@ -1,5 +1,5 @@
 import { IModPack } from './types/IModPack';
-import findModByRef from './util/findModByRef';
+import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
 import { modPackModToRule } from './util/modpack';
 
