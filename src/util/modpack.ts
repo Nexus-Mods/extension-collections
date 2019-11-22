@@ -1,13 +1,15 @@
 import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackSourceInfo } from '../types/IModPack';
 
+import { findModByRef } from './findModByRef';
+import { generateGameSpecifics } from './gameSupport';
+
 import * as _ from 'lodash';
 import * as path from 'path';
+import * as semver from 'semver';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
-import { findModByRef } from './findModByRef';
-import { generateGameSpecifics } from './gameSupport';
 
 const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
   fileMD5(fileName, (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result));
@@ -266,7 +268,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     }
     : undefined;
 
-  let versionMatch = `>=${mod.version}+prefer`;
+  let versionMatch = `>=${semver.coerce(mod.version)}+prefer`;
   if (mod.source.update_policy === 'exact') {
     versionMatch = mod.version;
   } else if (mod.source.update_policy === 'latest') {
@@ -276,7 +278,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     type: mod.optional ? 'recommends' : 'requires',
     reference: {
       description: mod.name,
-      fileMD5: mod.source.md5,
+      fileMD5: mod.source.update_policy === 'exact' ? mod.source.md5 : undefined,
       gameId: mod.game_id,
       fileSize: mod.source.file_size,
       versionMatch,
