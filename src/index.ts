@@ -34,6 +34,44 @@ function profileModpackExists(api: types.IExtensionApi, profileId: string) {
   return mods[makeModpackId(profileId)] !== undefined;
 }
 
+function makeOnUnfulfilledRules(api: types.IExtensionApi) {
+  return (profileId: string, modId: string, rules: types.IModRule[]): PromiseBB<boolean> => {
+    const state: types.IState = api.store.getState();
+
+    const profile = selectors.profileById(state, profileId);
+
+    const collection = util.getSafe(state.persistent.mods, [profile.gameId, modId], undefined);
+
+    if ((collection !== undefined)
+        && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)) {
+      api.sendNotification({
+        id: `collection-incomplete-${collection.id}`,
+        type: 'info',
+        title: 'Collection incomplete',
+        message: util.renderModName(collection),
+        actions: [
+          {
+            title: 'Resume',
+            action: dismiss => {
+              dismiss();
+              api.events.emit('install-dependencies', profile.id, [collection.id], true);
+            },
+          }, {
+            title: 'Disable',
+            action: dismiss => {
+              dismiss();
+              api.store.dispatch(actions.setModEnabled(profile.id, modId, false));
+            },
+          },
+        ],
+      });
+      return PromiseBB.resolve(true);
+    } else {
+      return PromiseBB.resolve(false);
+    }
+  };
+}
+
 let driver: InstallDriver;
 
 function init(context: types.IExtensionContext): boolean {
@@ -133,6 +171,8 @@ function init(context: types.IExtensionContext): boolean {
         }
       }
     });
+
+    context.api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(context.api));
 
     return (util as any).installIconSet('modpacks', path.join(__dirname, 'icons.svg'));
   });
