@@ -49,7 +49,7 @@ function doExport(api: types.IExtensionApi, modId: string) {
     errors.push({ message, replace });
   };
 
-  generateModPack(state, modId, progress, onError)
+  return generateModPack(state, modId, progress, onError)
     .then((zipPath: string) => {
       const dialogActions = [
         {

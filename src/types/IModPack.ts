@@ -38,6 +38,7 @@ export interface IModPackMod {
   hashes?: any;
   // installer-specific data to replicate the choices the author made
   choices?: any;
+  author?: string;
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';

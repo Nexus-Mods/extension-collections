@@ -21,4 +21,3 @@ export function initFromProfile(api: types.IExtensionApi, profileId: string, upd
     ],
   });
 }
-

@@ -169,6 +169,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
         source,
         hashes,
         choices,
+        author: util.getSafe(mod, ['attributes', 'author'], undefined),
       };
     } catch (err) {
       --total;
@@ -285,6 +286,9 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     fileList: mod.hashes,
     installerChoices: mod.choices,
     downloadHint,
+    extra: {
+      author: mod.author,
+    },
   } as any;
 }
 
@@ -307,21 +311,25 @@ export async function modToPack(state: types.IState,
 
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
-  return {
-    info: {
-      author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
-      author_url: util.getSafe(modpack.attributes, ['author_url'], ''),
-      name: util.renderModName(modpack),
-      version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
-      description: util.getSafe(modpack.attributes, ['description'], ''),
-      game_id: gameId,
-    },
+  const modpackInfo: IModPackInfo = {
+    author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
+    author_url: util.getSafe(modpack.attributes, ['author_url'], ''),
+    name: util.renderModName(modpack),
+    version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
+    description: util.getSafe(modpack.attributes, ['description'], ''),
+    game_id: gameId,
+  };
+
+  const res: IModPack = {
+    info: modpackInfo,
     mods: await rulesToModPackMods(modpack.rules, mods, stagingPath, gameId,
                                    util.getSafe(modpack.attributes, ['modpack'], {}),
                                    onProgress, onError),
     modRules,
     ...gameSpecific,
   };
+
+  return res;
 }
 
 function createRulesFromProfile(profile: types.IProfile,

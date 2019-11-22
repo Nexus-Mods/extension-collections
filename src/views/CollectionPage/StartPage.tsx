@@ -52,6 +52,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     gameId={gameMode}
                     collection={mod}
                     onView={onView}
+                    details={true}
                   />)
                 : (
                   <EmptyPlaceholder
@@ -77,6 +78,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   gameId={gameMode}
                   collection={mod}
                   onView={onView}
+                  details={true}
                 />)}
               <Panel className='collection-create-btn'>
                 <Panel.Body>

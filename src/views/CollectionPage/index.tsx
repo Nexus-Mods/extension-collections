@@ -47,16 +47,20 @@ class CollectionsMainPage extends ComponentEx<IDownloadViewProps, IComponentStat
     const { t, downloads, mods, notifications, profile } = this.props;
     const { selectedCollection } = this.state;
 
+    const collection = (selectedCollection !== undefined)
+      ? mods[selectedCollection]
+      : undefined;
+
     return (
       <MainPage id='collection-page'>
         <MainPage.Body>
-          {(selectedCollection !== undefined)
+          {(collection !== undefined)
             ? (
               <CollectionPage
                 t={t}
                 className='collection-details'
                 profile={profile}
-                collection={mods[selectedCollection]}
+                collection={collection}
                 mods={mods}
                 downloads={downloads}
                 notifications={notifications}

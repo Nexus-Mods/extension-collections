@@ -5,13 +5,16 @@ import { IModEx } from '../../types/IModEx';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
+import CollectionProgress, { ICollectionProgressProps } from './CollectionProgress';
 
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Image, Nav, NavItem, Panel } from 'react-bootstrap';
-import { ComponentEx, FlexLayout, OptionsFilter, Table,
+import { connect } from 'react-redux';
+import * as Redux from 'redux';
+import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
          TableTextFilter, types, util } from 'vortex-api';
 
 export interface ICollectionPageProps {
@@ -23,6 +26,15 @@ export interface ICollectionPageProps {
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
   onView: (modId: string) => void;
+}
+
+interface IConnectedProps {
+
+}
+
+interface IActionProps {
+  onSetModEnabled: (profileId: string, modId: string, enabled: boolean) => void;
+  onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
 }
 
 interface IComponentState {
@@ -42,19 +54,47 @@ const getCollator = (() => {
   };
 })();
 
-class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> {
+type IProps = ICollectionPageProps & IConnectedProps & IActionProps;
+
+class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mAttributes: Array<types.ITableAttribute<IModEx>>;
   private mUpdateDebouncer: util.Debouncer;
+  private mModActions: ITableRowAction[];
 
-  constructor(props: ICollectionPageProps) {
+  constructor(props: IProps) {
     super(props);
     this.initState({
       modsEx: {},
     });
 
+    this.mModActions = [
+      {
+        icon: 'checkbox-checked',
+        title: 'Enable',
+        action: this.enableSelected,
+        singleRowAction: false,
+      },
+      {
+        icon: 'checkbox-unchecked',
+        title: 'Disable',
+        action: this.disableSelected,
+        singleRowAction: false,
+      },
+      {
+        icon: 'delete',
+        title: 'Remove',
+        action: this.removeSelected,
+        condition: instanceId => (typeof(instanceId) === 'string')
+            ? (['downloaded', 'installed']
+                .indexOf(this.state.modsEx[instanceId].state) !== -1)
+            : true,
+        hotKey: { code: 46 },
+      },
+    ];
+
     this.mAttributes = [
       {
-        id: 'enabled',
+        id: 'collection_status',
         name: 'Status',
         description: 'Is mod enabled in current profile',
         icon: 'check-o',
@@ -73,12 +113,12 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
           );
         },
         calc: (mod: IModEx) => {
-          if (mod.state === 'downloaded') {
-            return (util.getSafe(mod.attributes, ['wasInstalled'], false))
-              ? 'Uninstalled'
-              : 'Never Installed';
-          } else if (mod.state === 'installing') {
+          if (mod.state === 'installing') {
             return 'Installing';
+          } else if (mod.state === 'downloading') {
+            return 'Downloading';
+          } else if ((mod.state === null) || (mod.state === 'downloaded')) {
+            return 'Pending';
           }
           return mod.enabled === true ? 'Enabled' : 'Disabled';
         },
@@ -88,10 +128,12 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
         noShrink: true,
         isSortable: false,
         filter: new OptionsFilter([
-          { value: true, label: 'Enabled' },
-          { value: false, label: 'Disabled' },
-          { value: undefined, label: 'Uninstalled' },
-        ], true),
+          { value: 'Enabled', label: 'Enabled' },
+          { value: 'Disabled', label: 'Disabled' },
+          { value: 'Installing', label: 'Installing' },
+          { value: 'Downloading', label: 'Downloading' },
+          { value: 'Pending', label: 'Pending' },
+        ], true, false),
       } as any,
       {
         id: 'name',
@@ -138,7 +180,8 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
           : this.props.t(AUTHOR_UNKNOWN),
         placement: 'table',
         edit: {},
-        isToggleable: false,
+        isToggleable: true,
+        isSortable: true,
       },
       {
         id: 'size',
@@ -146,6 +189,10 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
         calc: mod => util.bytesToString(util.getSafe(mod, ['attributes', 'fileSize'], 0)),
         placement: 'table',
         edit: {},
+        isSortable: true,
+        sortFuncRaw: (lhs, rhs) =>
+          util.getSafe(lhs, ['attributes', 'fileSize'], 0)
+          - util.getSafe(rhs, ['attributes', 'fileSize'], 0),
       },
     ];
   }
@@ -176,8 +223,17 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
   }
 
   public render(): JSX.Element {
-    const { t, className, collection, mods, onView, profile } = this.props;
+    const { t, className, collection, downloads, profile } = this.props;
     const { modsEx } = this.state;
+
+    if (collection === undefined) {
+      return null;
+    }
+
+    const totalSize = Object.values(modsEx).reduce((prev, mod) => {
+      const size = util.getSafe(mod, ['attributes', 'fileSize'], 0);
+      return prev + size;
+    }, 0);
 
     const modsFinal = Object.keys(modsEx).reduce((prev, modId) => {
       if (modsEx[modId].state !== 'installed') {
@@ -199,6 +255,7 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
             t={t}
             gameId={profile.gameId}
             collection={collection}
+            totalSize={totalSize}
             onClose={this.close}
           />
         </FlexLayout.Fixed>
@@ -206,16 +263,23 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
           <Panel>
             <Table
               tableId='mods'
-              showDetails={false}
+              showDetails={true}
               data={modsFinal}
               staticElements={this.mAttributes}
-              actions={[]}
+              actions={this.mModActions}
             />
           </Panel>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
           <Panel>
-            Foobar
+            <CollectionProgress
+              t={t}
+              mods={modsEx}
+              downloads={downloads}
+              totalSize={totalSize}
+              onCancel={() => null}
+              onPause={() => null}
+            />
           </Panel>
         </FlexLayout.Fixed>
       </FlexLayout>
@@ -266,6 +330,110 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
       || input.reference.fileExpression
       || input.reference.description
     );
+  }
+
+  private enableSelected = (modIds: string[]) => {
+    const { profile, onSetModEnabled } = this.props;
+
+    modIds.forEach((key: string) => {
+      if (!util.getSafe(profile.modState, [key, 'enabled'], false)) {
+        onSetModEnabled(profile.id, key, true);
+      }
+    });
+    this.context.api.events.emit('mods-enabled', modIds, true, profile.gameId);
+  }
+
+  private disableSelected = (modIds: string[]) => {
+    const { profile, onSetModEnabled } = this.props;
+
+    modIds.forEach((key: string) => {
+      if (util.getSafe(profile.modState, [key, 'enabled'], false)) {
+        onSetModEnabled(profile.id, key, false);
+      }
+    });
+    this.context.api.events.emit('mods-enabled', modIds, false, profile.gameId);
+  }
+
+  private removeSelected = (modIds: string[]) => {
+    const { t, collection, profile, onRemoveRule } = this.props;
+    const { modsEx } = this.state;
+
+    const filteredIds = modIds
+      .filter(modId => modsEx[modId] !== undefined)
+      .filter(modId =>
+        ['downloaded', 'installed', null].indexOf(modsEx[modId].state) !== -1);
+
+    if (filteredIds.length === 0) {
+      return;
+    }
+
+    const modNames = filteredIds
+      .map(modId => (modsEx[modId].state !== null)
+        ? util.renderModName(modsEx[modId], { version: true })
+        : util.renderModReference(modsEx[modId].collectionRule.reference, undefined));
+
+    const checkboxes = [
+      { id: 'mod', text: t('Remove Mod'), value: true },
+      { id: 'archive', text: t('Delete Archive'), value: false },
+      { id: 'collection', text: t('Remove from Collection'), value: false },
+    ];
+
+    this.context.api.showDialog('question', 'Confirm removal', {
+      text: t('Do you really want to remove this mod?', {
+        count: filteredIds.length,
+        replace: { count: filteredIds.length },
+      }),
+      message: modNames.join('\n'),
+      checkboxes,
+    }, [ { label: 'Cancel' }, { label: 'Remove' } ])
+      .then((result: types.IDialogResult) => {
+        const removeMods = result.action === 'Remove' && result.input.mod;
+        const removeArchive = result.action === 'Remove' && result.input.archive;
+        const removeRule = result.action === 'Remove' && result.input.collection;
+
+        const wereInstalled = filteredIds
+          .filter(key => (modsEx[key] !== undefined) && (modsEx[key].state === 'installed'))
+          .map(key => modsEx[key].id);
+
+        const archiveIds = filteredIds
+          .filter(key => (modsEx[key] !== undefined)
+                      && (['downloaded', 'installed'].includes(modsEx[key].state))
+                      && (modsEx[key].archiveId !== undefined))
+          .map(key => modsEx[key].archiveId);
+
+        const rulesToRemove = filteredIds.filter(key => modsEx[key] !== undefined);
+
+        return (removeMods
+            ? (util as any).removeMods(this.context.api, profile.gameId, wereInstalled)
+            : Promise.resolve())
+          .then(() => {
+            if (removeArchive) {
+              archiveIds.forEach(archiveId => {
+                this.context.api.events.emit('remove-download', archiveId);
+              });
+            }
+            return Promise.resolve();
+          })
+          .then(() => {
+            if (removeRule) {
+              rulesToRemove.forEach(key => {
+                onRemoveRule(profile.gameId, collection.id, modsEx[key].collectionRule);
+              });
+            }
+          });
+      })
+      .catch(util.ProcessCanceled, err => {
+        this.context.api.sendNotification({
+          id: 'cant-remove-mod',
+          type: 'warning',
+          title: 'Failed to remove mods',
+          message: err.message,
+        });
+      })
+      .catch(util.UserCanceled, () => null)
+      .catch(err => {
+        this.context.api.showErrorNotification('Failed to remove selected mods', err);
+      });
   }
 
   private updateModsEx(oldProps: ICollectionPageProps,
@@ -386,6 +554,8 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
       attributes: {
         customFileName: download.modInfo.name,
         fileName: download.localPath,
+        fileSize: download.size,
+        received: download.received,
         name: dlId,
       },
     };
@@ -416,6 +586,8 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
           type: '',
           installationPath: undefined,
           attributes: {
+            fileSize: rule.reference.fileSize,
+            author: util.getSafe(rule, ['extra', 'author'], undefined),
           },
           enabled: false,
           collectionRule: rule,
@@ -425,9 +597,9 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
   }
 
   private initModsEx(props: ICollectionPageProps): { [modId: string]: IModEx } {
-    const { collection, downloads, mods, profile } = props;
+    const { collection } = props;
 
-    return collection.rules
+    return (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .reduce<{ [modId: string]: IModEx }> ((prev, rule) => {
         const id = this.ruleId(rule);
@@ -437,4 +609,18 @@ class CollectionPage extends ComponentEx<ICollectionPageProps, IComponentState> 
   }
 }
 
-export default CollectionPage as React.ComponentClass<ICollectionPageProps>;
+function mapStateToProps(state: types.IState): IConnectedProps {
+  return {};
+}
+
+function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
+  return {
+    onSetModEnabled: (profileId: string, modId: string, enabled: boolean) =>
+      dispatch(actions.setModEnabled(profileId, modId, enabled)),
+    onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
+      dispatch(actions.removeModRule(gameId, modId, rule)),
+  };
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(
+  CollectionPage) as React.ComponentClass<ICollectionPageProps>;

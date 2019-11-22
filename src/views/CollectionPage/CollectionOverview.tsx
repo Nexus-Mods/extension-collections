@@ -10,12 +10,13 @@ interface ICollectionOverviewProps {
   t: i18next.TFunction;
   gameId: string;
   collection: types.IMod;
+  totalSize: number;
   onClose: () => void;
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, gameId, onClose } = this.props;
+    const { t, collection, gameId, totalSize, onClose } = this.props;
 
     const depRules = collection.rules
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
@@ -34,7 +35,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
         </div>
         <Media>
           <Media.Left>
-            <CollectionThumbnail t={t} collection={collection} gameId={gameId} />
+            <CollectionThumbnail t={t} collection={collection} gameId={gameId} details={false} />
           </Media.Left>
           <Media.Body>
             <FlexLayout type='column'>
@@ -63,7 +64,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('File size')}</div>
-                    <div>0.00TB</div>
+                    <div>{util.bytesToString(totalSize)}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Version')}</div>

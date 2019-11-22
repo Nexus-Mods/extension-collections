@@ -373,10 +373,15 @@ $collection-thumbnail-height: 320px;
   .collection-mods-panel {
     margin: $half-gutter;
 
+    .table-main-pane .header-author {
+      min-width: 25em;
+    }
+
     .table-main-pane .cell-author {
       .img-circle {
         width: 24px;
         height: 24px;
+        margin-right: 0.5em;
       }
     }
   }
@@ -387,7 +392,7 @@ $collection-thumbnail-height: 320px;
     }
   }
 
-  .table-header-cell.header-enabled {
+  .table-header-cell.header-collection_status {
     min-width: 12em;
   }
 
@@ -416,3 +421,49 @@ $collection-thumbnail-height: 320px;
   }
 }
 
+.collection-progress-flex {
+  padding: $half-gutter;
+  justify-content: space-evenly;
+
+  .progressbar-labels {
+    >div {
+      min-width: 10em;
+    }
+  }
+}
+
+.collection-pause-cancel-flex {
+  justify-content: center;
+  padding: $half-gutter;
+  > .btn {
+    margin: $half-gutter 0;
+    min-width: 100px;
+  }
+}
+
+.collection-premium-banner {
+  padding: $gutter-width;
+
+  .collection-table-container {
+    background: url(assets/images/ad-banner.png);
+    background-size: cover;
+    padding: $half-gutter;
+
+    > table {
+      background: transparent;
+    }
+  }
+
+  th {
+    font-size: x-large;
+  }
+
+  th, td {
+    border: 0 !important;
+    padding: 4px 30px !important;
+  }
+
+  .collection-estimate {
+    color: $text-color-disabled;
+  }
+}

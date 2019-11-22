@@ -11,6 +11,7 @@ export interface IBaseProps {
   t: I18next.TFunction;
   gameId: string;
   collection: types.IMod;
+  details: boolean;
   onView?: (modId: string) => void;
 }
 
@@ -47,12 +48,13 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   public render(): JSX.Element {
-    const { t, collection: mod, profile, stagingPath } = this.props;
+    const { t, collection, details, profile, stagingPath } = this.props;
 
-    const logoPath = path.join(stagingPath, mod.installationPath, 'logo.jpg');
-    const active = util.getSafe(profile, ['modState', mod.id, 'enabled'], false);
+    const logoPath = path.join(stagingPath, collection.installationPath, 'logo.jpg');
+    const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);
 
-    const mods = mod.rules.filter(rule => ['requires', 'recommends'].includes(rule.type));
+    const mods = (collection.rules || [])
+      .filter(rule => ['requires', 'recommends'].includes(rule.type));
 
     return (
       <Panel className='collection-thumbnail' bsStyle={active ? 'primary' : 'default'}>
@@ -62,30 +64,37 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             src={logoPath}
           />
           <div className='gradient' />
-          <div className='collection-status-container'>
-            {active ? <div className='collection-status'>{t('Enabled')}</div> : null}
-          </div>
-          <div className='collection-version-container'>
-            <div className='collection-version'>
-              {util.getSafe(mod.attributes, ['version'], '0.0.0')}
+          {details ? (
+            <div className='collection-status-container'>
+              {active ? <div className='collection-status'>{t('Enabled')}</div> : null}
             </div>
-          </div>
-          <div className='bottom'>
-            <div className='name'>
-              {util.renderModName(mod, { version: false })}
+          ) : null}
+          {details ? (
+            <div className='collection-version-container'>
+              <div className='collection-version'>
+                {util.getSafe(collection.attributes, ['version'], '0.0.0')}
+              </div>
             </div>
-            <div className='active-mods'>
-              <span>{t('{{ count }} mod', { count: mods.length })}</span>
+          ) : null}
+          {details ? (
+            <div className='bottom'>
+              <div className='name'>
+                {util.renderModName(collection, { version: false })}
+              </div>
+              <div className='active-mods'>
+                <span>{t('{{ count }} mod', { count: mods.length })}</span>
+              </div>
+              <div className='author'>
+                <Image
+                  src='assets/images/noavatar.png'
+                  circle
+                />
+                {util.getSafe(collection.attributes, ['author'], undefined)
+                  || `${t(AUTHOR_UNKNOWN)}`}
+              </div>
             </div>
-            <div className='author'>
-              <Image
-                src='assets/images/noavatar.png'
-                circle
-              />
-              {util.getSafe(mod.attributes, ['author'], undefined) || `${t(AUTHOR_UNKNOWN)}`}
-            </div>
-          </div>
-          {this.mActions.length > 0 ? (
+          ) : null}
+          {(this.mActions.length > 0) ? (
             <div className='hover-menu'>
               {this.renderMenu()}
             </div>
