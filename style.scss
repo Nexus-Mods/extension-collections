@@ -10,23 +10,23 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-#modpack-edit-dialog .header-version,
-#modpack-edit-dialog .header-source,
-#modpack-edit-dialog .header-required,
-#modpack-edit-dialog .header-install-type,
-#modpack-edit-dialog .header-action {
+#table-modpack-mods .header-version,
+#table-modpack-mods .header-source,
+#table-modpack-mods .header-required,
+#table-modpack-mods .header-install-type,
+#table-modpack-mods .header-action {
   width: 200px;
 }
 
-#modpack-edit-dialog .cell-source {
+#table-modpack-mods .cell-source {
   padding-right: 0;
 }
 
-#modpack-edit-dialog .cell-edit-source {
+#table-modpack-mods .cell-edit-source {
   padding-left: 0;
 }
 
-#modpack-edit-dialog .cell-highlight {
+#table-modpack-mods .cell-highlight {
   display: flex !important;
   align-items: center;
   > * {
@@ -57,6 +57,18 @@ $collection-thumbnail-height: 320px;
     > div {
       height: 100%;
     }
+
+    .panel {
+      padding: $half-gutter;
+    }
+  }
+
+  #modpack-edit-tabs-pane-info {
+    > .panel {
+      > form {
+        max-width: 40em;
+      }
+    }
   }
 }
 
@@ -69,6 +81,15 @@ $collection-thumbnail-height: 320px;
   > .list-group {
     height: 100%;
     overflow-y: scroll;
+  }
+}
+
+#modpack-edit-tabs-pane-ini-tweaks {
+  .table {
+    max-width: 40em;
+    td {
+      border-top: 0;
+    }
   }
 }
 
@@ -466,4 +487,16 @@ $collection-thumbnail-height: 320px;
   .collection-estimate {
     color: $text-color-disabled;
   }
+}
+
+.collection-view-container {
+  height: 100%;
+  display: flex;
+}
+
+.collection-back-btn {
+  color: currentColor;
+  background-color: transparent;
+  border: 0;
+  padding: 0.5em;
 }

@@ -40,10 +40,10 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
       <div>
         <ControlLabel>
           <p>
-            {t('By default the modpack will replicate all your custom rules dictate '
+            {t('By default the collection will replicate all your custom rules dictate '
                + 'the deployment order of mods.')}
             &nbsp;
-            {t('If you disable rules here your modpack may produce unresolved file conflicts '
+            {t('If you disable rules here your collection may produce unresolved file conflicts '
                + 'that the user has to resolve.')}
           </p>
         </ControlLabel>

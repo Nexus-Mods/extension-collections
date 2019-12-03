@@ -12,7 +12,9 @@ export interface IBaseProps {
   gameId: string;
   collection: types.IMod;
   details: boolean;
+  onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
+  onRemove?: (modId: string) => void;
 }
 
 interface IConnectedProps {
@@ -33,12 +35,22 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         action: (instanceIds: string[]) => this.props.onView(instanceIds[0]),
       });
     }
+    if (this.props.onEdit) {
+      this.mActions.push({
+        title: 'Edit',
+        icon: 'edit',
+        action: (instanceIds: string[]) => this.props.onEdit(instanceIds[0]),
+      });
+    }
+    if (this.props.onRemove) {
+      this.mActions.push({
+        title: 'Remove',
+        icon: 'remove',
+        action: (instanceIds: string[]) => this.props.onRemove(instanceIds[0]),
+      });
+    }
+
     /*
-    {
-      title: 'Edit',
-      icon: 'edit',
-      action: (instanceIds: string[]) => console.log('edit', instanceIds),
-    },
     {
       title: 'Publish',
       icon: 'clone',

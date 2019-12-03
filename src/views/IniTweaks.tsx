@@ -5,13 +5,14 @@ import * as Promise from 'bluebird';
 import I18next from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
-import { Button, ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Button, ControlLabel, Table } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
+import Select from 'react-select';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { actions, ComponentEx, fs, PureComponentEx, selectors,
-         Toggle, types, util } from 'vortex-api';
+         Toggle, types, util, Icon } from 'vortex-api';
 
 // copy&paste from src/extensions/mod_management/InstallManager.ts
 const INI_TWEAKS_PATH = 'Ini Tweaks';
@@ -66,12 +67,24 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
       return null;
     }
 
+    const options = [
+      { label: t('Required'), value: 'required' },
+      { label: t('Recommended'), value: 'recommended' },
+      { label: t('Optional'), value: 'optional' },
+    ];
+
     return (
-      <ListGroupItem className='listitem-tweak'>
-        <Toggle checked={enabled} onToggle={this.toggle}>{match[1]}</Toggle>
-        {' '}
-        <a onClick={this.edit}>{t('Edit')} ...</a>
-      </ListGroupItem>
+      <tr>
+        <td><Toggle checked={enabled} onToggle={this.toggle}/></td>
+        <td>{match[1]}</td>
+        <td>
+          <Select
+            options={options}
+            value='Optional'
+          />
+        </td>
+        <td><a onClick={this.edit}><Icon name='edit' /></a></td>
+      </tr>
     );
   }
 
@@ -119,9 +132,19 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
               + 'multiple tweaks to give users granular control.')}
           </p>
         </ControlLabel>
-        <ListGroup>
-          {tweaks.map(this.renderTweak)}
-        </ListGroup>
+        <Table>
+          <thead>
+            <tr>
+              <th>{t('Status')}</th>
+              <th>{t('Ini file')}</th>
+              <th>{t('Requirement')}</th>
+              <th>{t('Edit')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tweaks.map(this.renderTweak)}
+          </tbody>
+        </Table>
         <Button onClick={this.addIniTweak}>
           {t('Add')}
         </Button>

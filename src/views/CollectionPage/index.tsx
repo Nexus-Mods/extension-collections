@@ -1,5 +1,6 @@
 import { NAMESPACE } from '../../constants';
 
+import CollectionEdit from './CollectionEdit';
 import CollectionPage from './CollectionPage';
 import StartPage from './StartPage';
 
@@ -9,11 +10,13 @@ import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { ComponentEx, MainPage, selectors, types } from 'vortex-api';
+import { ComponentEx, MainPage, selectors, types, actions, util, tooltip, FlexLayout } from 'vortex-api';
 
-export interface IDownloadViewBaseProps extends WithTranslation {
+export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
+
+  onCreateCollection: (profile: types.IProfile, name: string) => void;
 }
 
 interface IConnectedProps {
@@ -24,38 +27,63 @@ interface IConnectedProps {
 }
 
 interface IActionProps {
+  removeMod: (gameId: string, modId: string) => void;
 }
 
-export type IDownloadViewProps =
-  IDownloadViewBaseProps & IConnectedProps & IActionProps & { t: I18next.TFunction };
+export type ICollectionsMainPageProps =
+  ICollectionsMainPageBaseProps & IConnectedProps & IActionProps & { t: I18next.TFunction };
 
 interface IComponentState {
   selectedCollection: string;
+  viewMode: 'view' | 'edit';
 }
 
-const nop = () => null;
-
-class CollectionsMainPage extends ComponentEx<IDownloadViewProps, IComponentState> {
-  constructor(props: IDownloadViewProps) {
+class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, IComponentState> {
+  constructor(props: ICollectionsMainPageProps) {
     super(props);
     this.initState({
       selectedCollection: undefined,
+      viewMode: 'view',
     });
   }
 
   public render(): JSX.Element {
     const { t, downloads, mods, notifications, profile } = this.props;
-    const { selectedCollection } = this.state;
+    const { selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
       ? mods[selectedCollection]
       : undefined;
 
-    return (
-      <MainPage id='collection-page'>
-        <MainPage.Body>
-          {(collection !== undefined)
-            ? (
+    let content = null;
+
+    if (collection === undefined) {
+      content = (
+        <StartPage
+          t={t}
+          profile={profile}
+          mods={mods}
+          onView={this.view}
+          onEdit={this.edit}
+          onRemove={this.remove}
+          onCreateCollection={this.createCollection}
+        />
+      );
+    } else {
+      content = (
+        <FlexLayout type='column'>
+          <FlexLayout.Fixed>
+            <tooltip.IconButton
+              className='collection-back-btn'
+              tooltip='Return to overview'
+              icon='nav-back'
+              onClick={this.deselectCollection}
+            >
+              {t('Back')}
+            </tooltip.IconButton>
+          </FlexLayout.Fixed>
+          <FlexLayout.Flex>
+            {(viewMode === 'view') ? (
               <CollectionPage
                 t={t}
                 className='collection-details'
@@ -67,22 +95,65 @@ class CollectionsMainPage extends ComponentEx<IDownloadViewProps, IComponentStat
                 onView={this.view}
               />
             )
-            : (
-              <StartPage
-                t={t}
-                gameMode={profile.gameId}
-                mods={mods}
-                onView={this.view}
-              />
-            )
-          }
+              : (
+                <CollectionEdit
+                  t={t}
+                  profile={profile}
+                  collection={collection}
+                  mods={mods}
+                />
+              )}
+          </FlexLayout.Flex>
+        </FlexLayout>
+      );
+    }
+
+    return (
+      <MainPage id='collection-page'>
+        <MainPage.Body>
+          {content}
         </MainPage.Body>
       </MainPage>
     );
   }
 
+  private createCollection = (name: string) => {
+    const { profile, onCreateCollection } = this.props;
+    onCreateCollection(profile, name);
+  }
+
+  private deselectCollection = () => {
+    this.nextState.selectedCollection = undefined;
+  }
+
   private view = (modId: string) => {
     this.nextState.selectedCollection = modId;
+    this.nextState.viewMode = 'view';
+  }
+  
+  private edit = (modId: string) => {
+    this.nextState.selectedCollection = modId;
+    this.nextState.viewMode = 'edit';
+  }
+
+  private remove = (modId: string) => {
+    const { mods, profile } = this.props;
+    this.context.api.showDialog('question', 'Confirm removal', {
+      text: 'Are you sure you want to remove the collection "{{collectionName}}"? '
+          + 'This will remove the collection but not the mods installed with it.\n'
+          + 'This can not be undone',
+      parameters: {
+        collectionName: util.renderModName(mods[modId]),
+      },
+    }, [
+      { label: 'Cancel' },
+      { label: 'Remove' },
+    ])
+    .then(res => {
+      if (res.action === 'Remove') {
+        (util as any).removeMods(this.context.api, profile.gameId, [modId]);
+      }
+    })
   }
 }
 
@@ -100,6 +171,7 @@ function mapStateToProps(state: types.IState): IConnectedProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<any, null, Redux.Action>): IActionProps {
   return {
+    removeMod: (gameId: string, modId: string) => dispatch(actions.removeMod(gameId, modId)),
   };
 }
 

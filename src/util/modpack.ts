@@ -363,11 +363,11 @@ function createRulesFromProfile(profile: types.IProfile,
     });
 }
 
-export function makeModpackId(profileId: string): string {
-  return `vortex_modpack_${profileId}`;
+export function makeModpackId(baseId: string): string {
+  return `vortex_collection_${baseId}`;
 }
 
-function createModpack(api: types.IExtensionApi, gameId: string,
+export function createModpack(api: types.IExtensionApi, gameId: string,
                        id: string, name: string,
                        rules: types.IModRule[]) {
   const state: types.IState = api.store.getState();
@@ -423,7 +423,7 @@ function updateModpack(api: types.IExtensionApi, gameId: string,
 
 export function createModpackFromProfile(api: types.IExtensionApi,
                                          profileId: string)
-                                         : { id: string, name: string } {
+                                         : { id: string, name: string, updated: boolean } {
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
@@ -440,5 +440,5 @@ export function createModpackFromProfile(api: types.IExtensionApi,
     updateModpack(api, profile.gameId, mod, rules);
   }
 
-  return { id, name };
+  return { id, name, updated: mod !== undefined };
 }

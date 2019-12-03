@@ -2,7 +2,7 @@ import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
 import { IModPack } from './types/IModPack';
 import InstallDriver from './util/InstallDriver';
-import { makeModpackId } from './util/modpack';
+import { makeModpackId, createModpack } from './util/modpack';
 import { bbProm } from './util/util';
 import CollectionsPage from './views/CollectionPage';
 import EditDialog from './views/EditDialog';
@@ -14,8 +14,8 @@ import doExport from './modpackExport';
 import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
-
 import * as path from 'path';
+import { generate as shortid } from 'shortid';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
 function isEditableModPack(state: types.IState, modIds: string[]): boolean {
@@ -74,6 +74,27 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
 let driver: InstallDriver;
 
+function createCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
+  const id = makeModpackId(shortid());
+  createModpack(this.context.api, profile.gameId, id, name, []);
+  this.context.api.sendNotification({
+    type: 'success',
+    id: 'collection-created',
+    title: 'Collection created',
+    message: name,
+    actions: [
+      {
+        title: 'Configure',
+        action: dismiss => {
+          this.context.api.store.dispatch(startEditModPack(id));
+          dismiss();
+        },
+      },
+    ],
+  });
+
+}
+
 function init(context: types.IExtensionContext): boolean {
   context.registerReducer(['session', 'modpack'], sessionReducer);
 
@@ -89,6 +110,9 @@ function init(context: types.IExtensionContext): boolean {
   context.registerMainPage('collection', 'Collections', CollectionsPage, {
     hotkey: 'C',
     group: 'per-game',
+    props: () => ({
+      onCreateCollection: (profile: types.IProfile, name: string) => createCollection(context.api, profile, name),
+    }),
   });
 
   context.registerModType(MOD_TYPE, 200, () => true,
@@ -121,12 +145,12 @@ function init(context: types.IExtensionContext): boolean {
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Modpack',
     (profileIds: string[]) => {
-      initFromProfile(context.api, profileIds[0], false);
+      initFromProfile(context.api, profileIds[0]);
     }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update Modpack',
     (profileIds: string[]) => {
-      initFromProfile(context.api, profileIds[0], true);
+      initFromProfile(context.api, profileIds[0]);
     }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
 
   context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));
@@ -166,8 +190,8 @@ function init(context: types.IExtensionContext): boolean {
           const modpack: IModPack = JSON.parse(modPackData);
           postprocessPack(context.api, profile, modpack, mods);
         } catch (err) {
-          log('info', 'Failed to apply mod rules from pack. This is normal if this is the '
-            + 'platform where the pack has been created.');
+          log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
+            + 'platform where the collection has been created.');
         }
       }
     });

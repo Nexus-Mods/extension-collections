@@ -4,7 +4,7 @@ import { findModByRef } from '../util/findModByRef';
 import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { ComponentEx, Icon, ITableRowAction, Table, tooltip, types, Usage, util } from 'vortex-api';
+import { ComponentEx, Icon, ITableRowAction, Table, tooltip, types, Usage, util, TableTextFilter } from 'vortex-api';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
@@ -56,6 +56,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       edit: {},
       isDefaultSort: true,
       isSortable: true,
+      filter: new TableTextFilter(true),
       sortFunc: (lhs: string, rhs: string, locale: string): number => {
         if ((this.mCollator === undefined) || (locale !== this.mLang)) {
           this.mLang = locale;
@@ -65,7 +66,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       },
     }, {
       id: 'highlight',
-      name: '',
+      name: 'Tag',
       description: 'Mod Highlights',
       customRenderer: (mod: IModEntry) => {
         const color = util.getSafe(mod.mod.attributes, ['color'], '');
@@ -101,6 +102,30 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       placement: 'table',
       edit: {},
     }, {
+      id: 'required',
+      name: 'Required',
+      description: 'Whether the entire mod pack will fail if this mod is missingü',
+      calc: (mod: IModEntry) => {
+        return mod.rule.type === 'requires'
+          ? 'Required'
+          : 'Optional';
+      },
+      placement: 'table',
+      edit: {
+        inline: true,
+        actions: false,
+        choices: () => [
+          { key: 'required', text: 'Required' },
+          { key: 'optional', text: 'Optional' },
+        ],
+        onChangeValue: (source: IModEntry, value: any) => {
+          this.props.onRemoveRule(source.rule);
+          const newRule = _.cloneDeep(source.rule);
+          newRule.type = value === 'optional' ? 'recommends' : 'requires';
+          this.props.onAddRule(newRule);
+        },
+      },
+    }, {
       id: 'version',
       name: 'Version',
       description: 'The version to install',
@@ -129,30 +154,6 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
             : (value === 'prefer')
             ? '>=' + source.mod.attributes['version'] + '+prefer'
             : '*';
-          this.props.onAddRule(newRule);
-        },
-      },
-    }, {
-      id: 'required',
-      name: 'Required',
-      description: 'Whether the entire mod pack will fail if this mod is missingü',
-      calc: (mod: IModEntry) => {
-        return mod.rule.type === 'requires'
-          ? 'Required'
-          : 'Optional';
-      },
-      placement: 'table',
-      edit: {
-        inline: true,
-        actions: false,
-        choices: () => [
-          { key: 'required', text: 'Required' },
-          { key: 'optional', text: 'Optional' },
-        ],
-        onChangeValue: (source: IModEntry, value: any) => {
-          this.props.onRemoveRule(source.rule);
-          const newRule = _.cloneDeep(source.rule);
-          newRule.type = value === 'optional' ? 'recommends' : 'requires';
           this.props.onAddRule(newRule);
         },
       },
@@ -261,6 +262,12 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     });
   }
 
+  public componentWillMount() {
+    const entries = this.generateEntries(this.props);
+    this.nextState.entries = entries;
+    this.nextState.problems = this.checkProblems(this.props, entries);
+  }
+
   public componentWillReceiveProps(newProps: IProps) {
     if ((newProps.mods !== this.props.mods)
         || (newProps.modpack !== this.props.modpack)) {
@@ -276,35 +283,35 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
 
     return (
       <div className='modpack-mods-container'>
-      <Table
-        tableId='modpack-mods'
-        data={entries}
-        staticElements={this.mColumns}
-        actions={this.mActions}
-        showDetails={false}
-      />
-      <Usage infoId='modpack-mods'>
-        <p>{t('Here you can configure which mods to install and how.')}</p>
-        <p>{t('Version: Choose whether the modpack will install exactly the version you '
-           + 'have yourself or whatever is current on Nexus Mods.')}</p>
-        <p>{t('Required: Select whether the user has to install the mod or whether it\'s just '
-           + 'a recommendation.')}</p>
-        <p>{t('Install: "Fresh Install" will install the mod as Vortex would usually do, installer '
-           + 'dialog and everything. "Replicate" will extract only the files you have extracted '
-           + 'yourself, in exactly the same location. This basically ensures the user gets the '
-           + 'same options as you without having to pick them but it only works when you have '
-           + 'selected "Exact version" in the Version column. It will also considerably increase '
-           + 'the time it takes to build the pack.')}</p>
-        <p>{t('Source: Decides how the user downloads the mod. "Nexus Mods" is easiest, use the '
-           + 'other options when the mod in only hosted on a different source. '
-           + 'The options also include "pack" which bundles the mod directly into the mod pack. '
-           + 'Do this only for stuff created during setup (e.g. generated LODs, '
-           + 'customized configuration files and such). '
-           + 'You must not include any material you don\'t hold the copyright to. '
-           + 'Also Do not provide direct download links unless you have express permission to '
-           + 'do so.')}
-         </p>
-      </Usage>
+        <Table
+          tableId='modpack-mods'
+          data={entries}
+          staticElements={this.mColumns}
+          actions={this.mActions}
+          showDetails={false}
+        />
+        <Usage infoId='modpack-mods'>
+          <p>{t('Here you can configure which mods to install and how.')}</p>
+          <p>{t('Version: Choose whether the modpack will install exactly the version you '
+            + 'have yourself or whatever is current on Nexus Mods.')}</p>
+          <p>{t('Required: Select whether the user has to install the mod or whether it\'s just '
+            + 'a recommendation.')}</p>
+          <p>{t('Install: "Fresh Install" will install the mod as Vortex would usually do, installer '
+            + 'dialog and everything. "Replicate" will extract only the files you have extracted '
+            + 'yourself, in exactly the same location. This basically ensures the user gets the '
+            + 'same options as you without having to pick them but it only works when you have '
+            + 'selected "Exact version" in the Version column. It will also considerably increase '
+            + 'the time it takes to build the pack.')}</p>
+          <p>{t('Source: Decides how the user downloads the mod. "Nexus Mods" is easiest, use the '
+            + 'other options when the mod in only hosted on a different source. '
+            + 'The options also include "pack" which bundles the mod directly into the mod pack. '
+            + 'Do this only for stuff created during setup (e.g. generated LODs, '
+            + 'customized configuration files and such). '
+            + 'You must not include any material you don\'t hold the copyright to. '
+            + 'Also Do not provide direct download links unless you have express permission to '
+            + 'do so.')}
+          </p>
+        </Usage>
       </div>
     );
   }
