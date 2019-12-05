@@ -13,6 +13,7 @@ export interface IStartPageProps {
   t: i18next.TFunction;
   profile: types.IProfile;
   mods: { [modId: string]: types.IMod };
+  matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
   onEdit: (modId: string) => void;
   onView: (modId: string) => void;
@@ -50,11 +51,11 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, profile, mods, onEdit, onRemove, onView } = this.props;
+    const { t, profile, matchedReferences, mods, onEdit, onRemove, onView } = this.props;
     const { createOpen } = this.state;
 
-    const modPacks = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
-    const {foreign, own} = modPacks.reduce((prev, mod) => {
+    const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
+    const {foreign, own} = collections.reduce((prev, mod) => {
       prev.own.push(mod);
       return prev;
     }, { foreign: [], own: [] });
@@ -86,6 +87,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   <EmptyPlaceholder
                     icon='layout-list'
                     text={t('You have not installed any Collections yet')}
+                    subtext={<a onClick={this.openCollections}>{t('Come get some')}</a>}
                   />
                 )
               }
@@ -105,6 +107,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   t={t}
                   gameId={profile.gameId}
                   collection={mod}
+                  incomplete={matchedReferences[mod.id].includes(undefined)}
                   onEdit={onEdit}
                   onView={onView}
                   onRemove={onRemove}
@@ -140,6 +143,16 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         </Panel>
       </PanelGroup>
     );
+  }
+
+  private openCollections = () => {
+    // TODO: this should open the collections website on nexusmods
+    this.context.api.selectFile({ title: 'Select collection file' })
+      .then(filePath => {
+        if (filePath !== undefined) {
+          this.context.api.events.emit('start-install', filePath);
+        }
+      });
   }
 
   private select = (eventKey: string) => {

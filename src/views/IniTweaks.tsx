@@ -75,15 +75,15 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
 
     return (
       <tr>
-        <td><Toggle checked={enabled} onToggle={this.toggle}/></td>
-        <td>{match[1]}</td>
-        <td>
+        <td className='cell-status'><Toggle checked={enabled} onToggle={this.toggle}/></td>
+        <td className='cell-filename'>{match[1]}</td>
+        <td className='cell-requirement'>
           <Select
             options={options}
             value='Optional'
           />
         </td>
-        <td><a onClick={this.edit}><Icon name='edit' /></a></td>
+        <td className='cell-edit'><a onClick={this.edit}><Icon name='edit' /></a></td>
       </tr>
     );
   }
@@ -132,13 +132,13 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
               + 'multiple tweaks to give users granular control.')}
           </p>
         </ControlLabel>
-        <Table>
+        <Table id='collection-initweaks-table'>
           <thead>
             <tr>
-              <th>{t('Status')}</th>
-              <th>{t('Ini file')}</th>
-              <th>{t('Requirement')}</th>
-              <th>{t('Edit')}</th>
+              <th className='header-status'>{t('Status')}</th>
+              <th className='header-filename'>{t('Ini file')}</th>
+              <th className='header-requirement'>{t('Requirement')}</th>
+              <th className='header-edit'>{t('Edit')}</th>
             </tr>
           </thead>
           <tbody>

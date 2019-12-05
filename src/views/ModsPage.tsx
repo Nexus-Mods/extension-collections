@@ -73,16 +73,19 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
         const hasProblem = (this.state.problems[mod.mod.id] !== undefined)
                         && (this.state.problems[mod.mod.id].length > 0);
+        const hasHighlight = color || icon;
 
         if (!color && !icon  && !hasProblem) {
           return null;
         }
         return (
           <>
-            <Icon
-              className={'highlight-base ' + (color !== '' ? color : 'highlight-default')}
-              name={icon !== '' ? icon : 'highlight'}
-            />
+            {hasHighlight ? (
+              <Icon
+                className={'highlight-base ' + (color !== '' ? color : 'highlight-default')}
+                name={icon !== '' ? icon : 'highlight'}
+              />
+            ) : null}
             {hasProblem ? (
               <tooltip.Icon
                 name='incompatible'
@@ -104,24 +107,24 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     }, {
       id: 'required',
       name: 'Required',
-      description: 'Whether the entire mod pack will fail if this mod is missingü',
+      description: 'Whether the entire mod pack will fail if this mod is missing',
       calc: (mod: IModEntry) => {
         return mod.rule.type === 'requires'
-          ? 'Required'
-          : 'Optional';
+          ? true
+          : false;
       },
       placement: 'table',
       edit: {
         inline: true,
         actions: false,
         choices: () => [
-          { key: 'required', text: 'Required' },
-          { key: 'optional', text: 'Optional' },
+          { key: 'required', bool: true },
+          { key: 'optional', bool: false },
         ],
         onChangeValue: (source: IModEntry, value: any) => {
           this.props.onRemoveRule(source.rule);
           const newRule = _.cloneDeep(source.rule);
-          newRule.type = value === 'optional' ? 'recommends' : 'requires';
+          newRule.type = value ? 'requires' : 'recommends';
           this.props.onAddRule(newRule);
         },
       },
@@ -130,22 +133,27 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       name: 'Version',
       description: 'The version to install',
       calc: (mod: IModEntry) => {
+        const { t } = this.props;
         if (mod.rule.reference.versionMatch === '*') {
-          return 'Latest available update';
+          return t('Latest');
         } else if (mod.rule.reference.versionMatch.endsWith('+prefer')) {
-          return 'Prefer this version';
+          return t('Prefer current ({{version}})', { replace: { version: mod.mod.attributes['version'] } });
         } else {
-          return 'Exactly this version';
+          return t('Current ({{version}})', { replace: { version: mod.mod.attributes['version'] } });
         }
       },
       placement: 'table',
       edit: {
         inline: true,
         actions: false,
-        choices: () => [
-          { key: 'exact', text: 'Exactly this version' },
-          { key: 'prefer', text: 'Prefer this version' },
-          { key: 'newest', text: 'Latest available update' }],
+        choices: (mod?: IModEntry) => {
+          const { t } = this.props;
+          return [
+            { key: 'exact', text: t('Current ({{version}})', { replace: { version: mod.mod.attributes['version'] } }) },
+            { key: 'prefer', text: t('Prefer current ({{version}})', { replace: { version: mod.mod.attributes['version'] } }) },
+            { key: 'newest', text: t('Latest') }
+          ];
+        },
         onChangeValue: (source: IModEntry, value: any) => {
           this.props.onRemoveRule(source.rule);
           const newRule = _.cloneDeep(source.rule);
@@ -233,10 +241,25 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
 
   private mActions: ITableRowAction[] = [
     {
-      title: 'Attach Instructions',
+      title: 'Set Instructions',
       icon: 'edit',
       singleRowAction: true,
-      action: (instanceId: string) => null,
+      action: (instanceId: string) => {
+        const { onSetModpackAttribute, modpack } = this.props;
+        const value = util.getSafe(modpack.attributes, ['modpack', 'instructions', instanceId], '');
+        this.context.api.showDialog('info', 'Instructions', {
+          text: 'These instructions will be shown before installing the mod. '
+              + 'This will interrupt the installation process so please use it '
+              + 'only if you have to',
+          input: [ { label: 'Instructions', id: 'instructions', type: 'textarea' as any, value } ],
+        }, [
+          { label: 'Cancel' },
+          { label: 'Save' },
+        ], 'collection-set-instructions')
+        .then(result => {
+          onSetModpackAttribute(['instructions', instanceId], result.input['instructions']);
+        });
+      },
     },
     {
       title: 'Remove',

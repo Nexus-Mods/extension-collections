@@ -12,7 +12,6 @@ $collection-thumbnail-height: 320px;
 
 #table-modpack-mods .header-version,
 #table-modpack-mods .header-source,
-#table-modpack-mods .header-required,
 #table-modpack-mods .header-install-type,
 #table-modpack-mods .header-action {
   width: 200px;
@@ -421,7 +420,7 @@ $collection-thumbnail-height: 320px;
     min-width: 7em;
   }
 
-  .table-mods.cell-enabled {
+  .table-mods.cell-collection_status {
     white-space: nowrap;
     .icon-spinner {
       margin-right: 0.5em;
@@ -498,5 +497,88 @@ $collection-thumbnail-height: 320px;
   color: currentColor;
   background-color: transparent;
   border: 0;
-  padding: 0.5em;
+  padding: 1em;
+}
+
+.collection-edit-header {
+  padding: $half-gutter;
+}
+
+#modpack-edit-tabs-tab-mods .badge {
+  margin-left: 0.5em;  
+}
+
+#modpack-edit-tabs-pane-mod-rules {
+  .toggle-container {
+    margin-top: 0;
+  }
+}
+
+.table-modpack-mods.cell-required {
+  .toggle-container {
+    margin-top: 0;
+  }
+}
+
+#collection-set-instructions {
+  textarea {
+    height: 10em;
+  }
+}
+
+#collection-mod-rules {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  .list-group {
+    flex: 1 1 0;
+    overflow: auto;
+  }
+  .collection-rule-separator {
+    margin-top: $half-gutter;
+    &::before {
+      content: '';
+      border-top: $border-width solid $border-color;
+      position: absolute;
+      top: floor($half-gutter / -2);
+      left: $half-gutter;
+      right: $half-gutter
+    }
+  }
+}
+
+#collection-initweaks-table {
+  .cell-status {
+    .toggle-container {
+      margin-top: 0;
+    }
+  }
+  .cell-edit {
+    text-align: center;
+  }
+}
+
+#collection-mod-rules {
+  .list-group-item {
+
+    .toggle-container .toggle-children {
+      display: flex;
+    }
+    .rule-name {
+      color: $text-color-disabled;
+    }
+
+    .rule-type {
+      color: $text-color;
+      font-style: italic;
+      margin: 0 0.5em;
+    }
+  }
+}
+
+#popover-modpack {
+  .popover-content {
+    max-height: 80vh;
+    overflow: auto;
+  }
 }

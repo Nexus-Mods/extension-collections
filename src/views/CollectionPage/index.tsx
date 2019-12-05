@@ -1,4 +1,4 @@
-import { NAMESPACE } from '../../constants';
+import { NAMESPACE, MOD_TYPE } from '../../constants';
 
 import CollectionEdit from './CollectionEdit';
 import CollectionPage from './CollectionPage';
@@ -11,6 +11,7 @@ import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { ComponentEx, MainPage, selectors, types, actions, util, tooltip, FlexLayout } from 'vortex-api';
+import { findModByRef } from '../../util/findModByRef';
 
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
@@ -35,6 +36,7 @@ export type ICollectionsMainPageProps =
 
 interface IComponentState {
   selectedCollection: string;
+  matchedReferences: { [collectionId: string]: types.IMod[] };
   viewMode: 'view' | 'edit';
 }
 
@@ -43,13 +45,20 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     super(props);
     this.initState({
       selectedCollection: undefined,
+      matchedReferences: this.updateMatchedReferences(this.props),
       viewMode: 'view',
     });
   }
 
+  public componentWillReceiveProps(newProps: ICollectionsMainPageProps) {
+    if (this.props.mods !== newProps.mods) {
+      this.nextState.matchedReferences = this.updateMatchedReferences(newProps);
+    }
+  }
+
   public render(): JSX.Element {
     const { t, downloads, mods, notifications, profile } = this.props;
-    const { selectedCollection, viewMode } = this.state;
+    const { matchedReferences, selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
       ? mods[selectedCollection]
@@ -63,6 +72,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           t={t}
           profile={profile}
           mods={mods}
+          matchedReferences={matchedReferences}
           onView={this.view}
           onEdit={this.edit}
           onRemove={this.remove}
@@ -97,7 +107,6 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             )
               : (
                 <CollectionEdit
-                  t={t}
                   profile={profile}
                   collection={collection}
                   mods={mods}
@@ -134,6 +143,15 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   private edit = (modId: string) => {
     this.nextState.selectedCollection = modId;
     this.nextState.viewMode = 'edit';
+  }
+
+  private updateMatchedReferences(props: ICollectionsMainPageProps) {
+    const { mods } = props;
+    const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
+    return collections.reduce((prev, collection) => {
+      prev[collection.id] = (collection.rules || []).map(rule => findModByRef(rule.reference, mods));
+      return prev;
+    }, {});
   }
 
   private remove = (modId: string) => {
@@ -177,4 +195,4 @@ function mapDispatchToProps(dispatch: ThunkDispatch<any, null, Redux.Action>): I
 
 export default
   connect(mapStateToProps, mapDispatchToProps)(
-    withTranslation(['common', NAMESPACE])(CollectionsMainPage));
+    withTranslation([NAMESPACE, 'common'])(CollectionsMainPage));

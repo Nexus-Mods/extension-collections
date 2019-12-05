@@ -448,6 +448,16 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const modifiedMods: { [modId: string]: types.IMod }
       = util.objDiff(oldProps.mods, newProps.mods);
 
+    const genRuleMap = (rules: types.IModRule[]) => {
+      return rules.reduce((prev, rule) => {
+        prev[this.ruleId(rule)] = rule;
+        return prev;
+      }, {});
+    }
+
+    const modifiedRules: { [ruleId: string]: types.IModRule }
+      = util.objDiff(genRuleMap(oldProps.collection.rules), genRuleMap(newProps.collection.rules));
+
     const needRefresh: Set<string> = new Set<string>();
 
     // remove any cache entry where the download or the mod has been
@@ -478,6 +488,15 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
       result[refId] = this.modFromRule(newProps, rule);
     });
+
+    Object.keys(modifiedRules)
+      .forEach(ruleId => {
+        if (ruleId.startsWith('-')) {
+          delete result[ruleId.slice(1)];
+        } else if (ruleId.startsWith('+')) {
+          result[ruleId.slice(1)] = this.modFromRule(newProps, modifiedRules[ruleId]);
+        }
+      })
 
     const { profile } = newProps;
     const { modsEx } = this.state;

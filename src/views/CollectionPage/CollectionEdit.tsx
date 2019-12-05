@@ -21,7 +21,6 @@ import { actions, ComponentEx, fs, selectors, types, util, FlexLayout } from 'vo
 
 
 export interface ICollectionEditBaseProps {
-  t: I18next.TFunction;
   profile: types.IProfile;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
@@ -68,29 +67,14 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     });
   }
 
+  public componentDidMount() {
+    this.updateState(this.props);
+  }
+
   public componentWillReceiveProps(newProps: ICollectionEditProps) {
     if (util.getSafe(newProps.collection, ['id'], undefined)
         !== util.getSafe(this.props.collection, ['id'], undefined)) {
-      this.nextState.page = 'info';
-      if (newProps.collection !== undefined) {
-        const {collection, mods} = newProps;
-
-        const includedMods: { [modId: string]: types.IMod } = collection.rules
-          .filter(rule => rule.type === 'requires')
-          .reduce((prev, rule) => {
-            const mod = findModByRef(rule.reference, mods);
-            if (mod !== undefined) {
-              prev[mod.id] = mod;
-            }
-            return prev;
-          }, {});
-        this.nextState.modPackMods = includedMods;
-        this.nextState.modPackRules = Object.values(includedMods)
-          .reduce((prev, mod: types.IMod) => {
-            prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
-            return prev;
-          }, []);
-      }
+      this.updateState(newProps);
     }
   }
 
@@ -108,7 +92,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     return (
       <FlexLayout type='column'>
-        <FlexLayout.Fixed>
+        <FlexLayout.Fixed className='collection-edit-header'>
           <h3>{t('Edit Collection')} / {util.renderModName(collection)}</h3>
           {t('Set up your mod collection\'s rules and site preferences.')}
         </FlexLayout.Fixed>
@@ -148,29 +132,33 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 </Panel>
               </Tab>
             ) : null}
-            <Tab key='export' eventKey='export' title={t('Export')}>
-              <Panel>
-                {this.renderExport()}
-              </Panel>
-            </Tab>
           </Tabs>
         </FlexLayout.Flex>
       </FlexLayout>
     );
   }
 
-  private renderExport(): React.ReactNode {
-    const { t } = this.props;
-    return (
-      <div className='modpack-edit-export'>
-        <Button onClick={this.export}>
-          {t('Export to file')}
-        </Button>
-        <Button disabled={true}>
-          {t('Upload to NexusMods')}
-        </Button>
-      </div>
-    );
+  private updateState(props: ICollectionEditProps) {
+    this.nextState.page = 'info';
+    if (props.collection !== undefined) {
+      const { collection, mods } = props;
+
+      const includedMods: { [modId: string]: types.IMod } = collection.rules
+        .filter(rule => rule.type === 'requires')
+        .reduce((prev, rule) => {
+          const mod = findModByRef(rule.reference, mods);
+          if (mod !== undefined) {
+            prev[mod.id] = mod;
+          }
+          return prev;
+        }, {});
+      this.nextState.modPackMods = includedMods;
+      this.nextState.modPackRules = Object.values(includedMods)
+        .reduce((prev, mod: types.IMod) => {
+          prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
+          return prev;
+        }, []);
+    }
   }
 
   private setModPackInfo = (key: string, value: any) => {
@@ -180,14 +168,6 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
   private setCurrentPage = (page: any) => {
     this.nextState.page = page;
-  }
-
-  private export = () => {
-    const {  } = this.props;
-    /*
-    onExport(modpack.id);
-    onClose();
-    */
   }
 
   private addRule = (rule: types.IModRule) => {
@@ -227,6 +207,6 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 }
 
 export default
-  withTranslation(['common', NAMESPACE])(
+  withTranslation([NAMESPACE, 'common'])(
     connect(mapStateToProps, mapDispatchToProps)(
       CollectionEdit) as any) as React.ComponentClass<ICollectionEditBaseProps>;

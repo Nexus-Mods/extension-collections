@@ -11,6 +11,7 @@ export interface IBaseProps {
   t: I18next.TFunction;
   gameId: string;
   collection: types.IMod;
+  incomplete?: boolean;
   details: boolean;
   onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
@@ -27,26 +28,39 @@ type IProps = IBaseProps & IConnectedProps;
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   private mActions: types.IActionDefinition[] = [];
 
+  constructor(props: IProps) {
+    super(props);
+
+    this.initState({ incomplete: false });
+  }
+
   public componentWillMount() {
-    if (this.props.onView) {
+    const { collection, incomplete, onEdit, onRemove, onView, profile } = this.props;
+
+    if (onView) {
       this.mActions.push({
-        title: 'View',
+        title: incomplete ? 'Resume' : 'View',
         icon: 'show',
-        action: (instanceIds: string[]) => this.props.onView(instanceIds[0]),
+        action: (instanceIds: string[]) => {
+          if (incomplete) {
+            this.context.api.events.emit('install-dependencies', profile.id, [collection.id], true)
+          }
+          onView(instanceIds[0]);
+        },
       });
     }
-    if (this.props.onEdit) {
+    if (onEdit) {
       this.mActions.push({
         title: 'Edit',
         icon: 'edit',
-        action: (instanceIds: string[]) => this.props.onEdit(instanceIds[0]),
+        action: (instanceIds: string[]) => onEdit(instanceIds[0]),
       });
     }
-    if (this.props.onRemove) {
+    if (onRemove) {
       this.mActions.push({
         title: 'Remove',
         icon: 'remove',
-        action: (instanceIds: string[]) => this.props.onRemove(instanceIds[0]),
+        action: (instanceIds: string[]) => onRemove(instanceIds[0]),
       });
     }
 
@@ -78,7 +92,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           <div className='gradient' />
           {details ? (
             <div className='collection-status-container'>
-              {active ? <div className='collection-status'>{t('Enabled')}</div> : null}
+              {this.renderCollectionStatus(active, mods)}
             </div>
           ) : null}
           {details ? (
@@ -114,6 +128,19 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         </Panel.Body>
       </Panel>
     );
+  }
+
+  private renderCollectionStatus(active: boolean, mods: types.IModRule[]) {
+    const { t, incomplete } = this.props;
+    if (active) {
+      if (incomplete) {
+        return <div className='collection-status'>{t('Incomplete')}</div>;
+      } else {
+        return <div className='collection-status'>{t('Enabled')}</div>;
+      }
+    } else {
+      return null;
+    }
   }
 
   private renderMenu(): JSX.Element[] {
