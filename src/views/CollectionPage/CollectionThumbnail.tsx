@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { Icon, IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
+import { IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 
 export interface IBaseProps {
@@ -16,6 +16,7 @@ export interface IBaseProps {
   onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
+  onPublish?: (modId: string) => void;
 }
 
 interface IConnectedProps {
@@ -35,7 +36,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   public componentWillMount() {
-    const { collection, incomplete, onEdit, onRemove, onView, profile } = this.props;
+    const { collection, incomplete, onEdit, onPublish, onRemove, onView, profile } = this.props;
 
     if (onView) {
       this.mActions.push({
@@ -64,13 +65,13 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       });
     }
 
-    /*
-    {
-      title: 'Publish',
-      icon: 'clone',
-      action: (instanceIds: string[]) => console.log('publish', instanceIds),
-    },
-    */
+    if (onPublish) {
+      this.mActions.push({
+        title: 'Publish',
+        icon: 'clone',
+        action: (instanceIds: string[]) => onPublish(instanceIds[0]),
+      });
+    }
   }
 
   public render(): JSX.Element {

@@ -309,7 +309,19 @@ export async function modToPack(state: types.IState,
 
   const modRules = extractModRules(modpack.rules, modpack, mods);
 
-  const includedMods = (modpack.rules as types.IModRule[]).map(rule => rule.reference.id);
+  const includedMods = (modpack.rules as types.IModRule[])
+    .map(rule => {
+      if (rule.reference.id !== undefined) {
+        return rule.reference.id;
+      } else {
+        const mod = findModByRef(rule.reference, mods);
+        if (mod !== undefined) {
+          return mod.id;
+        }
+        return undefined;
+      }
+    })
+    .filter(id => id !== undefined);
 
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 

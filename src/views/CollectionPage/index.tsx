@@ -12,6 +12,7 @@ import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { ComponentEx, MainPage, selectors, types, actions, util, tooltip, FlexLayout } from 'vortex-api';
 import { findModByRef } from '../../util/findModByRef';
+import { doExportToAPI } from '../../modpackExport';
 
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
@@ -76,6 +77,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           onView={this.view}
           onEdit={this.edit}
           onRemove={this.remove}
+          onPublish={this.publish}
           onCreateCollection={this.createCollection}
         />
       );
@@ -170,6 +172,30 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     .then(res => {
       if (res.action === 'Remove') {
         (util as any).removeMods(this.context.api, profile.gameId, [modId]);
+      }
+    })
+  }
+
+  private publish = (modId: string) => {
+    const { mods, profile } = this.props;
+
+    this.context.api.showDialog('question', 'Confirm publishing', {
+      text: 'Are you sure you want to upload the collection "{{collectionName}}"? '
+          + 'Once uploaded you can hide or update a collection but it can\'t be removed. '
+          + 'Please note: By uploading you agree that you adhere to the user agreement. '
+          + 'In particular you agree that you aren\'t violating anyone\'s copyright and you '
+          + 'agree to release your Collection (the list itself, instructions, ....) to '
+          + 'the public domain.',
+      parameters: {
+        collectionName: util.renderModName(mods[modId]),
+      },
+    }, [
+      { label: 'Cancel' },
+      { label: 'Publish' },
+    ])
+    .then(res => {
+      if (res.action === 'Publish') {
+        doExportToAPI(this.context.api, profile.gameId, modId);
       }
     })
   }

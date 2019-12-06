@@ -10,7 +10,6 @@ import InstallDialog from './views/InstallDialog';
 
 import { MOD_TYPE } from './constants';
 import { initFromProfile } from './modpackCreate';
-import doExport from './modpackExport';
 import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
@@ -100,7 +99,7 @@ function init(context: types.IExtensionContext): boolean {
 
   context.registerDialog('modpack-edit', EditDialog, () => ({
     onClose: () => context.api.store.dispatch(startEditModPack(undefined)),
-    onExport: (modpackId: string) => doExport(context.api, modpackId),
+    onExport: (modpackId: string) => null,
   }));
 
   context.registerDialog('modpack-install', InstallDialog, () => ({
@@ -120,7 +119,7 @@ function init(context: types.IExtensionContext): boolean {
 
   context.registerAction('mods-action-icons', 50, 'modpack-export', {}, 'Export Modpack',
                          (modIds: string[]) => {
-    doExport(context.api, modIds[0]);
+    // doExport(context.api, modIds[0]);
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
   context.registerAction('mods-action-icons', 25, 'modpack-edit', {}, 'Edit Modpack',

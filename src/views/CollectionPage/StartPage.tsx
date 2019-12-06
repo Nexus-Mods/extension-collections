@@ -16,6 +16,7 @@ export interface IStartPageProps {
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
   onEdit: (modId: string) => void;
+  onPublish: (modId: string) => void;
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
 }
@@ -51,7 +52,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, profile, matchedReferences, mods, onEdit, onRemove, onView } = this.props;
+    const { t, profile, matchedReferences, mods, onEdit, onPublish, onRemove, onView } = this.props;
     const { createOpen } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
@@ -111,6 +112,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   onEdit={onEdit}
                   onView={onView}
                   onRemove={onRemove}
+                  onPublish={onPublish}
                   details={true}
                 />)}
               <Panel className='collection-create-btn'>
