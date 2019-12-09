@@ -4,15 +4,19 @@ import * as path from 'path';
 import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { Icon, IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
+import { IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 
 export interface IBaseProps {
   t: I18next.TFunction;
   gameId: string;
   collection: types.IMod;
+  incomplete?: boolean;
   details: boolean;
+  onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
+  onRemove?: (modId: string) => void;
+  onPublish?: (modId: string) => void;
 }
 
 interface IConnectedProps {
@@ -25,26 +29,49 @@ type IProps = IBaseProps & IConnectedProps;
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   private mActions: types.IActionDefinition[] = [];
 
+  constructor(props: IProps) {
+    super(props);
+
+    this.initState({ incomplete: false });
+  }
+
   public componentWillMount() {
-    if (this.props.onView) {
+    const { collection, incomplete, onEdit, onPublish, onRemove, onView, profile } = this.props;
+
+    if (onView) {
       this.mActions.push({
-        title: 'View',
+        title: incomplete ? 'Resume' : 'View',
         icon: 'show',
-        action: (instanceIds: string[]) => this.props.onView(instanceIds[0]),
+        action: (instanceIds: string[]) => {
+          if (incomplete) {
+            this.context.api.events.emit('install-dependencies', profile.id, [collection.id], true)
+          }
+          onView(instanceIds[0]);
+        },
       });
     }
-    /*
-    {
-      title: 'Edit',
-      icon: 'edit',
-      action: (instanceIds: string[]) => console.log('edit', instanceIds),
-    },
-    {
-      title: 'Publish',
-      icon: 'clone',
-      action: (instanceIds: string[]) => console.log('publish', instanceIds),
-    },
-    */
+    if (onEdit) {
+      this.mActions.push({
+        title: 'Edit',
+        icon: 'edit',
+        action: (instanceIds: string[]) => onEdit(instanceIds[0]),
+      });
+    }
+    if (onRemove) {
+      this.mActions.push({
+        title: 'Remove',
+        icon: 'remove',
+        action: (instanceIds: string[]) => onRemove(instanceIds[0]),
+      });
+    }
+
+    if (onPublish) {
+      this.mActions.push({
+        title: 'Publish',
+        icon: 'clone',
+        action: (instanceIds: string[]) => onPublish(instanceIds[0]),
+      });
+    }
   }
 
   public render(): JSX.Element {
@@ -66,7 +93,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           <div className='gradient' />
           {details ? (
             <div className='collection-status-container'>
-              {active ? <div className='collection-status'>{t('Enabled')}</div> : null}
+              {this.renderCollectionStatus(active, mods)}
             </div>
           ) : null}
           {details ? (
@@ -102,6 +129,19 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         </Panel.Body>
       </Panel>
     );
+  }
+
+  private renderCollectionStatus(active: boolean, mods: types.IModRule[]) {
+    const { t, incomplete } = this.props;
+    if (active) {
+      if (incomplete) {
+        return <div className='collection-status'>{t('Incomplete')}</div>;
+      } else {
+        return <div className='collection-status'>{t('Enabled')}</div>;
+      }
+    } else {
+      return null;
+    }
   }
 
   private renderMenu(): JSX.Element[] {

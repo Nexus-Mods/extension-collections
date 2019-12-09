@@ -64,7 +64,7 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
           <FormInput value={authorUrl} onChange={this.setter('author_url')} />
         </FormGroup>
         <FormGroup controlId='name' validationState={nameValid}>
-          <ControlLabel>{t('Modpack Name')}</ControlLabel>
+          <ControlLabel>{t('Collection Name')}</ControlLabel>
           <FormInput value={name} onChange={this.setter('customFileName')} />
         </FormGroup>
         <FormGroup controlId='version' validationState={versionValid}>
@@ -73,9 +73,12 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
         </FormGroup>
         <FormGroup controlId='shortDescription'>
           <ControlLabel>{t('Summary')}</ControlLabel>
-          <FormInput
+          <textarea
             value={modpack.attributes['shortDescription']}
             onChange={this.setter('shortDescription')}
+            placeholder={t('Please provide a short description of your collection')}
+            rows={4}
+            style={{ display: 'block', width: '100%' }}
           />
         </FormGroup>
       </Form>

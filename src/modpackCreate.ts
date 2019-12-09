@@ -3,12 +3,12 @@ import { createModpackFromProfile } from './util/modpack';
 
 import { types } from 'vortex-api';
 
-export function initFromProfile(api: types.IExtensionApi, profileId: string, update: boolean) {
-  const { id, name } = createModpackFromProfile(api, profileId);
+export function initFromProfile(api: types.IExtensionApi, profileId: string) {
+  const { id, name, updated } = createModpackFromProfile(api, profileId);
   api.sendNotification({
     type: 'success',
     id: 'modpack-created',
-    title: update ? 'Modpack updated' : 'Modpack created',
+    title: updated ? 'Collection updated' : 'Collection created',
     message: name,
     actions: [
       {

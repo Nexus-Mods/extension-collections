@@ -23,16 +23,6 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
 
     return (
       <Panel className='collection-overview'>
-        <div>
-          <tooltip.IconButton
-            className='btn-embed'
-            tooltip='Return to overview'
-            icon='nav-back'
-            onClick={onClose}
-          >
-            {t('Back')}
-          </tooltip.IconButton>
-        </div>
         <Media>
           <Media.Left>
             <CollectionThumbnail t={t} collection={collection} gameId={gameId} details={false} />

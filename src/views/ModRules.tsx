@@ -17,6 +17,11 @@ interface IModsPageState {
 
 type IProps = IModsPageProps;
 
+interface IModPackModRuleEx extends IModPackModRule {
+  sourceName: string;
+  referenceName: string;
+}
+
 class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   constructor(props: IProps) {
     super(props);
@@ -36,33 +41,52 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
 
     const filtered = rules.filter(rule => !util.testModReference(modpack, rule.source));
 
+    let lastSourceName: string;
+
     return (
-      <div>
+      <div id='collection-mod-rules'>
         <ControlLabel>
           <p>
-            {t('By default the modpack will replicate all your custom rules dictate '
+            {t('By default the collection will replicate all your custom rules dictate '
                + 'the deployment order of mods.')}
             &nbsp;
-            {t('If you disable rules here your modpack may produce unresolved file conflicts '
+            {t('If you disable rules here your collection may produce unresolved file conflicts '
                + 'that the user has to resolve.')}
           </p>
         </ControlLabel>
         <ListGroup>
-          {filtered.map((rule, idx) => this.renderRule(rule, idx))}
+          {filtered
+            .map(rule => this.insertNames(rule))
+            .sort(this.ruleSort)
+            .map((rule, idx) => {
+              let separator: boolean = rule.sourceName !== lastSourceName;
+              lastSourceName = rule.sourceName;
+              return this.renderRule(rule, idx, separator);
+            })}
         </ListGroup>
       </div>
     );
   }
 
-  private renderRule(rule: IModPackModRule, idx: number): JSX.Element {
+  private insertNames(rule: IModPackModRule): IModPackModRuleEx {
+    return {
+      ...rule,
+      sourceName: this.renderReference(rule.source),
+      referenceName: this.renderReference(rule.reference),
+    };
+  }
+
+  private ruleSort = (lhs: IModPackModRuleEx, rhs: IModPackModRuleEx) => {
+    return lhs.sourceName.localeCompare(rhs.sourceName);
+  }
+
+  private renderRule(rule: IModPackModRuleEx, idx: number, separator: boolean): JSX.Element {
     return (
-      <ListGroupItem key={idx.toString()}>
+      <ListGroupItem className={separator ? 'collection-rule-separator' : undefined} key={idx.toString()}>
         <Toggle checked={true} dataId={'foobar'} onToggle={this.toggleRule}>
-          "{this.renderReference(rule.source)}"
-          {' '}
-          <em>{rule.type}</em>
-          {' '}
-          "{this.renderReference(rule.reference)}"
+          <div className='rule-name'>{rule.sourceName}</div>
+          <div className='rule-type'>{rule.type}</div>
+          <div className='rule-name'>{rule.referenceName}</div>
         </Toggle>
       </ListGroupItem>
     );

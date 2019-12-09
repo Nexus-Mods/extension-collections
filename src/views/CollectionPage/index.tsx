@@ -1,5 +1,6 @@
-import { NAMESPACE } from '../../constants';
+import { NAMESPACE, MOD_TYPE } from '../../constants';
 
+import CollectionEdit from './CollectionEdit';
 import CollectionPage from './CollectionPage';
 import StartPage from './StartPage';
 
@@ -9,11 +10,15 @@ import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { ComponentEx, MainPage, selectors, types } from 'vortex-api';
+import { ComponentEx, MainPage, selectors, types, actions, util, tooltip, FlexLayout } from 'vortex-api';
+import { findModByRef } from '../../util/findModByRef';
+import { doExportToAPI } from '../../modpackExport';
 
-export interface IDownloadViewBaseProps extends WithTranslation {
+export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
+
+  onCreateCollection: (profile: types.IProfile, name: string) => void;
 }
 
 interface IConnectedProps {
@@ -24,38 +29,73 @@ interface IConnectedProps {
 }
 
 interface IActionProps {
+  removeMod: (gameId: string, modId: string) => void;
 }
 
-export type IDownloadViewProps =
-  IDownloadViewBaseProps & IConnectedProps & IActionProps & { t: I18next.TFunction };
+export type ICollectionsMainPageProps =
+  ICollectionsMainPageBaseProps & IConnectedProps & IActionProps & { t: I18next.TFunction };
 
 interface IComponentState {
   selectedCollection: string;
+  matchedReferences: { [collectionId: string]: types.IMod[] };
+  viewMode: 'view' | 'edit';
 }
 
-const nop = () => null;
-
-class CollectionsMainPage extends ComponentEx<IDownloadViewProps, IComponentState> {
-  constructor(props: IDownloadViewProps) {
+class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, IComponentState> {
+  constructor(props: ICollectionsMainPageProps) {
     super(props);
     this.initState({
       selectedCollection: undefined,
+      matchedReferences: this.updateMatchedReferences(this.props),
+      viewMode: 'view',
     });
+  }
+
+  public componentWillReceiveProps(newProps: ICollectionsMainPageProps) {
+    if (this.props.mods !== newProps.mods) {
+      this.nextState.matchedReferences = this.updateMatchedReferences(newProps);
+    }
   }
 
   public render(): JSX.Element {
     const { t, downloads, mods, notifications, profile } = this.props;
-    const { selectedCollection } = this.state;
+    const { matchedReferences, selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
       ? mods[selectedCollection]
       : undefined;
 
-    return (
-      <MainPage id='collection-page'>
-        <MainPage.Body>
-          {(collection !== undefined)
-            ? (
+    let content = null;
+
+    if (collection === undefined) {
+      content = (
+        <StartPage
+          t={t}
+          profile={profile}
+          mods={mods}
+          matchedReferences={matchedReferences}
+          onView={this.view}
+          onEdit={this.edit}
+          onRemove={this.remove}
+          onPublish={this.publish}
+          onCreateCollection={this.createCollection}
+        />
+      );
+    } else {
+      content = (
+        <FlexLayout type='column'>
+          <FlexLayout.Fixed>
+            <tooltip.IconButton
+              className='collection-back-btn'
+              tooltip='Return to overview'
+              icon='nav-back'
+              onClick={this.deselectCollection}
+            >
+              {t('Back')}
+            </tooltip.IconButton>
+          </FlexLayout.Fixed>
+          <FlexLayout.Flex>
+            {(viewMode === 'view') ? (
               <CollectionPage
                 t={t}
                 className='collection-details'
@@ -67,22 +107,97 @@ class CollectionsMainPage extends ComponentEx<IDownloadViewProps, IComponentStat
                 onView={this.view}
               />
             )
-            : (
-              <StartPage
-                t={t}
-                gameMode={profile.gameId}
-                mods={mods}
-                onView={this.view}
-              />
-            )
-          }
+              : (
+                <CollectionEdit
+                  profile={profile}
+                  collection={collection}
+                  mods={mods}
+                />
+              )}
+          </FlexLayout.Flex>
+        </FlexLayout>
+      );
+    }
+
+    return (
+      <MainPage id='collection-page'>
+        <MainPage.Body>
+          {content}
         </MainPage.Body>
       </MainPage>
     );
   }
 
+  private createCollection = (name: string) => {
+    const { profile, onCreateCollection } = this.props;
+    onCreateCollection(profile, name);
+  }
+
+  private deselectCollection = () => {
+    this.nextState.selectedCollection = undefined;
+  }
+
   private view = (modId: string) => {
     this.nextState.selectedCollection = modId;
+    this.nextState.viewMode = 'view';
+  }
+  
+  private edit = (modId: string) => {
+    this.nextState.selectedCollection = modId;
+    this.nextState.viewMode = 'edit';
+  }
+
+  private updateMatchedReferences(props: ICollectionsMainPageProps) {
+    const { mods } = props;
+    const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
+    return collections.reduce((prev, collection) => {
+      prev[collection.id] = (collection.rules || []).map(rule => findModByRef(rule.reference, mods));
+      return prev;
+    }, {});
+  }
+
+  private remove = (modId: string) => {
+    const { mods, profile } = this.props;
+    this.context.api.showDialog('question', 'Confirm removal', {
+      text: 'Are you sure you want to remove the collection "{{collectionName}}"? '
+          + 'This will remove the collection but not the mods installed with it.\n'
+          + 'This can not be undone',
+      parameters: {
+        collectionName: util.renderModName(mods[modId]),
+      },
+    }, [
+      { label: 'Cancel' },
+      { label: 'Remove' },
+    ])
+    .then(res => {
+      if (res.action === 'Remove') {
+        (util as any).removeMods(this.context.api, profile.gameId, [modId]);
+      }
+    })
+  }
+
+  private publish = (modId: string) => {
+    const { mods, profile } = this.props;
+
+    this.context.api.showDialog('question', 'Confirm publishing', {
+      text: 'Are you sure you want to upload the collection "{{collectionName}}"? '
+          + 'Once uploaded you can hide or update a collection but it can\'t be removed. '
+          + 'Please note: By uploading you agree that you adhere to the user agreement. '
+          + 'In particular you agree that you aren\'t violating anyone\'s copyright and you '
+          + 'agree to release your Collection (the list itself, instructions, ....) to '
+          + 'the public domain.',
+      parameters: {
+        collectionName: util.renderModName(mods[modId]),
+      },
+    }, [
+      { label: 'Cancel' },
+      { label: 'Publish' },
+    ])
+    .then(res => {
+      if (res.action === 'Publish') {
+        doExportToAPI(this.context.api, profile.gameId, modId);
+      }
+    })
   }
 }
 
@@ -100,9 +215,10 @@ function mapStateToProps(state: types.IState): IConnectedProps {
 
 function mapDispatchToProps(dispatch: ThunkDispatch<any, null, Redux.Action>): IActionProps {
   return {
+    removeMod: (gameId: string, modId: string) => dispatch(actions.removeMod(gameId, modId)),
   };
 }
 
 export default
   connect(mapStateToProps, mapDispatchToProps)(
-    withTranslation(['common', NAMESPACE])(CollectionsMainPage));
+    withTranslation([NAMESPACE, 'common'])(CollectionsMainPage));
