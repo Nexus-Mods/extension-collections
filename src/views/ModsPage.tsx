@@ -118,8 +118,8 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         inline: true,
         actions: false,
         choices: () => [
-          { key: 'required', bool: true },
-          { key: 'optional', bool: false },
+          { key: 'required', bool: true } as any,
+          { key: 'optional', bool: false } as any,
         ],
         onChangeValue: (source: IModEntry, value: any) => {
           this.props.onRemoveRule(source.rule);

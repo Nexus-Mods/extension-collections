@@ -1,4 +1,6 @@
-import { NAMESPACE, MOD_TYPE } from '../../constants';
+import { MOD_TYPE, NAMESPACE } from '../../constants';
+import { doExportToAPI } from '../../modpackExport';
+import { findModByRef } from '../../util/findModByRef';
 
 import CollectionEdit from './CollectionEdit';
 import CollectionPage from './CollectionPage';
@@ -10,9 +12,8 @@ import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { ComponentEx, MainPage, selectors, types, actions, util, tooltip, FlexLayout } from 'vortex-api';
-import { findModByRef } from '../../util/findModByRef';
-import { doExportToAPI } from '../../modpackExport';
+import { actions, ComponentEx, FlexLayout, MainPage, selectors, tooltip,
+          types, util } from 'vortex-api';
 
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
@@ -141,7 +142,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     this.nextState.selectedCollection = modId;
     this.nextState.viewMode = 'view';
   }
-  
+
   private edit = (modId: string) => {
     this.nextState.selectedCollection = modId;
     this.nextState.viewMode = 'edit';
@@ -151,7 +152,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods } = props;
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     return collections.reduce((prev, collection) => {
-      prev[collection.id] = (collection.rules || []).map(rule => findModByRef(rule.reference, mods));
+      prev[collection.id] =
+        (collection.rules || []).map(rule => findModByRef(rule.reference, mods));
       return prev;
     }, {});
   }
@@ -173,7 +175,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       if (res.action === 'Remove') {
         (util as any).removeMods(this.context.api, profile.gameId, [modId]);
       }
-    })
+    });
   }
 
   private publish = (modId: string) => {
@@ -195,9 +197,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     ])
     .then(res => {
       if (res.action === 'Publish') {
-        doExportToAPI(this.context.api, profile.gameId, modId);
+        doExportToAPI(this.context.api, profile.gameId, modId)
+          .catch(err => {
+            this.context.api.showErrorNotification('Failed to publish to API', err);
+          });
       }
-    })
+    });
   }
 }
 

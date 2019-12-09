@@ -109,16 +109,18 @@ async function rulesToModPackMods(rules: types.IModRule[],
                                   onProgress: (percent: number, text: string) => void,
                                   onError: (message: string, replace: any) => void)
                                   : Promise<IModPackMod[]> {
-  rules = rules.filter(rule => mods[rule.reference.id] !== undefined);
   let total = rules.length;
 
   let finished = 0;
 
   const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
-    const mod = mods[rule.reference.id];
+    const mod = (rule.reference.id !== undefined)
+      ? mods[rule.reference.id]
+      : findModByRef(rule.reference, mods);
 
-    if (mod.type === 'modpack') {
+    if ((mod === undefined) || (mod.type === 'modpack')) {
       // don't include the modpack itself (or any other modpack for that matter)
+      --total;
       return undefined;
     }
 

@@ -1,8 +1,9 @@
-import { IModPack } from './types/IModPack';
+import { IModPack, IModPackMod } from './types/IModPack';
 import { modToPack } from './util/modpack';
 import { makeProgressFunction } from './util/util';
 
 import * as PromiseBB from 'bluebird';
+import * as _ from 'lodash';
 import Zip = require('node-7z');
 import * as path from 'path';
 import { dir as tmpDir } from 'tmp';
@@ -10,16 +11,16 @@ import { fs, log, selectors, types, util } from 'vortex-api';
 
 async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    tmpDir((err, path, cleanup) => {
+    tmpDir((err, tmpPath, cleanup) => {
       if (err !== null) {
         return reject(err);
       } else {
-        cb(path)
+        cb(tmpPath)
           .then(() => {
             resolve();
           })
-          .catch(err => {
-            reject(err);
+          .catch(tmpErr => {
+            reject(tmpErr);
           })
           .finally(() => {
             try {
@@ -42,16 +43,19 @@ async function zip(zipPath: string, sourcePath: string): Promise<void> {
 
 async function generateModPackInfo(state: types.IState, gameId: string, collection: types.IMod,
                                    progress: (percent: number, text: string) => void,
-                                   error: (message: string, replace: any) => void): Promise<IModPack> {
+                                   error: (message: string, replace: any) => void)
+                                   : Promise<IModPack> {
   const mods = state.persistent.mods[gameId];
   const stagingPath = selectors.installPath(state);
-  return await modToPack(state, gameId, stagingPath, collection, mods, progress, error);
+  return modToPack(state, gameId, stagingPath, collection, mods, progress, error);
 }
 
-async function writePackToFile(state: types.IState, info: IModPack, mod: types.IMod, outputPath: string) {
+async function writePackToFile(state: types.IState, info: IModPack,
+                               mod: types.IMod, outputPath: string) {
   await fs.ensureDirWritableAsync(outputPath, () => PromiseBB.resolve());
 
-  await fs.writeFileAsync(path.join(outputPath, 'modpack.json'), JSON.stringify(info, undefined, 2));
+  await fs.writeFileAsync(
+    path.join(outputPath, 'modpack.json'), JSON.stringify(info, undefined, 2));
 
   const stagingPath = selectors.installPath(state);
   const modPath = path.join(stagingPath, mod.installationPath);
@@ -85,9 +89,20 @@ function toProm<ResT>(func: (cb) => void): Promise<ResT> {
       } else {
         return resolve(res);
       }
-    }
+    };
     func(cb);
   });
+}
+
+function filterInfoMod(mod: IModPackMod): IModPackMod {
+  return _.omit(mod, ['hashes', 'choices']);
+}
+
+function filterInfo(input: IModPack): any {
+  return {
+    info: input.info,
+    mods: input.mods.map(mod => filterInfoMod(mod)),
+  };
 }
 
 export async function doExportToAPI(api: types.IExtensionApi, gameId: string, modId: string) {
@@ -105,7 +120,7 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
   const info = await generateModPackInfo(state, gameId, mod, progress, onError);
   await withTmpDir(async tmpPath => {
     const filePath = await writePackToFile(state, info, mod, tmpPath);
-    await toProm(cb => api.events.emit('submit-collection', info, filePath, cb));
+    await toProm(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
   });
   progressEnd();
 }
@@ -131,10 +146,6 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
     const dialogActions = [
       {
         title: 'Open', action: () => {
-          const stagingPath = selectors.installPath(state);
-          const gameMode = selectors.activeGameId(state);
-          const mods = state.persistent.mods[gameMode];
-          const mod: types.IMod = mods[modId];
           util.opn(path.join(stagingPath, mod.installationPath)).catch(() => null);
         },
       },
