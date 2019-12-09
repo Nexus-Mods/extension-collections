@@ -9,6 +9,9 @@ export function findModByRef(reference: types.IModReference,
 }
 
 export function isFuzzyVersion(versionMatch: string) {
+  if (!versionMatch) {
+    return false;
+  }
   return isNaN(parseInt(versionMatch[0], 16))
     || (semver.validRange(versionMatch)
       !== versionMatch);

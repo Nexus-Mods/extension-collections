@@ -107,7 +107,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       calc: (mod: IModEntry) => {
         if (mod.rule.reference.versionMatch === '*') {
           return 'Latest available update';
-        } else if (mod.rule.reference.versionMatch.endsWith('+prefer')) {
+        } else if ((mod.rule.reference.versionMatch || '').endsWith('+prefer')) {
           return 'Prefer this version';
         } else {
           return 'Exactly this version';
