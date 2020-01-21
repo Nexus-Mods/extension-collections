@@ -2,7 +2,7 @@ import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
 import { IModPack } from './types/IModPack';
 import InstallDriver from './util/InstallDriver';
-import { makeModpackId, createModpack } from './util/modpack';
+import { createModpack, makeModpackId } from './util/modpack';
 import { bbProm } from './util/util';
 import CollectionsPage from './views/CollectionPage';
 import EditDialog from './views/EditDialog';
@@ -75,8 +75,8 @@ let driver: InstallDriver;
 
 function createCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
   const id = makeModpackId(shortid());
-  createModpack(this.context.api, profile.gameId, id, name, []);
-  this.context.api.sendNotification({
+  createModpack(api, profile.gameId, id, name, []);
+  api.sendNotification({
     type: 'success',
     id: 'collection-created',
     title: 'Collection created',
@@ -85,7 +85,7 @@ function createCollection(api: types.IExtensionApi, profile: types.IProfile, nam
       {
         title: 'Configure',
         action: dismiss => {
-          this.context.api.store.dispatch(startEditModPack(id));
+          api.store.dispatch(startEditModPack(id));
           dismiss();
         },
       },
@@ -110,7 +110,8 @@ function init(context: types.IExtensionContext): boolean {
     hotkey: 'C',
     group: 'per-game',
     props: () => ({
-      onCreateCollection: (profile: types.IProfile, name: string) => createCollection(context.api, profile, name),
+      onCreateCollection: (profile: types.IProfile, name: string) =>
+        createCollection(context.api, profile, name),
     }),
   });
 

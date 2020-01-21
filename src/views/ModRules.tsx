@@ -47,7 +47,7 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
       <div id='collection-mod-rules'>
         <ControlLabel>
           <p>
-            {t('By default the collection will replicate all your custom rules dictate '
+            {t('By default the collection will replicate all your custom rules that dictate '
                + 'the deployment order of mods.')}
             &nbsp;
             {t('If you disable rules here your collection may produce unresolved file conflicts '
@@ -59,7 +59,7 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
             .map(rule => this.insertNames(rule))
             .sort(this.ruleSort)
             .map((rule, idx) => {
-              let separator: boolean = rule.sourceName !== lastSourceName;
+              const separator: boolean = rule.sourceName !== lastSourceName;
               lastSourceName = rule.sourceName;
               return this.renderRule(rule, idx, separator);
             })}

@@ -10,15 +10,12 @@ import IniTweaks from '../IniTweaks';
 import ModRules from '../ModRules';
 import ModsPage from '../ModsPage';
 
-import I18next from 'i18next';
-import * as path from 'path';
 import * as React from 'react';
-import { Button, Modal, Tab, Tabs, Panel, Badge } from 'react-bootstrap';
+import { Badge, Panel, Tab, Tabs } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, ComponentEx, fs, selectors, types, util, FlexLayout } from 'vortex-api';
-
+import { actions, ComponentEx, FlexLayout, types, util } from 'vortex-api';
 
 export interface ICollectionEditBaseProps {
   profile: types.IProfile;
@@ -44,7 +41,6 @@ interface ICollectionEditState {
   modPackMods: { [modId: string]: types.IMod };
   modPackRules: IModPackModRule[];
 }
-
 
 const emptyCollectionInfo: IModPackInfo = {
   game_id: '',
@@ -107,7 +103,11 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 />
               </Panel>
             </Tab>
-            <Tab key='mods' eventKey='mods' title={<div>{t('Mods')}<Badge>{Object.keys(mods).length}</Badge></div>}>
+            <Tab
+              key='mods'
+              eventKey='mods'
+              title={<div>{t('Mods')}<Badge>{Object.keys(mods).length}</Badge></div>}
+            >
               <Panel>
                 <ModsPage
                   mods={mods}

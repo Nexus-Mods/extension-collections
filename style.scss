@@ -10,6 +10,12 @@ $collection-thumbnail-height: 320px;
   }
 }
 
+#table-modpack-mods .header-name {
+  p {
+    white-space: nowrap;
+  }
+}
+
 #table-modpack-mods .header-version,
 #table-modpack-mods .header-source,
 #table-modpack-mods .header-install-type,
@@ -501,7 +507,8 @@ $collection-thumbnail-height: 320px;
 }
 
 .collection-edit-header {
-  padding: $half-gutter;
+  padding: $gutter-width;
+  margin-bottom: $half-gutter;
 }
 
 #modpack-edit-tabs-tab-mods .badge {
