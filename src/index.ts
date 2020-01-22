@@ -10,6 +10,7 @@ import InstallDialog from './views/InstallDialog';
 
 import { MOD_TYPE } from './constants';
 import { initFromProfile } from './modpackCreate';
+import { doExportToFile } from './modpackExport';
 import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
@@ -106,10 +107,15 @@ function init(context: types.IExtensionContext): boolean {
     driver,
   }));
 
+  let collectionsCB: { [cbName: string]: (...args: any[]) => void };
+
   context.registerMainPage('collection', 'Collections', CollectionsPage, {
     hotkey: 'C',
     group: 'per-game',
     props: () => ({
+      onSetupCallbacks: (callbacks: { [cbName: string]: (...args: any[]) => void }) => {
+        collectionsCB = callbacks;
+      },
       onCreateCollection: (profile: types.IProfile, name: string) =>
         createCollection(context.api, profile, name),
     }),
@@ -118,14 +124,23 @@ function init(context: types.IExtensionContext): boolean {
   context.registerModType(MOD_TYPE, 200, () => true,
                           () => undefined, () => PromiseBB.resolve(false));
 
-  context.registerAction('mods-action-icons', 50, 'modpack-export', {}, 'Export Modpack',
+  context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
                          (modIds: string[]) => {
-    // doExport(context.api, modIds[0]);
+    const state = context.api.store.getState();
+    const gameMode = selectors.activeGameId(state);
+    doExportToFile(context.api, gameMode, modIds[0]);
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
-  context.registerAction('mods-action-icons', 25, 'modpack-edit', {}, 'Edit Modpack',
+  context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
                          (modIds: string[]) => {
-      context.api.store.dispatch(startEditModPack(modIds[0]));
+    context.api.events.emit('show-main-page', 'Collections');
+    // have to delay this a bit because the callbacks are only set up once the page
+    // is first opened
+    setTimeout(() => {
+      if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
+        collectionsCB.editCollection(modIds[0]);
+      }
+    }, 100);
   }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
@@ -143,12 +158,12 @@ function init(context: types.IExtensionContext): boolean {
       return mod.type === MOD_TYPE;
     });
 
-  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Modpack',
+  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0]);
     }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
 
-  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update Modpack',
+  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0]);
     }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
@@ -198,7 +213,18 @@ function init(context: types.IExtensionContext): boolean {
 
     context.api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(context.api));
 
-    return (util as any).installIconSet('modpacks', path.join(__dirname, 'icons.svg'));
+    context.api.events.on('edit-collection', collectionId => {
+      context.api.events.emit('show-main-page', 'Collections');
+      // have to delay this a bit because the callbacks are only set up once the page
+      // is first opened
+      setTimeout(() => {
+        if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
+          collectionsCB.editCollection(collectionId);
+        }
+      }, 100);
+    });
+
+    return util.installIconSet('modpacks', path.join(__dirname, 'icons.svg'));
   });
   return true;
 }

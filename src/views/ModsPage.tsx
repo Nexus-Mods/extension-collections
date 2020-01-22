@@ -4,7 +4,9 @@ import { findModByRef } from '../util/findModByRef';
 import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { ComponentEx, Icon, ITableRowAction, Table, tooltip, types, Usage, util, TableTextFilter } from 'vortex-api';
+import {
+  ComponentEx, Icon, ITableRowAction, Table, TableTextFilter,
+  tooltip, types, Usage, util } from 'vortex-api';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
@@ -137,9 +139,11 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         if (mod.rule.reference.versionMatch === '*') {
           return t('Latest');
         } else if ((mod.rule.reference.versionMatch || '').endsWith('+prefer')) {
-          return t('Prefer current ({{version}})', { replace: { version: mod.mod.attributes['version'] } });
+          return t('Prefer current ({{version}})',
+                   { replace: { version: mod.mod.attributes['version'] } });
         } else {
-          return t('Current ({{version}})', { replace: { version: mod.mod.attributes['version'] } });
+          return t('Current ({{version}})',
+                   { replace: { version: mod.mod.attributes['version'] } });
         }
       },
       placement: 'table',
@@ -149,9 +153,11 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         choices: (mod?: IModEntry) => {
           const { t } = this.props;
           return [
-            { key: 'exact', text: t('Current ({{version}})', { replace: { version: mod.mod.attributes['version'] } }) },
-            { key: 'prefer', text: t('Prefer current ({{version}})', { replace: { version: mod.mod.attributes['version'] } }) },
-            { key: 'newest', text: t('Latest') }
+            { key: 'exact', text: t('Current ({{version}})',
+                                    { replace: { version: mod.mod.attributes['version'] } }) },
+            { key: 'prefer', text: t('Prefer current ({{version}})',
+                                     { replace: { version: mod.mod.attributes['version'] } }) },
+            { key: 'newest', text: t('Latest') },
           ];
         },
         onChangeValue: (source: IModEntry, value: any) => {
@@ -319,12 +325,12 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
             + 'have yourself or whatever is current on Nexus Mods.')}</p>
           <p>{t('Required: Select whether the user has to install the mod or whether it\'s just '
             + 'a recommendation.')}</p>
-          <p>{t('Install: "Fresh Install" will install the mod as Vortex would usually do, installer '
-            + 'dialog and everything. "Replicate" will extract only the files you have extracted '
-            + 'yourself, in exactly the same location. This basically ensures the user gets the '
-            + 'same options as you without having to pick them but it only works when you have '
-            + 'selected "Exact version" in the Version column. It will also considerably increase '
-            + 'the time it takes to build the pack.')}</p>
+          <p>{t('Install: "Fresh Install" will install the mod as Vortex would usually do, '
+            + 'installer dialog and everything. "Replicate" will extract only the files you have '
+            + 'extracted yourself, in exactly the same location. This basically ensures the user '
+            + 'gets the same options as you without having to pick them but it only works when you '
+            + 'have selected "Exact version" in the Version column. It will also considerably '
+            + 'increase the time it takes to build the pack.')}</p>
           <p>{t('Source: Decides how the user downloads the mod. "Nexus Mods" is easiest, use the '
             + 'other options when the mod in only hosted on a different source. '
             + 'The options also include "pack" which bundles the mod directly into the mod pack. '

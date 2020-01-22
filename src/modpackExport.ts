@@ -156,7 +156,7 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
       dialogActions.unshift({
         title: 'Errors',
         action: () => {
-          api.showDialog('error', 'Modpack Export Errors', {
+          api.showDialog('error', 'Collection Export Errors', {
             bbcode: '[list]'
               + errors.map(err => li(api.translate(err.message, { replace: err.replace })))
               + '[/list]',
@@ -168,14 +168,14 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
     }
 
     api.sendNotification({
-      id: 'modpack-exported',
-      title: errors.length > 0 ? 'Modpack exported, there were errors' : 'Modpack exported',
+      id: 'collection-exported',
+      title: errors.length > 0 ? 'Collection exported, there were errors' : 'Collection exported',
       message: zipPath,
       type: errors.length > 0 ? 'warning' : 'success',
       actions: dialogActions,
     });
   } catch (err) {
-    api.showErrorNotification('Failed to export modpack', err);
+    api.showErrorNotification('Failed to export collection', err);
     return Promise.resolve();
   }
   progressEnd();

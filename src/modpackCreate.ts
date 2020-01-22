@@ -14,7 +14,7 @@ export function initFromProfile(api: types.IExtensionApi, profileId: string) {
       {
         title: 'Configure',
         action: dismiss => {
-          api.store.dispatch(startEditModPack(id));
+          api.events.emit('edit-collection', id);
           dismiss();
         },
       },

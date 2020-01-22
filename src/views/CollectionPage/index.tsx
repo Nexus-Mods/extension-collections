@@ -19,6 +19,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
 
+  onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
 }
 
@@ -50,6 +51,19 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       matchedReferences: this.updateMatchedReferences(this.props),
       viewMode: 'view',
     });
+
+    if (props.onSetupCallbacks !== undefined) {
+      props.onSetupCallbacks({
+        viewCollection: (collectionId: string) => {
+          this.nextState.selectedCollection = collectionId;
+          this.nextState.viewMode = 'view';
+        },
+        editCollection: (collectionId: string) => {
+          this.nextState.selectedCollection = collectionId;
+          this.nextState.viewMode = 'edit';
+        },
+      });
+    }
   }
 
   public componentWillReceiveProps(newProps: ICollectionsMainPageProps) {

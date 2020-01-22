@@ -82,8 +82,6 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       return null;
     }
 
-    const name = collection !== undefined ? collection.attributes['name'] : '';
-
     const iniFiles = getIniFiles(profile.gameId);
 
     return (
@@ -106,7 +104,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
             <Tab
               key='mods'
               eventKey='mods'
-              title={<div>{t('Mods')}<Badge>{Object.keys(mods).length}</Badge></div>}
+              title={<div>{t('Mods')}<Badge>{collection.rules.length}</Badge></div>}
             >
               <Panel>
                 <ModsPage

@@ -60,8 +60,8 @@ function deduceSource(mod: types.IMod,
   } else {
     if (versionMatcher === '*') {
       assign(res, 'update_policy', 'latest');
-    } else if (versionMatcher.endsWith('+prefer')
-               || (versionMatcher === undefined)) {
+    } else if ((versionMatcher === undefined)
+               || versionMatcher.endsWith('+prefer')) {
       assign(res, 'update_policy', 'prefer');
     } else {
       assign(res, 'update_policy', 'exact');
@@ -247,10 +247,14 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 
 function extractModRules(rules: types.IModRule[],
                          modpack: types.IMod,
-                         mods: { [modId: string]: types.IMod }): IModPackModRule[] {
+                         mods: { [modId: string]: types.IMod },
+                         onError: (message: string, replace: any) => void): IModPackModRule[] {
   return rules.reduce((prev: IModPackModRule[], rule: types.IModRule) => {
     const mod = mods[rule.reference.id];
-    if ((mod === undefined) || (mod.id === modpack.id)) {
+    if (mod === undefined) {
+      onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id });
+      return prev;
+    } else if (mod.id === modpack.id) {
       return prev;
     }
 
@@ -309,7 +313,7 @@ export async function modToPack(state: types.IState,
     return Promise.reject(new Error('Can only export mod pack for the active profile'));
   }
 
-  const modRules = extractModRules(modpack.rules, modpack, mods);
+  const modRules = extractModRules(modpack.rules, modpack, mods, onError);
 
   const includedMods = (modpack.rules as types.IModRule[])
     .map(rule => {
@@ -442,7 +446,7 @@ export function createModpackFromProfile(api: types.IExtensionApi,
   const profile = state.persistent.profiles[profileId];
 
   const id = makeModpackId(profileId);
-  const name = `Modpack: ${profile.name}`;
+  const name = `Collection: ${profile.name}`;
   const mod: types.IMod = state.persistent.mods[profile.gameId][id];
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],

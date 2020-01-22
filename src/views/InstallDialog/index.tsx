@@ -67,7 +67,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
         onHide={undefined}
       >
         <Modal.Header>
-          <Modal.Title>{t('Installing Modpack "{{name}}"', { replace: { name } })}</Modal.Title>
+          <Modal.Title>{t('Installing Collection "{{name}}"', { replace: { name } })}</Modal.Title>
           {this.renderCurrentStep(driver.step)}
         </Modal.Header>
         <Modal.Body>

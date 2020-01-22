@@ -60,7 +60,7 @@ export function generateGameSpecifics(state: types.IState,
                                       modIds: string[],
                                       mods: { [modId: string]: types.IMod })
                                       : Promise<any> {
-  if (gameSupport[gameId].generator !== undefined) {
+  if ((gameSupport[gameId] !== undefined) && (gameSupport[gameId].generator !== undefined)) {
     return gameSupport[gameId].generator(state, gameId, stagingPath, modIds, mods);
   } else {
     return Promise.resolve({});

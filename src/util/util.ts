@@ -4,7 +4,7 @@ import { types } from 'vortex-api';
 export function makeProgressFunction(api: types.IExtensionApi) {
   const notificationId = api.sendNotification({
     type: 'activity',
-    title: 'Building Modpack',
+    title: 'Building Collection',
     message: '',
     progress: 0,
   });
@@ -45,7 +45,7 @@ export function makeProgressFunction(api: types.IExtensionApi) {
       api.sendNotification({
         id: notificationId,
         type: 'activity',
-        title: 'Building Modpack',
+        title: 'Building Collection',
         progress: notiPerc,
         message: notiText,
       });

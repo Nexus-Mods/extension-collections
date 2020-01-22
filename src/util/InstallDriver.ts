@@ -68,7 +68,7 @@ class InstallDriver {
     this.mApi.sendNotification({
       id: 'installing-modpack',
       type: 'activity',
-      message: 'Installing Modpack',
+      message: 'Installing Collection',
       actions: [
         {
           title: 'Show',
