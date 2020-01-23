@@ -385,9 +385,11 @@ export function makeModpackId(baseId: string): string {
   return `vortex_collection_${baseId}`;
 }
 
-export function createModpack(api: types.IExtensionApi, gameId: string,
-                       id: string, name: string,
-                       rules: types.IModRule[]) {
+export function createModpack(api: types.IExtensionApi,
+                              gameId: string,
+                              id: string,
+                              name: string,
+                              rules: types.IModRule[]) {
   const state: types.IState = api.store.getState();
 
   const mod: types.IMod = {
@@ -399,6 +401,7 @@ export function createModpack(api: types.IExtensionApi, gameId: string,
       version: '1.0.0',
       installTime: new Date(),
       author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
+      editable: true,
     },
     installationPath: id,
     rules,
@@ -421,8 +424,12 @@ export function createModpack(api: types.IExtensionApi, gameId: string,
       && (lhs.reference.logicalFileName === rhs.reference.logicalFileName);
 }*/
 
-function updateModpack(api: types.IExtensionApi, gameId: string,
-                       mod: types.IMod, newRules: types.IModRule[]) {
+function updateModpack(api: types.IExtensionApi,
+                       gameId: string,
+                       mod: types.IMod,
+                       newRules: types.IModRule[]) {
+  api.store.dispatch(actions.setModAttribute(gameId, mod.id, 'editable', true));
+
   const removedRules: types.IModRule[] = [];
   // remove rules not found in newRules
   mod.rules.forEach(rule => {
@@ -447,7 +454,8 @@ export function createModpackFromProfile(api: types.IExtensionApi,
 
   const id = makeModpackId(profileId);
   const name = `Collection: ${profile.name}`;
-  const mod: types.IMod = state.persistent.mods[profile.gameId][id];
+  const mod: types.IMod =
+    util.getSafe(state, ['persistent', 'mods', profile.gameId, id], undefined);
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],
                                        (mod !== undefined) ? mod.rules : []);

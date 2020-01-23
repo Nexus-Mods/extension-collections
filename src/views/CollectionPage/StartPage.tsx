@@ -57,7 +57,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     const {foreign, own} = collections.reduce((prev, mod) => {
-      if (util.getSafe(mod.attributes, ['modpack', 'editable'], false)) {
+      if (util.getSafe(mod.attributes, ['editable'], false)) {
         prev.own.push(mod);
       } else {
         prev.foreign.push(mod);
