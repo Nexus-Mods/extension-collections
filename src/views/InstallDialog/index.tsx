@@ -33,6 +33,10 @@ type IProps = IInstallDialogProps & IConnectedProps & IActionProps;
 interface IInstallDialogState {
 }
 
+function nop() {
+  // nop
+}
+
 class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   constructor(props: IProps) {
     super(props);
@@ -52,14 +56,28 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   public render(): React.ReactNode {
-    const { t, driver, visible } = this.props;
+    const { t, driver } = this.props;
 
     if (driver === undefined) {
       return null;
     }
 
-    const name = driver.modPack !== undefined ? driver.modPack.attributes['name'] : '';
+    // const name = driver.modPack !== undefined ? driver.modPack.attributes['name'] : '';
 
+    return (
+      <Modal show={(driver.modPack !== undefined) && (driver.step === 'start')} onHide={nop}>
+        <Modal.Body>
+          <h3>{util.renderModName(driver.modPack)}</h3>
+          {t('Has been added to your collections.')}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={this.cancel}>{t('Install Later')}</Button>
+          <Button onClick={this.next}>{t('Start')}</Button>
+        </Modal.Footer>
+      </Modal>
+    );
+
+    /*
     return (
       <Modal
         id='modpack-install-dialog'
@@ -87,8 +105,10 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
         </Modal.Footer>
       </Modal>
     );
+    */
   }
 
+  /*
   private renderCurrentStep(step: Step): JSX.Element {
     const { t } = this.props;
 
@@ -143,17 +163,22 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
       default: return null;
     }
   }
+  */
 
+  /*
   private hide = () => {
     this.props.onHide();
   }
+  */
 
   private cancel = () => {
     this.props.driver.cancel();
   }
 
   private next = () => {
-    this.props.driver.continue();
+    const { driver } = this.props;
+    driver.continue();
+    this.context.api.events.emit('view-collection', driver.modPack.id);
   }
 }
 

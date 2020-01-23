@@ -25,7 +25,7 @@ class InstallDialogDisclaimer extends React.Component<IInstallDialogDisclaimerPr
             </div>
             {t('A few things you should note:')}
             <ul>
-              <li>{t('Mod packs usually contain mods from various authors who probably '
+              <li>{t('Mod collections usually contain mods from various authors who probably '
                    + 'have no association with the creator of the pack.')}</li>
               <li>{t('Mod authors provide their own instructions on how to install their '
                    + 'mods. If an individual mod doesn\'t work, please don\'t complain to '
@@ -37,7 +37,7 @@ class InstallDialogDisclaimer extends React.Component<IInstallDialogDisclaimerPr
               <li>{t('If you like these mods, please endorse them, not just the pack. '
                    + 'Many mod authors will also appreciate donations or sponsoring through '
                    + 'Patreon and similar.')}</li>
-              <li>{t('Modding can be a complex process. A mod pack is intended to save you '
+              <li>{t('Modding can be a complex process. A mod coollection is intended to save you '
                    + 'the menial task of downloading and installing a lot of mods and helps you '
                    + 'find mods that work well together but it can\'t remove the complexity '
                    + 'entirely.')}</li>

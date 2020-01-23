@@ -24,7 +24,7 @@ class InstallDialogStart extends React.Component<IInstallDialogStartProps, {}> {
       <FlexLayout type='column' className='modpack-flex-start'>
         <FlexLayout.Fixed>
           <div className='modpack-name'>
-            {t('Installing Mod Pack')} {util.renderModName(modPack)}
+            {t('Installing Collection')} {util.renderModName(modPack)}
           </div>
           <div className='modpack-author'>
             {t('Created by {{author}}', {

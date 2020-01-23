@@ -125,7 +125,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
         <ControlLabel>
           <p>
             {t('This screen lets you set up tweaks for the game ini file that will be applied '
-              + 'to a user\'s setup when they use your mod pack.')}
+              + 'to a user\'s setup when they use your collection.')}
           </p>
           <p>
             {t('Users can toggle these ini tweaks individually so may want to set up '

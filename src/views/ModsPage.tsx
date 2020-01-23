@@ -109,7 +109,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     }, {
       id: 'required',
       name: 'Required',
-      description: 'Whether the entire mod pack will fail if this mod is missing',
+      description: 'Whether the entire collection will fail if this mod is missing',
       calc: (mod: IModEntry) => {
         return mod.rule.type === 'requires'
           ? true
@@ -186,7 +186,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
           + 'installer (if applicable) and everything.\n'
           + 'If set to "Replicate" Vortex will try to replicate your exact setup for this mod. '
           + 'This does not bundle the mod itself but the list of files to install and patches if '
-          + 'necessary. This may increase the size of the mod pack and the time it takes to '
+          + 'necessary. This may increase the size of the collection and the time it takes to '
           + 'export it considerably.',
       edit: {
         inline: true,
@@ -333,7 +333,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
             + 'increase the time it takes to build the pack.')}</p>
           <p>{t('Source: Decides how the user downloads the mod. "Nexus Mods" is easiest, use the '
             + 'other options when the mod in only hosted on a different source. '
-            + 'The options also include "pack" which bundles the mod directly into the mod pack. '
+            + 'The options also include "pack" which bundles the mod directly into the collection. '
             + 'Do this only for stuff created during setup (e.g. generated LODs, '
             + 'customized configuration files and such). '
             + 'You must not include any material you don\'t hold the copyright to. '

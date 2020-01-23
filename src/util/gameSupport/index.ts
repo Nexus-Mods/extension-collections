@@ -68,7 +68,7 @@ export function generateGameSpecifics(state: types.IState,
 }
 
 export function parseGameSpecifics(api: types.IExtensionApi, gameId: string, modpack: IModPack) {
-  if (gameSupport[gameId].parser !== undefined) {
+  if ((gameSupport[gameId] !== undefined) && (gameSupport[gameId].parser !== undefined)) {
     return gameSupport[gameId].parser(api, gameId, modpack);
   }
 }

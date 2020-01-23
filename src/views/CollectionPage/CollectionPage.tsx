@@ -261,13 +261,15 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         </FlexLayout.Fixed>
         <FlexLayout.Flex fill={true} className='collection-mods-panel'>
           <Panel>
-            <Table
-              tableId='mods'
-              showDetails={true}
-              data={modsFinal}
-              staticElements={this.mAttributes}
-              actions={this.mModActions}
-            />
+            <Panel.Body>
+              <Table
+                tableId='mods'
+                showDetails={true}
+                data={modsFinal}
+                staticElements={this.mAttributes}
+                actions={this.mModActions}
+              />
+            </Panel.Body>
           </Panel>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
@@ -453,7 +455,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         prev[this.ruleId(rule)] = rule;
         return prev;
       }, {});
-    }
+    };
 
     const modifiedRules: { [ruleId: string]: types.IModRule }
       = util.objDiff(genRuleMap(oldProps.collection.rules), genRuleMap(newProps.collection.rules));
@@ -496,7 +498,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         } else if (ruleId.startsWith('+')) {
           result[ruleId.slice(1)] = this.modFromRule(newProps, modifiedRules[ruleId]);
         }
-      })
+      });
 
     const { profile } = newProps;
     const { modsEx } = this.state;

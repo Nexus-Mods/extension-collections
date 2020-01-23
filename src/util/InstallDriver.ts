@@ -88,7 +88,7 @@ class InstallDriver {
       this.mInstallDone = false;
     }
 
-    log('info', 'starting install of mod pack', {
+    log('info', 'starting install of collection', {
       totalMods: required.length,
       missing: this.mRequiredMods.length,
     });
@@ -166,7 +166,8 @@ class InstallDriver {
 
   private begin = () => {
     this.mApi.events.emit('install-dependencies', this.mProfile.id, [this.mModPack.id], true);
-    this.mStep = 'disclaimer';
+    // skipping disclaimer for now
+    this.mStep = 'installing';
   }
 
   private closeDisclaimers = () => {

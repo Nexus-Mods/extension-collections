@@ -1,13 +1,13 @@
 import { MOD_TYPE } from '../../constants';
+import { initFromProfile } from '../../modpackCreate';
+import { makeModpackId } from '../../util/modpack';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
 import i18next from 'i18next';
 import * as React from 'react';
-import { Panel, PanelGroup, Dropdown, MenuItem } from 'react-bootstrap';
-import { ComponentEx, EmptyPlaceholder, Icon, types } from 'vortex-api';
-import { initFromProfile } from '../../modpackCreate';
-import { makeModpackId } from '../../util/modpack';
+import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
+import { ComponentEx, EmptyPlaceholder, Icon, types, util } from 'vortex-api';
 
 export interface IStartPageProps {
   t: i18next.TFunction;
@@ -57,7 +57,11 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     const {foreign, own} = collections.reduce((prev, mod) => {
-      prev.own.push(mod);
+      if (util.getSafe(mod.attributes, ['modpack', 'editable'], false)) {
+        prev.own.push(mod);
+      } else {
+        prev.foreign.push(mod);
+      }
       return prev;
     }, { foreign: [], own: [] });
 
@@ -119,8 +123,13 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                 <Panel.Body onClick={this.toggleCreate}>
                   <Icon name='add' />
                   <div className='collection-create-label'>{t('Create Collection')}</div>
-                  <Dropdown id='create-collection-dropdown' open={createOpen} onToggle={this.toggleCreate} onSelect={this.select as any}>
-                    { /* oh you say we need this react-bootstrap? here you go...  */}
+                  <Dropdown
+                    id='create-collection-dropdown'
+                    open={createOpen}
+                    onToggle={this.toggleCreate}
+                    onSelect={this.select as any}
+                  >
+                    {/* oh you say we need this react-bootstrap? here you go...  */}
                     <Dropdown.Toggle bsRole='toggle' style={{ display: 'none' }} />
                     <Dropdown.Menu>
                       <MenuItem
@@ -130,9 +139,12 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                           ? t('You already have a collection connected to this profile')
                           : t('Foobar')}
                       >
-                        {t('From current profile ({{profileName}})', { replace: {
-                        profileName: profile.name,
-                      } })}</MenuItem>
+                        {t('From current profile ({{profileName}})', {
+                          replace: {
+                            profileName: profile.name,
+                          },
+                        })}
+                      </MenuItem>
                       <MenuItem eventKey='empty'>{t('Empty (for game {{gameName}})', { replace: {
                         gameName: profile.gameId,
                       }})}</MenuItem>
@@ -160,7 +172,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private select = (eventKey: string) => {
     const { t, profile, onCreateCollection } = this.props;
 
-    if (eventKey == 'profile') {
+    if (eventKey === 'profile') {
       initFromProfile(this.context.api, profile.id);
     } else {
       this.context.api.showDialog('question', 'Name', {
@@ -182,7 +194,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         if (result.action === 'Create') {
           onCreateCollection(result.input['name']);
         }
-      })
+      });
     }
   }
 

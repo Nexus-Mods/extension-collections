@@ -214,7 +214,7 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
   }
   if (rule.reference.id === undefined) {
     // rule unusable
-    log('warn', 'invalid rule couldn\'t be included in the mod pack', JSON.stringify(rule));
+    log('warn', 'invalid rule couldn\'t be included in the collection', JSON.stringify(rule));
     return undefined;
   }
 
@@ -224,7 +224,7 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
   const mod = findModByRef(rule.reference, mods);
 
   if (mod === undefined) {
-    log('warn', 'mod enabled in mod pack isn\'t installed', JSON.stringify(rule));
+    log('warn', 'mod enabled in collection isn\'t installed', JSON.stringify(rule));
     return undefined;
   }
 
@@ -310,7 +310,7 @@ export async function modToPack(state: types.IState,
                                 : Promise<IModPack> {
   if (selectors.activeGameId(state) !== gameId) {
     // this would be a bug
-    return Promise.reject(new Error('Can only export mod pack for the active profile'));
+    return Promise.reject(new Error('Can only export collection for the active profile'));
   }
 
   const modRules = extractModRules(modpack.rules, modpack, mods, onError);
@@ -406,7 +406,7 @@ export function createModpack(api: types.IExtensionApi, gameId: string,
 
   api.events.emit('create-mod', gameId, mod, (error: Error) => {
     if (error !== null) {
-      api.showErrorNotification('Failed to create mod pack', error);
+      api.showErrorNotification('Failed to create collection', error);
     }
   });
 }

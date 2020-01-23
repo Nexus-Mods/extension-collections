@@ -113,6 +113,7 @@ function init(context: types.IExtensionContext): boolean {
     hotkey: 'C',
     group: 'per-game',
     props: () => ({
+      driver,
       onSetupCallbacks: (callbacks: { [cbName: string]: (...args: any[]) => void }) => {
         collectionsCB = callbacks;
       },
@@ -212,6 +213,17 @@ function init(context: types.IExtensionContext): boolean {
     });
 
     context.api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(context.api));
+
+    context.api.events.on('view-collection', collectionId => {
+      context.api.events.emit('show-main-page', 'Collections');
+      // have to delay this a bit because the callbacks are only set up once the page
+      // is first opened
+      setTimeout(() => {
+        if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
+          collectionsCB.viewCollection(collectionId);
+        }
+      }, 100);
+    });
 
     context.api.events.on('edit-collection', collectionId => {
       context.api.events.emit('show-main-page', 'Collections');
