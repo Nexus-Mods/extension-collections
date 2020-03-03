@@ -25,7 +25,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
       <Panel className='collection-overview'>
         <Media>
           <Media.Left>
-            <CollectionThumbnail t={t} collection={collection} gameId={gameId} details={false} />
+            <CollectionThumbnail t={t} imageTime={Date.now()} collection={collection} gameId={gameId} details={false} />
           </Media.Left>
           <Media.Body>
             <FlexLayout type='column'>

@@ -161,12 +161,14 @@ function init(context: types.IExtensionContext): boolean {
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
-      initFromProfile(context.api, profileIds[0]);
+      initFromProfile(context.api, profileIds[0])
+      .catch(err => context.api.showErrorNotification('Failed to init collection', err));
     }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update collection',
     (profileIds: string[]) => {
-      initFromProfile(context.api, profileIds[0]);
+      initFromProfile(context.api, profileIds[0])
+      .catch(err => context.api.showErrorNotification('Failed to init collection', err));
     }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
 
   context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));

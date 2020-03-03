@@ -13,6 +13,7 @@ export interface IBaseProps {
   collection: types.IMod;
   incomplete?: boolean;
   details: boolean;
+  imageTime: number;
   onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
@@ -75,7 +76,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   public render(): JSX.Element {
-    const { t, collection, details, profile, stagingPath } = this.props;
+    const { t, collection, details, imageTime, profile, stagingPath } = this.props;
 
     const logoPath = path.join(stagingPath, collection.installationPath, 'logo.jpg');
     const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);
@@ -88,7 +89,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         <Panel.Body className='collection-thumbnail-body'>
           <img
             className={'thumbnail-img'}
-            src={logoPath}
+            src={logoPath + `?_r=${imageTime}`}
           />
           <div className='gradient' />
           {details ? (

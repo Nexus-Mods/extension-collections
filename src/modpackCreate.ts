@@ -1,10 +1,10 @@
-import { startEditModPack } from './actions/session';
 import { createModpackFromProfile } from './util/modpack';
 
-import { types } from 'vortex-api';
+import { actions, types } from 'vortex-api';
 
-export function initFromProfile(api: types.IExtensionApi, profileId: string) {
-  const { id, name, updated } = createModpackFromProfile(api, profileId);
+export async function initFromProfile(api: types.IExtensionApi, profileId: string) {
+  const { id, name, updated } = await createModpackFromProfile(api, profileId);
+  api.store.dispatch(actions.setModEnabled(profileId, id, true));
   api.sendNotification({
     type: 'success',
     id: 'modpack-created',

@@ -8,7 +8,7 @@ import * as _ from 'lodash';
 import * as path from 'path';
 import * as semver from 'semver';
 import turbowalk, { IEntry } from 'turbowalk';
-import { actions, log, selectors, types, util } from 'vortex-api';
+import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
 
 const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
@@ -385,11 +385,11 @@ export function makeModpackId(baseId: string): string {
   return `vortex_collection_${baseId}`;
 }
 
-export function createModpack(api: types.IExtensionApi,
-                              gameId: string,
-                              id: string,
-                              name: string,
-                              rules: types.IModRule[]) {
+export async function createModpack(api: types.IExtensionApi,
+                                    gameId: string,
+                                    id: string,
+                                    name: string,
+                                    rules: types.IModRule[]) {
   const state: types.IState = api.store.getState();
 
   const mod: types.IMod = {
@@ -401,17 +401,31 @@ export function createModpack(api: types.IExtensionApi,
       version: '1.0.0',
       installTime: new Date(),
       author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
-      editable: true,
+      modpack: {
+        editable: true,
+      },
     },
     installationPath: id,
     rules,
   };
 
-  api.events.emit('create-mod', gameId, mod, (error: Error) => {
-    if (error !== null) {
-      api.showErrorNotification('Failed to create collection', error);
-    }
-  });
+  try {
+    await new Promise((resolve, reject) => {
+      api.events.emit('create-mod', gameId, mod, (error: Error) => {
+        if (error !== null) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    const deployPath = selectors.installPathForGame(state, gameId);
+    await fs.copyAsync(path.join(__dirname, 'fallback_tile.jpg'), path.join(deployPath, id, 'logo.jpg'))
+      .catch(err => api.showErrorNotification('Failed to install default modpack logo', err));
+  } catch (err) {
+    api.showErrorNotification('Failed to create collection', err);
+  }
 }
 
 /*function equalWithoutVersion(lhs: types.IModRule, rhs: types.IModRule): boolean {
@@ -446,9 +460,9 @@ function updateModpack(api: types.IExtensionApi,
   });
 }
 
-export function createModpackFromProfile(api: types.IExtensionApi,
-                                         profileId: string)
-                                         : { id: string, name: string, updated: boolean } {
+export async function createModpackFromProfile(api: types.IExtensionApi,
+                                               profileId: string)
+                                               : Promise<{ id: string, name: string, updated: boolean }> {
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
@@ -461,7 +475,7 @@ export function createModpackFromProfile(api: types.IExtensionApi,
                                        (mod !== undefined) ? mod.rules : []);
 
   if (mod === undefined) {
-    createModpack(api, profile.gameId, id, name, rules);
+    await createModpack(api, profile.gameId, id, name, rules);
   } else {
     updateModpack(api, profile.gameId, mod, rules);
   }

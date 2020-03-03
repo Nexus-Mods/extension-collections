@@ -27,7 +27,7 @@ async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void>
               cleanup();
             } catch (err) {
               // cleanup failed
-              log('warn', 'Failed to clean up temp file', { path });
+              log('warn', 'Failed to clean up temp file', { path, err });
             }
           });
       }
@@ -118,10 +118,14 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
   };
 
   const info = await generateModPackInfo(state, gameId, mod, progress, onError);
-  await withTmpDir(async tmpPath => {
-    const filePath = await writePackToFile(state, info, mod, tmpPath);
-    await toProm(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
-  });
+  try {
+    await withTmpDir(async tmpPath => {
+      const filePath = await writePackToFile(state, info, mod, tmpPath);
+      await toProm(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
+    });
+  } catch (err) {
+    api.showErrorNotification('Failed to submit collection', err);
+  }
   progressEnd();
 }
 

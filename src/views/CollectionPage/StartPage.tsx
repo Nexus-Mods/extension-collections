@@ -23,6 +23,7 @@ export interface IStartPageProps {
 
 interface IComponentState {
   createOpen: boolean;
+  imageTime: number;
 }
 
 const nop = () => null;
@@ -48,12 +49,13 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     super(props);
     this.initState({
       createOpen: false,
+      imageTime: Date.now(),
     });
   }
 
   public render(): JSX.Element {
     const { t, profile, matchedReferences, mods, onEdit, onPublish, onRemove, onView } = this.props;
-    const { createOpen } = this.state;
+    const { createOpen, imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     const {foreign, own} = collections.reduce((prev, mod) => {
@@ -83,6 +85,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     key={mod.id}
                     t={t}
                     gameId={profile.gameId}
+                    imageTime={imageTime}
+                    incomplete={matchedReferences[mod.id].includes(undefined)}
                     collection={mod}
                     onView={onView}
                     onRemove={onRemove}
@@ -112,6 +116,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   t={t}
                   gameId={profile.gameId}
                   collection={mod}
+                  imageTime={imageTime}
                   incomplete={matchedReferences[mod.id].includes(undefined)}
                   onEdit={onEdit}
                   onView={onView}
@@ -169,11 +174,17 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
       });
   }
 
+  private refreshImages() {
+    this.nextState.imageTime = Date.now();
+  }
+
   private select = (eventKey: string) => {
     const { t, profile, onCreateCollection } = this.props;
 
     if (eventKey === 'profile') {
-      initFromProfile(this.context.api, profile.id);
+      initFromProfile(this.context.api, profile.id)
+        .then(() => this.refreshImages())
+        .catch(err => this.context.api.showErrorNotification('Failed to init collection', err));
     } else {
       this.context.api.showDialog('question', 'Name', {
         text: 'Please enter a name for your new collection',

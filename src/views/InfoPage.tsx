@@ -89,7 +89,11 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
     const { onSetModPackInfo } = this.props;
     if (this.mSetters[key] === undefined) {
       this.mSetters[key] = (value: any) => {
-        onSetModPackInfo(key, value);
+        if (value.currentTarget !== undefined) {
+         onSetModPackInfo(key, value.currentTarget.value);
+        } else {
+         onSetModPackInfo(key, value);
+        }
       };
     }
 
