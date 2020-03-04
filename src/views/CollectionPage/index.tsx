@@ -213,7 +213,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       if (res.action === 'Publish') {
         doExportToAPI(this.context.api, profile.gameId, modId)
           .catch(err => {
-            this.context.api.showErrorNotification('Failed to publish to API', err);
+            if (!(err instanceof util.UserCanceled)) {
+              this.context.api.showErrorNotification('Failed to publish to API', err);
+            }
           });
       }
     });

@@ -24,6 +24,18 @@ function sanitizeExpression(fileName: string): string {
     .replace(/ \(\d+\)$/, '');
 }
 
+function toInt(input: string | number | undefined | null) {
+  if (!input) {
+    return 0;
+  }
+
+  if (typeof(input) === 'string') {
+    return parseInt(input, 10);
+  }
+
+  return input;
+}
+
 function deduceSource(mod: types.IMod,
                       sourceInfo: IModPackSourceInfo,
                       versionMatcher: string)
@@ -42,8 +54,8 @@ function deduceSource(mod: types.IMod,
       throw new Error(`"${mod.id}" is missing mod id or file id`);
     }
 
-    res.mod_id = modId;
-    res.file_id = fileId;
+    res.mod_id = toInt(modId)
+    res.file_id = toInt(fileId);
   }
 
   const assign = (obj: any, key: string, value: any) => {
@@ -85,7 +97,7 @@ export function initModPackMod(input: types.IMod): IModPackMod {
     name: util.renderModName(input),
     version: util.getSafe(input, ['attributes', 'version'], ''),
     optional: false,
-    game_id: util.getSafe(input, ['attributes', 'downloadGame'], undefined),
+    domain_name: util.getSafe(input, ['attributes', 'downloadGame'], undefined),
     source: deduceSource(input),
   };
 }
@@ -169,7 +181,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
         name: modName,
         version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
         optional: rule.type === 'recommends',
-        game_id: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
+        domain_name: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
         source,
         hashes,
         choices,
@@ -285,7 +297,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     reference: {
       description: mod.name,
       fileMD5: mod.source.update_policy === 'exact' ? mod.source.md5 : undefined,
-      gameId: mod.game_id,
+      gameId: mod.domain_name,
       fileSize: mod.source.file_size,
       versionMatch,
       logicalFileName: mod.source.logical_filename,
@@ -332,12 +344,13 @@ export async function modToPack(state: types.IState,
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
   const modpackInfo: IModPackInfo = {
+    collection_id: util.getSafe(modpack.attributes, ['collectionId'], undefined),
     author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
-    author_url: util.getSafe(modpack.attributes, ['author_url'], ''),
+    author_url: util.getSafe(modpack.attributes, ['authorURL'], ''),
     name: util.renderModName(modpack),
     version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
-    description: util.getSafe(modpack.attributes, ['description'], ''),
-    game_id: gameId,
+    description: util.getSafe(modpack.attributes, ['shortDescription'], ''),
+    domain_name: gameId,
   };
 
   const res: IModPack = {
@@ -401,9 +414,7 @@ export async function createModpack(api: types.IExtensionApi,
       version: '1.0.0',
       installTime: new Date(),
       author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
-      modpack: {
-        editable: true,
-      },
+      editable: true,
     },
     installationPath: id,
     rules,

@@ -7,7 +7,7 @@ import * as _ from 'lodash';
 import Zip = require('node-7z');
 import * as path from 'path';
 import { dir as tmpDir } from 'tmp';
-import { fs, log, selectors, types, util } from 'vortex-api';
+import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
 async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -105,6 +105,20 @@ function filterInfo(input: IModPack): any {
   };
 }
 
+async function queryErrorsContinue(api: types.IExtensionApi, errors: Array<{message: string, replace: any}>) {
+  const res = await api.showDialog('error', 'Errors creating collection', {
+    text: 'There were errors creating the collection, do you want to proceed anyway?',
+    message: errors.map(err => api.translate(err.message, { replace: err.replace })).join('\n'),
+  }, [
+    { label: 'Cancel' },
+    { label: 'Continue' },
+  ]);
+
+  if (res.action === 'Cancel') {
+    throw new util.UserCanceled();
+  }
+}
+
 export async function doExportToAPI(api: types.IExtensionApi, gameId: string, modId: string) {
   const state: types.IState = api.store.getState();
   const mod = state.persistent.mods[gameId][modId];
@@ -117,11 +131,15 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
     errors.push({ message, replace });
   };
 
-  const info = await generateModPackInfo(state, gameId, mod, progress, onError);
   try {
+    const info = await generateModPackInfo(state, gameId, mod, progress, onError);
+    if (errors.length > 0) {
+      await queryErrorsContinue(api, errors);
+    }
     await withTmpDir(async tmpPath => {
       const filePath = await writePackToFile(state, info, mod, tmpPath);
-      await toProm(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
+      const result: any = await toProm(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', result.collection_id));
     });
   } catch (err) {
     api.showErrorNotification('Failed to submit collection', err);

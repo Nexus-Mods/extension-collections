@@ -2,12 +2,13 @@ import { types } from 'vortex-api';
 import { IModPackGamebryo } from '../util/gameSupport/gamebryo';
 
 export interface IModPackInfo {
+  collection_id?: number;
   author: string;
   author_url: string;
   name: string;
   version: string;
   description: string;
-  game_id: string;
+  domain_name: string;
 }
 
 export type UpdatePolicy = 'exact' | 'latest';
@@ -19,8 +20,8 @@ export interface IModPackSourceInfo {
   md5?: string;
   url?: string;
   instructions?: string;
-  mod_id?: string;
-  file_id?: string;
+  mod_id?: number;
+  file_id?: number;
   // determines which file to get if there is an update compared to what's in the mod pack
   update_policy?: UpdatePolicy;
   file_size?: number;
@@ -32,7 +33,7 @@ export interface IModPackMod {
   name: string;
   version: string;
   optional: boolean;
-  game_id: string;
+  domain_name: string;
   source: IModPackSourceInfo;
   // hashes?: types.IFileListItem[];
   hashes?: any;

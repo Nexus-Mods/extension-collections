@@ -43,7 +43,7 @@ interface ICollectionEditState {
 }
 
 const emptyCollectionInfo: IModPackInfo = {
-  game_id: '',
+  domain_name: '',
   author: '',
   author_url: '',
   name: '',

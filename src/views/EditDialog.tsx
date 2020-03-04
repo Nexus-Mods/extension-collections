@@ -201,7 +201,7 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
 const emptyObject = {};
 
 const emptyModPackInfo: IModPackInfo = {
-  game_id: '',
+  domain_name: '',
   author: '',
   author_url: '',
   name: '',

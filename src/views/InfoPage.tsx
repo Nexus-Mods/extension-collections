@@ -36,7 +36,7 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
     }
 
     const author = util.getSafe(modpack.attributes, ['author'], '');
-    const authorUrl = util.getSafe(modpack.attributes, ['author_url'], '');
+    const authorUrl = util.getSafe(modpack.attributes, ['authorURL'], '');
     const name = util.renderModName(modpack);
     const version = util.getSafe(modpack.attributes, ['version'], '');
 
@@ -61,7 +61,7 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
         </FormGroup>
         <FormGroup controlId='author_url' validationState={urlValid}>
           <ControlLabel>{t('Author Url')}</ControlLabel>
-          <FormInput value={authorUrl} onChange={this.setter('author_url')} />
+          <FormInput value={authorUrl} onChange={this.setter('authorURL')} />
         </FormGroup>
         <FormGroup controlId='name' validationState={nameValid}>
           <ControlLabel>{t('Collection Name')}</ControlLabel>
