@@ -10,6 +10,9 @@ import * as semver from 'semver';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
+import { MOD_TYPE } from '../constants';
+
+export const LOGO_NAME: string = 'logo.jpg';
 
 const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
   fileMD5(fileName, (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result));
@@ -177,7 +180,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
       onProgress(Math.floor((finished / total) * 100), modName);
 
-      return {
+      const res = {
         name: modName,
         version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
         optional: rule.type === 'recommends',
@@ -186,7 +189,13 @@ async function rulesToModPackMods(rules: types.IModRule[],
         hashes,
         choices,
         author: util.getSafe(mod, ['attributes', 'author'], undefined),
+        details: {},
       };
+
+      if (mod.type !== '') {
+        res.details['type'] = mod.type;
+      }
+      return res;
     } catch (err) {
       --total;
 
@@ -296,7 +305,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     type: mod.optional ? 'recommends' : 'requires',
     reference: {
       description: mod.name,
-      fileMD5: mod.source.update_policy === 'exact' ? mod.source.md5 : undefined,
+      fileMD5: mod.source.md5,
       gameId: mod.domain_name,
       fileSize: mod.source.file_size,
       versionMatch,
@@ -351,6 +360,7 @@ export async function modToPack(state: types.IState,
     version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
     description: util.getSafe(modpack.attributes, ['shortDescription'], ''),
     domain_name: gameId,
+    details: {},
   };
 
   const res: IModPack = {
@@ -371,6 +381,7 @@ function createRulesFromProfile(profile: types.IProfile,
   return Object.keys(profile.modState)
     .filter(modId => profile.modState[modId].enabled
                   && (mods[modId] !== undefined)
+                  && (mods[modId].type !== MOD_TYPE)
                   && (mods[modId].attributes['generated'] !== true))
     .map(modId => {
       // don't forget what we set up regarding version matching
@@ -432,22 +443,12 @@ export async function createModpack(api: types.IExtensionApi,
     });
 
     const deployPath = selectors.installPathForGame(state, gameId);
-    await fs.copyAsync(path.join(__dirname, 'fallback_tile.jpg'), path.join(deployPath, id, 'logo.jpg'))
+    await fs.copyAsync(path.join(__dirname, 'fallback_tile.jpg'), path.join(deployPath, id, LOGO_NAME))
       .catch(err => api.showErrorNotification('Failed to install default modpack logo', err));
   } catch (err) {
     api.showErrorNotification('Failed to create collection', err);
   }
 }
-
-/*function equalWithoutVersion(lhs: types.IModRule, rhs: types.IModRule): boolean {
-  return (lhs.type === rhs.type)
-      && (lhs.reference.fileExpression === rhs.reference.fileExpression)
-      && (lhs.reference.fileMD5 === rhs.reference.fileMD5)
-      && (lhs.reference.fileSize === rhs.reference.fileSize)
-      && (lhs.reference.gameId === rhs.reference.gameId)
-      && (lhs.reference.id === rhs.reference.id)
-      && (lhs.reference.logicalFileName === rhs.reference.logicalFileName);
-}*/
 
 function updateModpack(api: types.IExtensionApi,
                        gameId: string,

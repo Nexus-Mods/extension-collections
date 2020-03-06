@@ -112,6 +112,7 @@ function init(context: types.IExtensionContext): boolean {
   context.registerMainPage('collection', 'Collections', CollectionsPage, {
     hotkey: 'C',
     group: 'per-game',
+    visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
       onSetupCallbacks: (callbacks: { [cbName: string]: (...args: any[]) => void }) => {
@@ -215,6 +216,44 @@ function init(context: types.IExtensionContext): boolean {
     });
 
     context.api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(context.api));
+
+    context.api.events.on('did-download-collection', async (dlId: string) => {
+      try {
+        let state: () => types.IState = () => context.api.store.getState();
+        const dlInfo: types.IDownload = util.getSafe(state().persistent.downloads.files, [dlId], undefined);
+        const profile = selectors.activeProfile(state());
+        if (!dlInfo.game.includes(profile.gameId)) {
+          log('info', 'Collection downloaded for a different game than is being managed', { gameMode: profile.gameId, game: dlInfo.game });
+          context.api.sendNotification({
+            message: 'The collection you downloaded is for a different game and thus can\'t be installed right now.',
+            type: 'info',
+          });
+
+          // the collection was for a different game, can't install it now
+          return;
+        }
+
+        const modId = await (util as any).toPromise(cb => context.api.events.emit('start-install-download', dlId, undefined, cb));
+    /*
+        const modInfo: types.IMod = util.getSafe(state().persistent.mods, [profile.gameId, modId], undefined);
+        if (modInfo === undefined) {
+          throw new Error('Collection mod not found');
+        }
+        const choice = await context.api.showDialog('info', 'Collection added', {
+          text: util.renderModName(modInfo),
+        }, [
+          { label: 'Install later' },
+          { label: 'Start' },
+        ]);
+
+        if (choice.action === 'Start') {
+          context.api.store.dispatch(actions.setModEnabled(profile.id, modId, true));
+        }
+    */
+      } catch (err) {
+        context.api.showErrorNotification('Failed to add collection', err);
+      }
+    });
 
     context.api.events.on('view-collection', collectionId => {
       context.api.events.emit('show-main-page', 'Collections');

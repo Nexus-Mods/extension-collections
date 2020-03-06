@@ -49,6 +49,7 @@ const emptyCollectionInfo: IModPackInfo = {
   name: '',
   description: '',
   version: '',
+  details: {},
 };
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {
@@ -104,7 +105,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
             <Tab
               key='mods'
               eventKey='mods'
-              title={<div>{t('Mods')}<Badge>{collection.rules.length}</Badge></div>}
+              title={<div>{t('Mods')}<Badge>{(collection.rules || []).length}</Badge></div>}
             >
               <Panel>
                 <ModsPage
@@ -123,7 +124,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 <ModRules t={t} modpack={collection} mods={mods} rules={this.state.modPackRules} />
               </Panel>
             </Tab>
-            {(iniFiles.length > 0) ? (
+            {((iniFiles || []).length > 0) ? (
               <Tab key='ini-tweaks' eventKey='ini-tweaks' title={t('Ini Tweaks')}>
                 <Panel>
                   <IniTweaks modId={collection !== undefined ? collection.id : undefined} />

@@ -49,16 +49,24 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                     </FlexLayout>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
+                    <div className='title'>{t('Uploaded')}</div>
+                    <div>{collection.attributes.uploadedTimestamp || t('Never')}</div>
+                  </FlexLayout.Fixed>
+                  <FlexLayout.Fixed className='collection-detail-cell'>
+                    <div className='title'>{t('Last updated')}</div>
+                    <div>{collection.attributes.lastUpdateTime || t('Never')}</div>
+                  </FlexLayout.Fixed>
+                  <FlexLayout.Fixed className='collection-detail-cell'>
+                    <div className='title'>{t('Version')}</div>
+                    <div>{collection.attributes.version || '0.0.0'}</div>
+                  </FlexLayout.Fixed>
+                  <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Mods')}</div>
                     <div>{depRules.length}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('File size')}</div>
                     <div>{util.bytesToString(totalSize)}</div>
-                  </FlexLayout.Fixed>
-                  <FlexLayout.Fixed className='collection-detail-cell'>
-                    <div className='title'>{t('Version')}</div>
-                    <div>{collection.attributes.version || '0.0.0'}</div>
                   </FlexLayout.Fixed>
                 </FlexLayout>
               </FlexLayout.Fixed>

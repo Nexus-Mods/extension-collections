@@ -283,8 +283,13 @@ $collection-thumbnail-height: 320px;
       @extend .h3;
     }
 
-    .active-mods {
-      @extend .h5;
+    .details {
+      font-size: smaller;
+      color: $text-color-disabled;
+
+      > *:not(:first-child) {
+        margin-left: 0.5em;
+      }
     }
 
     .author {

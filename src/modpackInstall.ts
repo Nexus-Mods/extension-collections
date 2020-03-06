@@ -35,6 +35,16 @@ export async function install(files: string[],
   return Promise.resolve({
     instructions: [
       {
+        type: 'attribute' as any,
+        key: 'customFileName',
+        value: modpack.info.name,
+      },
+      {
+        type: 'attribute' as any,
+        key: 'version',
+        value: modpack.info.version,
+      },
+      {
         type: 'setmodtype' as any,
         value: 'modpack',
       },

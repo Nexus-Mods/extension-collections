@@ -8,6 +8,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
 import { ComponentEx, EmptyPlaceholder, Icon, types, util } from 'vortex-api';
+import { ICollection, IRevision } from 'nexus-api';
 
 export interface IStartPageProps {
   t: i18next.TFunction;
@@ -164,14 +165,39 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     );
   }
 
-  private openCollections = () => {
-    // TODO: this should open the collections website on nexusmods
-    this.context.api.selectFile({ title: 'Select collection file' })
-      .then(filePath => {
-        if (filePath !== undefined) {
-          this.context.api.events.emit('start-install', filePath);
+  private openCollections = async () => {
+    const { api } = this.context;
+    const collections: ICollection[] = (await api.emitAndAwait('get-nexus-collections', this.props.profile.gameId))[0];
+    if ((collections === undefined) || (collections.length === 0)) {
+      api.sendNotification({ message: 'No collections for this game', type: 'error' });
+      return;
+    }
+    const choice = await api.showDialog('question', 'Choose collection', {
+      text: 'Pick a collection to install',
+      choices: collections.map(coll => ({ text: coll.name, value: false, id: (coll.collection_id || (coll as any).id).toString() }))
+    }, [
+      { label: 'Cancel' },
+      { label: 'Download' },
+    ]);
+
+    if (choice.action === 'Download') {
+      const collId = Object.keys(choice.input).find(id => choice.input[id]);
+      try {
+        const revisions: IRevision[] = (await api.emitAndAwait('get-nexus-collection-revisions', collId))[0];
+
+        const latest = revisions
+          // sort descending
+          .sort((lhs, rhs) => lhs.revision - rhs.revision)
+        [0];
+
+        const dlId = await (util as any).toPromise(cb => api.events.emit('start-download', [latest.uri], {}, (latest as any).file_name, cb));
+        await (util as any).toPromise(cb => api.events.emit('start-install-download', dlId, undefined, cb));
+      } catch (err) {
+        if (!(err instanceof util.UserCanceled)) {
+          api.showErrorNotification('Failed to download collection', err);
         }
-      });
+      }
+    }
   }
 
   private refreshImages() {

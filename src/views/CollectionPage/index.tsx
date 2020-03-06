@@ -195,7 +195,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   private publish = (modId: string) => {
     const { mods, profile } = this.props;
 
-    this.context.api.showDialog('question', 'Confirm publishing', {
+    const { api } = this.context;
+
+    api.showDialog('question', 'Confirm publishing', {
       text: 'Are you sure you want to upload the collection "{{collectionName}}"? '
           + 'Once uploaded you can hide or update a collection but it can\'t be removed. '
           + 'Please note: By uploading you agree that you adhere to the user agreement. '
@@ -211,10 +213,21 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     ])
     .then(res => {
       if (res.action === 'Publish') {
-        doExportToAPI(this.context.api, profile.gameId, modId)
+        doExportToAPI(api, profile.gameId, modId)
+          .then((collectionId: number) => {
+            api.sendNotification({
+              type: 'success',
+              message: 'Collection submitted',
+              actions: [
+                { title: 'Open in Browser', action: () => {
+                  util.opn(`https://www.nexusmods.com/${profile.gameId}/collections/${collectionId}`).catch(() => null);
+                } }
+              ]
+            });
+          })
           .catch(err => {
             if (!(err instanceof util.UserCanceled)) {
-              this.context.api.showErrorNotification('Failed to publish to API', err);
+              api.showErrorNotification('Failed to publish to API', err);
             }
           });
       }

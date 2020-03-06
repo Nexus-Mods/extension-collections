@@ -1,5 +1,5 @@
 import { IModPack, IModPackMod } from './types/IModPack';
-import { modToPack } from './util/modpack';
+import { modToPack, LOGO_NAME } from './util/modpack';
 import { makeProgressFunction } from './util/util';
 
 import * as PromiseBB from 'bluebird';
@@ -61,7 +61,7 @@ async function writePackToFile(state: types.IState, info: IModPack,
   const modPath = path.join(stagingPath, mod.installationPath);
 
   try {
-    await fs.copyAsync(path.join(modPath, 'icon.png'), path.join(outputPath, 'icon.png'));
+    await fs.copyAsync(path.join(modPath, LOGO_NAME), path.join(outputPath, LOGO_NAME));
   } catch (err) {
     if (err.code !== 'ENOENT') {
       throw err;
@@ -81,26 +81,15 @@ async function writePackToFile(state: types.IState, info: IModPack,
   return zipPath;
 }
 
-function toProm<ResT>(func: (cb) => void): Promise<ResT> {
-  return new Promise((resolve, reject) => {
-    const cb = (err, res) => {
-      if (err !== null) {
-        return reject(err);
-      } else {
-        return resolve(res);
-      }
-    };
-    func(cb);
-  });
-}
-
 function filterInfoMod(mod: IModPackMod): IModPackMod {
   return _.omit(mod, ['hashes', 'choices']);
 }
 
 function filterInfo(input: IModPack): any {
+  const info = input.info;
+  delete info.details;
   return {
-    info: input.info,
+    info,
     mods: input.mods.map(mod => filterInfoMod(mod)),
   };
 }
@@ -119,7 +108,7 @@ async function queryErrorsContinue(api: types.IExtensionApi, errors: Array<{mess
   }
 }
 
-export async function doExportToAPI(api: types.IExtensionApi, gameId: string, modId: string) {
+export async function doExportToAPI(api: types.IExtensionApi, gameId: string, modId: string): Promise<number> {
   const state: types.IState = api.store.getState();
   const mod = state.persistent.mods[gameId][modId];
 
@@ -131,20 +120,42 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
     errors.push({ message, replace });
   };
 
+  let info: IModPack;
+
+  let collectionId: number;
+
   try {
-    const info = await generateModPackInfo(state, gameId, mod, progress, onError);
+    info = await generateModPackInfo(state, gameId, mod, progress, onError);
     if (errors.length > 0) {
       await queryErrorsContinue(api, errors);
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writePackToFile(state, info, mod, tmpPath);
-      const result: any = await toProm(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
-      api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', result.collection_id));
+      const result: any = await (util as any).toPromise(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
+      collectionId = result.collection.collection_id;
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
     });
   } catch (err) {
-    api.showErrorNotification('Failed to submit collection', err);
+    if (err.name === 'ModFileNotFound') {
+      const file = info.mods.find(mod => mod.source.file_id === err.fileId);
+      api.sendNotification({
+        type: 'error',
+        title: 'The server can\'t find one of the files in the collection, are mod id and file id for it set correctly?',
+        message: file !== undefined ? file.name : `id: ${err.fileId}`,
+      });
+    } else if (err.constructor.name === 'ParameterInvalid') {
+      api.sendNotification({
+        type: 'error',
+        title: 'The server rejected this collection',
+        message: err.message,
+      });
+    } else {
+      api.showErrorNotification('Failed to submit collection', err);
+    }
   }
   progressEnd();
+
+  return collectionId;
 }
 
 export async function doExportToFile(api: types.IExtensionApi, gameId: string, modId: string) {

@@ -382,6 +382,16 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     const installMode: string =
       util.getSafe(modpack, ['attributes', 'modpack', 'installMode', mod.mod.id], 'fresh');
 
+    if ((source === 'nexus')
+        && ((util.getSafe(mod.mod, ['attributes', 'modId'], undefined) === undefined)
+            || (util.getSafe(mod.mod, ['attributes', 'modId'], undefined) === undefined))) {
+      res.push(t('When using nexus as a source both the mod id and file id have to be known. '
+                + 'If you didn\'t download the mod through Vortex they will not be set. '
+                + 'To solve this you have to change the source of the mod to "Nexus", click guess id '
+                + '(which will determine the mod id) and finally check mods for updates which '
+                + 'should fill in the file id.'));
+    }
+
     if (mod.rule.reference.versionMatch === '*') {
       if (installMode === 'clone') {
         res.push(t('"Replicate" install can only be used when installing '

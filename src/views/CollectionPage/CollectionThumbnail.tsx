@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
+import { IconBar, PureComponentEx, selectors, types, util, Icon } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 
 export interface IBaseProps {
@@ -109,9 +109,6 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               <div className='name'>
                 {util.renderModName(collection, { version: false })}
               </div>
-              <div className='active-mods'>
-                <span>{t('{{ count }} mod', { count: mods.length })}</span>
-              </div>
               <div className='author'>
                 <Image
                   src='assets/images/noavatar.png'
@@ -119,6 +116,10 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                 />
                 {util.getSafe(collection.attributes, ['author'], undefined)
                   || `${t(AUTHOR_UNKNOWN)}`}
+              </div>
+              <div className='details'>
+                <span><Icon name='mods' />{mods.length}</span>
+                <span><Icon name='archive' />??? MB</span>
               </div>
             </div>
           ) : null}
@@ -133,10 +134,12 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   private renderCollectionStatus(active: boolean, mods: types.IModRule[]) {
-    const { t, incomplete } = this.props;
+    const { t, collection, incomplete } = this.props;
     if (active) {
       if (incomplete) {
         return <div className='collection-status'>{t('Incomplete')}</div>;
+      } else if (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined) {
+        return <div className='collection-status'>{t('Published')}</div>;
       } else {
         return <div className='collection-status'>{t('Enabled')}</div>;
       }

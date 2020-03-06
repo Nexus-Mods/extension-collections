@@ -1,6 +1,10 @@
 import { types } from 'vortex-api';
 import { IModPackGamebryo } from '../util/gameSupport/gamebryo';
 
+export interface IModPackInfoDetails {
+  type?: string;
+}
+
 export interface IModPackInfo {
   collection_id?: number;
   author: string;
@@ -9,6 +13,7 @@ export interface IModPackInfo {
   version: string;
   description: string;
   domain_name: string;
+  details: IModPackInfoDetails;
 }
 
 export type UpdatePolicy = 'exact' | 'latest';
