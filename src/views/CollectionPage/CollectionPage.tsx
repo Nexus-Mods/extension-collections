@@ -451,7 +451,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       = util.objDiff(oldProps.mods, newProps.mods);
 
     const genRuleMap = (rules: types.IModRule[]) => {
-      return rules.reduce((prev, rule) => {
+      return (rules || []).reduce((prev, rule) => {
         prev[this.ruleId(rule)] = rule;
         return prev;
       }, {});

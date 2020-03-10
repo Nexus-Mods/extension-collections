@@ -192,12 +192,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     });
   }
 
-  private publish = (modId: string) => {
+  private publish = async (modId: string) => {
     const { mods, profile } = this.props;
 
     const { api } = this.context;
 
-    api.showDialog('question', 'Confirm publishing', {
+    const choice = await api.showDialog('question', 'Confirm publishing', {
       text: 'Are you sure you want to upload the collection "{{collectionName}}"? '
           + 'Once uploaded you can hide or update a collection but it can\'t be removed. '
           + 'Please note: By uploading you agree that you adhere to the user agreement. '
@@ -210,28 +210,30 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }, [
       { label: 'Cancel' },
       { label: 'Publish' },
-    ])
-    .then(res => {
-      if (res.action === 'Publish') {
-        doExportToAPI(api, profile.gameId, modId)
-          .then((collectionId: number) => {
-            api.sendNotification({
-              type: 'success',
-              message: 'Collection submitted',
-              actions: [
-                { title: 'Open in Browser', action: () => {
+    ]);
+
+    if (choice.action === 'Publish') {
+      try {
+        const collectionId = await doExportToAPI(api, profile.gameId, modId);
+        if (collectionId !== undefined) {
+          api.sendNotification({
+            type: 'success',
+            message: 'Collection submitted',
+            actions: [
+              {
+                title: 'Open in Browser', action: () => {
                   util.opn(`https://www.nexusmods.com/${profile.gameId}/collections/${collectionId}`).catch(() => null);
-                } }
-              ]
-            });
-          })
-          .catch(err => {
-            if (!(err instanceof util.UserCanceled)) {
-              api.showErrorNotification('Failed to publish to API', err);
-            }
+                }
+              }
+            ]
           });
+        }
+      } catch (err) {
+        if (!(err instanceof util.UserCanceled) && !(err instanceof util.ProcessCanceled)) {
+          api.showErrorNotification('Failed to publish to API', err);
+        }
       }
-    });
+    }
   }
 }
 

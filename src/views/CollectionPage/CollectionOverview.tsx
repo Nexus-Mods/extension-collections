@@ -2,7 +2,7 @@ import CollectionThumbnail from './CollectionThumbnail';
 
 import i18next from 'i18next';
 import * as React from 'react';
-import { Image, ListGroup, Media, Panel } from 'react-bootstrap';
+import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 

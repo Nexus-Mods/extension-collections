@@ -4,6 +4,7 @@ import { Table } from 'react-bootstrap';
 import { util } from 'vortex-api';
 
 const ONE_MB = 1024 * 1024;
+const NEXUS_MEMBERSHIP_URL = 'https://users.nexusmods.com/register/memberships';
 
 function renderTime(input: number): string {
   const hours = util.pad(Math.floor(input / 3600), '0', 2);
@@ -53,7 +54,7 @@ class CollectionBanner extends React.Component<ICollectionBannerProps, {}> {
   }
 
   private goGetPremium = () => {
-    util.opn('https://www.nexusmods.com/register/premium').catch(err => undefined);
+    util.opn(NEXUS_MEMBERSHIP_URL).catch(err => undefined);
   }
 }
 

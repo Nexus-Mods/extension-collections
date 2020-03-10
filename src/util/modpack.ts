@@ -301,17 +301,28 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   } else if (mod.source.update_policy === 'latest') {
     versionMatch = '*';
   }
+  const reference: types.IModReference = {
+    description: mod.name,
+    fileMD5: mod.source.md5,
+    gameId: mod.domain_name,
+    fileSize: mod.source.file_size,
+    versionMatch,
+    logicalFileName: mod.source.logical_filename,
+    fileExpression: mod.source.file_expression,
+  };
+
+  if (mod.source.type === 'nexus') {
+    reference['repo'] = {
+      repository: 'nexus',
+      gameId: mod.domain_name,
+      modId: mod.source.mod_id.toString(),
+      fileId: mod.source.file_id.toString(),
+    };
+  }
+
   return {
     type: mod.optional ? 'recommends' : 'requires',
-    reference: {
-      description: mod.name,
-      fileMD5: mod.source.md5,
-      gameId: mod.domain_name,
-      fileSize: mod.source.file_size,
-      versionMatch,
-      logicalFileName: mod.source.logical_filename,
-      fileExpression: mod.source.file_expression,
-    },
+    reference,
     fileList: mod.hashes,
     installerChoices: mod.choices,
     downloadHint,

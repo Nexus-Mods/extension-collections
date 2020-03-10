@@ -5,6 +5,8 @@ import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import { FlexLayout, util } from 'vortex-api';
 
+const NEXUS_MEMBERSHIP_URL = 'https://users.nexusmods.com/register/memberships';
+
 interface IInstallDialogStartProps {
   t: i18next.TFunction;
   driver: InstallDriver;
@@ -55,7 +57,7 @@ class InstallDialogStart extends React.Component<IInstallDialogStartProps, {}> {
   }
 
   private goBuyPremium = () => {
-    util.opn('https://www.nexusmods.com/register/premium').catch(err => undefined);
+    util.opn(NEXUS_MEMBERSHIP_URL).catch(err => undefined);
   }
 }
 

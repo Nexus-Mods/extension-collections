@@ -135,7 +135,9 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
       collectionId = result.collection.collection_id;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
     });
+    progressEnd();
   } catch (err) {
+    progressEnd();
     if (err.name === 'ModFileNotFound') {
       const file = info.mods.find(mod => mod.source.file_id === err.fileId);
       api.sendNotification({
@@ -143,17 +145,18 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
         title: 'The server can\'t find one of the files in the collection, are mod id and file id for it set correctly?',
         message: file !== undefined ? file.name : `id: ${err.fileId}`,
       });
+      throw new util.ProcessCanceled('Mod file not found');
     } else if (err.constructor.name === 'ParameterInvalid') {
       api.sendNotification({
         type: 'error',
         title: 'The server rejected this collection',
-        message: err.message,
+        message: err.message || '<No reason given>',
       });
+      throw new util.ProcessCanceled('collection rejected');
     } else {
-      api.showErrorNotification('Failed to submit collection', err);
+      throw err;
     }
   }
-  progressEnd();
 
   return collectionId;
 }
