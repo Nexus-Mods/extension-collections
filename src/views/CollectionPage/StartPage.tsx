@@ -20,6 +20,7 @@ export interface IStartPageProps {
   onPublish: (modId: string) => void;
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
+  onResume: (modId: string) => void;
 }
 
 interface IComponentState {
@@ -55,7 +56,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, profile, matchedReferences, mods, onEdit, onPublish, onRemove, onView } = this.props;
+    const { t, profile, matchedReferences, mods, onEdit, onPublish, onRemove, onResume, onView } = this.props;
     const { createOpen, imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
@@ -91,6 +92,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     collection={mod}
                     onView={onView}
                     onRemove={onRemove}
+                    onResume={onResume}
                     details={true}
                   />)
                 : (
@@ -123,6 +125,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   onView={onView}
                   onRemove={onRemove}
                   onPublish={onPublish}
+                  onResume={onResume}
                   details={true}
                 />)}
               <Panel className='collection-create-btn'>
@@ -166,8 +169,9 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   private openCollections = async () => {
+    const { profile } = this.props;
     const { api } = this.context;
-    const collections: ICollection[] = (await api.emitAndAwait('get-nexus-collections', this.props.profile.gameId))[0];
+    const collections: ICollection[] = (await api.emitAndAwait('get-nexus-collections', profile.gameId))[0];
     if ((collections === undefined) || (collections.length === 0)) {
       api.sendNotification({ message: 'No collections for this game', type: 'error' });
       return;
@@ -190,7 +194,16 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           .sort((lhs, rhs) => lhs.revision - rhs.revision)
         [0];
 
-        const dlId = await (util as any).toPromise(cb => api.events.emit('start-download', [latest.uri], {}, (latest as any).file_name, cb));
+        const modInfo = {
+          game: profile.gameId,
+          name: latest.collection.name,
+          source: 'nexus',
+          ids: {
+            collectionId: collId.toString(),
+            revisionId: latest.revision_id.toString(),
+          },
+        };
+        const dlId = await (util as any).toPromise(cb => api.events.emit('start-download', [latest.uri], modInfo, (latest as any).file_name, cb));
         await (util as any).toPromise(cb => api.events.emit('start-install-download', dlId, undefined, cb));
       } catch (err) {
         if (!(err instanceof util.UserCanceled)) {

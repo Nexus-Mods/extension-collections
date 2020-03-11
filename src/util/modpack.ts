@@ -328,6 +328,8 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     downloadHint,
     extra: {
       author: mod.author,
+      type: mod.details.type,
+      name: mod.name,
     },
   } as any;
 }
@@ -371,7 +373,6 @@ export async function modToPack(state: types.IState,
     version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
     description: util.getSafe(modpack.attributes, ['shortDescription'], ''),
     domain_name: gameId,
-    details: {},
   };
 
   const res: IModPack = {

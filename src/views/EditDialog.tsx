@@ -207,7 +207,6 @@ const emptyModPackInfo: IModPackInfo = {
   name: '',
   description: '',
   version: '',
-  details: {},
 };
 
 function mapStateToProps(state: any): IConnectedProps {

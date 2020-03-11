@@ -14,6 +14,7 @@ export interface IBaseProps {
   incomplete?: boolean;
   details: boolean;
   imageTime: number;
+  onResume?: (modId: string) => void;
   onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
@@ -37,15 +38,15 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   public componentWillMount() {
-    const { collection, incomplete, onEdit, onPublish, onRemove, onView, profile } = this.props;
+    const { incomplete, onEdit, onPublish, onRemove, onResume, onView } = this.props;
 
     if (onView) {
       this.mActions.push({
         title: incomplete ? 'Resume' : 'View',
         icon: 'show',
         action: (instanceIds: string[]) => {
-          if (incomplete) {
-            this.context.api.events.emit('install-dependencies', profile.id, [collection.id], true)
+          if (incomplete && (onResume !== undefined)) {
+            onResume(instanceIds[0]);
           }
           onView(instanceIds[0]);
         },
@@ -77,6 +78,10 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
 
   public render(): JSX.Element {
     const { t, collection, details, imageTime, profile, stagingPath } = this.props;
+
+    if (collection === undefined) {
+      return null;
+    }
 
     const logoPath = path.join(stagingPath, collection.installationPath, 'logo.jpg');
     const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);

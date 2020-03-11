@@ -366,11 +366,32 @@ $collection-thumbnail-height: 320px;
   bottom: 0;
 }
 
+.collection-detail-cell {
+  padding: 0 0.5em;
+
+  &:not(:first-child) {
+    border-left: 1px solid $gray-light;
+  }
+
+  img {
+    width: 32px;
+    height: 32px;
+    margin-right: 0.5em;
+  }
+
+  .title {
+    color: $text-color-disabled;
+  }
+}
+
+
 .collection-overview {
   padding: $half-gutter;
+  overflow: hidden;
 
   .media {
     margin-bottom: $half-gutter;
+    max-height: 25vh;
   }
 
   .collection-thumbnail {
@@ -380,23 +401,31 @@ $collection-thumbnail-height: 320px;
   .collection-title {
     @extend .h3;
   }
+}
 
-  .collection-detail-cell {
-    padding: 0 0.5em;
-
-    &:not(:first-child) {
-      border-left: 1px solid $gray-light;
+.installing-mod-overview {
+  > .media {
+    height: 425px;
+    max-height: 25vh;
+    > .media-right {
+      min-width: 30vw;
+      > .layout-container {
+        align-items: center;
+      }
     }
+  }
 
-    img {
-      width: 32px;
-      height: 32px;
-      margin-right: 0.5em;
-    }
+  .installing-mod-title {
+    @extend .h3;
+  }
 
-    .title {
-      color: $text-color-disabled;
-    }
+  .installing-mod-image {
+    max-width: 520px;
+    max-height: 293px;
+  }
+
+  .nav-button {
+    @extend .btn-embed;
   }
 }
 

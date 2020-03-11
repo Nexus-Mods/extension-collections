@@ -2679,8 +2679,8 @@ void-elements@^2.0.1:
   integrity sha1-wGavtYK7HLQSjWDqkjkulNXp2+w=
 
 vortex-api@Nexus-Mods/vortex-api#mod-packs:
-  version "1.1.0-modpacks.r4"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/5d6bf455089f7e8ffd97992442b5ee8c0804364f"
+  version "1.1.0-modpacks.r6"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/ec82f9e3b937a0009c0ec55ea45da2e09f608ca8"
 
 warning@^3.0.0:
   version "3.0.0"

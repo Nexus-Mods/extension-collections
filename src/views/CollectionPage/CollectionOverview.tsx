@@ -16,7 +16,7 @@ interface ICollectionOverviewProps {
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, gameId, totalSize, onClose } = this.props;
+    const { t, collection, gameId, totalSize } = this.props;
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));

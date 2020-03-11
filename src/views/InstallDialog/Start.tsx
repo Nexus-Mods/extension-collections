@@ -16,9 +16,9 @@ interface IInstallDialogStartProps {
 class InstallDialogStart extends React.Component<IInstallDialogStartProps, {}> {
   public render(): JSX.Element {
     const { t, driver, isPremium } = this.props;
-    const { modPack } = driver;
+    const { collection } = driver;
 
-    const numMods: number = modPack.rules
+    const numMods: number = collection.rules
       .filter(rule => ['requires', 'recommended'].indexOf(rule.type) !== -1)
       .length;
 
@@ -26,12 +26,12 @@ class InstallDialogStart extends React.Component<IInstallDialogStartProps, {}> {
       <FlexLayout type='column' className='modpack-flex-start'>
         <FlexLayout.Fixed>
           <div className='modpack-name'>
-            {t('Installing Collection')} {util.renderModName(modPack)}
+            {t('Installing Collection')} {util.renderModName(collection)}
           </div>
           <div className='modpack-author'>
             {t('Created by {{author}}', {
               replace: {
-                author: util.getSafe(modPack.attributes, ['author'], '<Unkown Author>'),
+                author: util.getSafe(collection.attributes, ['author'], '<Unkown Author>'),
               },
             })}
           </div>

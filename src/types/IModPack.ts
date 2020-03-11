@@ -1,10 +1,6 @@
 import { types } from 'vortex-api';
 import { IModPackGamebryo } from '../util/gameSupport/gamebryo';
 
-export interface IModPackInfoDetails {
-  type?: string;
-}
-
 export interface IModPackInfo {
   collection_id?: number;
   author: string;
@@ -13,7 +9,6 @@ export interface IModPackInfo {
   version: string;
   description: string;
   domain_name: string;
-  details: IModPackInfoDetails;
 }
 
 export type UpdatePolicy = 'exact' | 'latest';
@@ -34,6 +29,10 @@ export interface IModPackSourceInfo {
   file_expression?: string;
 }
 
+export interface IModPackModDetails {
+  type?: string;
+}
+
 export interface IModPackMod {
   name: string;
   version: string;
@@ -45,6 +44,7 @@ export interface IModPackMod {
   // installer-specific data to replicate the choices the author made
   choices?: any;
   author?: string;
+  details: IModPackModDetails;
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';

@@ -49,7 +49,6 @@ const emptyCollectionInfo: IModPackInfo = {
   name: '',
   description: '',
   version: '',
-  details: {},
 };
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {

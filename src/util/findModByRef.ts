@@ -31,6 +31,14 @@ function newerSort(lhs: types.IDownload, rhs: types.IDownload): number {
 export function testDownloadReference(download: types.IDownload,
                                       reference: types.IReference)
                                       : boolean {
+  if (download === undefined) {
+    return false;
+  }
+
+  if (!download.game.includes(reference.gameId)) {
+    return false;
+  }
+
   const lookup = {
     fileMD5: download.fileMD5,
     fileName: download.localPath,
@@ -38,6 +46,9 @@ export function testDownloadReference(download: types.IDownload,
     version: util.getSafe(download, ['modInfo', 'version'], undefined),
     logicalFileName: util.getSafe(download, ['modInfo', 'name'], undefined),
     game: download.game,
+    source: util.getSafe(download, ['modInfo', 'source'], undefined),
+    modId: util.getSafe(download, ['modInfo', 'nexus', 'ids', 'modId'], undefined),
+    fileId: util.getSafe(download, ['modInfo', 'nexus', 'ids', 'fileId'], undefined),
   };
 
   return util.testModReference(lookup, reference);

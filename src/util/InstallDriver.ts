@@ -2,6 +2,7 @@ import { findModByRef } from './findModByRef';
 
 import * as Promise from 'bluebird';
 import { actions, log, types, util } from 'vortex-api';
+import { IRevisionDetailed } from 'nexus-api';
 
 export type Step = 'start' | 'disclaimer' | 'installing' | 'review';
 
@@ -10,13 +11,14 @@ export type UpdateCB = () => void;
 class InstallDriver {
   private mApi: types.IExtensionApi;
   private mProfile: types.IProfile;
-  private mModPack: types.IMod;
+  private mCollection: types.IMod;
   private mStep: Step = 'start';
   private mUpdateHandlers: UpdateCB[] = [];
   private mInstalledMods: types.IMod[] = [];
   private mRequiredMods: types.IModRule[] = [];
   private mInstallingMod: string;
   private mInstallDone: boolean = false;
+  private mRevisionInfo: IRevisionDetailed;
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -43,7 +45,7 @@ class InstallDriver {
 
     api.events.on('did-install-dependencies',
       (profileId: string, modId: string, recommendations: boolean) => {
-        if ((this.mModPack !== undefined) && (modId === this.mModPack.id)) {
+        if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
           this.mInstallDone = true;
           this.mInstallingMod = undefined;
           this.mApi.dismissNotification('installing-modpack');
@@ -52,9 +54,9 @@ class InstallDriver {
       });
   }
 
-  public start(profile: types.IProfile, modpack: types.IMod) {
+  public async start(profile: types.IProfile, modpack: types.IMod) {
     this.mProfile = profile;
-    this.mModPack = modpack;
+    this.mCollection = modpack;
     this.mStep = 'start';
     this.mInstalledMods = [];
     this.mInstallingMod = undefined;
@@ -62,6 +64,15 @@ class InstallDriver {
 
     const state: types.IState = this.mApi.store.getState();
     const mods = state.persistent.mods[this.mProfile.gameId];
+
+    const collectionId = util.getSafe(modpack.attributes, ['collectionId'], undefined);
+    const revisionId = util.getSafe(modpack.attributes, ['revisionId'], undefined);
+    if ((collectionId !== undefined) && (revisionId !== undefined)) {
+      this.mRevisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision', collectionId, revisionId))[0];
+      if (Array.isArray(this.mRevisionInfo)) {
+        this.mRevisionInfo = this.mRevisionInfo[0];
+      }
+    }
 
     this.mApi.store.dispatch(actions.setDialogVisible('modpack-install'));
 
@@ -116,8 +127,12 @@ class InstallDriver {
     return this.mInstallingMod;
   }
 
-  public get modPack() {
-    return this.mModPack;
+  public get collection() {
+    return this.mCollection;
+  }
+
+  public get revisionInfo(): IRevisionDetailed {
+    return this.mRevisionInfo;
   }
 
   public get installDone(): boolean {
@@ -125,7 +140,7 @@ class InstallDriver {
   }
 
   public cancel() {
-    this.mModPack = undefined;
+    this.mCollection = undefined;
     this.mProfile = undefined;
     this.mInstalledMods = [];
     this.mStep = 'start';
@@ -165,7 +180,7 @@ class InstallDriver {
   }
 
   private begin = () => {
-    this.mApi.events.emit('install-dependencies', this.mProfile.id, [this.mModPack.id], true);
+    this.mApi.events.emit('install-dependencies', this.mProfile.id, [this.mCollection.id], true);
     // skipping disclaimer for now
     this.mStep = 'installing';
   }
@@ -175,12 +190,12 @@ class InstallDriver {
   }
 
   private finishInstalling = () => {
-    this.mApi.store.dispatch(actions.setModEnabled(this.mProfile.id, this.mModPack.id, true));
+    this.mApi.store.dispatch(actions.setModEnabled(this.mProfile.id, this.mCollection.id, true));
     this.mStep = 'review';
   }
 
   private close = () => {
-    this.mModPack = undefined;
+    this.mCollection = undefined;
     this.triggerUpdate();
   }
 

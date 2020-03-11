@@ -1,6 +1,7 @@
 import { MOD_TYPE, NAMESPACE } from '../../constants';
 import { doExportToAPI } from '../../modpackExport';
-import { findModByRef } from '../../util/findModByRef';
+import { findModByRef, findDownloadIdByRef } from '../../util/findModByRef';
+import InstallDriver from '../../util/InstallDriver';
 
 import CollectionEdit from './CollectionEdit';
 import CollectionPage from './CollectionPage';
@@ -19,6 +20,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
 
+  driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
 }
@@ -94,6 +96,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           onRemove={this.remove}
           onPublish={this.publish}
           onCreateCollection={this.createCollection}
+          onResume={this.resume}
         />
       );
     } else {
@@ -114,12 +117,15 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
               <CollectionPage
                 t={t}
                 className='collection-details'
+                driver={this.props.driver}
                 profile={profile}
                 collection={collection}
                 mods={mods}
                 downloads={downloads}
                 notifications={notifications}
                 onView={this.view}
+                onPause={this.pause}
+                onCancel={this.cancel}
               />
             )
               : (
@@ -160,6 +166,55 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   private edit = (modId: string) => {
     this.nextState.selectedCollection = modId;
     this.nextState.viewMode = 'edit';
+  }
+
+  private pause = (modId: string) => {
+    const { downloads, mods } = this.props;
+
+    const collection = mods[modId];
+    collection.rules.forEach(rule => {
+      const dlId = findDownloadIdByRef(rule.reference, downloads);
+      if (dlId !== undefined) {
+        this.context.api.events.emit('pause-download', dlId);
+      }
+    });
+  }
+
+  private cancel = async (modId: string) => {
+    const { downloads, mods, profile } = this.props;
+    const { api } = this.context;
+    
+    const result = await api.showDialog('question', 'Are you sure you want to cancel the installation', {
+      text: 'Choose to delete the collection and its content or to cancel the install',
+    }, [
+      { label: 'Cancel and delete' },
+      { label: 'Cancel' },
+    ]);
+
+    // apparently one can't cancel out of the cancellation...
+
+    // either way, delete all running downloads
+    const collection = mods[modId];
+    await Promise.all(collection.rules.map(async rule => {
+      const dlId = findDownloadIdByRef(rule.reference, downloads);
+
+      if (dlId !== undefined) {
+        await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+      }
+    }));
+
+    if (result.action === 'Cancel and delete') {
+      await Promise.all(collection.rules.map(async rule => {
+        const mod = findModByRef(rule.reference, mods);
+        if (mod !== undefined) {
+          const dlId = mod.archiveId;
+          await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, mod.id, cb));
+          if ((dlId !== undefined) && (downloads[dlId])) {
+            await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+          }
+        }
+      }));
+    }
   }
 
   private updateMatchedReferences(props: ICollectionsMainPageProps) {
@@ -234,6 +289,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         }
       }
     }
+  }
+
+  private resume = async (modId: string) => {
+    const { driver, mods, profile } = this.props;
+
+    driver.start(profile, mods[modId]);
   }
 }
 

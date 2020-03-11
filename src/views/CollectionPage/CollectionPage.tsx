@@ -1,10 +1,12 @@
 import { AUTHOR_UNKNOWN } from '../../constants';
 import { findDownloadIdByRef, findModByRef, testDownloadReference } from '../../util/findModByRef';
+import InstallDriver from '../../util/InstallDriver';
 
 import { IModEx } from '../../types/IModEx';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
+import CollectionOverviewInstalling from './CollectionOverviewInstalling';
 import CollectionProgress, { ICollectionProgressProps } from './CollectionProgress';
 
 import * as Promise from 'bluebird';
@@ -22,10 +24,13 @@ export interface ICollectionPageProps {
   className: string;
   profile: types.IProfile;
   collection: types.IMod;
+  driver: InstallDriver;
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
   onView: (modId: string) => void;
+  onPause: (collectionId: string) => void;
+  onCancel: (collectionId: string) => void;
 }
 
 interface IConnectedProps {
@@ -223,12 +228,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, className, collection, downloads, profile } = this.props;
+    const { t, className, collection, driver, downloads, profile } = this.props;
     const { modsEx } = this.state;
 
     if (collection === undefined) {
       return null;
     }
+
+    const incomplete = Object.values(modsEx).find(mod => mod.state !== 'installed') !== undefined;
 
     const totalSize = Object.values(modsEx).reduce((prev, mod) => {
       const size = util.getSafe(mod, ['attributes', 'fileSize'], 0);
@@ -251,13 +258,22 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed>
-          <CollectionOverview
-            t={t}
-            gameId={profile.gameId}
-            collection={collection}
-            totalSize={totalSize}
-            onClose={this.close}
-          />
+          {incomplete && (driver.revisionInfo !== undefined) && (driver.collection.id === collection.id)
+            ? (
+              <CollectionOverviewInstalling
+                t={t}
+                gameId={profile.gameId}
+                driver={driver}
+              />
+            ) : (
+              <CollectionOverview
+                t={t}
+                gameId={profile.gameId}
+                collection={collection}
+                totalSize={totalSize}
+                onClose={this.close}
+              />
+            )}
         </FlexLayout.Fixed>
         <FlexLayout.Flex fill={true} className='collection-mods-panel'>
           <Panel>
@@ -279,8 +295,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               mods={modsEx}
               downloads={downloads}
               totalSize={totalSize}
-              onCancel={() => null}
-              onPause={() => null}
+              onCancel={this.cancel}
+              onPause={this.pause}
             />
           </Panel>
         </FlexLayout.Fixed>
@@ -304,6 +320,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     }
 
     return 0;
+  }
+
+  private pause = () => {
+    this.props.onPause(this.props.collection.id);
+  }
+
+  private cancel = () => {
+    this.props.onCancel(this.props.collection.id);
   }
 
   private close = () => {
@@ -573,7 +597,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       enabled: false,
       collectionRule: rule,
       attributes: {
-        customFileName: download.modInfo.name,
+        customFileName: util.getSafe(download, ['modInfo', 'name'], undefined),
         fileName: download.localPath,
         fileSize: download.size,
         received: download.received,

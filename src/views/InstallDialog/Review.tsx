@@ -21,7 +21,7 @@ class InstallDialogReview extends React.Component<IInstallDialogReviewProps, {}>
             {t('The modpack will appear as a mod in your mod list with the '
               + 'name "{{modpackName}}."', {
               replace: {
-                modpackName: util.renderModName(driver.modPack),
+                modpackName: util.renderModName(driver.collection),
               },
             })}
             <br/>

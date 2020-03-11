@@ -87,7 +87,6 @@ function filterInfoMod(mod: IModPackMod): IModPackMod {
 
 function filterInfo(input: IModPack): any {
   const info = input.info;
-  delete info.details;
   return {
     info,
     mods: input.mods.map(mod => filterInfoMod(mod)),

@@ -1,13 +1,15 @@
 import { NAMESPACE } from '../../constants';
 import InstallDriver, { Step } from '../../util/InstallDriver';
 
+import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+
 import InstallDialogDisclaimer from './Disclaimer';
 import InstallDialogInstalling from './Installing';
 import InstallDialogReview from './Review';
 import InstallDialogStart from './Start';
 
 import * as React from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, Media } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
@@ -56,19 +58,26 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   public render(): React.ReactNode {
-    const { t, driver } = this.props;
+    const { t, driver, profile } = this.props;
 
     if (driver === undefined) {
       return null;
     }
 
+    const game = util.getGame(profile.gameId);
     // const name = driver.modPack !== undefined ? driver.modPack.attributes['name'] : '';
 
     return (
-      <Modal show={(driver.modPack !== undefined) && (driver.step === 'start')} onHide={nop}>
+      <Modal show={(driver.collection !== undefined) && (driver.step === 'start')} onHide={nop}>
         <Modal.Body>
-          <h3>{util.renderModName(driver.modPack)}</h3>
-          {t('Has been added to your collections.')}
+          <Media.Left>
+            <CollectionThumbnail t={t} gameId={profile.gameId} collection={driver.collection} details={true} imageTime={42} />
+          </Media.Left>
+          <Media.Right>
+            <h5>{game.name}</h5>
+            <h3>{util.renderModName(driver.collection)}</h3>
+            {t('Has been added to your collections.')}
+          </Media.Right>
         </Modal.Body>
         <Modal.Footer>
           <Button onClick={this.cancel}>{t('Install Later')}</Button>
@@ -178,7 +187,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   private next = () => {
     const { driver } = this.props;
     driver.continue();
-    this.context.api.events.emit('view-collection', driver.modPack.id);
+    this.context.api.events.emit('view-collection', driver.collection.id);
   }
 }
 

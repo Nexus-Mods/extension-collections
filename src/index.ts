@@ -4,7 +4,7 @@ import { IModPack } from './types/IModPack';
 import InstallDriver from './util/InstallDriver';
 import { createModpack, makeModpackId } from './util/modpack';
 import { bbProm } from './util/util';
-import CollectionsPage from './views/CollectionPage';
+import CollectionsMainPage from './views/CollectionPage';
 import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
 
@@ -92,10 +92,25 @@ function createCollection(api: types.IExtensionApi, profile: types.IProfile, nam
       },
     ],
   });
-
 }
 
-function init(context: types.IExtensionContext): boolean {
+function genAttributeExtractor(api: types.IExtensionApi) {
+  // tslint:disable-next-line:no-shadowed-variable
+  return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
+    const collectionId = util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'collectionId'], undefined);
+    const revisionId = util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'revisionId'], undefined);
+    return PromiseBB.resolve({
+      collectionId,
+      revisionId,
+    });
+  };
+}
+
+type CallbackMap = { [cbName: string]: (...args: any[]) => void };
+
+function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: CallbackMap) => void) {
+  let collectionsCB: CallbackMap;
+
   context.registerReducer(['session', 'modpack'], sessionReducer);
 
   context.registerDialog('modpack-edit', EditDialog, () => ({
@@ -107,16 +122,15 @@ function init(context: types.IExtensionContext): boolean {
     driver,
   }));
 
-  let collectionsCB: { [cbName: string]: (...args: any[]) => void };
-
-  context.registerMainPage('collection', 'Collections', CollectionsPage, {
+  context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
     group: 'per-game',
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
-      onSetupCallbacks: (callbacks: { [cbName: string]: (...args: any[]) => void }) => {
+      onSetupCallbacks: (callbacks: CallbackMap) => {
         collectionsCB = callbacks;
+        onSetCallbacks(callbacks);
       },
       onCreateCollection: (profile: types.IProfile, name: string) =>
         createCollection(context.api, profile, name),
@@ -124,29 +138,31 @@ function init(context: types.IExtensionContext): boolean {
   });
 
   context.registerModType(MOD_TYPE, 200, () => true,
-                          () => undefined, () => PromiseBB.resolve(false));
+    () => undefined, () => PromiseBB.resolve(false), {
+    name: 'Collection',
+  });
 
   context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
-                         (modIds: string[]) => {
-    const state = context.api.store.getState();
-    const gameMode = selectors.activeGameId(state);
-    doExportToFile(context.api, gameMode, modIds[0]);
-  }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
+    (modIds: string[]) => {
+      const state = context.api.store.getState();
+      const gameMode = selectors.activeGameId(state);
+      doExportToFile(context.api, gameMode, modIds[0]);
+    }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
-                         (modIds: string[]) => {
-    context.api.events.emit('show-main-page', 'Collections');
-    // have to delay this a bit because the callbacks are only set up once the page
-    // is first opened
-    setTimeout(() => {
-      if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
-        collectionsCB.editCollection(modIds[0]);
-      }
-    }, 100);
-  }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
+    (modIds: string[]) => {
+      context.api.events.emit('show-main-page', 'Collections');
+      // have to delay this a bit because the callbacks are only set up once the page
+      // is first opened
+      setTimeout(() => {
+        if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
+          collectionsCB.editCollection(modIds[0]);
+        }
+      }, 100);
+    }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
 
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
-                         (modIds: string[]) => {
+    (modIds: string[]) => {
       const state = context.api.store.getState();
       const profile: types.IProfile = selectors.activeProfile(state);
       context.api.events.emit('install-recommendations', profile.id, modIds);
@@ -163,39 +179,42 @@ function init(context: types.IExtensionContext): boolean {
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0])
-      .catch(err => context.api.showErrorNotification('Failed to init collection', err));
+        .catch(err => context.api.showErrorNotification('Failed to init collection', err));
     }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0])
-      .catch(err => context.api.showErrorNotification('Failed to init collection', err));
+        .catch(err => context.api.showErrorNotification('Failed to init collection', err));
     }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
 
+  context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
+
   context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));
+}
 
-  context.once(() => {
-    driver = new InstallDriver(context.api);
-    context.api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
+function once(api: types.IExtensionApi, collectionsCB: CallbackMap) {
+  const { store } = api;
 
-    context.api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
-      // automatically enable modpacks once they're installed
-      const { store } = context.api;
-      const state: types.IState = store.getState();
-      const profileId = selectors.lastActiveProfileForGame(state, gameId);
-      const profile = selectors.profileById(state, profileId);
-      if (profile === undefined) {
-        return;
-      }
-      const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
-      if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
-        driver.start(profile, mod);
-      }
-    });
+  driver = new InstallDriver(api);
+  api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
-    context.api.events.on('did-install-dependencies',
-                          async (profileId: string, modId: string, recommendations: boolean) => {
-      const { store } = context.api;
+  api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
+    // automatically enable modpacks once they're installed
+    const state: types.IState = store.getState();
+    const profileId = selectors.lastActiveProfileForGame(state, gameId);
+    const profile = selectors.profileById(state, profileId);
+    if (profile === undefined) {
+      return;
+    }
+    const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
+    if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
+      driver.start(profile, mod);
+    }
+  });
+
+  api.events.on('did-install-dependencies',
+    async (profileId: string, modId: string, recommendations: boolean) => {
       const state: types.IState = store.getState();
       const profile = selectors.profileById(state, profileId);
       const stagingPath = selectors.installPathForGame(state, profile.gameId);
@@ -207,7 +226,7 @@ function init(context: types.IExtensionContext): boolean {
             path.join(stagingPath, mod.installationPath, 'modpack.json'),
             { encoding: 'utf-8' });
           const modpack: IModPack = JSON.parse(modPackData);
-          postprocessPack(context.api, profile, modpack, mods);
+          postprocessPack(api, profile, modpack, mods);
         } catch (err) {
           log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
             + 'platform where the collection has been created.');
@@ -215,69 +234,61 @@ function init(context: types.IExtensionContext): boolean {
       }
     });
 
-    context.api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(context.api));
+  api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
 
-    context.api.events.on('did-download-collection', async (dlId: string) => {
-      try {
-        let state: () => types.IState = () => context.api.store.getState();
-        const dlInfo: types.IDownload = util.getSafe(state().persistent.downloads.files, [dlId], undefined);
-        const profile = selectors.activeProfile(state());
-        if (!dlInfo.game.includes(profile.gameId)) {
-          log('info', 'Collection downloaded for a different game than is being managed', { gameMode: profile.gameId, game: dlInfo.game });
-          context.api.sendNotification({
-            message: 'The collection you downloaded is for a different game and thus can\'t be installed right now.',
-            type: 'info',
-          });
+  api.events.on('did-download-collection', async (dlId: string) => {
+    try {
+      let state: () => types.IState = () => store.getState();
+      const dlInfo: types.IDownload = util.getSafe(state().persistent.downloads.files, [dlId], undefined);
+      const profile = selectors.activeProfile(state());
+      if (!dlInfo.game.includes(profile.gameId)) {
+        log('info', 'Collection downloaded for a different game than is being managed', { gameMode: profile.gameId, game: dlInfo.game });
+        api.sendNotification({
+          message: 'The collection you downloaded is for a different game and thus can\'t be installed right now.',
+          type: 'info',
+        });
 
-          // the collection was for a different game, can't install it now
-          return;
-        }
-
-        const modId = await (util as any).toPromise(cb => context.api.events.emit('start-install-download', dlId, undefined, cb));
-    /*
-        const modInfo: types.IMod = util.getSafe(state().persistent.mods, [profile.gameId, modId], undefined);
-        if (modInfo === undefined) {
-          throw new Error('Collection mod not found');
-        }
-        const choice = await context.api.showDialog('info', 'Collection added', {
-          text: util.renderModName(modInfo),
-        }, [
-          { label: 'Install later' },
-          { label: 'Start' },
-        ]);
-
-        if (choice.action === 'Start') {
-          context.api.store.dispatch(actions.setModEnabled(profile.id, modId, true));
-        }
-    */
-      } catch (err) {
-        context.api.showErrorNotification('Failed to add collection', err);
+        // the collection was for a different game, can't install it now
+        return;
       }
-    });
+    } catch (err) {
+      api.showErrorNotification('Failed to add collection', err);
+    }
+  });
 
-    context.api.events.on('view-collection', collectionId => {
-      context.api.events.emit('show-main-page', 'Collections');
-      // have to delay this a bit because the callbacks are only set up once the page
-      // is first opened
-      setTimeout(() => {
-        if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
-          collectionsCB.viewCollection(collectionId);
-        }
-      }, 100);
-    });
+  api.events.on('view-collection', collectionId => {
+    api.events.emit('show-main-page', 'Collections');
+    // have to delay this a bit because the callbacks are only set up once the page
+    // is first opened
+    setTimeout(() => {
+      if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
+        collectionsCB.viewCollection(collectionId);
+      }
+    }, 100);
+  });
 
-    context.api.events.on('edit-collection', collectionId => {
-      context.api.events.emit('show-main-page', 'Collections');
-      // have to delay this a bit because the callbacks are only set up once the page
-      // is first opened
-      setTimeout(() => {
-        if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
-          collectionsCB.editCollection(collectionId);
-        }
-      }, 100);
-    });
+  api.events.on('edit-collection', collectionId => {
+    api.events.emit('show-main-page', 'Collections');
+    // have to delay this a bit because the callbacks are only set up once the page
+    // is first opened
+    setTimeout(() => {
+      if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
+        collectionsCB.editCollection(collectionId);
+      }
+    }, 100);
+  });
 
-    return util.installIconSet('modpacks', path.join(__dirname, 'icons.svg'));
+  util.installIconSet('modpacks', path.join(__dirname, 'icons.svg'))
+    .catch(err => api.showErrorNotification('failed to install icon set', err));
+}
+
+function init(context: types.IExtensionContext): boolean {
+  let collectionsCB: CallbackMap;
+
+  register(context, (callbacks: { [cbName: string]: (...args: any[]) => void }) => collectionsCB = callbacks);
+
+  context.once(() => {
+    once(context.api, collectionsCB);
   });
   return true;
 }

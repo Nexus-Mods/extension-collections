@@ -40,16 +40,16 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
         return prev;
       }, { pending: [], downloading: [], installing: [], done: [] });
 
-    if ((downloading.length === 0) && (installing.length === 0)) {
+    if ((downloading.length === 0) && (installing.length === 0) && (pending.length === 0)) {
       return null;
     }
 
     const downloadProgress = Object.values(mods).reduce((prev, mod) => {
       let size = 0;
-      if (['installed', 'installing'].includes(mod.state)) {
-        size += util.getSafe(mod, ['attributes', 'fileSize'], 0);
-      } else {
+      if (mod.state === 'downloading') {
         size += util.getSafe(mod, ['attributes', 'received'], 0);
+      } else {
+        size += util.getSafe(mod, ['attributes', 'fileSize'], 0);
       }
       return prev + size;
     }, 0);
@@ -65,14 +65,12 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
               labelRight={
                 `${util.bytesToString(downloadProgress)} / ${util.bytesToString(totalSize)}`}
             />
-            {(installing.length > 0) ? (
-              <ProgressBar
-                now={done.length}
-                max={Object.keys(mods).length}
-                labelLeft={t('Installing')}
-                labelRight={util.renderModName(installing[0])}
-              />
-            ) : null}
+            <ProgressBar
+              now={done.length}
+              max={Object.keys(mods).length}
+              labelLeft={installing.length > 0 ? t('Installing') : t('Waiting to install')}
+              labelRight={installing.length > 0 ? util.renderModName(installing[0]) : undefined}
+            />
           </FlexLayout>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
