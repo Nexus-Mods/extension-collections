@@ -14,9 +14,11 @@ import { doExportToFile } from './modpackExport';
 import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
+import memoize from 'memoize-one';
 import * as path from 'path';
+import * as React from 'react';
 import { generate as shortid } from 'shortid';
-import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 
 function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -106,6 +108,24 @@ function genAttributeExtractor(api: types.IExtensionApi) {
   };
 }
 
+function generateCollectionMap(mods: { [modId: string]: types.IMod }): { [modId: string]: types.IMod[] } {
+  const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
+
+  const result: { [modId: string]: types.IMod[] } = {};
+
+  collections.forEach(coll => coll.rules.forEach(rule => {
+    if (rule.reference.id !== undefined) {
+      util.setdefault(result, rule.reference.id, []).push(coll);
+    }
+  }));
+
+  return result;
+}
+
+function generateCollectionOptions(mods: { [modId: string]: types.IMod }): Array<{ label: string, value: string }> {
+  return Object.values(mods).filter(mod => mod.type === MOD_TYPE).map(mod => ({ label: util.renderModName(mod), value: mod.id }));
+}
+
 type CallbackMap = { [cbName: string]: (...args: any[]) => void };
 
 function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: CallbackMap) => void) {
@@ -141,6 +161,39 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
     () => undefined, () => PromiseBB.resolve(false), {
     name: 'Collection',
   });
+
+  const state: () => types.IState = () => context.api.store.getState();
+
+  const collectionsMap = () => memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())]);
+  const collectionOptions = memoize(generateCollectionOptions);
+
+  context.registerTableAttribute('mods', {
+    id: 'collection',
+    name: 'Collection',
+    description: 'Collection(s) this mod was installed from (if any)',
+    icon: 'collection',
+    placement: 'both',
+    customRenderer: (mod: types.IMod) => {
+      const gameMode = selectors.activeGameId(state());
+      const collections = collectionsMap()[mod.id];
+      const collectionsString = (collections === undefined)
+        ? '' : collections.map(mod => util.renderModName(mod)).join(', ');
+
+      return React.createElement('div', {}, collectionsString);
+    },
+    calc: (mod: types.IMod) => {
+      const gameMode = selectors.activeGameId(state());
+      const collections = collectionsMap()[mod.id];
+      return (collections === undefined)
+        ? '': collections.map(mod => mod.id);
+    },
+    isToggleable: true,
+    edit: {},
+    filter: new OptionsFilter((() => collectionOptions(state().persistent.mods[selectors.activeGameId(state())])) as any, false, false),
+    isGroupable: true,
+    groupName: (modId: string) => util.renderModName(state().persistent.mods[selectors.activeGameId(state())][modId]),
+    isDefaultVisible: false,
+  } as types.ITableAttribute<types.IMod>);
 
   context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
     (modIds: string[]) => {

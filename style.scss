@@ -475,6 +475,10 @@ $collection-thumbnail-height: 320px;
   }
 }
 
+.table-mods.cell-collection {
+  white-space: nowrap;
+}
+
 .collection-progress-flex {
   padding: $half-gutter;
   justify-content: space-evenly;
