@@ -255,6 +255,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       return prev;
     }, {});
 
+    const TableX: any = Table;
+
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed>
@@ -278,12 +280,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         <FlexLayout.Flex fill={true} className='collection-mods-panel'>
           <Panel>
             <Panel.Body>
-              <Table
+              <TableX
                 tableId='mods'
                 showDetails={true}
                 data={modsFinal}
                 staticElements={this.mAttributes}
                 actions={this.mModActions}
+                columnBlacklist={['collection']}
               />
             </Panel.Body>
           </Panel>
