@@ -1,6 +1,8 @@
 import { startEditModPack } from './actions/session';
 import sessionReducer from './reducers/session';
+import persistentReducer from './reducers/persistent';
 import { IModPack } from './types/IModPack';
+import InfoCache from './util/InfoCache';
 import InstallDriver from './util/InstallDriver';
 import { createModpack, makeModpackId } from './util/modpack';
 import { bbProm } from './util/util';
@@ -75,6 +77,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 }
 
 let driver: InstallDriver;
+let cache: InfoCache;
 
 function createCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
   const id = makeModpackId(shortid());
@@ -131,7 +134,8 @@ type CallbackMap = { [cbName: string]: (...args: any[]) => void };
 function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: CallbackMap) => void) {
   let collectionsCB: CallbackMap;
 
-  context.registerReducer(['session', 'modpack'], sessionReducer);
+  context.registerReducer(['session', 'collections'], sessionReducer);
+  context.registerReducer(['persistent', 'collections'], persistentReducer);
 
   context.registerDialog('modpack-edit', EditDialog, () => ({
     onClose: () => context.api.store.dispatch(startEditModPack(undefined)),
@@ -148,6 +152,7 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
+      cache,
       onSetupCallbacks: (callbacks: CallbackMap) => {
         collectionsCB = callbacks;
         onSetCallbacks(callbacks);
@@ -250,6 +255,7 @@ function once(api: types.IExtensionApi, collectionsCB: CallbackMap) {
   const { store } = api;
 
   driver = new InstallDriver(api);
+  cache = new InfoCache(api);
   api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
   api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {

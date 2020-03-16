@@ -194,7 +194,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 const emptyObject = {};
 
 function mapStateToProps(state: types.IState): IConnectedProps {
-  const { modId } = (state.session as any).modpack;
+  const { modId } = (state.session as any).collections;
   const profile = selectors.activeProfile(state);
   const gameMode = profile !== undefined
     ? profile.gameId

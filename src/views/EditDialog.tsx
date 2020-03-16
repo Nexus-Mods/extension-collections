@@ -210,7 +210,7 @@ const emptyModPackInfo: IModPackInfo = {
 };
 
 function mapStateToProps(state: any): IConnectedProps {
-  const { modId } = state.session.modpack;
+  const { modId } = state.session.collections;
   const profile = selectors.activeProfile(state);
   const gameMode = profile !== undefined
     ? profile.gameId

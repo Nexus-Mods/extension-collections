@@ -1,6 +1,8 @@
+import { updateSuccessRate } from '../../actions/persistent';
 import { MOD_TYPE, NAMESPACE } from '../../constants';
 import { doExportToAPI } from '../../modpackExport';
 import { findModByRef, findDownloadIdByRef } from '../../util/findModByRef';
+import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';
 
 import CollectionEdit from './CollectionEdit';
@@ -21,6 +23,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   secondary: boolean;
 
   driver: InstallDriver;
+  cache: InfoCache;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
 }
@@ -118,6 +121,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 t={t}
                 className='collection-details'
                 driver={this.props.driver}
+                cache={this.props.cache}
                 profile={profile}
                 collection={collection}
                 mods={mods}
@@ -126,6 +130,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 onView={this.view}
                 onPause={this.pause}
                 onCancel={this.cancel}
+                onVoteSuccess={this.voteSuccess}
               />
             )
               : (
@@ -214,6 +219,24 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           }
         }
       }));
+    }
+  }
+
+  private voteSuccess = async (modId: string, success: boolean) => {
+    const { mods } = this.props;
+    const { api } = this.context;
+
+    const collection = mods[modId];
+
+    const { collectionId, revisionId } = collection.attributes;
+    
+    if (revisionId === undefined) {
+      return;
+    }
+
+    const voted = (api.emitAndAwait('rate-collection', parseInt(revisionId, 10), success ? 10 : -10))[0];
+    if (voted) {
+      api.store.dispatch(updateSuccessRate(collectionId, revisionId, success));
     }
   }
 

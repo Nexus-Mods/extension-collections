@@ -1,22 +1,27 @@
 import CollectionThumbnail from './CollectionThumbnail';
+import HealthIndicator from '../HealthIndicator';
 
 import i18next from 'i18next';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
+import { IRevisionDetailed } from 'nexus-api';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
   gameId: string;
   collection: types.IMod;
   totalSize: number;
+  revision: IRevisionDetailed;
+  votedSuccess: boolean;
   onClose: () => void;
+  onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, gameId, totalSize } = this.props;
+    const { t, collection, gameId, revision, totalSize, votedSuccess } = this.props;
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
@@ -76,6 +81,12 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                 </div>
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
+                <HealthIndicator
+                  t={t}
+                  value={revision !== undefined ? revision.success_rate : undefined}
+                  onVoteSuccess={this.voteSuccess}
+                  ownSuccess={votedSuccess}
+                />
                 <tooltip.IconButton
                   tooltip={t('Opens the collection page in your webbrowser')}
                   icon='open-in-browser'
@@ -88,6 +99,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
         </Media>
       </Panel>
     );
+  }
+
+  private voteSuccess = (success: boolean) => {
+    const { collection, onVoteSuccess } = this.props;
+    onVoteSuccess(collection.id, success);
   }
 }
 

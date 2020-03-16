@@ -78,9 +78,9 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
                 <tooltip.IconButton icon='showhide-left' tooltip={t('Show first mod')} disabled={displayModIdx === 0} onClick={this.first} />
-                <tooltip.IconButton icon='navback-left' tooltip={t('Show previous mod')} disabled={displayModIdx === 0} onClick={this.prev} />
+                <tooltip.IconButton icon='nav-back' tooltip={t('Show previous mod')} disabled={displayModIdx === 0} onClick={this.prev} />
                 {t('{{pos}} of {{count}}', { replace: { pos: displayModIdx + 1, count: modCount } })}
-                <tooltip.IconButton icon='navback-right' tooltip={t('Show next mod')} disabled={displayModIdx === modCount - 1} onClick={this.next}/>
+                <tooltip.IconButton icon='nav-forward' tooltip={t('Show next mod')} disabled={displayModIdx === modCount - 1} onClick={this.next}/>
                 <tooltip.IconButton icon='showhide-right' tooltip={t('Show last mod')} disabled={displayModIdx === modCount - 1} onClick={this.last}/>
               </FlexLayout.Fixed>
             </FlexLayout>

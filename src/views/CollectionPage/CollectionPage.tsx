@@ -1,5 +1,6 @@
 import { AUTHOR_UNKNOWN } from '../../constants';
 import { findDownloadIdByRef, findModByRef, testDownloadReference } from '../../util/findModByRef';
+import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';
 
 import { IModEx } from '../../types/IModEx';
@@ -18,6 +19,7 @@ import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
          TableTextFilter, types, util } from 'vortex-api';
+import { IRevisionDetailed } from 'nexus-api';
 
 export interface ICollectionPageProps {
   t: i18next.TFunction;
@@ -25,16 +27,19 @@ export interface ICollectionPageProps {
   profile: types.IProfile;
   collection: types.IMod;
   driver: InstallDriver;
+  cache: InfoCache;
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
   onView: (modId: string) => void;
   onPause: (collectionId: string) => void;
   onCancel: (collectionId: string) => void;
+  onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
 
 interface IConnectedProps {
-
+  userInfo: any;
+  votedSuccess: boolean;
 }
 
 interface IActionProps {
@@ -44,6 +49,7 @@ interface IActionProps {
 
 interface IComponentState {
   modsEx: { [modId: string]: IModEx };
+  revisionInfo: IRevisionDetailed;
 }
 
 const getCollator = (() => {
@@ -70,6 +76,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     super(props);
     this.initState({
       modsEx: {},
+      revisionInfo: undefined,
     });
 
     this.mModActions = [
@@ -114,6 +121,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               mod={mod}
               notifications={this.props.notifications}
               download={download}
+              userInfo={this.props.userInfo}
+              onStartFreeDownloads={this.startFreeDownload}
             />
           );
         },
@@ -202,34 +211,45 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     ];
   }
 
-  public componentWillMount() {
+  public async componentDidMount() {
+    const { collection } = this.props;
     this.nextState.modsEx = this.initModsEx(this.props);
+    if (collection.attributes.revisionId !== undefined) {
+      this.nextState.revisionInfo = await this.props.cache.getRevisionInfo(collection.attributes.collectionId, collection.attributes.revisionId);
+    }
   }
 
-  public componentWillReceiveProps(newProps: ICollectionPageProps) {
+  public async componentWillReceiveProps(newProps: ICollectionPageProps) {
     if ((this.props.mods !== newProps.mods)
         || (this.props.profile !== newProps.profile)
         || (this.props.collection !== newProps.collection)
         || (this.props.downloads !== newProps.downloads)
         || this.installingNotificationsChanged(this.props, newProps)) {
       this.nextState.modsEx = this.updateModsEx(this.props, newProps);
+      const { collection } = this.props;
+      if (collection.attributes.revisionId !== undefined) {
+        this.nextState.revisionInfo = await this.props.cache.getRevisionInfo(collection.attributes.collectionId, collection.attributes.revisionId);
+      }
     }
   }
 
-  public shouldComponentUpdate(newProps: ICollectionPageProps) {
+  public shouldComponentUpdate(newProps: ICollectionPageProps, newState: IComponentState) {
     if ((this.props.mods !== newProps.mods)
         || (this.props.profile !== newProps.profile)
         || (this.props.downloads !== newProps.downloads)
         || (this.props.collection !== newProps.collection)
-        || this.installingNotificationsChanged(this.props, newProps)) {
+        || this.installingNotificationsChanged(this.props, newProps)
+        || (this.state.revisionInfo !== newState.revisionInfo)) {
       return true;
     }
     return false;
   }
 
   public render(): JSX.Element {
-    const { t, className, collection, driver, downloads, profile } = this.props;
-    const { modsEx } = this.state;
+    const { t, className, collection, driver, downloads, onVoteSuccess, profile, votedSuccess } = this.props;
+    const { modsEx, revisionInfo } = this.state;
+
+    console.log('render collection page', revisionInfo);
 
     if (collection === undefined) {
       return null;
@@ -274,6 +294,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 collection={collection}
                 totalSize={totalSize}
                 onClose={this.close}
+                onVoteSuccess={onVoteSuccess}
+                revision={revisionInfo}
+                votedSuccess={votedSuccess}
               />
             )}
         </FlexLayout.Fixed>
@@ -655,10 +678,26 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         return prev;
       }, {});
   }
+
+  private startFreeDownload = () => {
+
+  }
 }
 
-function mapStateToProps(state: types.IState): IConnectedProps {
-  return {};
+function mapStateToProps(state: types.IState, ownProps: ICollectionPageProps): IConnectedProps {
+  const { nexus } = state.persistent as any;
+  const { collection } = ownProps;
+
+  let votedSuccess = undefined;
+  if ((collection !== undefined) && (collection.attributes.revisionId !== undefined)) {
+    const { collectionId, revisionId } = collection.attributes;
+    votedSuccess = (state.persistent as any).collections[collectionId].revisions[revisionId].success;
+  }
+
+  return {
+    userInfo: nexus.userInfo,
+    votedSuccess,
+  };
 }
 
 function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {

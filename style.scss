@@ -621,3 +621,9 @@ $collection-thumbnail-height: 320px;
     overflow: auto;
   }
 }
+
+.collection-health-indicator {
+  .icon-button {
+    @extend .btn-embed;
+  }
+}
