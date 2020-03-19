@@ -78,14 +78,21 @@ export async function postprocessPack(api: types.IExtensionApi,
     }
   });
 
+  /* this is now done through the "extra" attribute in the mod rules
   modpack.mods.forEach(iter => {
     const rule = modPackModToRule(iter);
     const mod = findModByRef(rule.reference, mods);
-    if ((mod !== undefined) && (mod.attributes['customFileName'] === undefined)) {
-      api.store.dispatch(
-        actions.setModAttribute(profile.gameId, mod.id, 'customFileName', iter.name));
+    if (mod !== undefined) {
+      if (mod.attributes['customFileName'] === undefined) {
+        api.store.dispatch(
+          actions.setModAttribute(profile.gameId, mod.id, 'customFileName', iter.name));
+      }
+      if (iter.details.type !== undefined) {
+        api.store.dispatch(actions.setModType(profile.gameId, mod.id, iter.details.type));
+      }
     }
   });
+  */
 
   parseGameSpecifics(api, profile.gameId, modpack);
 }

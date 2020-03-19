@@ -2,22 +2,21 @@ import { IModEx } from '../../types/IModEx';
 
 import i18next from 'i18next';
 import * as React from 'react';
-import { ProgressBar } from 'react-bootstrap';
-import { Spinner, types } from 'vortex-api';
-import * as vortex from 'vortex-api';
-
-const { SelectUpDown } = vortex as any;
+import { ProgressBar, Button } from 'react-bootstrap';
+import { SelectUpDown, Spinner, types } from 'vortex-api';
 
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;
   mod: IModEx;
   download: types.IDownload;
   notifications: types.INotification[];
+  onStartFreeDownloads: (mod: IModEx) => void;
+  userInfo: any;
 }
 
 class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {}> {
   public render(): JSX.Element {
-    const { t, mod } = this.props;
+    const { t, mod, userInfo } = this.props;
 
     if (mod.state === 'installed') {
       const options = [
@@ -65,6 +64,12 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
     } else {
       return <div><Spinner />{t('Download pending')}</div>;
     }
+  }
+
+  private generateLinks = () => {
+    const { mod, onStartFreeDownloads } = this.props;
+    // should be taking user to the site
+    onStartFreeDownloads(mod);
   }
 
   private changeDownloaded = (input) => {
