@@ -1,4 +1,4 @@
-import { AUTHOR_UNKNOWN } from '../../constants';
+import { AUTHOR_UNKNOWN, AVATAR_FALLBACK } from '../../constants';
 import { findDownloadIdByRef, findModByRef, testDownloadReference } from '../../util/findModByRef';
 import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';
@@ -13,13 +13,13 @@ import CollectionProgress, { ICollectionProgressProps } from './CollectionProgre
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
+import { IRevisionDetailed, IRevisionModInfo } from 'nexus-api';
 import * as React from 'react';
 import { Image, Nav, NavItem, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
          TableTextFilter, types, util } from 'vortex-api';
-import { IRevisionDetailed } from 'nexus-api';
 
 export interface ICollectionPageProps {
   t: i18next.TFunction;
@@ -121,8 +121,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               mod={mod}
               notifications={this.props.notifications}
               download={download}
-              userInfo={this.props.userInfo}
-              onStartFreeDownloads={this.startFreeDownload}
             />
           );
         },
@@ -177,18 +175,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       {
         id: 'author',
         name: 'Author',
-        customRenderer: (mod: IModEx) => (mod !== undefined)
-          ? (
-            <div>
-              <Image circle src='assets/images/noavatar.png' />
-              {util.getSafe(mod.attributes, ['author'], undefined) || this.props.t(AUTHOR_UNKNOWN)}
-            </div>
-          ) : (
-            <div>
-              <Image circle src='assets/images/noavatar.png' />
-              {this.props.t(AUTHOR_UNKNOWN)}
-            </div>
-          ),
         calc: mod => (mod !== undefined)
           ? util.getSafe(mod.attributes, ['author'], undefined) || this.props.t(AUTHOR_UNKNOWN)
           : this.props.t(AUTHOR_UNKNOWN),
@@ -198,25 +184,62 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         isSortable: true,
       },
       {
+        id: 'uploader',
+        name: 'Uploader',
+        customRenderer: (mod: IModEx) => {
+          const { t } = this.props;
+          if (mod === undefined) {
+            return (
+              <div>
+                <Image circle src={AVATAR_FALLBACK} />
+                {t(AUTHOR_UNKNOWN)}
+              </div>
+            );
+          }
+
+          const revMods = this.state.revisionInfo?.collection_revision_mods || [];
+          const revMod = revMods.find(iter => iter.mod.mod_id === mod.attributes.modId);
+
+          const name = revMod?.mod.uploader.name;
+          const avatar = revMod?.mod.uploader.avatar?.url || AVATAR_FALLBACK;
+
+          return (
+            <div>
+              <Image circle src={avatar} />
+              {name}
+            </div>
+          );
+        },
+        calc: mod => mod?.attributes?.author || this.props.t(AUTHOR_UNKNOWN),
+        placement: 'table',
+        edit: {},
+        isToggleable: true,
+        isSortable: true,
+      },
+      {
         id: 'size',
         name: 'Size',
-        calc: mod => util.bytesToString(util.getSafe(mod, ['attributes', 'fileSize'], 0)),
+        calc: mod => util.bytesToString(mod?.attributes?.fileSize || 0),
         placement: 'table',
         edit: {},
         isSortable: true,
-        sortFuncRaw: (lhs, rhs) =>
-          util.getSafe(lhs, ['attributes', 'fileSize'], 0)
-          - util.getSafe(rhs, ['attributes', 'fileSize'], 0),
+        sortFuncRaw: (lhs, rhs) => (lhs.attributes?.fileSize || 0 - rhs.attributes?.fileSize),
       },
     ];
   }
 
   public async componentDidMount() {
     const { collection } = this.props;
-    this.nextState.modsEx = this.initModsEx(this.props);
+
+    let revisionInfo: IRevisionDetailed;
     if (collection.attributes.revisionId !== undefined) {
-      this.nextState.revisionInfo = await this.props.cache.getRevisionInfo(collection.attributes.collectionId, collection.attributes.revisionId);
+      revisionInfo = await this.props.cache.getRevisionInfo(collection.attributes.collectionId,
+                                                            collection.attributes.revisionId);
+      this.nextState.revisionInfo = revisionInfo;
     }
+
+    const modsEx = this.initModsEx(this.props);
+    this.nextState.modsEx = modsEx;
   }
 
   public async componentWillReceiveProps(newProps: ICollectionPageProps) {
@@ -228,7 +251,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       this.nextState.modsEx = this.updateModsEx(this.props, newProps);
       const { collection } = this.props;
       if (collection.attributes.revisionId !== undefined) {
-        this.nextState.revisionInfo = await this.props.cache.getRevisionInfo(collection.attributes.collectionId, collection.attributes.revisionId);
+        this.nextState.revisionInfo =
+          await this.props.cache.getRevisionInfo(collection.attributes.collectionId,
+                                                 collection.attributes.revisionId);
       }
     }
   }
@@ -239,14 +264,16 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || (this.props.downloads !== newProps.downloads)
         || (this.props.collection !== newProps.collection)
         || this.installingNotificationsChanged(this.props, newProps)
-        || (this.state.revisionInfo !== newState.revisionInfo)) {
+        || (this.state.revisionInfo !== newState.revisionInfo)
+        || (this.state.modsEx !== newState.modsEx)) {
       return true;
     }
     return false;
   }
 
   public render(): JSX.Element {
-    const { t, className, collection, driver, downloads, onVoteSuccess, profile, votedSuccess } = this.props;
+    const { t, className, collection, driver, downloads,
+            onVoteSuccess, profile, votedSuccess } = this.props;
     const { modsEx, revisionInfo } = this.state;
 
     console.log('render collection page', revisionInfo);
@@ -280,7 +307,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed>
-          {incomplete && (driver.revisionInfo !== undefined) && (driver.collection.id === collection.id)
+          {incomplete
+            && (driver.revisionInfo !== undefined)
+            && (driver.collection.id === collection.id)
             ? (
               <CollectionOverviewInstalling
                 t={t}
@@ -603,7 +632,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           if (match !== undefined) {
             result[match] = {
               ...mod,
-              ...profile.modState[mod.id],
+              ...(profile.modState || {})[mod.id],
               collectionRule: modsEx[match].collectionRule,
             };
           }
@@ -658,7 +687,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           installationPath: undefined,
           attributes: {
             fileSize: rule.reference.fileSize,
-            author: util.getSafe(rule, ['extra', 'author'], undefined),
+            ...(rule.extra || {}),
           },
           enabled: false,
           collectionRule: rule,
@@ -667,7 +696,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     }
   }
 
-  private initModsEx(props: ICollectionPageProps): { [modId: string]: IModEx } {
+  private initModsEx(props: ICollectionPageProps)
+                     : { [modId: string]: IModEx } {
     const { collection } = props;
 
     return (collection.rules || [])
@@ -678,20 +708,22 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         return prev;
       }, {});
   }
-
-  private startFreeDownload = () => {
-
-  }
 }
 
 function mapStateToProps(state: types.IState, ownProps: ICollectionPageProps): IConnectedProps {
   const { nexus } = state.persistent as any;
   const { collection } = ownProps;
 
-  let votedSuccess = undefined;
+  let votedSuccess;
+
   if ((collection !== undefined) && (collection.attributes.revisionId !== undefined)) {
     const { collectionId, revisionId } = collection.attributes;
-    votedSuccess = (state.persistent as any).collections[collectionId].revisions[revisionId].success;
+    const collectionInfo = (state.persistent as any).collections[collectionId];
+    votedSuccess = ((collectionInfo !== undefined)
+                    && (collectionInfo.revisions !== undefined)
+                    && (collectionInfo.revisions[revisionId] !== undefined))
+       ? collectionInfo.revisions[revisionId].success
+       : false;
   }
 
   return {

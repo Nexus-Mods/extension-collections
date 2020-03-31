@@ -3,11 +3,6 @@ import InstallDriver, { Step } from '../../util/InstallDriver';
 
 import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
 
-import InstallDialogDisclaimer from './Disclaimer';
-import InstallDialogInstalling from './Installing';
-import InstallDialogReview from './Review';
-import InstallDialogStart from './Start';
-
 import * as React from 'react';
 import { Button, Media } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
@@ -60,7 +55,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   public render(): React.ReactNode {
     const { t, driver, profile } = this.props;
 
-    if (driver === undefined) {
+    if ((driver === undefined) || (profile === undefined)) {
       return null;
     }
 
@@ -71,7 +66,13 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
       <Modal show={(driver.collection !== undefined) && (driver.step === 'start')} onHide={nop}>
         <Modal.Body>
           <Media.Left>
-            <CollectionThumbnail t={t} gameId={profile.gameId} collection={driver.collection} details={true} imageTime={42} />
+            <CollectionThumbnail
+              t={t}
+              gameId={profile.gameId}
+              collection={driver.collection}
+              details={true}
+              imageTime={42}
+            />
           </Media.Left>
           <Media.Right>
             <h5>{game.name}</h5>

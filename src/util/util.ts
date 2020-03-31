@@ -62,3 +62,7 @@ export function makeProgressFunction(api: types.IExtensionApi) {
 export function bbProm<T>(func: (...args: any[]) => Promise<T>): (...args: any[]) => PromiseBB<T> {
   return (...args: any[]) => PromiseBB.resolve(func(...args));
 }
+
+export function getUnfulfilledNotificationId(collectionId: string) {
+  return `collection-incomplete-${collectionId}`;
+}

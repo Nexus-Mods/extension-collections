@@ -1,8 +1,8 @@
-import { findModByRef } from './findModByRef';
-
 import * as Promise from 'bluebird';
-import { actions, log, types, util } from 'vortex-api';
 import { IRevisionDetailed } from 'nexus-api';
+import { actions, log, types, util } from 'vortex-api';
+import { findModByRef } from './findModByRef';
+import { getUnfulfilledNotificationId } from './util';
 
 export type Step = 'start' | 'disclaimer' | 'installing' | 'review';
 
@@ -54,9 +54,9 @@ class InstallDriver {
       });
   }
 
-  public async start(profile: types.IProfile, modpack: types.IMod) {
+  public async start(profile: types.IProfile, collection: types.IMod) {
     this.mProfile = profile;
-    this.mCollection = modpack;
+    this.mCollection = collection;
     this.mStep = 'start';
     this.mInstalledMods = [];
     this.mInstallingMod = undefined;
@@ -65,16 +65,18 @@ class InstallDriver {
     const state: types.IState = this.mApi.store.getState();
     const mods = state.persistent.mods[this.mProfile.gameId];
 
-    const collectionId = util.getSafe(modpack.attributes, ['collectionId'], undefined);
-    const revisionId = util.getSafe(modpack.attributes, ['revisionId'], undefined);
+    const collectionId = util.getSafe(collection.attributes, ['collectionId'], undefined);
+    const revisionId = util.getSafe(collection.attributes, ['revisionId'], undefined);
     if ((collectionId !== undefined) && (revisionId !== undefined)) {
-      this.mRevisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision', collectionId, revisionId))[0];
+      this.mRevisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision',
+                                                         collectionId,
+                                                         revisionId))[0];
       if (Array.isArray(this.mRevisionInfo)) {
         this.mRevisionInfo = this.mRevisionInfo[0];
       }
     }
 
-    this.mApi.store.dispatch(actions.setDialogVisible('modpack-install'));
+    this.mApi.store.dispatch(actions.setDialogVisible('collection-install'));
 
     this.mApi.sendNotification({
       id: 'installing-modpack',
@@ -84,13 +86,16 @@ class InstallDriver {
         {
           title: 'Show',
           action: () => {
-            this.mApi.store.dispatch(actions.setDialogVisible('modpack-install'));
+            this.mApi.store.dispatch(actions.setDialogVisible('collection-install'));
           },
         },
       ],
     });
 
-    const required = modpack.rules
+    this.mApi.dismissNotification(getUnfulfilledNotificationId(collection.id));
+    this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
+
+    const required = collection.rules
       .filter(rule => rule.type === 'requires');
     this.mRequiredMods = required
       .filter(rule => findModByRef(rule.reference, mods) === undefined);

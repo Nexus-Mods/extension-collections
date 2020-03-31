@@ -1,12 +1,13 @@
 import CollectionThumbnail from './CollectionThumbnail';
+
 import HealthIndicator from '../HealthIndicator';
 
 import i18next from 'i18next';
+import { IRevisionDetailed } from 'nexus-api';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
-import { IRevisionDetailed } from 'nexus-api';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
@@ -30,7 +31,13 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
       <Panel className='collection-overview'>
         <Media>
           <Media.Left>
-            <CollectionThumbnail t={t} imageTime={Date.now()} collection={collection} gameId={gameId} details={false} />
+            <CollectionThumbnail
+              t={t}
+              imageTime={Date.now()}
+              collection={collection}
+              gameId={gameId}
+              details={false}
+            />
           </Media.Left>
           <Media.Body>
             <FlexLayout type='column'>

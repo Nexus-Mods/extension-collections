@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { IconBar, PureComponentEx, selectors, types, util, Icon } from 'vortex-api';
+import { Icon, IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 
 export interface IBaseProps {
@@ -29,51 +29,10 @@ interface IConnectedProps {
 type IProps = IBaseProps & IConnectedProps;
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
-  private mActions: types.IActionDefinition[] = [];
-
   constructor(props: IProps) {
     super(props);
 
     this.initState({ incomplete: false });
-  }
-
-  public componentWillMount() {
-    const { incomplete, onEdit, onPublish, onRemove, onResume, onView } = this.props;
-
-    if (onView) {
-      this.mActions.push({
-        title: incomplete ? 'Resume' : 'View',
-        icon: 'show',
-        action: (instanceIds: string[]) => {
-          if (incomplete && (onResume !== undefined)) {
-            onResume(instanceIds[0]);
-          }
-          onView(instanceIds[0]);
-        },
-      });
-    }
-    if (onEdit) {
-      this.mActions.push({
-        title: 'Edit',
-        icon: 'edit',
-        action: (instanceIds: string[]) => onEdit(instanceIds[0]),
-      });
-    }
-    if (onRemove) {
-      this.mActions.push({
-        title: 'Remove',
-        icon: 'remove',
-        action: (instanceIds: string[]) => onRemove(instanceIds[0]),
-      });
-    }
-
-    if (onPublish) {
-      this.mActions.push({
-        title: 'Publish',
-        icon: 'clone',
-        action: (instanceIds: string[]) => onPublish(instanceIds[0]),
-      });
-    }
   }
 
   public render(): JSX.Element {
@@ -128,7 +87,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               </div>
             </div>
           ) : null}
-          {(this.mActions.length > 0) ? (
+          {(this.actions.length > 0) ? (
             <div className='hover-menu'>
               {this.renderMenu()}
             </div>
@@ -138,12 +97,56 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     );
   }
 
+  private get actions() {
+    const { incomplete, onEdit, onPublish, onRemove, onResume, onView } = this.props;
+
+    const result = [];
+
+    if (onView) {
+      result.push({
+        title: incomplete ? 'Resume' : 'View',
+        icon: 'show',
+        action: (instanceIds: string[]) => {
+          if (incomplete && (onResume !== undefined)) {
+            onResume(instanceIds[0]);
+          }
+          onView(instanceIds[0]);
+        },
+      });
+    }
+    if (onEdit) {
+      result.push({
+        title: 'Edit',
+        icon: 'edit',
+        action: (instanceIds: string[]) => onEdit(instanceIds[0]),
+      });
+    }
+    if (onRemove) {
+      result.push({
+        title: 'Remove',
+        icon: 'remove',
+        action: (instanceIds: string[]) => onRemove(instanceIds[0]),
+      });
+    }
+
+    if (onPublish) {
+      result.push({
+        title: 'Publish',
+        icon: 'clone',
+        action: (instanceIds: string[]) => onPublish(instanceIds[0]),
+      });
+    }
+
+    return result;
+  }
+
   private renderCollectionStatus(active: boolean, mods: types.IModRule[]) {
     const { t, collection, incomplete } = this.props;
     if (active) {
       if (incomplete) {
         return <div className='collection-status'>{t('Incomplete')}</div>;
-      } else if (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined) {
+      } else if ((util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined)
+                 && util.getSafe(collection.attributes, ['editable'], false)) {
         return <div className='collection-status'>{t('Published')}</div>;
       } else {
         return <div className='collection-status'>{t('Enabled')}</div>;
@@ -163,7 +166,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           className='buttons'
           group={`collection-actions`}
           instanceId={mod.id}
-          staticElements={this.mActions}
+          staticElements={this.actions}
           collapse={false}
           buttonType='text'
           orientation='vertical'

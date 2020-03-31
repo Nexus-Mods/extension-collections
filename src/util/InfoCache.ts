@@ -1,7 +1,7 @@
 import { setCollectionInfo, setRevisionInfo } from '../actions/persistent';
 
-import { types } from 'vortex-api';
 import { ICollectionDetailed, IRevisionDetailed } from 'nexus-api';
+import { types } from 'vortex-api';
 
 const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000;
 
@@ -17,13 +17,15 @@ class InfoCache {
     const {collections} = store.getState().persistent;
     if ((collections[collectionId] === undefined)
         || ((Date.now() - collections[collectionId].timestamp) > CACHE_EXPIRE_MS)) {
-      return await this.cacheCollectionInfo(collectionId);
+      return this.cacheCollectionInfo(collectionId);
     }
 
     return collections[collectionId].info;
   }
 
-  public async getRevisionInfo(collectionId: string, revisionId: string): Promise<IRevisionDetailed> {
+  public async getRevisionInfo(collectionId: string,
+                               revisionId: string)
+                               : Promise<IRevisionDetailed> {
     const { store } = this.mApi;
     let {collections} = store.getState().persistent;
 
@@ -36,7 +38,7 @@ class InfoCache {
 
     if ((revisions[revisionId] === undefined)
         || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
-       return await this.cacheRevisionInfo(collectionId, revisionId);
+       return this.cacheRevisionInfo(collectionId, revisionId);
     }
 
     return revisions[revisionId].info;
@@ -49,9 +51,13 @@ class InfoCache {
     return Promise.resolve(collectionInfo);
   }
 
-  private async cacheRevisionInfo(collectionId: string, revisionId: string): Promise<IRevisionDetailed> {
+  private async cacheRevisionInfo(collectionId: string,
+                                  revisionId: string)
+                                  : Promise<IRevisionDetailed> {
     const { store } = this.mApi;
-    const revisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision', collectionId, revisionId))[0]
+    const revisions =
+      await this.mApi.emitAndAwait('get-nexus-collection-revision', collectionId, revisionId);
+    const revisionInfo = revisions[0];
     store.dispatch(setRevisionInfo(collectionId, revisionId, revisionInfo));
     return Promise.resolve(revisionInfo);
   }

@@ -229,12 +229,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const collection = mods[modId];
 
     const { collectionId, revisionId } = collection.attributes;
-    
+
     if (revisionId === undefined) {
       return;
     }
 
-    const voted = (api.emitAndAwait('rate-collection', parseInt(revisionId, 10), success ? 10 : -10))[0];
+    const voted = (api.emitAndAwait('rate-nexus-collection-revision',
+                                    parseInt(revisionId, 10), success ? 10 : -10))[0];
     if (voted) {
       api.store.dispatch(updateSuccessRate(collectionId, revisionId, success));
     }

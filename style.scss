@@ -433,11 +433,12 @@ $collection-thumbnail-height: 320px;
   .collection-mods-panel {
     margin: $half-gutter;
 
-    .table-main-pane .header-author {
-      min-width: 25em;
+    .table-main-pane .cell-author {
+      white-space: nowrap;
     }
 
-    .table-main-pane .cell-author {
+    .table-main-pane .cell-uploader {
+      white-space: nowrap;
       .img-circle {
         width: 24px;
         height: 24px;

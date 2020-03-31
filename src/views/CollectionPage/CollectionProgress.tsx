@@ -46,10 +46,10 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
 
     const downloadProgress = Object.values(mods).reduce((prev, mod) => {
       let size = 0;
-      if (mod.state === 'downloading') {
-        size += util.getSafe(mod, ['attributes', 'received'], 0);
+      if ((mod.state === 'downloading') || (mod.state === null)) {
+        size += mod.attributes?.received || 0;
       } else {
-        size += util.getSafe(mod, ['attributes', 'fileSize'], 0);
+        size += mod.attributes?.fileSize || 0;
       }
       return prev + size;
     }, 0);

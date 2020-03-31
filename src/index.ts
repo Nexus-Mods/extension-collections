@@ -1,11 +1,11 @@
 import { startEditModPack } from './actions/session';
-import sessionReducer from './reducers/session';
 import persistentReducer from './reducers/persistent';
+import sessionReducer from './reducers/session';
 import { IModPack } from './types/IModPack';
 import InfoCache from './util/InfoCache';
 import InstallDriver from './util/InstallDriver';
 import { createModpack, makeModpackId } from './util/modpack';
-import { bbProm } from './util/util';
+import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import CollectionsMainPage from './views/CollectionPage';
 import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
@@ -17,6 +17,7 @@ import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
 import memoize from 'memoize-one';
+import { IRevisionDetailed } from 'nexus-api';
 import * as path from 'path';
 import * as React from 'react';
 import { generate as shortid } from 'shortid';
@@ -28,7 +29,7 @@ function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   if (mod === undefined) {
     return false;
   }
-  return mod.type === MOD_TYPE;
+  return util.getSafe(mod.attributes, ['editable'], false);
 }
 
 function profileModpackExists(api: types.IExtensionApi, profileId: string) {
@@ -44,12 +45,13 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
     const profile = selectors.profileById(state, profileId);
 
-    const collection = util.getSafe(state.persistent.mods, [profile.gameId, modId], undefined);
+    const collection: types.IMod =
+      util.getSafe(state.persistent.mods, [profile.gameId, modId], undefined);
 
     if ((collection !== undefined)
         && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)) {
       api.sendNotification({
-        id: `collection-incomplete-${collection.id}`,
+        id: getUnfulfilledNotificationId(collection.id),
         type: 'info',
         title: 'Collection incomplete',
         message: util.renderModName(collection),
@@ -59,6 +61,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
             action: dismiss => {
               dismiss();
               api.events.emit('install-dependencies', profile.id, [collection.id], true);
+              api.store.dispatch(actions.setOpenMainPage('Collections', false));
             },
           }, {
             title: 'Disable',
@@ -102,16 +105,40 @@ function createCollection(api: types.IExtensionApi, profile: types.IProfile, nam
 function genAttributeExtractor(api: types.IExtensionApi) {
   // tslint:disable-next-line:no-shadowed-variable
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
-    const collectionId = util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'collectionId'], undefined);
-    const revisionId = util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'revisionId'], undefined);
-    return PromiseBB.resolve({
-      collectionId,
-      revisionId,
+    const collectionId =
+      util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'collectionId'], undefined);
+    const revisionId =
+      util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'revisionId'], undefined);
+    const modId =
+      util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'modId'], undefined);
+
+    const getRevInfo: PromiseBB<IRevisionDetailed> =
+      (collectionId !== undefined) && (revisionId !== undefined) && (modId !== undefined)
+      ? PromiseBB.resolve(cache.getRevisionInfo(collectionId, revisionId))
+      : PromiseBB.resolve(undefined);
+
+    return getRevInfo
+      .then(revInfo => {
+        const result: { [key: string]: any } = {
+          collectionId,
+          revisionId,
+        };
+
+        if (revInfo !== undefined) {
+          const revModInfo = revInfo.collection_revision_mods
+            .find(iter => iter.mod.mod_id === modId);
+          if (revModInfo !== undefined) {
+            result.uploaderAvatar = revModInfo.mod.uploader.avatar;
+          }
+        }
+
+        return PromiseBB.resolve(result);
     });
   };
 }
 
-function generateCollectionMap(mods: { [modId: string]: types.IMod }): { [modId: string]: types.IMod[] } {
+function generateCollectionMap(mods: { [modId: string]: types.IMod })
+    : { [modId: string]: types.IMod[] } {
   const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
 
   const result: { [modId: string]: types.IMod[] } = {};
@@ -125,14 +152,18 @@ function generateCollectionMap(mods: { [modId: string]: types.IMod }): { [modId:
   return result;
 }
 
-function generateCollectionOptions(mods: { [modId: string]: types.IMod }): Array<{ label: string, value: string }> {
-  return Object.values(mods).filter(mod => mod.type === MOD_TYPE).map(mod => ({ label: util.renderModName(mod), value: mod.id }));
+function generateCollectionOptions(mods: { [modId: string]: types.IMod })
+    : Array<{ label: string, value: string }> {
+  return Object.values(mods)
+    .filter(mod => mod.type === MOD_TYPE)
+    .map(mod => ({ label: util.renderModName(mod), value: mod.id }));
 }
 
-type CallbackMap = { [cbName: string]: (...args: any[]) => void };
+interface ICallbackMap { [cbName: string]: (...args: any[]) => void; }
 
-function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: CallbackMap) => void) {
-  let collectionsCB: CallbackMap;
+function register(context: types.IExtensionContext,
+                  onSetCallbacks: (callbacks: ICallbackMap) => void) {
+  let collectionsCB: ICallbackMap;
 
   context.registerReducer(['session', 'collections'], sessionReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
@@ -142,7 +173,7 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
     onExport: (modpackId: string) => null,
   }));
 
-  context.registerDialog('modpack-install', InstallDialog, () => ({
+  context.registerDialog('collection-install', InstallDialog, () => ({
     driver,
   }));
 
@@ -153,7 +184,7 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
     props: () => ({
       driver,
       cache,
-      onSetupCallbacks: (callbacks: CallbackMap) => {
+      onSetupCallbacks: (callbacks: ICallbackMap) => {
         collectionsCB = callbacks;
         onSetCallbacks(callbacks);
       },
@@ -169,20 +200,20 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
 
   const state: () => types.IState = () => context.api.store.getState();
 
-  const collectionsMap = () => memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())]);
+  const collectionsMap = () =>
+    memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())]);
   const collectionOptions = memoize(generateCollectionOptions);
 
-  context.registerTableAttribute('mods', {
+  const collectionAttribute: types.ITableAttribute<types.IMod> = {
     id: 'collection',
     name: 'Collection',
     description: 'Collection(s) this mod was installed from (if any)',
     icon: 'collection',
     placement: 'both',
     customRenderer: (mod: types.IMod) => {
-      const gameMode = selectors.activeGameId(state());
       const collections = collectionsMap()[mod.id];
       const collectionsString = (collections === undefined)
-        ? '' : collections.map(mod => util.renderModName(mod)).join(', ');
+        ? '' : collections.map(iter => util.renderModName(iter)).join(', ');
 
       return React.createElement('div', {}, collectionsString);
     },
@@ -190,22 +221,25 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
       const gameMode = selectors.activeGameId(state());
       const collections = collectionsMap()[mod.id];
       return (collections === undefined)
-        ? '': collections.map(mod => mod.id);
+        ? '' : collections.map(iter => iter.id);
     },
     isToggleable: true,
     edit: {},
-    filter: new OptionsFilter((() => collectionOptions(state().persistent.mods[selectors.activeGameId(state())])) as any, false, false),
+    filter: new OptionsFilter((() =>
+      collectionOptions(state().persistent.mods[selectors.activeGameId(state())])) as any,
+      false, false),
     isGroupable: true,
-    groupName: (modId: string) => util.renderModName(state().persistent.mods[selectors.activeGameId(state())][modId]),
+    groupName: (modId: string) =>
+      util.renderModName(state().persistent.mods[selectors.activeGameId(state())][modId]),
     isDefaultVisible: false,
-  } as types.ITableAttribute<types.IMod>);
+  } as any;
+  context.registerTableAttribute('mods', collectionAttribute);
 
   context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
     (modIds: string[]) => {
-      const state = context.api.store.getState();
-      const gameMode = selectors.activeGameId(state);
+      const gameMode = selectors.activeGameId(state());
       doExportToFile(context.api, gameMode, modIds[0]);
-    }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
+    }, (modIds: string[]) => isEditableModPack(state(), modIds));
 
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
     (modIds: string[]) => {
@@ -221,13 +255,11 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
 
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
-      const state = context.api.store.getState();
-      const profile: types.IProfile = selectors.activeProfile(state);
+      const profile: types.IProfile = selectors.activeProfile(state());
       context.api.events.emit('install-recommendations', profile.id, modIds);
     }, (modIds: string[]) => {
-      const state = context.api.store.getState();
-      const gameMode = selectors.activeGameId(state);
-      const mod = state.persistent.mods[gameMode][modIds[0]];
+      const gameMode = selectors.activeGameId(state());
+      const mod = state().persistent.mods[gameMode][modIds[0]];
       if (mod === undefined) {
         return false;
       }
@@ -251,7 +283,7 @@ function register(context: types.IExtensionContext, onSetCallbacks: (callbacks: 
   context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));
 }
 
-function once(api: types.IExtensionApi, collectionsCB: CallbackMap) {
+function once(api: types.IExtensionApi, collectionsCB: ICallbackMap) {
   const { store } = api;
 
   driver = new InstallDriver(api);
@@ -297,13 +329,16 @@ function once(api: types.IExtensionApi, collectionsCB: CallbackMap) {
 
   api.events.on('did-download-collection', async (dlId: string) => {
     try {
-      let state: () => types.IState = () => store.getState();
-      const dlInfo: types.IDownload = util.getSafe(state().persistent.downloads.files, [dlId], undefined);
+      const state: () => types.IState = () => store.getState();
+      const dlInfo: types.IDownload =
+        util.getSafe(state().persistent.downloads.files, [dlId], undefined);
       const profile = selectors.activeProfile(state());
       if (!dlInfo.game.includes(profile.gameId)) {
-        log('info', 'Collection downloaded for a different game than is being managed', { gameMode: profile.gameId, game: dlInfo.game });
+        log('info', 'Collection downloaded for a different game than is being managed',
+            { gameMode: profile.gameId, game: dlInfo.game });
         api.sendNotification({
-          message: 'The collection you downloaded is for a different game and thus can\'t be installed right now.',
+          message: 'The collection you downloaded is for a different game and thus '
+                 + 'can\'t be installed right now.',
           type: 'info',
         });
 
@@ -342,9 +377,9 @@ function once(api: types.IExtensionApi, collectionsCB: CallbackMap) {
 }
 
 function init(context: types.IExtensionContext): boolean {
-  let collectionsCB: CallbackMap;
+  let collectionsCB: ICallbackMap;
 
-  register(context, (callbacks: { [cbName: string]: (...args: any[]) => void }) => collectionsCB = callbacks);
+  register(context, (callbacks: ICallbackMap) => collectionsCB = callbacks);
 
   context.once(() => {
     once(context.api, collectionsCB);

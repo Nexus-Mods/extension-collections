@@ -1,12 +1,10 @@
-import CollectionThumbnail from './CollectionThumbnail';
-import { AUTHOR_UNKNOWN } from '../../constants';
-
-import InstallDriver from '../../util/InstallDriver';
-
 import i18next from 'i18next';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
+import { AUTHOR_UNKNOWN } from '../../constants';
+import InstallDriver from '../../util/InstallDriver';
+import CollectionThumbnail from './CollectionThumbnail';
 
 interface ICollectionOverviewInstallingProps {
   t: i18next.TFunction;
@@ -30,10 +28,15 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
     const displayMod = driver.revisionInfo.collection_revision_mods[displayModIdx];
     const modCount = driver.revisionInfo.collection_revision_mods.length;
 
+    const uploaderName = util.getSafe(displayMod, ['mod', 'uploader', 'name'], undefined)
+                      || AUTHOR_UNKNOWN;
+    const authorName = util.getSafe(displayMod, ['mod', 'author', 'name'], undefined)
+                    || AUTHOR_UNKNOWN;
+
     return (
       <Panel className='installing-mod-overview'>
-        <Media>
-          <Media.Body>
+        <FlexLayout type='row'>
+          <FlexLayout.Flex>
             <FlexLayout type='column'>
               <FlexLayout.Fixed>
                 <div className='installing-mod-title'>
@@ -50,13 +53,13 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
                       />
                       <div>
                         <div className='title'>{t('Uploaded by')}</div>
-                        <div>{util.getSafe(displayMod, ['mod', 'uploaded_by', 'name'], undefined) || AUTHOR_UNKNOWN}</div>
+                        <div>{uploaderName}</div>
                       </div>
                     </FlexLayout>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Created by')}</div>
-                    <div>{util.getSafe(displayMod, ['mod', 'author', 'name'], undefined) || AUTHOR_UNKNOWN}</div>
+                    <div>{authorName}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Version')}</div>
@@ -70,22 +73,43 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
                 </div>
               </FlexLayout.Flex>
             </FlexLayout>
-          </Media.Body>
-          <Media.Right>
+          </FlexLayout.Flex>
+          <FlexLayout.Flex>
             <FlexLayout type='column'>
               <FlexLayout.Flex style={{ maxWidth: '100%' }}>
                 <Image className='installing-mod-image' src={displayMod.mod.picture_url} />
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
-                <tooltip.IconButton icon='showhide-left' tooltip={t('Show first mod')} disabled={displayModIdx === 0} onClick={this.first} />
-                <tooltip.IconButton icon='nav-back' tooltip={t('Show previous mod')} disabled={displayModIdx === 0} onClick={this.prev} />
-                {t('{{pos}} of {{count}}', { replace: { pos: displayModIdx + 1, count: modCount } })}
-                <tooltip.IconButton icon='nav-forward' tooltip={t('Show next mod')} disabled={displayModIdx === modCount - 1} onClick={this.next}/>
-                <tooltip.IconButton icon='showhide-right' tooltip={t('Show last mod')} disabled={displayModIdx === modCount - 1} onClick={this.last}/>
+                <tooltip.IconButton
+                  icon='collection-first'
+                  tooltip={t('Show first mod')}
+                  disabled={displayModIdx === 0}
+                  onClick={this.first}
+                />
+                <tooltip.IconButton
+                  icon='collection-previous'
+                  tooltip={t('Show previous mod')}
+                  disabled={displayModIdx === 0}
+                  onClick={this.prev}
+                />
+                {t('{{pos}} of {{count}}',
+                   { replace: { pos: displayModIdx + 1, count: modCount } })}
+                <tooltip.IconButton
+                  icon='collection-next'
+                  tooltip={t('Show next mod')}
+                  disabled={displayModIdx === modCount - 1}
+                  onClick={this.next}
+                />
+                <tooltip.IconButton
+                  icon='collection-last'
+                  tooltip={t('Show last mod')}
+                  disabled={displayModIdx === modCount - 1}
+                  onClick={this.last}
+                />
               </FlexLayout.Fixed>
             </FlexLayout>
-          </Media.Right>
-        </Media>
+          </FlexLayout.Flex>
+        </FlexLayout>
       </Panel>
     );
   }

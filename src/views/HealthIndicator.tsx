@@ -16,8 +16,8 @@ function HealthIndicator(props: IHealthIndicatorProps) {
   }
 
   const voteSuccess = React.useCallback((evt: React.MouseEvent<any>) => {
-    const value = evt.currentTarget.dataset.success;
-    onVoteSuccess(value === 'true');
+    const { success } = evt.currentTarget.dataset;
+    onVoteSuccess(success === 'true');
   }, []);
 
   const total = value !== undefined
