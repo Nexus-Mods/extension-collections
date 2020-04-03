@@ -34,9 +34,9 @@ class InfoCache {
       collections = store.getState().persistent;
     }
 
-    const revisions = collections[collectionId].revisions || {};
+    const revisions = collections[collectionId]?.revisions || {};
 
-    if ((revisions[revisionId] === undefined)
+    if ((revisions[revisionId]?.info.collection_revision_mods === undefined)
         || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
        return this.cacheRevisionInfo(collectionId, revisionId);
     }

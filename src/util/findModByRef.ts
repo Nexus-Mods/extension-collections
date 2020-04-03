@@ -35,7 +35,7 @@ export function testDownloadReference(download: types.IDownload,
     return false;
   }
 
-  if (!download.game.includes(reference.gameId)) {
+  if (!(download.game || []).includes(reference.gameId)) {
     return false;
   }
 
@@ -46,9 +46,9 @@ export function testDownloadReference(download: types.IDownload,
     version: util.getSafe(download, ['modInfo', 'version'], undefined),
     logicalFileName: util.getSafe(download, ['modInfo', 'name'], undefined),
     game: download.game,
-    source: util.getSafe(download, ['modInfo', 'source'], undefined),
-    modId: util.getSafe(download, ['modInfo', 'nexus', 'ids', 'modId'], undefined),
-    fileId: util.getSafe(download, ['modInfo', 'nexus', 'ids', 'fileId'], undefined),
+    source: download.modInfo?.source,
+    modId: download.modInfo?.nexus?.ids?.modId,
+    fileId: download.modInfo?.nexus?.ids?.fileId,
   };
 
   return util.testModReference(lookup, reference);

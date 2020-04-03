@@ -5,10 +5,10 @@ import { makeModpackId } from '../../util/modpack';
 import CollectionThumbnail from './CollectionThumbnail';
 
 import i18next from 'i18next';
+import { ICollection, IRevision } from 'nexus-api';
 import * as React from 'react';
 import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
 import { ComponentEx, EmptyPlaceholder, Icon, types, util } from 'vortex-api';
-import { ICollection, IRevision } from 'nexus-api';
 
 export interface IStartPageProps {
   t: i18next.TFunction;
@@ -56,7 +56,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, profile, matchedReferences, mods, onEdit, onPublish, onRemove, onResume, onView } = this.props;
+    const { t, profile, matchedReferences, mods, onEdit, onPublish,
+            onRemove, onResume, onView } = this.props;
     const { createOpen, imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
@@ -88,7 +89,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     t={t}
                     gameId={profile.gameId}
                     imageTime={imageTime}
-                    incomplete={matchedReferences[mod.id].includes(undefined)}
+                    incomplete={matchedReferences[mod.id].includes(null)}
                     collection={mod}
                     onView={onView}
                     onRemove={onRemove}
@@ -120,7 +121,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   gameId={profile.gameId}
                   collection={mod}
                   imageTime={imageTime}
-                  incomplete={matchedReferences[mod.id].includes(undefined)}
+                  incomplete={matchedReferences[mod.id].includes(null)}
                   onEdit={onEdit}
                   onView={onView}
                   onRemove={onRemove}
@@ -171,14 +172,19 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private openCollections = async () => {
     const { profile } = this.props;
     const { api } = this.context;
-    const collections: ICollection[] = (await api.emitAndAwait('get-nexus-collections', profile.gameId))[0];
+    const collections: ICollection[] =
+      (await api.emitAndAwait('get-nexus-collections', profile.gameId))[0];
     if ((collections === undefined) || (collections.length === 0)) {
       api.sendNotification({ message: 'No collections for this game', type: 'error' });
       return;
     }
     const choice = await api.showDialog('question', 'Choose collection', {
       text: 'Pick a collection to install',
-      choices: collections.map(coll => ({ text: coll.name, value: false, id: (coll.collection_id || (coll as any).id).toString() }))
+      choices: collections.map(coll => ({
+        text: coll.name,
+        value: false,
+        id: (coll.collection_id || (coll as any).id).toString(),
+      })),
     }, [
       { label: 'Cancel' },
       { label: 'Download' },
@@ -187,7 +193,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     if (choice.action === 'Download') {
       const collId = Object.keys(choice.input).find(id => choice.input[id]);
       try {
-        const revisions: IRevision[] = (await api.emitAndAwait('get-nexus-collection-revisions', collId))[0];
+        const revisions: IRevision[] =
+          (await api.emitAndAwait('get-nexus-collection-revisions', collId))[0];
 
         const latest = revisions
           // sort descending
@@ -203,8 +210,10 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
             revisionId: latest.revision_id.toString(),
           },
         };
-        const dlId = await (util as any).toPromise(cb => api.events.emit('start-download', [latest.uri], modInfo, (latest as any).file_name, cb));
-        await (util as any).toPromise(cb => api.events.emit('start-install-download', dlId, undefined, cb));
+        const dlId = await util.toPromise(cb =>
+          api.events.emit('start-download', [latest.uri], modInfo, (latest as any).file_name, cb));
+        await util.toPromise(cb =>
+          api.events.emit('start-install-download', dlId, undefined, cb));
       } catch (err) {
         if (!(err instanceof util.UserCanceled)) {
           api.showErrorNotification('Failed to download collection', err);

@@ -403,25 +403,12 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-.installing-mod-overview {
-  > .media {
-    height: 425px;
-    max-height: 25vh;
-    > .media-right {
-      min-width: 30vw;
-      > .layout-container {
-        align-items: center;
-      }
-    }
-  }
+.installing-mod-overview.panel {
+  height: 425px;
+  max-height: 25vh;
 
   .installing-mod-title {
     @extend .h3;
-  }
-
-  .installing-mod-image {
-    max-width: 520px;
-    max-height: 293px;
   }
 
   .nav-button {
@@ -545,7 +532,7 @@ $collection-thumbnail-height: 320px;
 }
 
 #modpack-edit-tabs-tab-mods .badge {
-  margin-left: 0.5em;  
+  margin-left: 0.5em;
 }
 
 #modpack-edit-tabs-pane-mod-rules {
@@ -626,5 +613,23 @@ $collection-thumbnail-height: 320px;
 .collection-health-indicator {
   .icon-button {
     @extend .btn-embed;
+  }
+}
+
+.collection-installing-image-pane {
+  align-items: center;
+
+  .layout-flex {
+    overflow: auto;
+  }
+
+  .icon-button {
+    @extend .btn-embed;
+    margin: 0 $half-gutter;
+  }
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
   }
 }

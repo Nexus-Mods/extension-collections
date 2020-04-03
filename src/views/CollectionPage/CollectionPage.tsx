@@ -276,8 +276,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             onVoteSuccess, profile, votedSuccess } = this.props;
     const { modsEx, revisionInfo } = this.state;
 
-    console.log('render collection page', revisionInfo);
-
     if (collection === undefined) {
       return null;
     }
@@ -456,8 +454,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const checkboxes = [
       { id: 'mod', text: t('Remove Mod'), value: true },
       { id: 'archive', text: t('Delete Archive'), value: false },
-      { id: 'collection', text: t('Remove from Collection'), value: false },
     ];
+
+    if (collection.attributes?.editable === true) {
+      checkboxes.push({ id: 'collection', text: t('Remove from Collection'), value: false });
+    }
 
     this.context.api.showDialog('question', 'Confirm removal', {
       text: t('Do you really want to remove this mod?', {
@@ -485,7 +486,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         const rulesToRemove = filteredIds.filter(key => modsEx[key] !== undefined);
 
         return (removeMods
-            ? (util as any).removeMods(this.context.api, profile.gameId, wereInstalled)
+            ? util.removeMods(this.context.api, profile.gameId, wereInstalled)
             : Promise.resolve())
           .then(() => {
             if (removeArchive) {
@@ -539,17 +540,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const modifiedRules: { [ruleId: string]: types.IModRule }
       = util.objDiff(genRuleMap(oldProps.collection.rules), genRuleMap(newProps.collection.rules));
 
-    const needRefresh: Set<string> = new Set<string>();
-
     // remove any cache entry where the download or the mod has been
     // removed or changed
     Object.keys(modifiedDownloads)
       .filter(dlId => dlId.startsWith('-'))
       .forEach(dlId => {
         const refId = Object.keys(result).find(iter => result[iter].archiveId === dlId.slice(1));
-        if (refId !== undefined) {
-          needRefresh.add(refId);
-        }
+        delete result[refId];
       });
 
     Object.keys(modifiedMods)
@@ -557,19 +554,22 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       .forEach(modId => {
         const realId = modId.slice(1);
         const refId = Object.keys(result).find(iter => result[iter].id === realId);
-        if (refId !== undefined) {
-          needRefresh.add(refId);
+        delete result[refId];
+      });
+
+    // refresh for any rule that doesn't currently have an enrty
+    const { collection } = newProps;
+
+    (collection.rules || [])
+      .filter(rule => ['requires', 'recommends'].includes(rule.type))
+      .forEach(rule => {
+        const id = this.ruleId(rule);
+        if (result[id] === undefined) {
+          result[id] = this.modFromRule(newProps, rule);
         }
       });
 
-    // refresh removed or changed entries
-    needRefresh.forEach(refId => {
-      const rule = result[refId].collectionRule;
-      delete result[refId];
-
-      result[refId] = this.modFromRule(newProps, rule);
-    });
-
+    // also remove and add entries if a rule was added/removed
     Object.keys(modifiedRules)
       .forEach(ruleId => {
         if (ruleId.startsWith('-')) {

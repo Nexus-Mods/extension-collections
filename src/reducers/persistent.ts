@@ -25,16 +25,17 @@ const persistentReducer: types.IReducerSpec = {
 
       state = util.setSafe(state, [...revPath, 'timestamp'], Date.now());
 
-      return util.setSafe(state, [...revPath, 'info'], _.omit(revisionInfo, ['collection', 'collection_revision_mods']));
+      return util.setSafe(state, [...revPath, 'info'], _.omit(revisionInfo, ['collection']));
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
       const { collectionId, revisionId, success } = payload;
 
       const revPath = [collectionId, 'revisions', revisionId];
 
-      // we update the success_rate inside the revision info as well, so it gets updated immediately, not just after it got fetched the
-      // next time.
-      const successRate = JSON.parse(JSON.stringify(util.getSafe(state, [...revPath, 'info', 'success_rate'], { positive: 0, negative: 0 })));
+      // we update the success_rate inside the revision info as well, so it gets updated
+      // immediately, not just after it got fetched the next time.
+      const successRate = JSON.parse(JSON.stringify(
+        util.getSafe(state, [...revPath, 'info', 'success_rate'], { positive: 0, negative: 0 })));
       const oldSuccess = util.getSafe(state, [...revPath, 'success'], undefined);
       if (oldSuccess !== undefined) {
         // this isn't the first time we send a rating so subtract our previous rating

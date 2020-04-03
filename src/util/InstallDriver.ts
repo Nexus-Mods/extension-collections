@@ -4,7 +4,7 @@ import { actions, log, types, util } from 'vortex-api';
 import { findModByRef } from './findModByRef';
 import { getUnfulfilledNotificationId } from './util';
 
-export type Step = 'start' | 'disclaimer' | 'installing' | 'review';
+export type Step = 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 
 export type UpdateCB = () => void;
 
@@ -12,7 +12,7 @@ class InstallDriver {
   private mApi: types.IExtensionApi;
   private mProfile: types.IProfile;
   private mCollection: types.IMod;
-  private mStep: Step = 'start';
+  private mStep: Step = 'query';
   private mUpdateHandlers: UpdateCB[] = [];
   private mInstalledMods: types.IMod[] = [];
   private mRequiredMods: types.IModRule[] = [];
@@ -48,66 +48,24 @@ class InstallDriver {
         if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
           this.mInstallDone = true;
           this.mInstallingMod = undefined;
-          this.mApi.dismissNotification('installing-modpack');
+          this.mApi.dismissNotification('installing-collection');
           this.triggerUpdate();
         }
       });
   }
 
+  public async query(profile: types.IProfile, collection: types.IMod) {
+    this.mProfile = profile;
+    this.mCollection = collection;
+    this.mStep = 'query';
+    this.triggerUpdate();
+  }
+
   public async start(profile: types.IProfile, collection: types.IMod) {
     this.mProfile = profile;
     this.mCollection = collection;
-    this.mStep = 'start';
-    this.mInstalledMods = [];
-    this.mInstallingMod = undefined;
-    this.mInstallDone = false;
 
-    const state: types.IState = this.mApi.store.getState();
-    const mods = state.persistent.mods[this.mProfile.gameId];
-
-    const collectionId = util.getSafe(collection.attributes, ['collectionId'], undefined);
-    const revisionId = util.getSafe(collection.attributes, ['revisionId'], undefined);
-    if ((collectionId !== undefined) && (revisionId !== undefined)) {
-      this.mRevisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision',
-                                                         collectionId,
-                                                         revisionId))[0];
-      if (Array.isArray(this.mRevisionInfo)) {
-        this.mRevisionInfo = this.mRevisionInfo[0];
-      }
-    }
-
-    this.mApi.store.dispatch(actions.setDialogVisible('collection-install'));
-
-    this.mApi.sendNotification({
-      id: 'installing-modpack',
-      type: 'activity',
-      message: 'Installing Collection',
-      actions: [
-        {
-          title: 'Show',
-          action: () => {
-            this.mApi.store.dispatch(actions.setDialogVisible('collection-install'));
-          },
-        },
-      ],
-    });
-
-    this.mApi.dismissNotification(getUnfulfilledNotificationId(collection.id));
-    this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
-
-    const required = collection.rules
-      .filter(rule => rule.type === 'requires');
-    this.mRequiredMods = required
-      .filter(rule => findModByRef(rule.reference, mods) === undefined);
-
-    if (this.mRequiredMods.length === 0) {
-      this.mInstallDone = false;
-    }
-
-    log('info', 'starting install of collection', {
-      totalMods: required.length,
-      missing: this.mRequiredMods.length,
-    });
+    this.startImpl();
 
     this.triggerUpdate();
   }
@@ -156,6 +114,7 @@ class InstallDriver {
   public continue() {
     if (this.canContinue()) {
       const steps = {
+        query: this.startImpl,
         start: this.begin,
         disclaimer: this.closeDisclaimers,
         installing: this.finishInstalling,
@@ -184,6 +143,63 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
+  private startImpl = async () => {
+    this.mInstalledMods = [];
+    this.mInstallingMod = undefined;
+    this.mInstallDone = false;
+    this.mStep = 'start';
+
+    const state: types.IState = this.mApi.store.getState();
+    const mods = state.persistent.mods[this.mProfile.gameId];
+    const nexusInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo.nexus;
+
+    const collectionId = nexusInfo?.ids?.collectionId;
+    const revisionId = nexusInfo?.ids?.revisionId;
+
+    if ((collectionId !== undefined) && (revisionId !== undefined)) {
+      this.mRevisionInfo = nexusInfo?.revisionInfo
+        ?? (await this.mApi.emitAndAwait('get-nexus-collection-revision',
+                                         collectionId,
+                                         revisionId))[0];
+      if (Array.isArray(this.mRevisionInfo)) {
+        this.mRevisionInfo = this.mRevisionInfo[0];
+      }
+    }
+
+    this.mApi.events.emit('view-collection', this.mCollection.id);
+
+    this.mApi.sendNotification({
+      id: 'installing-collection',
+      type: 'activity',
+      message: 'Installing Collection',
+      actions: [
+        {
+          title: 'Show',
+          action: () => {
+            this.mApi.events.emit('view-collection', this.mCollection.id);
+          },
+        },
+      ],
+    });
+
+    this.mApi.dismissNotification(getUnfulfilledNotificationId(this.mCollection.id));
+    this.mApi.store.dispatch(actions.setModEnabled(this.mProfile.id, this.mCollection.id, true));
+
+    const required = this.mCollection.rules
+      .filter(rule => rule.type === 'requires');
+    this.mRequiredMods = required
+      .filter(rule => findModByRef(rule.reference, mods) === undefined);
+
+    if (this.mRequiredMods.length === 0) {
+      this.mInstallDone = false;
+    }
+
+    log('info', 'starting install of collection', {
+      totalMods: required.length,
+      missing: this.mRequiredMods.length,
+    });
+  }
+
   private begin = () => {
     this.mApi.events.emit('install-dependencies', this.mProfile.id, [this.mCollection.id], true);
     // skipping disclaimer for now
@@ -195,7 +211,6 @@ class InstallDriver {
   }
 
   private finishInstalling = () => {
-    this.mApi.store.dispatch(actions.setModEnabled(this.mProfile.id, this.mCollection.id, true));
     this.mStep = 'review';
   }
 

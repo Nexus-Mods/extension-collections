@@ -63,7 +63,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     // const name = driver.modPack !== undefined ? driver.modPack.attributes['name'] : '';
 
     return (
-      <Modal show={(driver.collection !== undefined) && (driver.step === 'start')} onHide={nop}>
+      <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
         <Modal.Body>
           <Media.Left>
             <CollectionThumbnail
@@ -188,7 +188,6 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   private next = () => {
     const { driver } = this.props;
     driver.continue();
-    this.context.api.events.emit('view-collection', driver.collection.id);
   }
 }
 

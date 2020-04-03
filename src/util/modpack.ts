@@ -1,3 +1,4 @@
+import { MOD_TYPE } from '../constants';
 import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackSourceInfo } from '../types/IModPack';
 
@@ -7,10 +8,10 @@ import { generateGameSpecifics } from './gameSupport';
 import * as _ from 'lodash';
 import * as path from 'path';
 import * as semver from 'semver';
+import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
-import { MOD_TYPE } from '../constants';
 
 export const LOGO_NAME: string = 'logo.jpg';
 
@@ -133,7 +134,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
       ? mods[rule.reference.id]
       : findModByRef(rule.reference, mods);
 
-    if ((mod === undefined) || (mod.type === 'modpack')) {
+    if ((mod === undefined) || (mod.type === MOD_TYPE)) {
       // don't include the modpack itself (or any other modpack for that matter)
       --total;
       return undefined;
@@ -310,6 +311,15 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     logicalFileName: mod.source.logical_filename,
     fileExpression: mod.source.file_expression,
   };
+
+  if (downloadHint !== undefined) {
+    // if the mod gets downloaded from a foreign source it will be next to impossible
+    // to later match the actual download against the reference.
+    // To help with that we generate a random tag that needs to be carried over to every
+    // download downloaded from this rule and every mod installed from that so that
+    // we don't re-download the same file again and again.
+    reference['tag'] = shortid();
+  }
 
   if (mod.source.type === 'nexus') {
     reference['repo'] = {

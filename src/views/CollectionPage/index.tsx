@@ -1,7 +1,7 @@
 import { updateSuccessRate } from '../../actions/persistent';
-import { MOD_TYPE, NAMESPACE } from '../../constants';
+import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL } from '../../constants';
 import { doExportToAPI } from '../../modpackExport';
-import { findModByRef, findDownloadIdByRef } from '../../util/findModByRef';
+import { findDownloadIdByRef, findModByRef } from '../../util/findModByRef';
 import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';
 
@@ -57,6 +57,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       viewMode: 'view',
     });
 
+    console.log('construct collections main page', props);
     if (props.onSetupCallbacks !== undefined) {
       props.onSetupCallbacks({
         viewCollection: (collectionId: string) => {
@@ -185,40 +186,66 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     });
   }
 
-  private cancel = async (modId: string) => {
-    const { downloads, mods, profile } = this.props;
+  private cancel = async (modId: string, message?: string) => {
+    const { t, downloads, mods, profile } = this.props;
     const { api } = this.context;
-    
-    const result = await api.showDialog('question', 'Are you sure you want to cancel the installation', {
-      text: 'Choose to delete the collection and its content or to cancel the install',
+
+    if (message === undefined) {
+      message = 'Are you sure you want to cancel the installation?';
+    }
+
+    const result = await api.showDialog(
+      'question',
+      message, {
+      text: 'You can delete the collection including all the mods it contains or just the '
+          + 'the collection, leaving already installed mods alone.',
+      parameters: {
+        collectionName: util.renderModName(mods[modId]),
+      },
+      checkboxes: [
+        { id: 'delete', text: t('Delete installed mods'), value: false },
+      ],
     }, [
-      { label: 'Cancel and delete' },
       { label: 'Cancel' },
+      { label: 'Remove' },
     ]);
 
     // apparently one can't cancel out of the cancellation...
+    if (result.action === 'Cancel') {
+      return;
+    }
 
-    // either way, delete all running downloads
+    const state: types.IState = api.store.getState();
+
+    // either way, all running downloads are canceled
     const collection = mods[modId];
     await Promise.all(collection.rules.map(async rule => {
       const dlId = findDownloadIdByRef(rule.reference, downloads);
 
       if (dlId !== undefined) {
-        await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+        const download = state.persistent.downloads.files[dlId];
+        if ((download !== undefined)
+            && result.input.delete || (download.state !== 'finished')) {
+          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+        }
       }
     }));
 
-    if (result.action === 'Cancel and delete') {
+    if (result.input.delete) {
       await Promise.all(collection.rules.map(async rule => {
         const mod = findModByRef(rule.reference, mods);
         if (mod !== undefined) {
-          const dlId = mod.archiveId;
           await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, mod.id, cb));
-          if ((dlId !== undefined) && (downloads[dlId])) {
-            await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
-          }
         }
       }));
+    }
+
+    { // finally remove the collection itself
+      const download = state.persistent.downloads.files[collection.archiveId];
+      if (download !== undefined) {
+        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+      }
+      await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
     }
   }
 
@@ -246,29 +273,14 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     return collections.reduce((prev, collection) => {
       prev[collection.id] =
-        (collection.rules || []).map(rule => findModByRef(rule.reference, mods));
+        (collection.rules || []).map(rule => findModByRef(rule.reference, mods) || null);
       return prev;
     }, {});
   }
 
   private remove = (modId: string) => {
-    const { mods, profile } = this.props;
-    this.context.api.showDialog('question', 'Confirm removal', {
-      text: 'Are you sure you want to remove the collection "{{collectionName}}"? '
-          + 'This will remove the collection but not the mods installed with it.\n'
-          + 'This can not be undone',
-      parameters: {
-        collectionName: util.renderModName(mods[modId]),
-      },
-    }, [
-      { label: 'Cancel' },
-      { label: 'Remove' },
-    ])
-    .then(res => {
-      if (res.action === 'Remove') {
-        (util as any).removeMods(this.context.api, profile.gameId, [modId]);
-      }
-    });
+    return this.cancel(modId,
+      'Are you sure you want to remove the collection "{{collectionName}}"?');
   }
 
   private publish = async (modId: string) => {
@@ -301,10 +313,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             actions: [
               {
                 title: 'Open in Browser', action: () => {
-                  util.opn(`https://www.nexusmods.com/${profile.gameId}/collections/${collectionId}`).catch(() => null);
-                }
-              }
-            ]
+                  const url = `${NEXUS_BASE_URL}/${profile.gameId}/collections/${collectionId}`;
+                  util.opn(url).catch(() => null);
+                },
+              },
+            ],
           });
         }
       } catch (err) {

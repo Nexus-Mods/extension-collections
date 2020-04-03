@@ -75,8 +75,8 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
             </FlexLayout>
           </FlexLayout.Flex>
           <FlexLayout.Flex>
-            <FlexLayout type='column'>
-              <FlexLayout.Flex style={{ maxWidth: '100%' }}>
+            <FlexLayout type='column' className='collection-installing-image-pane'>
+              <FlexLayout.Flex>
                 <Image className='installing-mod-image' src={displayMod.mod.picture_url} />
               </FlexLayout.Flex>
               <FlexLayout.Fixed>

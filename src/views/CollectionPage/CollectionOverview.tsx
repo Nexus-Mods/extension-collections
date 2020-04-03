@@ -88,12 +88,14 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                 </div>
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
-                <HealthIndicator
-                  t={t}
-                  value={revision !== undefined ? revision.success_rate : undefined}
-                  onVoteSuccess={this.voteSuccess}
-                  ownSuccess={votedSuccess}
-                />
+                {(revision?.revision_status_id !== ('is_private' as any)) ? (
+                  <HealthIndicator
+                    t={t}
+                    value={revision !== undefined ? revision.success_rate : undefined}
+                    onVoteSuccess={this.voteSuccess}
+                    ownSuccess={votedSuccess}
+                  />
+                ) : null}
                 <tooltip.IconButton
                   tooltip={t('Opens the collection page in your webbrowser')}
                   icon='open-in-browser'

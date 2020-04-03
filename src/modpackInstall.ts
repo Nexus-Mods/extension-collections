@@ -3,6 +3,8 @@ import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
 import { modPackModToRule } from './util/modpack';
 
+import { MOD_TYPE } from './constants';
+
 import * as path from 'path';
 import { actions, fs, types } from 'vortex-api';
 
@@ -46,7 +48,7 @@ export async function install(files: string[],
       },
       {
         type: 'setmodtype' as any,
-        value: 'modpack',
+        value: MOD_TYPE,
       },
       ...filesToCopy.map(filePath => ({
         type: 'copy' as any,

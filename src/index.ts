@@ -105,12 +105,10 @@ function createCollection(api: types.IExtensionApi, profile: types.IProfile, nam
 function genAttributeExtractor(api: types.IExtensionApi) {
   // tslint:disable-next-line:no-shadowed-variable
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
-    const collectionId =
-      util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'collectionId'], undefined);
-    const revisionId =
-      util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'revisionId'], undefined);
-    const modId =
-      util.getSafe(modInfo, ['download', 'modInfo', 'ids', 'modId'], undefined);
+    const collectionId = modInfo.download?.modInfo?.nexus?.ids?.collectionId;
+    const revisionId = modInfo.download?.modInfo?.nexus?.ids?.revisionId;
+    const modId = modInfo.download?.modInfo?.nexus?.ids?.modId;
+    const referenceTag = modInfo.download?.modInfo?.referenceTag;
 
     const getRevInfo: PromiseBB<IRevisionDetailed> =
       (collectionId !== undefined) && (revisionId !== undefined) && (modId !== undefined)
@@ -122,6 +120,7 @@ function genAttributeExtractor(api: types.IExtensionApi) {
         const result: { [key: string]: any } = {
           collectionId,
           revisionId,
+          referenceTag,
         };
 
         if (revInfo !== undefined) {
@@ -196,7 +195,8 @@ function register(context: types.IExtensionContext,
   context.registerModType(MOD_TYPE, 200, () => true,
     () => undefined, () => PromiseBB.resolve(false), {
     name: 'Collection',
-  });
+    customDependencyManagement: true,
+  } as any);
 
   const state: () => types.IState = () => context.api.store.getState();
 
@@ -283,33 +283,41 @@ function register(context: types.IExtensionContext,
   context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));
 }
 
-function once(api: types.IExtensionApi, collectionsCB: ICallbackMap) {
+function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const { store } = api;
 
   driver = new InstallDriver(api);
+
+  driver.onUpdate(() => {
+    // currently no UI associated with the start step
+    if (driver.step === 'start') {
+      driver.continue();
+    }
+  });
+
   cache = new InfoCache(api);
   api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
+  const state: () => types.IState = () => store.getState();
+
   api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
     // automatically enable modpacks once they're installed
-    const state: types.IState = store.getState();
-    const profileId = selectors.lastActiveProfileForGame(state, gameId);
-    const profile = selectors.profileById(state, profileId);
+    const profileId = selectors.lastActiveProfileForGame(state(), gameId);
+    const profile = selectors.profileById(state(), profileId);
     if (profile === undefined) {
       return;
     }
-    const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
+    const mod = util.getSafe(state().persistent.mods, [gameId, modId], undefined);
     if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
-      driver.start(profile, mod);
+      driver.query(profile, mod);
     }
   });
 
   api.events.on('did-install-dependencies',
     async (profileId: string, modId: string, recommendations: boolean) => {
-      const state: types.IState = store.getState();
-      const profile = selectors.profileById(state, profileId);
-      const stagingPath = selectors.installPathForGame(state, profile.gameId);
-      const mods = state.persistent.mods[profile.gameId];
+      const profile = selectors.profileById(state(), profileId);
+      const stagingPath = selectors.installPathForGame(state(), profile.gameId);
+      const mods = state().persistent.mods[profile.gameId];
       const mod = mods[modId];
       if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
         try {
@@ -327,9 +335,17 @@ function once(api: types.IExtensionApi, collectionsCB: ICallbackMap) {
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
 
+  api.events.on('did-finish-download', (dlId: string, outcome: string) => {
+    if (outcome === 'finished') {
+      const download: types.IDownload = state().persistent.downloads.files[dlId];
+      if (download === undefined) {
+        return;
+      }
+    }
+  });
+
   api.events.on('did-download-collection', async (dlId: string) => {
     try {
-      const state: () => types.IState = () => store.getState();
       const dlInfo: types.IDownload =
         util.getSafe(state().persistent.downloads.files, [dlId], undefined);
       const profile = selectors.activeProfile(state());
@@ -344,35 +360,35 @@ function once(api: types.IExtensionApi, collectionsCB: ICallbackMap) {
 
         // the collection was for a different game, can't install it now
         return;
+      } else {
+        // once this is complete it will automatically trigger did-install-mod
+        // which will then start the ui for the installation process
+        await util.toPromise<string>(cb => api.events.emit('start-install-download', dlId, {}, cb));
       }
     } catch (err) {
       api.showErrorNotification('Failed to add collection', err);
     }
   });
 
-  api.events.on('view-collection', collectionId => {
+  api.events.on('view-collection', (collectionId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
-        collectionsCB.viewCollection(collectionId);
-      }
+      collectionsCB().viewCollection?.(collectionId);
     }, 100);
   });
 
-  api.events.on('edit-collection', collectionId => {
+  api.events.on('edit-collection', (collectionId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      if ((collectionsCB !== undefined) && (collectionsCB.editCollection !== undefined)) {
-        collectionsCB.editCollection(collectionId);
-      }
+      collectionsCB().editCollection?.(collectionId);
     }, 100);
   });
 
-  util.installIconSet('modpacks', path.join(__dirname, 'icons.svg'))
+  util.installIconSet('collections', path.join(__dirname, 'icons.svg'))
     .catch(err => api.showErrorNotification('failed to install icon set', err));
 }
 
@@ -382,7 +398,7 @@ function init(context: types.IExtensionContext): boolean {
   register(context, (callbacks: ICallbackMap) => collectionsCB = callbacks);
 
   context.once(() => {
-    once(context.api, collectionsCB);
+    once(context.api, () => collectionsCB);
   });
   return true;
 }

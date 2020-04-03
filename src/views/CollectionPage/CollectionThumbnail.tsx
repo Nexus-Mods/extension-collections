@@ -29,12 +29,6 @@ interface IConnectedProps {
 type IProps = IBaseProps & IConnectedProps;
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
-  constructor(props: IProps) {
-    super(props);
-
-    this.initState({ incomplete: false });
-  }
-
   public render(): JSX.Element {
     const { t, collection, details, imageTime, profile, stagingPath } = this.props;
 

@@ -1,11 +1,10 @@
+import { NEXUS_MEMBERSHIP_URL } from '../../constants';
 import InstallDriver from '../../util/InstallDriver';
 
 import i18next from 'i18next';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import { FlexLayout, util } from 'vortex-api';
-
-const NEXUS_MEMBERSHIP_URL = 'https://users.nexusmods.com/register/memberships';
 
 interface IInstallDialogStartProps {
   t: i18next.TFunction;
