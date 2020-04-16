@@ -18,7 +18,7 @@ export interface ICollectionProgressProps {
 
 class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   public render(): JSX.Element {
-    const {t, mods, totalSize, onCancel, onPause} = this.props;
+    const {t, downloads, mods, totalSize, onCancel, onPause} = this.props;
 
     const group = (state: string): string => {
       return {
@@ -47,7 +47,8 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
     const downloadProgress = Object.values(mods).reduce((prev, mod) => {
       let size = 0;
       if ((mod.state === 'downloading') || (mod.state === null)) {
-        size += mod.attributes?.received || 0;
+        const download = downloads[mod.archiveId];
+        size += download?.received || 0;
       } else {
         size += mod.attributes?.fileSize || 0;
       }

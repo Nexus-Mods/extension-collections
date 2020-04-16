@@ -345,7 +345,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           <Panel>
             <CollectionProgress
               t={t}
-              mods={modsEx}
+              mods={modsFinal}
               downloads={downloads}
               totalSize={totalSize}
               onCancel={this.cancel}
@@ -654,8 +654,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       attributes: {
         customFileName: util.getSafe(download, ['modInfo', 'name'], undefined),
         fileName: download.localPath,
-        fileSize: download.size,
-        received: download.received,
+        fileSize: download.size ?? rule.reference.fileSize,
         name: dlId,
       },
     };
