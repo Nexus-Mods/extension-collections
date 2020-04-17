@@ -295,7 +295,6 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  cache = new InfoCache(api);
   api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
   const state: () => types.IState = () => store.getState();

@@ -46,7 +46,7 @@ class InfoCache {
 
   private async cacheCollectionInfo(collectionId: string): Promise<ICollectionDetailed> {
     const { store } = this.mApi;
-    const collectionInfo = (await this.mApi.emitAndAwait('get-nexus-collection', collectionId))[0]
+    const collectionInfo = (await this.mApi.emitAndAwait('get-nexus-collection', collectionId))[0];
     store.dispatch(setCollectionInfo(collectionId, collectionInfo));
     return Promise.resolve(collectionInfo);
   }

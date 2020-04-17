@@ -3,6 +3,7 @@ import { IRevisionDetailed } from 'nexus-api';
 import { actions, log, types, util } from 'vortex-api';
 import { findModByRef } from './findModByRef';
 import { getUnfulfilledNotificationId } from './util';
+import InfoCache from './InfoCache';
 
 export type Step = 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 
@@ -19,9 +20,13 @@ class InstallDriver {
   private mInstallingMod: string;
   private mInstallDone: boolean = false;
   private mRevisionInfo: IRevisionDetailed;
+  private mInfoCache: InfoCache;
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
+
+    this.mInfoCache = new InfoCache(api);
+
     api.onAsync('will-install-mod', (gameId, archiveId, modId) => {
       const state: types.IState = api.store.getState();
       const download = state.persistent.downloads.files[archiveId];
@@ -151,16 +156,15 @@ class InstallDriver {
 
     const state: types.IState = this.mApi.store.getState();
     const mods = state.persistent.mods[this.mProfile.gameId];
-    const nexusInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo.nexus;
+    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const nexusInfo = modInfo.nexus;
 
-    const collectionId = nexusInfo?.ids?.collectionId;
-    const revisionId = nexusInfo?.ids?.revisionId;
+    const collectionId = nexusInfo?.ids?.collectionId || modInfo.ids?.collectionId;
+    const revisionId = nexusInfo?.ids?.revisionId || modInfo.ids?.revisionId;
 
     if ((collectionId !== undefined) && (revisionId !== undefined)) {
       this.mRevisionInfo = nexusInfo?.revisionInfo
-        ?? (await this.mApi.emitAndAwait('get-nexus-collection-revision',
-                                         collectionId,
-                                         revisionId))[0];
+        ?? await this.mInfoCache.getRevisionInfo(collectionId, revisionId);
       if (Array.isArray(this.mRevisionInfo)) {
         this.mRevisionInfo = this.mRevisionInfo[0];
       }
