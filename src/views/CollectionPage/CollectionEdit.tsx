@@ -43,12 +43,11 @@ interface ICollectionEditState {
 }
 
 const emptyCollectionInfo: IModPackInfo = {
-  domain_name: '',
+  domainName: '',
   author: '',
-  author_url: '',
+  authorUrl: '',
   name: '',
   description: '',
-  version: '',
 };
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {

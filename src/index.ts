@@ -17,7 +17,6 @@ import { install, postprocessPack, testSupported } from './modpackInstall';
 
 import * as PromiseBB from 'bluebird';
 import memoize from 'memoize-one';
-import { IRevisionDetailed } from 'nexus-api';
 import * as path from 'path';
 import * as React from 'react';
 import { generate as shortid } from 'shortid';
@@ -106,33 +105,17 @@ function genAttributeExtractor(api: types.IExtensionApi) {
   // tslint:disable-next-line:no-shadowed-variable
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
     const collectionId = modInfo.download?.modInfo?.nexus?.ids?.collectionId;
-    const revisionId = modInfo.download?.modInfo?.nexus?.ids?.revisionId;
+    const revisionNumber = modInfo.download?.modInfo?.nexus?.ids?.revisionNumber;
     const modId = modInfo.download?.modInfo?.nexus?.ids?.modId;
     const referenceTag = modInfo.download?.modInfo?.referenceTag;
 
-    const getRevInfo: PromiseBB<IRevisionDetailed> =
-      (collectionId !== undefined) && (revisionId !== undefined) && (modId !== undefined)
-      ? PromiseBB.resolve(cache.getRevisionInfo(collectionId, revisionId))
-      : PromiseBB.resolve(undefined);
+    const result: { [key: string]: any } = {
+      collectionId,
+      revisionNumber,
+      referenceTag,
+    };
 
-    return getRevInfo
-      .then(revInfo => {
-        const result: { [key: string]: any } = {
-          collectionId,
-          revisionId,
-          referenceTag,
-        };
-
-        if (revInfo !== undefined) {
-          const revModInfo = revInfo.collection_revision_mods
-            .find(iter => iter.mod.mod_id === modId);
-          if (revModInfo !== undefined) {
-            result.uploaderAvatar = revModInfo.mod.uploader.avatar;
-          }
-        }
-
-        return PromiseBB.resolve(result);
-    });
+    return PromiseBB.resolve(result);
   };
 }
 

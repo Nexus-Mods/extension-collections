@@ -2,31 +2,34 @@ import { types } from 'vortex-api';
 import { IModPackGamebryo } from '../util/gameSupport/gamebryo';
 
 export interface IModPackInfo {
-  collection_id?: number;
   author: string;
-  author_url: string;
+  authorUrl: string;
   name: string;
-  version: string;
   description: string;
-  domain_name: string;
+  domainName: string;
 }
 
-export type UpdatePolicy = 'exact' | 'latest';
+export type UpdatePolicy = 'exact' | 'latest' | 'prefer';
 
 export type SourceType = 'browse' | 'manual' | 'direct' | 'nexus';
 
 export interface IModPackSourceInfo {
   type: SourceType;
-  md5?: string;
   url?: string;
+  // textual download/installation instructions (used with source 'manual' and 'browse')
   instructions?: string;
-  mod_id?: number;
-  file_id?: number;
+  // numerical mod id (used with source 'nexus')
+  modId?: number;
+  // numerical file id (used with source 'nexus')
+  fileId?: number;
   // determines which file to get if there is an update compared to what's in the mod pack
-  update_policy?: UpdatePolicy;
-  file_size?: number;
-  logical_filename?: string;
-  file_expression?: string;
+  // Not supported with every source type
+  updatePolicy?: UpdatePolicy;
+
+  md5?: string;
+  fileSize?: number;
+  logicalFilename?: string;
+  fileExpression?: string;
 }
 
 export interface IModPackModDetails {
@@ -37,14 +40,14 @@ export interface IModPackMod {
   name: string;
   version: string;
   optional: boolean;
-  domain_name: string;
+  domainName: string;
   source: IModPackSourceInfo;
   // hashes?: types.IFileListItem[];
   hashes?: any;
   // installer-specific data to replicate the choices the author made
   choices?: any;
   author?: string;
-  details: IModPackModDetails;
+  details?: IModPackModDetails;
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';

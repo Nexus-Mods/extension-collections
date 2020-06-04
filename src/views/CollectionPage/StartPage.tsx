@@ -1,5 +1,6 @@
 import { MOD_TYPE } from '../../constants';
 import { initFromProfile } from '../../modpackCreate';
+import InstallDriver from '../../util/InstallDriver';
 import { makeModpackId } from '../../util/modpack';
 
 import CollectionThumbnail from './CollectionThumbnail';
@@ -183,7 +184,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
       choices: collections.map(coll => ({
         text: coll.name,
         value: false,
-        id: (coll.collection_id || (coll as any).id).toString(),
+        id: coll.id.toString(),
       })),
     }, [
       { label: 'Cancel' },
@@ -192,26 +193,22 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
     if (choice.action === 'Download') {
       const collId = Object.keys(choice.input).find(id => choice.input[id]);
+      const selectedCollection = collections.find(coll => coll.id.toString() === collId);
       try {
-        const revisions: IRevision[] =
-          (await api.emitAndAwait('get-nexus-collection-revisions', collId))[0];
-
-        const latest = revisions
-          // sort descending
-          .sort((lhs, rhs) => lhs.revision - rhs.revision)
-        [0];
+        const latest = selectedCollection.currentRevision;
 
         const modInfo = {
           game: profile.gameId,
-          name: latest.collection.name,
+          name: selectedCollection.name,
           source: 'nexus',
           ids: {
             collectionId: collId.toString(),
-            revisionId: latest.revision_id.toString(),
+            revisionNumber: latest.revision,
           },
         };
         const dlId = await util.toPromise(cb =>
-          api.events.emit('start-download', [latest.uri], modInfo, (latest as any).file_name, cb));
+          api.events.emit('start-download',
+            [latest.downloadUri], modInfo, (latest as any).file_name, cb));
         await util.toPromise(cb =>
           api.events.emit('start-install-download', dlId, undefined, cb));
       } catch (err) {

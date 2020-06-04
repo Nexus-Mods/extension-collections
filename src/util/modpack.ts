@@ -44,7 +44,7 @@ function deduceSource(mod: types.IMod,
                       sourceInfo: IModPackSourceInfo,
                       versionMatcher: string)
                       : IModPackSourceInfo {
-  const res: IModPackSourceInfo = (sourceInfo !== undefined)
+  const res: Partial<IModPackSourceInfo> = (sourceInfo !== undefined)
     ? {...sourceInfo}
     : { type: 'nexus' };
 
@@ -58,8 +58,8 @@ function deduceSource(mod: types.IMod,
       throw new Error(`"${mod.id}" is missing mod id or file id`);
     }
 
-    res.mod_id = toInt(modId)
-    res.file_id = toInt(fileId);
+    res.modId = toInt(modId)
+    res.fileId = toInt(fileId);
   }
 
   const assign = (obj: any, key: string, value: any) => {
@@ -69,30 +69,30 @@ function deduceSource(mod: types.IMod,
   };
 
   assign(res, 'md5', util.getSafe(mod.attributes, ['fileMD5'], undefined));
-  assign(res, 'file_size', util.getSafe(mod.attributes, ['fileSize'], undefined));
-  assign(res, 'logical_filename', util.getSafe(mod.attributes, ['logicalFileName'], undefined));
-  if (sourceInfo !== undefined) {
-    assign(res, 'update_policy', sourceInfo.update_policy);
+  assign(res, 'fileSize', util.getSafe(mod.attributes, ['fileSize'], undefined));
+  assign(res, 'logicalFilename', util.getSafe(mod.attributes, ['logicalFileName'], undefined));
+  if (sourceInfo?.updatePolicy !== undefined) {
+    assign(res, 'updatePolicy', sourceInfo.updatePolicy);
   } else {
     if (versionMatcher === '*') {
-      assign(res, 'update_policy', 'latest');
+      assign(res, 'updatePolicy', 'latest');
     } else if ((versionMatcher === undefined)
                || versionMatcher.endsWith('+prefer')) {
-      assign(res, 'update_policy', 'prefer');
+      assign(res, 'updatePolicy', 'prefer');
     } else {
-      assign(res, 'update_policy', 'exact');
+      assign(res, 'updatePolicy', 'exact');
       assign(res, 'version', versionMatcher);
     }
   }
 
   if ((res.md5 === undefined)
-      && (res.logical_filename === undefined)
-      && (res.file_expression === undefined)) {
-    assign(res, 'file_expression',
+      && (res.logicalFilename === undefined)
+      && (res.fileExpression === undefined)) {
+    assign(res, 'fileExpression',
       sanitizeExpression(util.getSafe(mod.attributes, ['fileName'], undefined)));
   }
 
-  return res;
+  return res as IModPackSourceInfo;
 }
 
 /*
@@ -185,7 +185,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
         name: modName,
         version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
         optional: rule.type === 'recommends',
-        domain_name: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
+        domainName: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
         source,
         hashes,
         choices,
@@ -297,19 +297,19 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     : undefined;
 
   let versionMatch = `>=${semver.coerce(mod.version)}+prefer`;
-  if (mod.source.update_policy === 'exact') {
+  if (mod.source.updatePolicy === 'exact') {
     versionMatch = mod.version;
-  } else if (mod.source.update_policy === 'latest') {
+  } else if (mod.source.updatePolicy === 'latest') {
     versionMatch = '*';
   }
   const reference: types.IModReference = {
     description: mod.name,
     fileMD5: mod.source.md5,
-    gameId: mod.domain_name,
-    fileSize: mod.source.file_size,
+    gameId: mod.domainName,
+    fileSize: mod.source.fileSize,
     versionMatch,
-    logicalFileName: mod.source.logical_filename,
-    fileExpression: mod.source.file_expression,
+    logicalFileName: mod.source.logicalFilename,
+    fileExpression: mod.source.fileExpression,
   };
 
   if (downloadHint !== undefined) {
@@ -324,9 +324,9 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   if (mod.source.type === 'nexus') {
     reference['repo'] = {
       repository: 'nexus',
-      gameId: mod.domain_name,
-      modId: mod.source.mod_id.toString(),
-      fileId: mod.source.file_id.toString(),
+      gameId: mod.domainName,
+      modId: mod.source.modId.toString(),
+      fileId: mod.source.fileId.toString(),
     };
   }
 
@@ -376,13 +376,13 @@ export async function modToPack(state: types.IState,
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
   const modpackInfo: IModPackInfo = {
-    collection_id: util.getSafe(modpack.attributes, ['collectionId'], undefined),
+    // collection_id: util.getSafe(modpack.attributes, ['collectionId'], undefined),
     author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
-    author_url: util.getSafe(modpack.attributes, ['authorURL'], ''),
+    authorUrl: util.getSafe(modpack.attributes, ['authorURL'], ''),
     name: util.renderModName(modpack),
-    version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
+    // version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
     description: util.getSafe(modpack.attributes, ['shortDescription'], ''),
-    domain_name: gameId,
+    domainName: gameId,
   };
 
   const res: IModPack = {

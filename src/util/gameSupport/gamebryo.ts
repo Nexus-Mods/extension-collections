@@ -24,7 +24,7 @@ interface IUserlistEntry {
 
 interface IGamebryoRules {
   plugins: IUserlistEntry[];
-  groups: IUserlistEntry[];
+  groups?: IUserlistEntry[];
 }
 
 function extractPluginRules(state: types.IState, plugins: string[]): IGamebryoRules {

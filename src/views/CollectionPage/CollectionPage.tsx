@@ -4,6 +4,7 @@ import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';
 
 import { IModEx } from '../../types/IModEx';
+import { IRevisionEx } from '../../types/IRevisionEx';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
@@ -13,7 +14,7 @@ import CollectionProgress, { ICollectionProgressProps } from './CollectionProgre
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
-import { IRevisionDetailed, IRevisionModInfo } from 'nexus-api';
+import { ICollection, ICollectionRevisionMod, IRevision } from 'nexus-api';
 import * as React from 'react';
 import { Image, Nav, NavItem, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
@@ -49,7 +50,7 @@ interface IActionProps {
 
 interface IComponentState {
   modsEx: { [modId: string]: IModEx };
-  revisionInfo: IRevisionDetailed;
+  revisionInfo: IRevision;
 }
 
 const getCollator = (() => {
@@ -197,11 +198,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             );
           }
 
-          const revMods = this.state.revisionInfo?.collection_revision_mods || [];
-          const revMod = revMods.find(iter => iter.mod.mod_id === mod.attributes.modId);
+          const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
+          const revMod = revMods.find(iter => iter.file.mod.id === mod.attributes.modId);
 
-          const name = revMod?.mod.uploader.name;
-          const avatar = revMod?.mod.uploader.avatar?.url || AVATAR_FALLBACK;
+          const name = revMod?.file.mod.uploader.name;
+          const avatar = revMod?.file.mod.uploader.avatar?.url || AVATAR_FALLBACK;
 
           return (
             <div>
@@ -231,11 +232,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   public async componentDidMount() {
     const { collection } = this.props;
 
-    let revisionInfo: IRevisionDetailed;
-    if (collection.attributes.revisionId !== undefined) {
-      revisionInfo = await this.props.cache.getRevisionInfo(collection.attributes.collectionId,
-                                                            collection.attributes.revisionId);
-      this.nextState.revisionInfo = revisionInfo;
+    if (collection.attributes.revisionNumber !== undefined) {
+      const collectionInfo = await this.props.cache.getRevisionInfo(
+        collection.attributes.collectionId, collection.attributes.revisionNumber);
+      this.nextState.revisionInfo = collectionInfo.revisions
+        .find(rev => rev.revision === collection.attributes.revisionNumber);
     }
 
     const modsEx = this.initModsEx(this.props);
@@ -250,10 +251,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || this.installingNotificationsChanged(this.props, newProps)) {
       this.nextState.modsEx = this.updateModsEx(this.props, newProps);
       const { collection } = this.props;
-      if (collection.attributes.revisionId !== undefined) {
-        this.nextState.revisionInfo =
-          await this.props.cache.getRevisionInfo(collection.attributes.collectionId,
-                                                 collection.attributes.revisionId);
+      if (collection.attributes.revisionNumber !== undefined) {
+        const collectionInfo = await this.props.cache.getRevisionInfo(
+          collection.attributes.collectionId, collection.attributes.revisionNumber);
+        this.nextState.revisionInfo = collectionInfo.revisions
+          .find(rev => rev.revision === collection.attributes.revisionNumber);
       }
     }
   }
@@ -306,7 +308,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed>
           {incomplete
-            && (driver.revisionInfo !== undefined)
+            && (driver.collectionInfo !== undefined)
             && (driver.collection.id === collection.id)
             ? (
               <CollectionOverviewInstalling
@@ -715,13 +717,13 @@ function mapStateToProps(state: types.IState, ownProps: ICollectionPageProps): I
 
   let votedSuccess;
 
-  if ((collection !== undefined) && (collection.attributes.revisionId !== undefined)) {
-    const { collectionId, revisionId } = collection.attributes;
-    const collectionInfo = (state.persistent as any).collections[collectionId];
-    votedSuccess = ((collectionInfo !== undefined)
-                    && (collectionInfo.revisions !== undefined)
-                    && (collectionInfo.revisions[revisionId] !== undefined))
-       ? collectionInfo.revisions[revisionId].success
+  if ((collection !== undefined) && (collection.attributes.revisionNumber !== undefined)) {
+    const { collectionId, revisionNumber } = collection.attributes;
+    const collectionInfo: ICollection = (state.persistent as any).collections[collectionId];
+    const revisionInfo: IRevisionEx =
+      collectionInfo?.revisions?.find(rev => rev.revision === revisionNumber);
+    votedSuccess = revisionInfo !== undefined
+       ? revisionInfo.success
        : false;
   }
 

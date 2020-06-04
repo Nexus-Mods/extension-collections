@@ -3,7 +3,8 @@ import CollectionThumbnail from './CollectionThumbnail';
 import HealthIndicator from '../HealthIndicator';
 
 import i18next from 'i18next';
-import { IRevisionDetailed } from 'nexus-api';
+import * as _ from 'lodash';
+import { IRevision } from 'nexus-api';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
@@ -14,7 +15,7 @@ interface ICollectionOverviewProps {
   gameId: string;
   collection: types.IMod;
   totalSize: number;
-  revision: IRevisionDetailed;
+  revision: IRevision;
   votedSuccess: boolean;
   onClose: () => void;
   onVoteSuccess: (collectionId: string, success: boolean) => void;
@@ -88,10 +89,12 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                 </div>
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
-                {(revision?.revision_status_id !== ('is_private' as any)) ? (
+                {(revision?.revisionStatusId !== ('is_private' as any)) ? (
                   <HealthIndicator
                     t={t}
-                    value={revision !== undefined ? revision.success_rate : undefined}
+                    value={revision !== undefined
+                      ? _.pick(revision, ['rating', 'votes'])
+                      : undefined}
                     onVoteSuccess={this.voteSuccess}
                     ownSuccess={votedSuccess}
                   />

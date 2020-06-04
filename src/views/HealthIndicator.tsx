@@ -4,7 +4,7 @@ import { Icon, tooltip } from 'vortex-api';
 
 export interface IHealthIndicatorProps {
   t: I18next.TFunction;
-  value: { positive: number, negative: number };
+  value: { rating: number, votes: number };
   ownSuccess: boolean;
   onVoteSuccess: (success: boolean) => void;
 }
@@ -20,18 +20,10 @@ function HealthIndicator(props: IHealthIndicatorProps) {
     onVoteSuccess(success === 'true');
   }, []);
 
-  const total = value !== undefined
-    ? value.positive + value.negative
-    : undefined;
-
-  const successPerc = total !== 0
-    ? (value.positive * 100) / total
-    : 100;
-
   return (
     <div className='collection-health-indicator'>
       <Icon name='health' />
-      {`${successPerc}%`}
+      {`${value.rating}%`}
       <tooltip.IconButton
         className={ownSuccess === true ? 'voted' : undefined}
         icon='endorse-yes'
@@ -42,7 +34,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
       <tooltip.IconButton
         className={ownSuccess === false ? 'voted' : undefined}
         icon='endorse-no'
-        tooltip={t('Collection didn\'t work (in a significant way)')} 
+        tooltip={t('Collection didn\'t work (in a significant way)')}
         data-success={false}
         onClick={voteSuccess}
       />

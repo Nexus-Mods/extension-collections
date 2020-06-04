@@ -1,31 +1,25 @@
 import * as actions from '../actions/persistent';
 
 import * as _ from 'lodash';
+import { ICollection, IRevision } from 'nexus-api';
 import { types, util } from 'vortex-api';
 
 const persistentReducer: types.IReducerSpec = {
   reducers: {
-    [actions.setCollectionInfo as any]: (state, payload) => {
-      const { collectionId, collectionInfo } = payload;
-      state = util.setSafe(state, [collectionId, 'timestamp'], Date.now());
-      state = util.setSafe(state, [collectionId, 'info'], collectionInfo);
-      if (state[collectionId].revisions === undefined) {
-        state = util.setSafe(state, [collectionId, 'revisions'], {});
-      }
-      return state;
-    },
-    [actions.setRevisionInfo as any]: (state, payload) => {
-      const { collectionId, revisionId, revisionInfo } = payload;
+    [actions.updateCollectionInfo as any]: (state, payload) => {
+      const { collectionId, revisionInfo }:
+        { collectionId: string, revisionInfo: ICollection } = payload;
 
-      if (state[collectionId] === undefined) {
-        state = util.setSafe(state, [collectionId, 'timestamp'], 0);
-        state = util.setSafe(state, [collectionId, 'info'], undefined);
-      }
-      const revPath = [collectionId, 'revisions', revisionId];
+      const knownRevisions: IRevision[] = state[collectionId]?.revisions || [];
+      const updatedRevisions = new Set(revisionInfo.revisions.map(rev => rev.revision));
 
-      state = util.setSafe(state, [...revPath, 'timestamp'], Date.now());
-
-      return util.setSafe(state, [...revPath, 'info'], _.omit(revisionInfo, ['collection']));
+      // update collection info and all the revisions that are contained in the payload but
+      // keep the info about all other revisions
+      return util.setSafe(state, [collectionId], {
+        ..._.omit(revisionInfo, 'revisions'),
+        revisions: [].concat(knownRevisions.filter(rev => updatedRevisions.has(rev.revision)),
+                             revisionInfo),
+      });
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
       const { collectionId, revisionId, success } = payload;

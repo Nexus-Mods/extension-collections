@@ -12,7 +12,8 @@ interface ICollectionOverviewInstallingProps {
   driver: InstallDriver;
 }
 
-class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstallingProps, { displayModIdx: number }> {
+class CollectionOverviewInstalling
+    extends ComponentEx<ICollectionOverviewInstallingProps, { displayModIdx: number }> {
   constructor(props: ICollectionOverviewInstallingProps) {
     super(props);
 
@@ -25,8 +26,8 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
     const { t, driver, gameId } = this.props;
     const { displayModIdx } = this.state;
 
-    const displayMod = driver.revisionInfo.collection_revision_mods[displayModIdx];
-    const modCount = driver.revisionInfo.collection_revision_mods.length;
+    const displayMod = driver.revisionInfo.modFiles[displayModIdx];
+    const modCount = driver.revisionInfo.modFiles.length;
 
     const uploaderName = util.getSafe(displayMod, ['mod', 'uploader', 'name'], undefined)
                       || AUTHOR_UNKNOWN;
@@ -40,7 +41,7 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
             <FlexLayout type='column'>
               <FlexLayout.Fixed>
                 <div className='installing-mod-title'>
-                  {displayMod.mod.name}
+                  {displayMod.file.mod.name}
                 </div>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>
@@ -63,13 +64,13 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Version')}</div>
-                    <div>{displayMod.mod_file.version}</div>
+                    <div>{displayMod.file.version || '???'}</div>
                   </FlexLayout.Fixed>
                 </FlexLayout>
               </FlexLayout.Fixed>
               <FlexLayout.Flex>
                 <div className='collection-description'>
-                  {displayMod.mod.summary}
+                  {displayMod.file.mod.summary}
                 </div>
               </FlexLayout.Flex>
             </FlexLayout>
@@ -77,7 +78,7 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
           <FlexLayout.Flex>
             <FlexLayout type='column' className='collection-installing-image-pane'>
               <FlexLayout.Flex>
-                <Image className='installing-mod-image' src={displayMod.mod.picture_url} />
+    {/*<Image className='installing-mod-image' src={displayMod.file.mod.picture_url} />*/}
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
                 <tooltip.IconButton
@@ -120,7 +121,7 @@ class CollectionOverviewInstalling extends ComponentEx<ICollectionOverviewInstal
 
   private last = () => {
     const { driver } = this.props;
-    this.nextState.displayModIdx = driver.revisionInfo.collection_revision_mods.length - 1;
+    this.nextState.displayModIdx = driver.revisionInfo.modFiles.length - 1;
   }
 
   private prev = () => {

@@ -164,12 +164,6 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
     this.nextState.page = page;
   }
 
-  private genName = () => {
-    const { modPackInfo } = this.state;
-
-    return `${modPackInfo.name} v${modPackInfo.version}.vmp`;
-  }
-
   private export = () => {
     const { modpack, onClose, onExport } = this.props;
     onExport(modpack.id);
@@ -201,12 +195,11 @@ class EditDialog extends ComponentEx<IProps, IEditDialogState> {
 const emptyObject = {};
 
 const emptyModPackInfo: IModPackInfo = {
-  domain_name: '',
+  domainName: '',
   author: '',
-  author_url: '',
+  authorUrl: '',
   name: '',
   description: '',
-  version: '',
 };
 
 function mapStateToProps(state: any): IConnectedProps {

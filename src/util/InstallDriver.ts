@@ -1,9 +1,10 @@
 import * as Promise from 'bluebird';
-import { IRevisionDetailed } from 'nexus-api';
+import { ICollection } from 'nexus-api';
 import { actions, log, types, util } from 'vortex-api';
 import { findModByRef } from './findModByRef';
-import { getUnfulfilledNotificationId } from './util';
 import InfoCache from './InfoCache';
+import { getUnfulfilledNotificationId } from './util';
+import { IRevisionEx } from '../types/IRevisionEx';
 
 export type Step = 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 
@@ -19,7 +20,7 @@ class InstallDriver {
   private mRequiredMods: types.IModRule[] = [];
   private mInstallingMod: string;
   private mInstallDone: boolean = false;
-  private mRevisionInfo: IRevisionDetailed;
+  private mCollectionInfo: ICollection;
   private mInfoCache: InfoCache;
 
   constructor(api: types.IExtensionApi) {
@@ -95,12 +96,33 @@ class InstallDriver {
     return this.mInstallingMod;
   }
 
-  public get collection() {
+  public get collection(): types.IMod {
     return this.mCollection;
   }
 
-  public get revisionInfo(): IRevisionDetailed {
-    return this.mRevisionInfo;
+  public get collectionId(): string {
+    const state: types.IState = this.mApi.store.getState();
+    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const nexusInfo = modInfo?.nexus;
+
+    return nexusInfo?.ids?.collectionId || modInfo?.ids?.collectionId;
+  }
+
+  public get revisionNumber(): number {
+    const state: types.IState = this.mApi.store.getState();
+    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const nexusInfo = modInfo?.nexus;
+
+    return nexusInfo?.ids?.revisionNumber || modInfo?.ids?.revisionNumber;
+  }
+
+  public get collectionInfo(): ICollection {
+    return this.mCollectionInfo;
+  }
+
+  public get revisionInfo(): IRevisionEx {
+    const revisionNumber = this.revisionNumber;
+    return this.mCollectionInfo.revisions.find(rev => rev.revision === revisionNumber);
   }
 
   public get installDone(): boolean {
@@ -111,7 +133,7 @@ class InstallDriver {
     this.mCollection = undefined;
     this.mProfile = undefined;
     this.mInstalledMods = [];
-    this.mStep = 'start';
+    this.mStep = 'query';
 
     this.triggerUpdate();
   }
@@ -157,17 +179,14 @@ class InstallDriver {
     const state: types.IState = this.mApi.store.getState();
     const mods = state.persistent.mods[this.mProfile.gameId];
     const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
-    const nexusInfo = modInfo.nexus;
+    const nexusInfo = modInfo?.nexus;
 
-    const collectionId = nexusInfo?.ids?.collectionId || modInfo.ids?.collectionId;
-    const revisionId = nexusInfo?.ids?.revisionId || modInfo.ids?.revisionId;
+    const collectionId = this.collectionId;
+    const revisionNumber = this.revisionNumber;
 
-    if ((collectionId !== undefined) && (revisionId !== undefined)) {
-      this.mRevisionInfo = nexusInfo?.revisionInfo
-        ?? await this.mInfoCache.getRevisionInfo(collectionId, revisionId);
-      if (Array.isArray(this.mRevisionInfo)) {
-        this.mRevisionInfo = this.mRevisionInfo[0];
-      }
+    if ((collectionId !== undefined) && (revisionNumber !== undefined)) {
+      this.mCollectionInfo = nexusInfo?.collectionInfo
+        ?? await this.mInfoCache.getRevisionInfo(collectionId, revisionNumber);
     }
 
     this.mApi.events.emit('view-collection', this.mCollection.id);

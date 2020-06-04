@@ -1,5 +1,5 @@
 import { IModPack, IModPackMod } from './types/IModPack';
-import { modToPack, LOGO_NAME } from './util/modpack';
+import { LOGO_NAME, modToPack } from './util/modpack';
 import { makeProgressFunction } from './util/util';
 
 import * as PromiseBB from 'bluebird';
@@ -82,7 +82,7 @@ async function writePackToFile(state: types.IState, info: IModPack,
 }
 
 function filterInfoMod(mod: IModPackMod): IModPackMod {
-  return _.omit(mod, ['hashes', 'choices']);
+  return _.omit(mod, ['hashes', 'choices', 'details']);
 }
 
 function filterInfo(input: IModPack): any {
@@ -93,7 +93,8 @@ function filterInfo(input: IModPack): any {
   };
 }
 
-async function queryErrorsContinue(api: types.IExtensionApi, errors: Array<{message: string, replace: any}>) {
+async function queryErrorsContinue(api: types.IExtensionApi,
+                                   errors: Array<{message: string, replace: any}>) {
   const res = await api.showDialog('error', 'Errors creating collection', {
     text: 'There were errors creating the collection, do you want to proceed anyway?',
     message: errors.map(err => api.translate(err.message, { replace: err.replace })).join('\n'),
@@ -107,7 +108,10 @@ async function queryErrorsContinue(api: types.IExtensionApi, errors: Array<{mess
   }
 }
 
-export async function doExportToAPI(api: types.IExtensionApi, gameId: string, modId: string): Promise<number> {
+export async function doExportToAPI(api: types.IExtensionApi,
+                                    gameId: string,
+                                    modId: string)
+                                    : Promise<number> {
   const state: types.IState = api.store.getState();
   const mod = state.persistent.mods[gameId][modId];
 
@@ -130,18 +134,20 @@ export async function doExportToAPI(api: types.IExtensionApi, gameId: string, mo
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writePackToFile(state, info, mod, tmpPath);
-      const result: any = await (util as any).toPromise(cb => api.events.emit('submit-collection', filterInfo(info), filePath, cb));
-      collectionId = result.collection.collection_id;
+      const result: any = await (util as any).toPromise(cb =>
+        api.events.emit('submit-collection', filterInfo(info), filePath, cb));
+      collectionId = result.collectionId;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
     });
     progressEnd();
   } catch (err) {
     progressEnd();
     if (err.name === 'ModFileNotFound') {
-      const file = info.mods.find(mod => mod.source.file_id === err.fileId);
+      const file = info.mods.find(iter => iter.source.fileId === err.fileId);
       api.sendNotification({
         type: 'error',
-        title: 'The server can\'t find one of the files in the collection, are mod id and file id for it set correctly?',
+        title: 'The server can\'t find one of the files in the collection, '
+             + 'are mod id and file id for it set correctly?',
         message: file !== undefined ? file.name : `id: ${err.fileId}`,
       });
       throw new util.ProcessCanceled('Mod file not found');
