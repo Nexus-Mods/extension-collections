@@ -85,7 +85,7 @@ function filterInfoMod(mod: IModPackMod): IModPackMod {
   return _.omit(mod, ['hashes', 'choices', 'details']);
 }
 
-function filterInfo(input: IModPack): any {
+function filterInfo(input: IModPack): Partial<IModPack> {
   const info = input.info;
   return {
     info,
@@ -134,10 +134,12 @@ export async function doExportToAPI(api: types.IExtensionApi,
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writePackToFile(state, info, mod, tmpPath);
-      const result: any = await (util as any).toPromise(cb =>
-        api.events.emit('submit-collection', filterInfo(info), filePath, cb));
+      const result: any = await util.toPromise(cb =>
+        api.events.emit('submit-collection', filterInfo(info), filePath,
+                        mod.attributes?.collectionId, cb));
       collectionId = result.collectionId;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', result.revisionId));
     });
     progressEnd();
   } catch (err) {
