@@ -1,8 +1,9 @@
 import { IModPackInfo } from '../types/IModPack';
+import { validateName } from '../util/validation';
 
 import I18next from 'i18next';
 import * as React from 'react';
-import { ControlLabel, Form, FormGroup } from 'react-bootstrap';
+import { ControlLabel, Form, FormGroup, HelpBlock } from 'react-bootstrap';
 import * as semver from 'semver';
 import * as url from 'url';
 import { ComponentEx, FormInput, types, util } from 'vortex-api';
@@ -38,11 +39,11 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
     const author = util.getSafe(modpack.attributes, ['author'], '');
     const authorUrl = util.getSafe(modpack.attributes, ['authorURL'], '');
     const name = util.renderModName(modpack);
-    const version = util.getSafe(modpack.attributes, ['version'], '');
 
     const authorValid = (author.length >= 2) ? 'success' : 'error';
-    const nameValid =  (name.length >= 4) ? 'success' : 'error';
-    const versionValid = semver.valid(version) ? 'success' : 'error';
+    const nameValid = validateName(name);
+    const descriptionValid = (modpack.attributes['shortDescription'].length > 0)
+      ? 'success' : 'error';
     let urlValid: 'success' | 'error';
     if (authorUrl.length > 0) {
       try {
@@ -59,19 +60,16 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
           <ControlLabel>{t('Author')}</ControlLabel>
           <FormInput value={author} onChange={this.setter('author')} />
         </FormGroup>
-        <FormGroup controlId='author_url' validationState={urlValid}>
+        <FormGroup controlId='authorUrl' validationState={urlValid}>
           <ControlLabel>{t('Author Url')}</ControlLabel>
           <FormInput value={authorUrl} onChange={this.setter('authorURL')} />
         </FormGroup>
-        <FormGroup controlId='name' validationState={nameValid}>
+        <FormGroup controlId='name' validationState={nameValid.valid}>
           <ControlLabel>{t('Collection Name')}</ControlLabel>
           <FormInput value={name} onChange={this.setter('customFileName')} />
+          {nameValid.reason !== undefined ? <HelpBlock>{t(nameValid.reason)}</HelpBlock> : null}
         </FormGroup>
-        <FormGroup controlId='version' validationState={versionValid}>
-          <ControlLabel>{t('Version')}</ControlLabel>
-          <FormInput value={version} onChange={this.setter('version')} />
-        </FormGroup>
-        <FormGroup controlId='shortDescription'>
+        <FormGroup controlId='shortDescription' validationState={descriptionValid}>
           <ControlLabel>{t('Summary')}</ControlLabel>
           <textarea
             value={modpack.attributes['shortDescription']}
