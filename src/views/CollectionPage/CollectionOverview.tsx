@@ -2,9 +2,9 @@ import CollectionThumbnail from './CollectionThumbnail';
 
 import HealthIndicator from '../HealthIndicator';
 
+import { IRevision } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as _ from 'lodash';
-import { IRevision } from 'nexus-api';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';

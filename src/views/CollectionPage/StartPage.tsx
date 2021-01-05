@@ -5,8 +5,8 @@ import { makeModpackId } from '../../util/modpack';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
+import { ICollection } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
-import { ICollection, IRevision } from 'nexus-api';
 import * as React from 'react';
 import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
 import { ComponentEx, EmptyPlaceholder, Icon, types, util } from 'vortex-api';

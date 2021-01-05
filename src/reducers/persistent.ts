@@ -1,7 +1,7 @@
 import * as actions from '../actions/persistent';
 
+import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as _ from 'lodash';
-import { ICollection, IRevision } from 'nexus-api';
 import { types, util } from 'vortex-api';
 
 const persistentReducer: types.IReducerSpec = {

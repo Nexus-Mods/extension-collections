@@ -1,10 +1,10 @@
+import { ICollection } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
-import { ICollection } from 'nexus-api';
 import { actions, log, types, util } from 'vortex-api';
+import { IRevisionEx } from '../types/IRevisionEx';
 import { findModByRef } from './findModByRef';
 import InfoCache from './InfoCache';
 import { getUnfulfilledNotificationId } from './util';
-import { IRevisionEx } from '../types/IRevisionEx';
 
 export type Step = 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 

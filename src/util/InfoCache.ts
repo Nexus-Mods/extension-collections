@@ -1,6 +1,6 @@
 import { updateCollectionInfo } from '../actions/persistent';
 
-import { ICollection } from 'nexus-api';
+import { ICollection } from '@nexusmods/nexus-api';
 import { types } from 'vortex-api';
 
 const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000;

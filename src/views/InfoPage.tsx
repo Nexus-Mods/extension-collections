@@ -38,11 +38,12 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
 
     const author = util.getSafe(modpack.attributes, ['author'], '');
     const authorUrl = util.getSafe(modpack.attributes, ['authorURL'], '');
+    const description = modpack.attributes?.['shortDescription'] ?? '';
     const name = util.renderModName(modpack);
 
     const authorValid = (author.length >= 2) ? 'success' : 'error';
     const nameValid = validateName(name);
-    const descriptionValid = (modpack.attributes['shortDescription'].length > 0)
+    const descriptionValid = (description.length > 0)
       ? 'success' : 'error';
     let urlValid: 'success' | 'error';
     if (authorUrl.length > 0) {

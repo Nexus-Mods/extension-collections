@@ -11,10 +11,10 @@ import CollectionOverview from './CollectionOverview';
 import CollectionOverviewInstalling from './CollectionOverviewInstalling';
 import CollectionProgress, { ICollectionProgressProps } from './CollectionProgress';
 
+import { ICollection, ICollectionRevisionMod, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
-import { ICollection, ICollectionRevisionMod, IRevision } from 'nexus-api';
 import * as React from 'react';
 import { Image, Nav, NavItem, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
@@ -202,7 +202,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           const revMod = revMods.find(iter => iter.file.mod.id === mod.attributes.modId);
 
           const name = revMod?.file.mod.uploader.name;
-          const avatar = revMod?.file.mod.uploader.avatar?.url || AVATAR_FALLBACK;
+          // const avatar = revMod?.file.mod.uploader.avatar?.url || AVATAR_FALLBACK;
+          const avatar = revMod?.file.mod.uploader.avatar || AVATAR_FALLBACK;
 
           return (
             <div>

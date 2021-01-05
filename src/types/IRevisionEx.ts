@@ -1,4 +1,4 @@
-import { IRevision } from 'nexus-api';
+import { IRevision } from '@nexusmods/nexus-api';
 
 export interface IRevisionEx extends IRevision {
   success?: boolean;
