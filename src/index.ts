@@ -211,12 +211,13 @@ function register(context: types.IExtensionContext,
     () => undefined, () => PromiseBB.resolve(false), {
     name: 'Collection',
     customDependencyManagement: true,
+    noConflicts: true,
   } as any);
 
   const state: () => types.IState = () => context.api.store.getState();
 
   const collectionsMap = () =>
-    memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())]);
+    memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())] ?? {});
   const collectionOptions = memoize(generateCollectionOptions);
 
   const collectionAttribute: types.ITableAttribute<types.IMod> = {
