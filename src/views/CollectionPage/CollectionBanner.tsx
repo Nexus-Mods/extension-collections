@@ -2,9 +2,10 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Table } from 'react-bootstrap';
 import { util } from 'vortex-api';
+import { NEXUS_DOMAIN } from '../../constants';
 
 const ONE_MB = 1024 * 1024;
-const NEXUS_MEMBERSHIP_URL = 'https://users.nexusmods.com/register/memberships';
+const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memberships`;
 
 function renderTime(input: number): string {
   const hours = util.pad(Math.floor(input / 3600), '0', 2);

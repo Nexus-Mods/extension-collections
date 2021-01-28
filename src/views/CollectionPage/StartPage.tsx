@@ -9,7 +9,7 @@ import { ICollection } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
-import { ComponentEx, EmptyPlaceholder, Icon, types, util } from 'vortex-api';
+import { ComponentEx, EmptyPlaceholder, Icon, PortalMenu, types, util } from 'vortex-api';
 
 export interface IStartPageProps {
   t: i18next.TFunction;
@@ -26,6 +26,7 @@ export interface IStartPageProps {
 
 interface IComponentState {
   createOpen: boolean;
+  mousePosition: { x: number, y: number };
   imageTime: number;
 }
 
@@ -48,11 +49,14 @@ function validateCollectionName(t: i18next.TFunction, input: string): string {
 }
 
 class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
+  private mCreateRef: React.RefObject<any> = React.createRef();
+
   constructor(props: IStartPageProps) {
     super(props);
     this.initState({
       createOpen: false,
       imageTime: Date.now(),
+      mousePosition: { x: 0, y: 0 },
     });
   }
 
@@ -73,6 +77,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
     const id = makeModpackId(profile.id);
     const profilePack: types.IMod = mods[id];
+    const PortalMenuX: any = PortalMenu;
 
     return (
       <PanelGroup id='collection-panel-group'>
@@ -131,18 +136,26 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   details={true}
                 />)}
               <Panel className='collection-create-btn'>
-                <Panel.Body onClick={this.toggleCreate}>
+                <Panel.Body onClick={this.clickCreate}>
                   <Icon name='add' />
                   <div className='collection-create-label'>{t('Create Collection')}</div>
                   <Dropdown
                     id='create-collection-dropdown'
                     open={createOpen}
-                    onToggle={this.toggleCreate}
-                    onSelect={this.select as any}
+                    onToggle={nop}
+                    ref={this.mCreateRef}
                   >
                     {/* oh you say we need this react-bootstrap? here you go...  */}
                     <Dropdown.Toggle bsRole='toggle' style={{ display: 'none' }} />
-                    <Dropdown.Menu>
+                    <PortalMenuX
+                      open={createOpen}
+                      target={this.mCreateRef.current}
+                      onClose={nop}
+                      onClick={this.clickCreate}
+                      onSelect={this.select}
+                      useMousePosition={this.state.mousePosition}
+                      bsRole='menu'
+                    >
                       <MenuItem
                         eventKey='profile'
                         disabled={profilePack !== undefined}
@@ -159,7 +172,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                       <MenuItem eventKey='empty'>{t('Empty (for game {{gameName}})', { replace: {
                         gameName: profile.gameId,
                       }})}</MenuItem>
-                    </Dropdown.Menu>
+                    </PortalMenuX>
                   </Dropdown>
                 </Panel.Body>
               </Panel>
@@ -182,7 +195,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     const choice = await api.showDialog('question', 'Choose collection', {
       text: 'Pick a collection to install',
       choices: collections.map(coll => ({
-        text: coll.name,
+        text: `${coll.name} (${coll.id} revision ${coll.currentRevision?.revision})`,
         value: false,
         id: coll.id.toString(),
       })),
@@ -254,7 +267,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     }
   }
 
-  private toggleCreate = () => {
+  private clickCreate = (evt: React.MouseEvent<any>) => {
+    this.nextState.mousePosition = { x: evt.clientX, y: evt.clientY };
     this.nextState.createOpen = !this.state.createOpen;
   }
 }

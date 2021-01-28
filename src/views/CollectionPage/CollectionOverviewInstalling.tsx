@@ -1,3 +1,4 @@
+import { ICollectionRevisionMod } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
@@ -23,16 +24,14 @@ class CollectionOverviewInstalling
   }
 
   public render(): JSX.Element {
-    const { t, driver, gameId } = this.props;
+    const { t, driver } = this.props;
     const { displayModIdx } = this.state;
 
-    const displayMod = driver.revisionInfo.modFiles[displayModIdx];
+    const displayMod: ICollectionRevisionMod = driver.revisionInfo.modFiles[displayModIdx];
     const modCount = driver.revisionInfo.modFiles.length;
 
-    const uploaderName = util.getSafe(displayMod, ['mod', 'uploader', 'name'], undefined)
-                      || AUTHOR_UNKNOWN;
-    const authorName = util.getSafe(displayMod, ['mod', 'author', 'name'], undefined)
-                    || AUTHOR_UNKNOWN;
+    const uploaderName = displayMod?.['mod']?.uploader?.name || AUTHOR_UNKNOWN;
+    const authorName = displayMod?.['mod']?.author?.name || AUTHOR_UNKNOWN;
 
     return (
       <Panel className='installing-mod-overview'>

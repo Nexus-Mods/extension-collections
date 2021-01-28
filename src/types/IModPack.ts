@@ -46,6 +46,7 @@ export interface IModPackMod {
   hashes?: any;
   // installer-specific data to replicate the choices the author made
   choices?: any;
+  instructions?: string;
   author?: string;
   details?: IModPackModDetails;
 }
@@ -66,4 +67,6 @@ export interface IModPack extends Partial<IModPackGamebryo> {
 
 export interface IModPackAttributes {
   freshInstall?: { [modId: string]: boolean };
+  instructions?: { [modId: string]: string };
+  source?: { [modId: string]: { type: SourceType } };
 }

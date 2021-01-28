@@ -49,11 +49,11 @@ function deduceSource(mod: types.IMod,
     : { type: 'nexus' };
 
   if (res.type === 'nexus') {
-    if (util.getSafe(mod.attributes, ['source'], undefined) !== 'nexus') {
+    if (mod.attributes?.source !== 'nexus') {
       throw new Error(`"${util.renderModName(mod)}" doesn't have Nexus as its source`);
     }
-    const modId = util.getSafe(mod, ['attributes', 'modId'], undefined);
-    const fileId = util.getSafe(mod, ['attributes', 'fileId'], undefined);
+    const modId = (mod.type === MOD_TYPE) ? mod.attributes?.collectionId : mod.attributes?.modId;
+    const fileId = (mod.type === MOD_TYPE) ? mod.attributes?.revisionId : mod.attributes?.fileId;
     if ((modId === undefined) || (fileId === undefined)) {
       throw new Error(`"${mod.id}" is missing mod id or file id`);
     }
@@ -68,9 +68,9 @@ function deduceSource(mod: types.IMod,
     }
   };
 
-  assign(res, 'md5', util.getSafe(mod.attributes, ['fileMD5'], undefined));
-  assign(res, 'fileSize', util.getSafe(mod.attributes, ['fileSize'], undefined));
-  assign(res, 'logicalFilename', util.getSafe(mod.attributes, ['logicalFileName'], undefined));
+  assign(res, 'md5', mod.attributes?.fileMD5);
+  assign(res, 'fileSize', mod.attributes?.fileSize);
+  assign(res, 'logicalFilename', mod.attributes?.logicalFileName);
   if (sourceInfo?.updatePolicy !== undefined) {
     assign(res, 'updatePolicy', sourceInfo.updatePolicy);
   } else {
@@ -88,8 +88,7 @@ function deduceSource(mod: types.IMod,
   if ((res.md5 === undefined)
       && (res.logicalFilename === undefined)
       && (res.fileExpression === undefined)) {
-    assign(res, 'fileExpression',
-      sanitizeExpression(util.getSafe(mod.attributes, ['fileName'], undefined)));
+    assign(res, 'fileExpression', sanitizeExpression(mod.attributes?.fileName));
   }
 
   return res as IModPackSourceInfo;
@@ -135,7 +134,8 @@ async function rulesToModPackMods(rules: types.IModRule[],
       : findModByRef(rule.reference, mods);
 
     if ((mod === undefined) || (mod.type === MOD_TYPE)) {
-      // don't include the modpack itself (or any other modpack for that matter)
+      // don't include the modpack itself (or any other modpack for that matter,
+      // nested collections aren't allowed)
       --total;
       return undefined;
     }
@@ -145,16 +145,15 @@ async function rulesToModPackMods(rules: types.IModRule[],
       // This call is relatively likely to fail to do it before the hash calculation to
       // save the user time in case it does fail
       const source = deduceSource(mod,
-                                  util.getSafe(modpackInfo, ['source', mod.id], undefined),
+                                  modpackInfo['source']?.[mod.id],
                                   rule.reference.versionMatch);
 
-      // let hashes: types.IFileListItem[];
       let hashes: any;
       let choices: any;
 
       let entries: IEntry[] = [];
 
-      const installMode: string = util.getSafe(modpackInfo, ['installMode', mod.id], 'fresh');
+      const installMode: string = modpackInfo?.['installMode']?.[mod.id] ?? 'fresh';
 
       if (installMode === 'clone') {
         const modPath = path.join(stagingPath, mod.installationPath);
@@ -173,7 +172,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
         ++finished;
       } else if (installMode === 'choices') {
-        choices = util.getSafe(mod, ['attributes', 'installerChoices'], undefined);
+        choices = mod?.attributes?.installerChoices;
         --total;
       } else {
         --total;
@@ -181,15 +180,16 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
       onProgress(Math.floor((finished / total) * 100), modName);
 
-      const res = {
+      const res: IModPackMod = {
         name: modName,
-        version: util.getSafe(mod.attributes, ['version'], '1.0.0'),
+        version: mod.attributes?.version ?? '1.0.0',
         optional: rule.type === 'recommends',
-        domainName: util.getSafe(mod, ['attributes', 'downloadGame'], gameId),
+        domainName: mod.attributes?.downloadGame ?? gameId,
         source,
         hashes,
         choices,
-        author: util.getSafe(mod, ['attributes', 'author'], undefined),
+        instructions: modpackInfo.instructions?.[mod.id],
+        author: mod.attributes?.author,
         details: {},
       };
 
@@ -250,7 +250,7 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
     return undefined;
   }
 
-  const newRef: types.IModReference = (util as any).makeModReference(mod);
+  const newRef: types.IModReference = util.makeModReference(mod);
 
   // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
   // the rules referencing it apply to newer versions
@@ -288,7 +288,7 @@ function extractModRules(rules: types.IModRule[],
 }
 
 export function modPackModToRule(mod: IModPackMod): types.IModRule {
-  const downloadHint = ['manual', 'browse', 'direct'].indexOf(mod.source.type) !== -1
+  const downloadHint = ['manual', 'browse', 'direct'].includes(mod.source.type)
     ? {
       url: mod.source.url,
       instructions: mod.source.instructions,
@@ -296,7 +296,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     }
     : undefined;
 
-  let versionMatch = `>=${semver.coerce(mod.version)}+prefer`;
+  let versionMatch = `>=${semver.coerce(mod.version)?.version ?? '0.0.0'}+prefer`;
   if (mod.source.updatePolicy === 'exact') {
     versionMatch = mod.version;
   } else if (mod.source.updatePolicy === 'latest') {
@@ -340,6 +340,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
       author: mod.author,
       type: mod.details.type,
       name: mod.name,
+      instructions: mod.instructions,
     },
   } as any;
 }
@@ -382,18 +383,18 @@ export async function modToPack(state: types.IState,
 
   const modpackInfo: IModPackInfo = {
     // collection_id: util.getSafe(modpack.attributes, ['collectionId'], undefined),
-    author: util.getSafe(modpack.attributes, ['author'], 'Anonymous'),
-    authorUrl: util.getSafe(modpack.attributes, ['authorURL'], ''),
+    author: modpack.attributes?.author ?? 'Anonymous',
+    authorUrl: modpack.attributes?.authorURL ?? '',
     name: util.renderModName(modpack),
     // version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
-    description: util.getSafe(modpack.attributes, ['shortDescription'], ''),
+    description: modpack.attributes?.shortDescription ?? '',
     domainName: gameId,
   };
 
   const res: IModPack = {
     info: modpackInfo,
     mods: await rulesToModPackMods(modpack.rules, mods, stagingPath, gameId,
-                                   util.getSafe(modpack.attributes, ['modpack'], {}),
+                                   modpack.attributes?.modpack ?? {},
                                    onProgress, onError),
     modRules,
     ...gameSpecific,
@@ -404,10 +405,13 @@ export async function modToPack(state: types.IState,
 
 function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
-                                existingRules: types.IModRule[]): types.IModRule[] {
+                                existingRules: types.IModRule[],
+                                existingId: string): types.IModRule[] {
   return Object.keys(profile.modState)
     .filter(modId => profile.modState[modId].enabled
                   && (mods[modId] !== undefined)
+                  && (modId !== existingId)
+                  // no nested collections allowed
                   && (mods[modId].type !== MOD_TYPE)
                   && (mods[modId].attributes['generated'] !== true))
     .map(modId => {
@@ -445,13 +449,13 @@ export async function createModpack(api: types.IExtensionApi,
 
   const mod: types.IMod = {
     id,
-    type: 'modpack',
+    type: MOD_TYPE,
     state: 'installed',
     attributes: {
       name,
       version: '1.0.0',
       installTime: new Date(),
-      author: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'name'], 'Anonymous'),
+      author: state.persistent['nexus']?.userInfo?.name ?? 'Anonymous',
       editable: true,
     },
     installationPath: id,
@@ -459,7 +463,7 @@ export async function createModpack(api: types.IExtensionApi,
   };
 
   try {
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       api.events.emit('create-mod', gameId, mod, (error: Error) => {
         if (error !== null) {
           reject(error);
@@ -507,11 +511,10 @@ export async function createModpackFromProfile(api: types.IExtensionApi,
 
   const id = makeModpackId(profileId);
   const name = `Collection: ${profile.name}`;
-  const mod: types.IMod =
-    util.getSafe(state, ['persistent', 'mods', profile.gameId, id], undefined);
+  const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],
-                                       (mod !== undefined) ? mod.rules : []);
+                                       (mod !== undefined) ? mod.rules : [], mod.id);
 
   if (mod === undefined) {
     await createModpack(api, profile.gameId, id, name, rules);

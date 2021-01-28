@@ -235,7 +235,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         return (
           <tooltip.IconButton
             icon='edit'
-            disabled={['nexus', 'pack'].indexOf(type) !== -1}
+            disabled={['nexus', 'pack'].includes(type)}
             tooltip={t('Edit Source')}
             data-modid={entry.mod.id}
             onClick={this.onQuerySource}
@@ -462,16 +462,15 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         });
       }));
     } else {
-      this.props.onSetModpackAttribute(['source', modId], { id: type });
+      this.props.onSetModpackAttribute(['source', modId], { type });
     }
   }
 
   private onQuerySource = (evt: React.MouseEvent<any>) => {
     const { modpack } = this.props;
     const modId = evt.currentTarget.getAttribute('data-modid');
-    const type = util.getSafe(modpack,
-      ['attributes', 'modpack', 'source', modId, 'type'],
-      'nexus');
+    const type = modpack.attributes?.modpack?.source?.[modId]?.type ?? 'nexus';
+    
     return this.querySource(modId, type);
   }
 }

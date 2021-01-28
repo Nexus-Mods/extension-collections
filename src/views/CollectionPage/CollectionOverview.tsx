@@ -89,7 +89,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                 </div>
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
-                {(revision?.revisionStatusId !== ('is_private' as any)) ? (
+                {(revision?.revisionStatus !== 'is_private') ? (
                   <HealthIndicator
                     t={t}
                     value={revision !== undefined

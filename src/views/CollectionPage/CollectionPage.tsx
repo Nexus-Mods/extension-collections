@@ -304,8 +304,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       return prev;
     }, {});
 
-    const TableX: any = Table;
-
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed>
@@ -331,10 +329,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               />
             )}
         </FlexLayout.Fixed>
-        <FlexLayout.Flex fill={true} className='collection-mods-panel'>
+        <FlexLayout.Flex className='collection-mods-panel'>
           <Panel>
             <Panel.Body>
-              <TableX
+              <Table
                 tableId='mods'
                 showDetails={true}
                 data={modsFinal}
@@ -657,6 +655,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       type: '',
       installationPath: undefined,
       archiveId: dlId,
+      enabledTime: 0,
       state: download.state === 'finished' ? 'downloaded' : 'downloading',
       enabled: false,
       collectionRule: rule,
@@ -693,6 +692,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           state: null,
           type: '',
           installationPath: undefined,
+          enabledTime: 0,
           attributes: {
             fileSize: rule.reference.fileSize,
             ...(rule.extra || {}),

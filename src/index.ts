@@ -287,10 +287,10 @@ function register(context: types.IExtensionContext,
         .catch(err => context.api.showErrorNotification('Failed to init collection', err));
     }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
 
-  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update collection',
+  context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update Collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0])
-        .catch(err => context.api.showErrorNotification('Failed to init collection', err));
+        .catch(err => context.api.showErrorNotification('Failed to update collection', err));
     }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
 
   context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
