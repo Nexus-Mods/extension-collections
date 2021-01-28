@@ -45,19 +45,13 @@ export const IModPackSchema = {
         "authorUrl": {
           "type": "string"
         },
-        "collection_id": {
-          "type": "number"
-        },
         "description": {
           "type": "string"
         },
-        "domain_name": {
+        "domainName": {
           "type": "string"
         },
         "name": {
-          "type": "string"
-        },
-        "version": {
           "type": "string"
         }
       },
@@ -65,9 +59,8 @@ export const IModPackSchema = {
         "author",
         "authorUrl",
         "description",
-        "domain_name",
-        "name",
-        "version"
+        "domainName",
+        "name"
       ],
       "type": "object"
     },
@@ -83,7 +76,7 @@ export const IModPackSchema = {
         "details": {
           "$ref": "#/definitions/IModPackModDetails"
         },
-        "domain_name": {
+        "domainName": {
           "type": "string"
         },
         "hashes": {
@@ -102,8 +95,7 @@ export const IModPackSchema = {
         }
       },
       "required": [
-        "details",
-        "domain_name",
+        "domainName",
         "name",
         "optional",
         "source",
@@ -146,31 +138,31 @@ export const IModPackSchema = {
       "defaultProperties": [
       ],
       "properties": {
-        "file_expression": {
+        "fileExpression": {
           "type": "string"
         },
-        "file_id": {
+        "fileId": {
           "type": "number"
         },
-        "file_size": {
+        "fileSize": {
           "type": "number"
         },
         "instructions": {
           "type": "string"
         },
-        "logical_filename": {
+        "logicalFilename": {
           "type": "string"
         },
         "md5": {
           "type": "string"
         },
-        "mod_id": {
+        "modId": {
           "type": "number"
         },
         "type": {
           "$ref": "#/definitions/SourceType"
         },
-        "update_policy": {
+        "updatePolicy": {
           "$ref": "#/definitions/UpdatePolicy"
         },
         "url": {
@@ -226,6 +218,9 @@ export const IModPackSchema = {
               "$ref": "#/definitions/IModRepoId"
             }
           ]
+        },
+        "tag": {
+          "type": "string"
         },
         "versionMatch": {
           "type": "string"
