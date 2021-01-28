@@ -5,7 +5,7 @@ import { makeModpackId } from '../../util/modpack';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
-import { ICollection } from '@nexusmods/nexus-api';
+import { ICollection, IDownloadURL } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
@@ -219,9 +219,11 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
             revisionNumber: latest.revision,
           },
         };
+        const downloadURLs: IDownloadURL[] =
+          (await api.emitAndAwait('resolve-collection-url', latest.downloadLink))[0];
         const dlId = await util.toPromise(cb =>
           api.events.emit('start-download',
-            [latest.downloadUri], modInfo, (latest as any).file_name, cb));
+            downloadURLs.map(iter => iter.URI), modInfo, (latest as any).file_name, cb));
         await util.toPromise(cb =>
           api.events.emit('start-install-download', dlId, undefined, cb));
       } catch (err) {
