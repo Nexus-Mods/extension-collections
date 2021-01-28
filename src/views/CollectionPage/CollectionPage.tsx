@@ -35,6 +35,7 @@ export interface ICollectionPageProps {
   onView: (modId: string) => void;
   onPause: (collectionId: string) => void;
   onCancel: (collectionId: string) => void;
+  onResume: (collectionId: string) => void;
   onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
 
@@ -353,6 +354,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               totalSize={totalSize}
               onCancel={this.cancel}
               onPause={this.pause}
+              onResume={this.resume}
             />
           </Panel>
         </FlexLayout.Fixed>
@@ -384,6 +386,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private cancel = () => {
     this.props.onCancel(this.props.collection.id);
+  }
+
+  private resume = () => {
+    this.props.onResume(this.props.collection.id);
   }
 
   private close = () => {

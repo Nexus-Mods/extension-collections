@@ -14,11 +14,12 @@ export interface ICollectionProgressProps {
   totalSize: number;
   onCancel: () => void;
   onPause: () => void;
+  onResume: () => void;
 }
 
 class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   public render(): JSX.Element {
-    const {t, downloads, mods, totalSize, onCancel, onPause} = this.props;
+    const {t, downloads, mods, totalSize, onCancel, onPause, onResume} = this.props;
 
     const group = (state: string): string => {
       return {
@@ -83,6 +84,11 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
               {t('Cancel')}
             </Button>
           </FlexLayout>
+        </FlexLayout.Fixed>
+        <FlexLayout.Fixed>
+          <Button onClick={onResume}>
+            {t('Resume')}
+          </Button>
         </FlexLayout.Fixed>
         <FlexLayout.Fixed>
           <CollectionBanner t={t} totalSize={totalSize} />

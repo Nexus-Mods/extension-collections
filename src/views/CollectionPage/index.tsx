@@ -131,6 +131,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 onView={this.view}
                 onPause={this.pause}
                 onCancel={this.cancel}
+                onResume={this.resume}
                 onVoteSuccess={this.voteSuccess}
               />
             )

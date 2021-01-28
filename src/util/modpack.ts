@@ -373,6 +373,11 @@ export async function modToPack(state: types.IState,
     })
     .filter(id => id !== undefined);
 
+  const missing = includedMods.find(modId => mods[modId] === undefined);
+  if (missing !== undefined) {
+    return Promise.reject(new Error('Can only export collections that are fully installed'));
+  }
+
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
   const modpackInfo: IModPackInfo = {

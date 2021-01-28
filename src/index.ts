@@ -38,6 +38,14 @@ function profileModpackExists(api: types.IExtensionApi, profileId: string) {
   return mods[makeModpackId(profileId)] !== undefined;
 }
 
+function onlyLocalRules(rule: types.IModRule) {
+  return ['requires', 'recommends'].includes(rule.type)
+    && (rule.reference.fileExpression === undefined)
+    && (rule.reference.fileMD5 === undefined)
+    && (rule.reference.logicalFileName === undefined)
+    && (rule.reference.repo === undefined);
+}
+
 function makeOnUnfulfilledRules(api: types.IExtensionApi) {
   return (profileId: string, modId: string, rules: types.IModRule[]): PromiseBB<boolean> => {
     const state: types.IState = api.store.getState();
@@ -49,27 +57,51 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
     if ((collection !== undefined)
         && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)) {
+
+      const collectionProfile = Object.keys(state.persistent.profiles)
+        .find(iter => makeModpackId(iter) === modId);
+
+      const notiActions = [{
+        title: 'Disable',
+        action: dismiss => {
+          dismiss();
+          api.store.dispatch(actions.setModEnabled(profile.id, modId, false));
+        },
+      }];
+
+      if (collectionProfile !== undefined) {
+        // with local collections that we sync with a profile, we wouldn't be able to
+        // installing the missing dependencies because the dependencies are referenced via
+        // their local id
+        notiActions.unshift({
+          title: 'Update',
+          action: dismiss => {
+            initFromProfile(api, collectionProfile)
+              .then(dismiss)
+              .catch(err => api.showErrorNotification('Failed to update collection', err));
+          }
+        });
+      } else {
+        notiActions.unshift({
+          title: 'Resume',
+          action: dismiss => {
+            dismiss();
+            const localRules = collection.rules.filter(onlyLocalRules);
+            localRules.forEach(rule => {
+              api.store.dispatch(actions.removeModRule(profile.gameId, modId, rule));
+            });
+            api.events.emit('install-dependencies', profile.id, [collection.id], true);
+            api.store.dispatch(actions.setOpenMainPage('Collections', false));
+          }
+        });
+      }
+
       api.sendNotification({
         id: getUnfulfilledNotificationId(collection.id),
         type: 'info',
         title: 'Collection incomplete',
         message: util.renderModName(collection),
-        actions: [
-          {
-            title: 'Resume',
-            action: dismiss => {
-              dismiss();
-              api.events.emit('install-dependencies', profile.id, [collection.id], true);
-              api.store.dispatch(actions.setOpenMainPage('Collections', false));
-            },
-          }, {
-            title: 'Disable',
-            action: dismiss => {
-              dismiss();
-              api.store.dispatch(actions.setModEnabled(profile.id, modId, false));
-            },
-          },
-        ],
+        actions: notiActions,
       });
       return PromiseBB.resolve(true);
     } else {
