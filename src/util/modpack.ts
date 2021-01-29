@@ -430,6 +430,7 @@ function createRulesFromProfile(profile: types.IProfile,
         type: 'requires',
         reference: {
           id: modId,
+          archiveId: mods[modId].archiveId,
           versionMatch,
         },
       } as any;

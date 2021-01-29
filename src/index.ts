@@ -182,7 +182,7 @@ function register(context: types.IExtensionContext,
   context.registerReducer(['session', 'collections'], sessionReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
-  context.registerDialog('modpack-edit', EditDialog, () => ({
+  context.registerDialog('collection-edit', EditDialog, () => ({
     onClose: () => context.api.store.dispatch(startEditModPack(undefined)),
     onExport: (modpackId: string) => null,
   }));

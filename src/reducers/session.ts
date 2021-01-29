@@ -5,8 +5,8 @@ import * as actions from '../actions/session';
 const sessionReducer: types.IReducerSpec = {
   reducers: {
     [actions.startEditModPack as any]: (state, payload) => {
-        const { modId } = payload;
-        return util.setSafe(state, ['modId'], modId);
+      const { modId } = payload;
+      return util.setSafe(state, ['modId'], modId);
     },
   },
   defaults: {

@@ -633,3 +633,25 @@ $collection-thumbnail-height: 320px;
     max-height: 100%;
   }
 }
+
+.collection-instructions {
+  position: absolute;
+  background-color: $brand-menu;
+  border: $border-width solid $border-color;
+  z-index: 10;
+
+  .collection-instructions-header {
+    align-items: center;
+    h4 {
+      margin: 0;
+    }
+    div {
+      padding: 0 0.5em;
+    }
+  }
+
+  .collection-instructions-content {
+    min-height: 20em;
+    max-height: 80vh;
+  }
+}

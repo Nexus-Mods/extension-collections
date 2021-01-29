@@ -16,11 +16,11 @@ import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { Image, Nav, NavItem, Panel } from 'react-bootstrap';
+import { Image, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
-         TableTextFilter, types, util } from 'vortex-api';
+         TableTextFilter, tooltip, types, util } from 'vortex-api';
 
 export interface ICollectionPageProps {
   t: i18next.TFunction;
@@ -228,6 +228,31 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         isSortable: true,
         sortFuncRaw: (lhs, rhs) => (lhs.attributes?.fileSize || 0 - rhs.attributes?.fileSize),
       },
+      {
+        id: 'instructions',
+        name: 'Instructions',
+        customRenderer: (mod: IModEx) => {
+          const { collection } = this.props;
+          const instructions = collection.attributes?.modpack?.instructions?.[mod.id];
+          if (instructions === undefined) {
+            return null;
+          }
+          return (
+            <tooltip.IconButton
+              icon='details'
+              tooltip={instructions}
+              data-modid={mod.id}
+              onClick={this.showInstructions}
+            />
+          );
+        },
+        calc: mod => {
+          const { collection } = this.props;
+          return collection.attributes?.modpack?.instructions?.[mod.id];
+        },
+        placement: 'table',
+        edit: {},
+      },
     ];
   }
 
@@ -392,6 +417,17 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private close = () => {
     this.props.onView(undefined);
+  }
+
+  private showInstructions = (evt: React.MouseEvent<any>) => {
+    const modId = evt.currentTarget.getAttribute('data-modid');
+    const { collection, mods } = this.props;
+    const instructions = collection.attributes?.modpack?.instructions?.[modId];
+    const mod = mods[modId];
+
+    const modName = util.renderModName(mod);
+
+    this.context.api.ext.showOverlay?.(modId, modName, instructions);
   }
 
   private installingNotificationsChanged(oldProps: ICollectionPageProps,
