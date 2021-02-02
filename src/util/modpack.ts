@@ -133,6 +133,7 @@ async function rulesToModPackMods(collection: types.IMod,
 
   const zipper = new Zip();
   const collectionPath = path.join(stagingPath, collection.installationPath)
+  await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
 
   const result: IModPackMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
     const mod = (rule.reference.id !== undefined)
@@ -188,8 +189,9 @@ async function rulesToModPackMods(collection: types.IMod,
       if (modpackInfo.source?.[mod.id]?.type === 'bundle') {
         await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
         const tlFiles = await fs.readdirAsync(modPath);
-        console.log('zip', path.join(collectionPath, BUNDLED_PATH, mod.id), tlFiles);
-        const destPath = path.join(collectionPath, BUNDLED_PATH, mod.id) + '.7z';
+        const generatedName: string =
+          `Bundled - ${(util as any).sanitizeFilename(util.renderModName(mod, { version: true }))}`;
+        const destPath = path.join(collectionPath, BUNDLED_PATH, generatedName) + '.7z';
         try {
           await fs.removeAsync(destPath);
         } catch (err) {
@@ -198,6 +200,10 @@ async function rulesToModPackMods(collection: types.IMod,
           }
         }
         await zipper.add(destPath, tlFiles.map(name => path.join(modPath, name)));
+        // update the source reference to match the actual bundled file
+        source.fileExpression = generatedName + '.7z';
+        source.fileSize = (await fs.statAsync(destPath)).size;
+        source.md5 = await util.fileMD5(destPath);
       }
 
       onProgress(Math.floor((finished / total) * 100), modName);
@@ -321,7 +327,7 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   let versionMatch = `>=${semver.coerce(mod.version)?.version ?? '0.0.0'}+prefer`;
   if ((mod.source.updatePolicy === 'exact')
       || (mod.source.type === 'bundle')) {
-    versionMatch = mod.version;
+    versionMatch = semver.coerce(mod.version)?.version ?? '0.0.0';
   } else if (mod.source.updatePolicy === 'latest') {
     versionMatch = '*';
   }
