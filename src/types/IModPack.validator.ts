@@ -283,6 +283,7 @@ export const IModPackSchema = {
         "browse",
         "direct",
         "manual",
+        "bundle",
         "nexus"
       ],
       "type": "string"

@@ -11,7 +11,7 @@ export interface IModPackInfo {
 
 export type UpdatePolicy = 'exact' | 'latest' | 'prefer';
 
-export type SourceType = 'browse' | 'manual' | 'direct' | 'nexus';
+export type SourceType = 'browse' | 'manual' | 'direct' | 'nexus' | 'bundle';
 
 export interface IModPackSourceInfo {
   type: SourceType;
@@ -69,4 +69,5 @@ export interface IModPackAttributes {
   freshInstall?: { [modId: string]: boolean };
   instructions?: { [modId: string]: string };
   source?: { [modId: string]: { type: SourceType } };
+  installMode?: { [modId: string]: string };
 }

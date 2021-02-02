@@ -1,4 +1,4 @@
-import { MOD_TYPE } from '../constants';
+import { BUNDLED_PATH, MOD_TYPE } from '../constants';
 import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
          IModPackModRule, IModPackSourceInfo } from '../types/IModPack';
 
@@ -6,6 +6,7 @@ import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';
 
 import * as _ from 'lodash';
+import Zip = require('node-7z');
 import * as path from 'path';
 import * as semver from 'semver';
 import { generate as shortid } from 'shortid';
@@ -73,6 +74,8 @@ function deduceSource(mod: types.IMod,
   assign(res, 'logicalFilename', mod.attributes?.logicalFileName);
   if (sourceInfo?.updatePolicy !== undefined) {
     assign(res, 'updatePolicy', sourceInfo.updatePolicy);
+  } else if (sourceInfo?.type === 'bundle') {
+    assign(res, 'updatePolicy', 'exact');
   } else {
     if (versionMatcher === '*') {
       assign(res, 'updatePolicy', 'latest');
@@ -116,7 +119,7 @@ export function generateModPack(info: IModPackInfo,
   };
 }
 
-async function rulesToModPackMods(rules: types.IModRule[],
+async function rulesToModPackMods(collection: types.IMod,
                                   mods: { [modId: string]: types.IMod },
                                   stagingPath: string,
                                   gameId: string,
@@ -124,11 +127,14 @@ async function rulesToModPackMods(rules: types.IModRule[],
                                   onProgress: (percent: number, text: string) => void,
                                   onError: (message: string, replace: any) => void)
                                   : Promise<IModPackMod[]> {
-  let total = rules.length;
+  let total = collection.rules.length;
 
   let finished = 0;
 
-  const result: IModPackMod[] = await Promise.all(rules.map(async (rule, idx) => {
+  const zipper = new Zip();
+  const collectionPath = path.join(stagingPath, collection.installationPath)
+
+  const result: IModPackMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
       : findModByRef(rule.reference, mods);
@@ -145,7 +151,7 @@ async function rulesToModPackMods(rules: types.IModRule[],
       // This call is relatively likely to fail to do it before the hash calculation to
       // save the user time in case it does fail
       const source = deduceSource(mod,
-                                  modpackInfo['source']?.[mod.id],
+                                  modpackInfo.source?.[mod.id],
                                   rule.reference.versionMatch);
 
       let hashes: any;
@@ -153,10 +159,11 @@ async function rulesToModPackMods(rules: types.IModRule[],
 
       let entries: IEntry[] = [];
 
-      const installMode: string = modpackInfo?.['installMode']?.[mod.id] ?? 'fresh';
+      const installMode: string = modpackInfo.installMode?.[mod.id] ?? 'fresh';
+
+      const modPath = path.join(stagingPath, mod.installationPath);
 
       if (installMode === 'clone') {
-        const modPath = path.join(stagingPath, mod.installationPath);
         await turbowalk(modPath, async input => {
           entries = [].concat(entries, input);
         }, {});
@@ -176,6 +183,14 @@ async function rulesToModPackMods(rules: types.IModRule[],
         --total;
       } else {
         --total;
+      }
+
+      if (modpackInfo.source?.[mod.id]?.type === 'bundle') {
+        await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
+        const tlFiles = await fs.readdirAsync(modPath);
+        console.log('zip', path.join(collectionPath, BUNDLED_PATH, mod.id), tlFiles);
+        zipper.add(path.join(collectionPath, BUNDLED_PATH, mod.id) + '.7z',
+                   tlFiles.map(name => path.join(modPath, name)));
       }
 
       onProgress(Math.floor((finished / total) * 100), modName);
@@ -297,7 +312,8 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     : undefined;
 
   let versionMatch = `>=${semver.coerce(mod.version)?.version ?? '0.0.0'}+prefer`;
-  if (mod.source.updatePolicy === 'exact') {
+  if ((mod.source.updatePolicy === 'exact')
+      || (mod.source.type === 'bundle')) {
     versionMatch = mod.version;
   } else if (mod.source.updatePolicy === 'latest') {
     versionMatch = '*';
@@ -308,8 +324,8 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
     gameId: mod.domainName,
     fileSize: mod.source.fileSize,
     versionMatch,
-    logicalFileName: mod.source.logicalFilename,
-    fileExpression: mod.source.fileExpression,
+    logicalFileName: mod.source.type === 'bundle' ? undefined : mod.source.logicalFilename,
+    fileExpression: mod.source.type === 'bundle' ? undefined : mod.source.fileExpression,
   };
 
   if (downloadHint !== undefined) {
@@ -393,7 +409,7 @@ export async function modToPack(state: types.IState,
 
   const res: IModPack = {
     info: modpackInfo,
-    mods: await rulesToModPackMods(modpack.rules, mods, stagingPath, gameId,
+    mods: await rulesToModPackMods(modpack, mods, stagingPath, gameId,
                                    modpack.attributes?.modpack ?? {},
                                    onProgress, onError),
     modRules,

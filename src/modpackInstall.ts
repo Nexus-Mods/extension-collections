@@ -3,7 +3,7 @@ import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
 import { modPackModToRule } from './util/modpack';
 
-import { MOD_TYPE } from './constants';
+import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
 import * as path from 'path';
 import { actions, fs, log, types } from 'vortex-api';
@@ -42,7 +42,12 @@ export async function install(files: string[],
   }
 
   const filesToCopy = files
-    .filter(filePath => !filePath.endsWith(path.sep));
+    .filter(filePath => !filePath.endsWith(path.sep)
+                     && (filePath.split(path.sep)[0] !== BUNDLED_PATH));
+
+  const bundled = files
+    .filter(filePath => !filePath.endsWith(path.sep)
+                     && (filePath.split(path.sep)[0] === BUNDLED_PATH));
 
   return Promise.resolve({
     instructions: [
@@ -59,6 +64,12 @@ export async function install(files: string[],
         type: 'copy' as any,
         source: filePath,
         destination: filePath,
+      })),
+      ...bundled.map(filePath => ({
+        type: 'copy' as any,
+        source: filePath,
+        destination: path.basename(filePath),
+        section: 'download',
       })),
       ...modpack.mods.map(mod => (
         {

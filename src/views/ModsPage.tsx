@@ -34,7 +34,7 @@ const SOURCES = {
   nexus: 'Nexus Mods',
   direct: 'Direct download',
   browse: 'Browse a website',
-  pack: 'Bundle with modpack',
+  bundle: 'Bundle with collection',
   manual: 'Manual',
 };
 
@@ -235,7 +235,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         return (
           <tooltip.IconButton
             icon='edit'
-            disabled={['nexus', 'pack'].includes(type)}
+            disabled={['nexus', 'bundle'].includes(type)}
             tooltip={t('Edit Source')}
             data-modid={entry.mod.id}
             onClick={this.onQuerySource}
@@ -403,10 +403,10 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       }
     }
 
-    if (source === 'pack') {
+    if (source === 'bundle') {
       res.push(t('Mods are copyright protected, only pack mods if you are sure you '
-               + 'have the right to do so, e.g. if it\'s dynamically generated content, '
-               + 'if it\'s your own mod or if you have (written) permission to do so.'));
+               + 'have the right to do so, e.g. if it\'s dynamically generated content '
+               + 'or if it\'s your own mod.'));
     } else if (source === 'direct') {
       res.push(t('Most websites don\'t allow direct downloads, Plese make sure you are '
                + 'allowed to use direct links to the specified page.'));
@@ -431,16 +431,31 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private querySource(modId: string, type: SourceType) {
-    const { modpack } = this.props;
+    const { modpack, mods } = this.props;
     const src: IModPackSourceInfo = util.getSafe(modpack,
       ['attributes', 'modpack', 'source', modId], { type });
     const input: types.IInput[] = [];
 
-    if (['direct', 'browse'].indexOf(type) !== -1) {
+    if ((type === 'bundle')
+        && (mods[modId].attributes?.source !== undefined)) {
+      return this.context.api.showDialog('error', 'Can\'t bundle foreign content', {
+        text: 'This mod has been downloaded from a website so we assume '
+            + 'it was created by someone else.\n'
+            + 'Redistributing this could therefore '
+            + 'be copyright infringement and is therefore not allowed. '
+            + 'You can only bundle mods that you created yourself, locally.\n'
+            + 'Please respect mod authors and understand that they have rights, even '
+            + 'if that is sometimes inconvenient.'
+      }, [
+        { label: 'Understood' },
+      ]);
+    }
+
+    if (['direct', 'browse'].includes(type)) {
       input.push({ id: 'url', type: 'url', label: 'URL', value: src.url });
     }
 
-    if (['browse', 'manual'].indexOf(type) !== -1) {
+    if (['browse', 'manual'].includes(type)) {
       input.push({
         id: 'instructions', type: 'text', label: 'Instructions',
         value: src.instructions,

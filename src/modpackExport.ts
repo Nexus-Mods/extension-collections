@@ -8,6 +8,7 @@ import Zip = require('node-7z');
 import * as path from 'path';
 import { dir as tmpDir } from 'tmp';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { BUNDLED_PATH } from './constants';
 
 async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -38,6 +39,7 @@ async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void>
 async function zip(zipPath: string, sourcePath: string): Promise<void> {
   const zipper = new Zip();
   const files = await fs.readdirAsync(sourcePath);
+  console.log('zip', zipPath, files);
   await zipper.add(zipPath, files.map(fileName => path.join(sourcePath, fileName)));
 }
 
@@ -74,6 +76,9 @@ async function writePackToFile(state: types.IState, info: IModPack,
       throw err;
     } // else: no ini tweak, no problem
   }
+
+  await fs.copyAsync(path.join(modPath, BUNDLED_PATH), path.join(outputPath, BUNDLED_PATH));
+
   const zipPath = path.join(modPath,
                             `modpack_${util.getSafe(mod.attributes, ['version'], '1.0.0')}.7z`);
   await zip(zipPath, outputPath);
@@ -82,7 +87,7 @@ async function writePackToFile(state: types.IState, info: IModPack,
 }
 
 function filterInfoMod(mod: IModPackMod): IModPackMod {
-  return _.omit(mod, ['hashes', 'choices', 'details']);
+  return _.omit(mod, ['hashes', 'choices', 'details', 'instructions']);
 }
 
 function filterInfo(input: IModPack): Partial<IModPack> {
@@ -219,7 +224,6 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
     });
   } catch (err) {
     api.showErrorNotification('Failed to export collection', err);
-    return Promise.resolve();
   }
   progressEnd();
 }
