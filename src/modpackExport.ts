@@ -81,6 +81,13 @@ async function writePackToFile(state: types.IState, info: IModPack,
 
   const zipPath = path.join(modPath,
                             `modpack_${util.getSafe(mod.attributes, ['version'], '1.0.0')}.7z`);
+  try {
+    await fs.removeAsync(zipPath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      throw err;
+    }
+  }
   await zip(zipPath, outputPath);
   await fs.removeAsync(outputPath);
   return zipPath;

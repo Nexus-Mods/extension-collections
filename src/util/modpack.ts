@@ -189,8 +189,15 @@ async function rulesToModPackMods(collection: types.IMod,
         await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
         const tlFiles = await fs.readdirAsync(modPath);
         console.log('zip', path.join(collectionPath, BUNDLED_PATH, mod.id), tlFiles);
-        zipper.add(path.join(collectionPath, BUNDLED_PATH, mod.id) + '.7z',
-                   tlFiles.map(name => path.join(modPath, name)));
+        const destPath = path.join(collectionPath, BUNDLED_PATH, mod.id) + '.7z';
+        try {
+          await fs.removeAsync(destPath);
+        } catch (err) {
+          if (err.code !== 'ENOENT') {
+            throw err;
+          }
+        }
+        await zipper.add(destPath, tlFiles.map(name => path.join(modPath, name)));
       }
 
       onProgress(Math.floor((finished / total) * 100), modName);
