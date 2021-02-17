@@ -134,6 +134,7 @@ async function rulesToModPackMods(collection: types.IMod,
   const zipper = new Zip();
   const collectionPath = path.join(stagingPath, collection.installationPath)
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
+  await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
 
   const result: IModPackMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
     const mod = (rule.reference.id !== undefined)
@@ -187,7 +188,6 @@ async function rulesToModPackMods(collection: types.IMod,
       }
 
       if (modpackInfo.source?.[mod.id]?.type === 'bundle') {
-        await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
         const tlFiles = await fs.readdirAsync(modPath);
         const generatedName: string =
           `Bundled - ${(util as any).sanitizeFilename(util.renderModName(mod, { version: true }))}`;
@@ -544,7 +544,7 @@ export async function createModpackFromProfile(api: types.IExtensionApi,
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],
-                                       (mod !== undefined) ? mod.rules : [], mod.id);
+                                       mod?.rules ?? [], mod?.id);
 
   if (mod === undefined) {
     await createModpack(api, profile.gameId, id, name, rules);

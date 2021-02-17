@@ -27,9 +27,11 @@ class InfoCache {
   private async cacheRevisionInfo(collectionId: string,
                                   revisionNumber: number): Promise<ICollection> {
     const { store } = this.mApi;
-    const collectionInfo =
-      (await this.mApi.emitAndAwait('get-nexus-collection', collectionId, revisionNumber))[0];
-    store.dispatch(updateCollectionInfo(collectionId, collectionInfo));
+    const collectionInfo = (await this.mApi.emitAndAwait(
+        'get-nexus-collection', parseInt(collectionId, 10), revisionNumber))[0];
+    if (!!collectionInfo) {
+      store.dispatch(updateCollectionInfo(collectionId, collectionInfo));
+    }
     return Promise.resolve(collectionInfo);
   }
 }

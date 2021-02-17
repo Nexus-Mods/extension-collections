@@ -10,16 +10,7 @@ const persistentReducer: types.IReducerSpec = {
       const { collectionId, revisionInfo }:
         { collectionId: string, revisionInfo: ICollection } = payload;
 
-      const knownRevisions: IRevision[] = state[collectionId]?.revisions || [];
-      const updatedRevisions = new Set(revisionInfo.revisions.map(rev => rev.revision));
-
-      // update collection info and all the revisions that are contained in the payload but
-      // keep the info about all other revisions
-      return util.setSafe(state, [collectionId], {
-        ..._.omit(revisionInfo, 'revisions'),
-        revisions: [].concat(knownRevisions.filter(rev => updatedRevisions.has(rev.revision)),
-                             revisionInfo),
-      });
+      return util.setSafe(state, [collectionId], revisionInfo);
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
       const { collectionId, revisionId, success } = payload;
