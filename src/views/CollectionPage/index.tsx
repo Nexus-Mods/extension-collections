@@ -1,5 +1,5 @@
 import { updateSuccessRate } from '../../actions/persistent';
-import { MOD_TYPE, NAMESPACE, NEXUS_DOMAIN } from '../../constants';
+import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, NEXUS_DOMAIN} from '../../constants';
 import { doExportToAPI } from '../../modpackExport';
 import { findDownloadIdByRef, findModByRef } from '../../util/findModByRef';
 import InfoCache from '../../util/InfoCache';
@@ -315,7 +315,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
               {
                 title: 'Open in Browser', action: () => {
                   // tslint:disable-next-line: max-line-length
-                  const url = `https://www.${NEXUS_DOMAIN}/${profile.gameId}/collections/${collectionId}`;
+                  const url = `https://${NEXUS_BASE_URL}/${profile.gameId}/collections/${collectionId}`;
                   util.opn(url).catch(() => null);
                 },
               },

@@ -436,6 +436,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       ['attributes', 'modpack', 'source', modId], { type });
     const input: types.IInput[] = [];
 
+    /*
     if ((type === 'bundle')
         && (mods[modId].attributes?.source !== undefined)) {
       return this.context.api.showDialog('error', 'Can\'t bundle foreign content', {
@@ -450,6 +451,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         { label: 'Understood' },
       ]);
     }
+    */
 
     if (['direct', 'browse'].includes(type)) {
       input.push({ id: 'url', type: 'url', label: 'URL', value: src.url });
