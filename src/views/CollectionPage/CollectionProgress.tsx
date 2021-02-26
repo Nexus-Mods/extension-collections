@@ -77,7 +77,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
           <FlexLayout type='column' className='collection-pause-cancel-flex'>
-            <Button disabled={pending.length === 0} onClick={onResume}>
+            <Button disabled={pending.length === 0 && installing.length === 0} onClick={onResume}>
               {t('Resume')}
             </Button>
             <Button disabled={downloading.length === 0} onClick={onPause}>

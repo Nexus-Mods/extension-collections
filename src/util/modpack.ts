@@ -46,7 +46,7 @@ function deduceSource(mod: types.IMod,
                       versionMatcher: string)
                       : IModPackSourceInfo {
   const res: Partial<IModPackSourceInfo> = (sourceInfo !== undefined)
-    ? {...sourceInfo}
+    ? {..._.omit(sourceInfo, ['instructions'])}
     : { type: 'nexus' };
 
   if (res.type === 'nexus') {
@@ -300,7 +300,9 @@ function extractModRules(rules: types.IModRule[],
                          mods: { [modId: string]: types.IMod },
                          onError: (message: string, replace: any) => void): IModPackModRule[] {
   return rules.reduce((prev: IModPackModRule[], rule: types.IModRule) => {
-    const mod = mods[rule.reference.id];
+    const mod = (rule.reference.id !== undefined)
+      ? mods[rule.reference.id]
+      : findModByRef(rule.reference, mods);
     if (mod === undefined) {
       onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id });
       return prev;

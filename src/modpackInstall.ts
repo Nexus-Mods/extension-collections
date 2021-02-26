@@ -1,4 +1,5 @@
-import { ajv, IModPack, isIModPack } from './types/IModPack.validator';
+import { IModPack } from './types/IModPack';
+
 import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
 import { modPackModToRule } from './util/modpack';
@@ -32,6 +33,7 @@ export async function install(files: string[],
 
   const modpack: IModPack = JSON.parse(modPackData);
 
+  /*
   if (!isIModPack(modpack)) {
     const errorText = isIModPack.errors.length > 10
       ? ajv.errorsText(isIModPack.errors.slice(0, 10)) + '...'
@@ -40,6 +42,7 @@ export async function install(files: string[],
     log('warn', 'invalid mod pack', { errorText });
     return Promise.reject(new Error('invalid modpack (see log for details)'));
   }
+  */
 
   const filesToCopy = files
     .filter(filePath => !filePath.endsWith(path.sep)
