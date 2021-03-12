@@ -103,7 +103,7 @@ export async function parser(api: types.IExtensionApi, gameId: string, modpack: 
   });
   */
 
-  modpack.plugins.forEach(plugin => {
+  (modpack.plugins ?? []).forEach(plugin => {
     api.store.dispatch({ type: 'SET_PLUGIN_ENABLED', payload: {
       pluginName: plugin.name,
       enabled: plugin.enabled,
@@ -119,7 +119,7 @@ export async function parser(api: types.IExtensionApi, gameId: string, modpack: 
     .filter(noti => noti.id.startsWith('multiple-plugins-'))
     .forEach(noti => api.dismissNotification(noti.id));
 
-  modpack.pluginRules.plugins.forEach(plugin => {
+  (modpack.pluginRules?.plugins ?? []).forEach(plugin => {
     const existing = (state as any).userlist.plugins.find(plug =>
       plug.name.toUpperCase() === plugin.name.toUpperCase());
 
