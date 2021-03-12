@@ -2,9 +2,9 @@ import * as Promise from 'bluebird';
 import I18next from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
-import { Image, Panel } from 'react-bootstrap';
+import { Image as BSImage, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { Icon, IconBar, PureComponentEx, selectors, types, util } from 'vortex-api';
+import { Icon, IconBar, Image, PureComponentEx, selectors, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 
 export interface IBaseProps {
@@ -45,9 +45,10 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     return (
       <Panel className='collection-thumbnail' bsStyle={active ? 'primary' : 'default'}>
         <Panel.Body className='collection-thumbnail-body'>
-          <img
+          <Image
             className={'thumbnail-img'}
-            src={logoPath + `?_r=${imageTime}`}
+            srcs={[logoPath + `?_r=${imageTime}`, path.join(__dirname, 'fallback_tile.jpg')]}
+            circle={false}
           />
           <div className='gradient' />
           {details ? (
@@ -68,7 +69,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                 {util.renderModName(collection, { version: false })}
               </div>
               <div className='author'>
-                <Image
+                <BSImage
                   src='assets/images/noavatar.png'
                   circle
                 />
