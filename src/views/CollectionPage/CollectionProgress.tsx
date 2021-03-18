@@ -41,6 +41,10 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
         return prev;
       }, { pending: [], downloading: [], installing: [], done: [] });
 
+    const curInstall = installing.length > 0
+      ? installing.find(iter => iter.state === 'installing')
+      : undefined;
+
     if ((downloading.length === 0) && (installing.length === 0) && (pending.length === 0)) {
       return null;
     }
@@ -63,6 +67,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
             <ProgressBar
               now={downloadProgress}
               max={totalSize}
+              showPercentage
               labelLeft={t('Downloading')}
               labelRight={
                 `${util.bytesToString(downloadProgress)} / ${util.bytesToString(totalSize)}`}
@@ -70,8 +75,9 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
             <ProgressBar
               now={done.length}
               max={Object.keys(mods).length}
+              showPercentage
               labelLeft={installing.length > 0 ? t('Installing') : t('Waiting to install')}
-              labelRight={installing.length > 0 ? util.renderModName(installing[0]) : undefined}
+              labelRight={curInstall !== undefined ? util.renderModName(curInstall) : undefined}
             />
           </FlexLayout>
         </FlexLayout.Flex>

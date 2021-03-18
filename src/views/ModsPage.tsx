@@ -250,6 +250,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       title: 'Set Instructions',
       icon: 'edit',
       singleRowAction: true,
+      multiRowAction: false,
       action: (instanceId: string) => {
         const { onSetModpackAttribute, modpack } = this.props;
         const value = util.getSafe(modpack.attributes, ['modpack', 'instructions', instanceId], '');
@@ -263,7 +264,39 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
           { label: 'Save' },
         ], 'collection-set-instructions')
         .then(result => {
-          onSetModpackAttribute(['instructions', instanceId], result.input['instructions']);
+          if (result.action === 'Save') {
+            onSetModpackAttribute(['instructions', instanceId], result.input['instructions']);
+          }
+        });
+      },
+    },
+    {
+      title: 'Set Install Type',
+      icon: 'edit',
+      singleRowAction: false,
+      multiRowAction: true,
+      action: (instanceIds: string[]) => {
+        const { onSetModpackAttribute, modpack } = this.props;
+
+        const refMode = modpack.attributes?.modpack?.installMode?.[instanceIds[0]] ?? 'fresh';
+
+        this.context.api.showDialog('question', 'Install Type', {
+          text: 'Please select the install mode to apply to all selected mods',
+          choices: [
+            { id: 'fresh', text: 'Fresh Install', value: refMode === 'fresh' },
+            { id: 'choices', text: 'Same Installer Options', value: refMode === 'choices' },
+            { id: 'clone', text: 'Replicate', value: refMode === 'clone' },
+          ],
+        }, [
+          { label: 'Cancel' },
+          { label: 'Apply' },
+        ]).then(result => {
+          if (result.action === 'Apply') {
+            const selected = Object.keys(result.input).find(iter => result.input[iter]);
+            instanceIds.forEach(modId => {
+              onSetModpackAttribute(['installMode', modId], selected);
+            });
+          }
         });
       },
     },

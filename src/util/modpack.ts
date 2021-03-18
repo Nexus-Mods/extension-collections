@@ -353,6 +353,11 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   }
 
   if (mod.source.type === 'nexus') {
+    if (!mod.source.modId || !mod.source.fileId) {
+      const err = new Error('Invalid nexus repo specification');
+      err['mod'] = mod;
+      throw err;
+    }
     reference['repo'] = {
       repository: 'nexus',
       gameId: mod.domainName,

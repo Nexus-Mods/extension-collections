@@ -454,23 +454,29 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     );
   }
 
-  private enableSelected = (modIds: string[]) => {
+  private enableSelected = (ruleIds: string[]) => {
     const { profile, onSetModEnabled } = this.props;
+    const { modsEx } = this.state;
 
-    modIds.forEach((key: string) => {
-      if (!util.getSafe(profile.modState, [key, 'enabled'], false)) {
-        onSetModEnabled(profile.id, key, true);
+    const modIds = ruleIds.map(iter => modsEx[iter]?.id).filter(iter => iter !== undefined);
+
+    modIds.forEach((modId: string) => {
+      if (!util.getSafe(profile.modState, [modId, 'enabled'], false)) {
+        onSetModEnabled(profile.id, modId, true);
       }
     });
     this.context.api.events.emit('mods-enabled', modIds, true, profile.gameId);
   }
 
-  private disableSelected = (modIds: string[]) => {
+  private disableSelected = (ruleIds: string[]) => {
     const { profile, onSetModEnabled } = this.props;
+    const { modsEx } = this.state;
 
-    modIds.forEach((key: string) => {
-      if (util.getSafe(profile.modState, [key, 'enabled'], false)) {
-        onSetModEnabled(profile.id, key, false);
+    const modIds = ruleIds.map(iter => modsEx[iter]?.id).filter(iter => iter !== undefined);
+
+    modIds.forEach((modId: string) => {
+      if (util.getSafe(profile.modState, [modId, 'enabled'], false)) {
+        onSetModEnabled(profile.id, modId, false);
       }
     });
     this.context.api.events.emit('mods-enabled', modIds, false, profile.gameId);
