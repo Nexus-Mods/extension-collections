@@ -222,8 +222,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         const downloadURLs: IDownloadURL[] =
           (await api.emitAndAwait('resolve-collection-url', latest.downloadLink))[0];
         const dlId = await util.toPromise(cb =>
-          api.events.emit('start-download',
-            downloadURLs.map(iter => iter.URI), modInfo, (latest as any).file_name, cb));
+          api.events.emit('start-download', downloadURLs.map(iter => iter.URI), modInfo,
+                          (latest as any).file_name, cb, 'never', false));
         await util.toPromise(cb =>
           api.events.emit('start-install-download', dlId, undefined, cb));
       } catch (err) {
