@@ -21,6 +21,7 @@ import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
          TableTextFilter, tooltip, types, util } from 'vortex-api';
+import ReactDOM = require('react-dom');
 
 export interface ICollectionPageProps {
   t: i18next.TFunction;
@@ -73,6 +74,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mAttributes: Array<types.ITableAttribute<IModEx>>;
   private mUpdateDebouncer: util.Debouncer;
   private mModActions: ITableRowAction[];
+  private mTableContainerRef: Element;
 
   constructor(props: IProps) {
     super(props);
@@ -123,6 +125,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               mod={mod}
               notifications={this.props.notifications}
               download={download}
+              container={this.mTableContainerRef}
+              onSetModEnabled={this.setModEnabled}
             />
           );
         },
@@ -220,13 +224,18 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         isSortable: true,
       },
       {
-        id: 'size',
-        name: 'Size',
-        calc: mod => util.bytesToString(mod?.attributes?.fileSize || 0),
+        id: 'filesize',
+        name: 'File Size',
+        description: 'Total size of the file',
+        icon: 'chart-bars',
+        customRenderer: (mod: IModEx) =>
+          <span>{mod?.attributes?.fileSize !== undefined
+            ? util.bytesToString(mod?.attributes?.fileSize)
+            : '???'}</span>,
+        calc: mod => mod?.attributes?.fileSize,
         placement: 'table',
         edit: {},
         isSortable: true,
-        sortFuncRaw: (lhs, rhs) => (lhs.attributes?.fileSize || 0 - rhs.attributes?.fileSize),
       },
       {
         id: 'instructions',
@@ -355,7 +364,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             )}
         </FlexLayout.Fixed>
         <FlexLayout.Flex className='collection-mods-panel'>
-          <Panel>
+          <Panel ref={this.setTableContainerRef}>
             <Panel.Body>
               <Table
                 tableId='mods'
@@ -417,6 +426,17 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private close = () => {
     this.props.onView(undefined);
+  }
+
+  private setModEnabled = (modId: string, enabled: boolean) => {
+    const { profile } = this.props;
+    this.props.onSetModEnabled(profile.id, modId, enabled);
+  }
+
+  private setTableContainerRef = (ref: any) => {
+    this.mTableContainerRef = (ref !== null)
+      ? ReactDOM.findDOMNode(ref) as Element
+      : null;
   }
 
   private showInstructions = (evt: React.MouseEvent<any>) => {
@@ -579,6 +599,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const modifiedMods: { [modId: string]: types.IMod }
       = util.objDiff(oldProps.mods, newProps.mods);
 
+    const modifiedState: { [modId: string]: { enabled: boolean } }
+      = util.objDiff(oldProps.profile.modState, newProps.profile.modState);
+
     const genRuleMap = (rules: types.IModRule[]) => {
       return (rules || []).reduce((prev, rule) => {
         prev[this.ruleId(rule)] = rule;
@@ -598,13 +621,20 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         delete result[refId];
       });
 
+    const invalidateMod = modId => {
+      const realId = modId.slice(1);
+      const refId = Object.keys(result).find(iter => result[iter].id === realId);
+      delete result[refId];
+    };
+
     Object.keys(modifiedMods)
       .filter(modId => modId.startsWith('-'))
-      .forEach(modId => {
-        const realId = modId.slice(1);
-        const refId = Object.keys(result).find(iter => result[iter].id === realId);
-        delete result[refId];
-      });
+      .forEach(invalidateMod);
+
+    Object.keys(modifiedState)
+      .filter(modId => modId.startsWith('-')
+                    || modifiedState[modId]?.['-enabled'] !== undefined)
+      .forEach(invalidateMod);
 
     // refresh for any rule that doesn't currently have an enrty
     const { collection } = newProps;
@@ -650,43 +680,50 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         }
       });
 
+    const updateMod = modId => {
+      const realId = modId.startsWith('+') ? modId.slice(1) : modId;
+      const mod = newProps.mods[realId];
+      if (mod === undefined) {
+        return;
+      }
+      if (mod.state === 'installing') {
+        // in this state the mod doesn't contain enough information to match a reference, go
+        // through the download instead
+        const dlId = mod.archiveId;
+        const download = newProps.downloads[dlId];
+        const match = pendingInstall.find(iter =>
+          testDownloadReference(download, modsEx[iter].collectionRule.reference));
+        if (match !== undefined) {
+          result[match] = {
+            ...this.modFromDownload(dlId, download, modsEx[match].collectionRule),
+            id: modId.slice(1),
+            state: 'installing',
+          };
+        }
+      } else {
+        const match = pendingFinish.find(iter =>
+          util.testModReference(mod, modsEx[iter].collectionRule.reference));
+        if (match !== undefined) {
+          result[match] = {
+            ...mod,
+            ...(profile.modState || {})[mod.id],
+            collectionRule: modsEx[match].collectionRule,
+          };
+        }
+      }
+    };
+
     Object.keys(modifiedMods)
       .filter(modId => !modId.startsWith('-')
                     && (modId.startsWith('+')
                         || (modifiedMods[modId]['+state'] !== undefined)
-                        || (modifiedMods[modId]['attributes'] !== undefined)))
-      .forEach(modId => {
-        const realId = modId.startsWith('+') ? modId.slice(1) : modId;
-        const mod = newProps.mods[realId];
-        if (mod === undefined) {
-          return;
-        }
-        if (mod.state === 'installing') {
-          // in this state the mod doesn't contain enough information to match a reference, go
-          // through the download instead
-          const dlId = mod.archiveId;
-          const download = newProps.downloads[dlId];
-          const match = pendingInstall.find(iter =>
-            testDownloadReference(download, modsEx[iter].collectionRule.reference));
-          if (match !== undefined) {
-            result[match] = {
-              ...this.modFromDownload(dlId, download, modsEx[match].collectionRule),
-              id: modId.slice(1),
-              state: 'installing',
-            };
-          }
-        } else {
-          const match = pendingFinish.find(iter =>
-            util.testModReference(mod, modsEx[iter].collectionRule.reference));
-          if (match !== undefined) {
-            result[match] = {
-              ...mod,
-              ...(profile.modState || {})[mod.id],
-              collectionRule: modsEx[match].collectionRule,
-            };
-          }
-        }
-      });
+                        || (modifiedMods[modId]['attributes'] !== undefined)
+                        ))
+      .forEach(updateMod);
+
+    Object.keys(modifiedState)
+      .filter(modId => modifiedState[modId]?.['+enabled'] !== undefined)
+      .forEach(updateMod);
 
     return result;
   }

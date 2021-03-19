@@ -4,17 +4,20 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { ProgressBar } from 'react-bootstrap';
 import { SelectUpDown, Spinner, types } from 'vortex-api';
+import { Option, Options, OptionValues } from 'react-select';
 
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;
   mod: IModEx;
   download: types.IDownload;
   notifications: types.INotification[];
+  container: Element;
+  onSetModEnabled: (modId: string, enabled: boolean) => void;
 }
 
 class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {}> {
   public render(): JSX.Element {
-    const { t, mod } = this.props;
+    const { t, container, mod } = this.props;
 
     if (mod.state === 'installed') {
       const options = [
@@ -30,6 +33,7 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
           labelKey='text'
           clearable={false}
           searchable={false}
+          container={container}
         />
       );
     } else if (mod.state === 'installing') {
@@ -64,8 +68,9 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
     }
   }
 
-  private changeDownloaded = (input) => {
-    console.log('downloaded', input);
+  private changeDownloaded = (input: Option<OptionValues>) => {
+    const { mod } = this.props;
+    this.props.onSetModEnabled(mod.id, input.key === 'enabled');
   }
 }
 
