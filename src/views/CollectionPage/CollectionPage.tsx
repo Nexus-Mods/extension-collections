@@ -43,6 +43,7 @@ export interface ICollectionPageProps {
 interface IConnectedProps {
   userInfo: any;
   votedSuccess: boolean;
+  activity: { [id: string]: string };
 }
 
 interface IActionProps {
@@ -296,12 +297,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     }
   }
 
-  public shouldComponentUpdate(newProps: ICollectionPageProps, newState: IComponentState) {
+  public shouldComponentUpdate(newProps: ICollectionPageProps & IConnectedProps,
+                               newState: IComponentState) {
     if ((this.props.mods !== newProps.mods)
         || (this.props.profile !== newProps.profile)
         || (this.props.downloads !== newProps.downloads)
         || (this.props.collection !== newProps.collection)
         || this.installingNotificationsChanged(this.props, newProps)
+        || (this.props.activity !== newProps.activity)
         || (this.state.revisionInfo !== newState.revisionInfo)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
@@ -310,7 +313,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, className, collection, driver, downloads,
+    const { t, activity, className, collection, driver, downloads,
             onVoteSuccess, profile, votedSuccess } = this.props;
     const { modsEx, revisionInfo } = this.state;
 
@@ -384,6 +387,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               mods={modsFinal}
               downloads={downloads}
               totalSize={totalSize}
+              activity={activity}
               onCancel={this.cancel}
               onPause={this.pause}
               onResume={this.resume}
@@ -816,6 +820,7 @@ function mapStateToProps(state: types.IState, ownProps: ICollectionPageProps): I
   return {
     userInfo: nexus.userInfo,
     votedSuccess,
+    activity: state.session.base.activity,
   };
 }
 
