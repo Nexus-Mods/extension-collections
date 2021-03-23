@@ -1,8 +1,8 @@
-import { IModPack } from './types/IModPack';
+import { ICollection } from './types/IModPack';
 
 import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
-import { modPackModToRule } from './util/modpack';
+import { collectionModToRule } from './util/modpack';
 
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
@@ -15,8 +15,8 @@ import { actions, fs, log, types } from 'vortex-api';
 export async function testSupported(files: string[], gameId: string)
     : Promise<types.ISupportedResult> {
   return {
-    supported: files.indexOf('modpack.json') !== -1,
-    requiredFiles: ['modpack.json'],
+    supported: files.indexOf('collection.json') !== -1,
+    requiredFiles: ['collection.json'],
   };
 }
 
@@ -28,10 +28,10 @@ export async function install(files: string[],
                               gameId: string,
                               progressDelegate: types.ProgressDelegate)
                               : Promise<types.IInstallResult> {
-  const modPackData = await fs.readFileAsync(path.join(destinationPath, 'modpack.json'),
-                                             { encoding: 'utf-8' });
+  const collectionData = await fs.readFileAsync(path.join(destinationPath, 'collection.json'),
+                                                { encoding: 'utf-8' });
 
-  const modpack: IModPack = JSON.parse(modPackData);
+  const collection: ICollection = JSON.parse(collectionData);
 
   /*
   if (!isIModPack(modpack)) {
@@ -57,7 +57,7 @@ export async function install(files: string[],
       {
         type: 'attribute' as any,
         key: 'customFileName',
-        value: modpack.info.name,
+        value: collection.info.name,
       },
       {
         type: 'setmodtype' as any,
@@ -74,10 +74,10 @@ export async function install(files: string[],
         destination: path.basename(filePath),
         section: 'download',
       })),
-      ...modpack.mods.map(mod => (
+      ...collection.mods.map(mod => (
         {
           type: 'rule' as any,
-          rule: modPackModToRule(mod),
+          rule: collectionModToRule(mod),
         })),
     ],
   });
@@ -88,32 +88,16 @@ export async function install(files: string[],
  * It may get called multiple times so it has to take care to not break if any data already
  * exists
  */
-export async function postprocessPack(api: types.IExtensionApi,
-                                      profile: types.IProfile,
-                                      modpack: IModPack,
-                                      mods: { [modId: string]: types.IMod }) {
-  modpack.modRules.forEach(rule => {
+export async function postprocessCollection(api: types.IExtensionApi,
+                                            profile: types.IProfile,
+                                            collection: ICollection,
+                                            mods: { [modId: string]: types.IMod }) {
+  collection.modRules.forEach(rule => {
     const sourceMod = findModByRef(rule.source, mods);
     if (sourceMod !== undefined) {
       api.store.dispatch(actions.addModRule(profile.gameId, sourceMod.id, rule));
     }
   });
 
-  /* this is now done through the "extra" attribute in the mod rules
-  modpack.mods.forEach(iter => {
-    const rule = modPackModToRule(iter);
-    const mod = findModByRef(rule.reference, mods);
-    if (mod !== undefined) {
-      if (mod.attributes['customFileName'] === undefined) {
-        api.store.dispatch(
-          actions.setModAttribute(profile.gameId, mod.id, 'customFileName', iter.name));
-      }
-      if (iter.details.type !== undefined) {
-        api.store.dispatch(actions.setModType(profile.gameId, mod.id, iter.details.type));
-      }
-    }
-  });
-  */
-
-  parseGameSpecifics(api, profile.gameId, modpack);
+  parseGameSpecifics(api, profile.gameId, collection);
 }

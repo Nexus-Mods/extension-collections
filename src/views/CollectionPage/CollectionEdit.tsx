@@ -1,4 +1,4 @@
-import { IModPackInfo, IModPackMod, IModPackModRule } from '../../types/IModPack';
+import { ICollectionInfo, ICollectionModRule } from '../../types/IModPack';
 import { findModByRef } from '../../util/findModByRef';
 import { getIniFiles } from '../../util/gameSupport';
 import { makeBiDirRule } from '../../util/modpack';
@@ -37,12 +37,12 @@ type ICollectionEditProps = ICollectionEditBaseProps & IConnectedProps & IAction
 
 interface ICollectionEditState {
   page: string;
-  modPackInfo: IModPackInfo;
-  modPackMods: { [modId: string]: types.IMod };
-  modPackRules: IModPackModRule[];
+  collectionInfo: ICollectionInfo;
+  collectionMods: { [modId: string]: types.IMod };
+  collectionRules: ICollectionModRule[];
 }
 
-const emptyCollectionInfo: IModPackInfo = {
+const emptyCollectionInfo: ICollectionInfo = {
   domainName: '',
   author: '',
   authorUrl: '',
@@ -56,9 +56,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     this.initState({
       page: 'info',
-      modPackInfo: emptyCollectionInfo,
-      modPackMods: {},
-      modPackRules: [],
+      collectionInfo: emptyCollectionInfo,
+      collectionMods: {},
+      collectionRules: [],
     });
   }
 
@@ -90,13 +90,13 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
           {t('Set up your mod collection\'s rules and site preferences.')}
         </FlexLayout.Fixed>
         <FlexLayout.Flex>
-          <Tabs id='modpack-edit-tabs' activeKey={page} onSelect={this.setCurrentPage}>
+          <Tabs id='collection-edit-tabs' activeKey={page} onSelect={this.setCurrentPage}>
             <Tab key='info' eventKey='info' title={t('Info')}>
               <Panel>
                 <InfoPage
                   t={t}
-                  modpack={collection}
-                  onSetModPackInfo={this.setModPackInfo}
+                  collection={collection}
+                  onSetCollectionInfo={this.setCollectionInfo}
                 />
               </Panel>
             </Tab>
@@ -108,18 +108,23 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               <Panel>
                 <ModsPage
                   mods={mods}
-                  modpack={collection}
+                  collection={collection}
                   t={t}
                   onSetModVersion={null}
                   onAddRule={this.addRule}
                   onRemoveRule={this.removeRule}
-                  onSetModpackAttribute={this.setModpackAttribute}
+                  onSetCollectionAttribute={this.setCollectionAttribute}
                 />
               </Panel>
             </Tab>
             <Tab key='mod-rules' eventKey='mod-rules' title={t('Mod Rules')}>
               <Panel>
-                <ModRules t={t} modpack={collection} mods={mods} rules={this.state.modPackRules} />
+                <ModRules
+                  t={t}
+                  collection={collection}
+                  mods={mods}
+                  rules={this.state.collectionRules}
+                />
               </Panel>
             </Tab>
             {((iniFiles || []).length > 0) ? (
@@ -149,8 +154,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
           }
           return prev;
         }, {});
-      this.nextState.modPackMods = includedMods;
-      this.nextState.modPackRules = Object.values(includedMods)
+      this.nextState.collectionMods = includedMods;
+      this.nextState.collectionRules = Object.values(includedMods)
         .reduce((prev, mod: types.IMod) => {
           prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
           return prev;
@@ -158,7 +163,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     }
   }
 
-  private setModPackInfo = (key: string, value: any) => {
+  private setCollectionInfo = (key: string, value: any) => {
     const { profile, collection, onSetModAttributes } = this.props;
     onSetModAttributes(profile.gameId, collection.id, { [key]: value });
   }
@@ -177,10 +182,10 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     this.props.onRemoveRule(profile.gameId, collection.id, rule);
   }
 
-  private setModpackAttribute = (attrPath: string[], value: any) => {
+  private setCollectionAttribute = (attrPath: string[], value: any) => {
     const { profile, collection } = this.props;
-    const attr = util.getSafe(collection.attributes, ['modpack'], {});
-    this.props.onSetModAttribute(profile.gameId, collection.id, 'modpack',
+    const attr = util.getSafe(collection.attributes, ['collection'], {});
+    this.props.onSetModAttribute(profile.gameId, collection.id, 'collection',
       util.setSafe(attr, attrPath, value));
   }
 }

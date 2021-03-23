@@ -1,19 +1,19 @@
-import { startEditModPack } from './actions/session';
+import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
-import { IModPack } from './types/IModPack';
+import { ICollection } from './types/IModPack';
 import InfoCache from './util/InfoCache';
 import InstallDriver from './util/InstallDriver';
-import { createModpack, makeModpackId } from './util/modpack';
+import { createCollection, makeCollectionId } from './util/modpack';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import CollectionsMainPage from './views/CollectionPage';
-import EditDialog from './views/EditDialog';
+// import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
 
 import { MOD_TYPE } from './constants';
-import { initFromProfile } from './modpackCreate';
-import { doExportToFile } from './modpackExport';
-import { install, postprocessPack, testSupported } from './modpackInstall';
+import { initFromProfile } from './collectionCreate';
+import { doExportToFile } from './collectionExport';
+import { install, postprocessCollection, testSupported } from './collectionInstall';
 
 import * as PromiseBB from 'bluebird';
 import memoize from 'memoize-one';
@@ -22,7 +22,7 @@ import * as React from 'react';
 import { generate as shortid } from 'shortid';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 
-function isEditableModPack(state: types.IState, modIds: string[]): boolean {
+function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
   const mod = state.persistent.mods[gameMode][modIds[0]];
   if (mod === undefined) {
@@ -31,11 +31,11 @@ function isEditableModPack(state: types.IState, modIds: string[]): boolean {
   return util.getSafe(mod.attributes, ['editable'], false);
 }
 
-function profileModpackExists(api: types.IExtensionApi, profileId: string) {
+function profileCollectionExists(api: types.IExtensionApi, profileId: string) {
   const state = api.store.getState();
   const gameMode = selectors.activeGameId(state);
   const mods = state.persistent.mods[gameMode];
-  return mods[makeModpackId(profileId)] !== undefined;
+  return mods[makeCollectionId(profileId)] !== undefined;
 }
 
 function onlyLocalRules(rule: types.IModRule) {
@@ -59,7 +59,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
         && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)) {
 
       const collectionProfile = Object.keys(state.persistent.profiles)
-        .find(iter => makeModpackId(iter) === modId);
+        .find(iter => makeCollectionId(iter) === modId);
 
       const notiActions = [{
         title: 'Disable',
@@ -113,9 +113,9 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 let driver: InstallDriver;
 let cache: InfoCache;
 
-function createCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
-  const id = makeModpackId(shortid());
-  createModpack(api, profile.gameId, id, name, []);
+function createNewCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
+  const id = makeCollectionId(shortid());
+  createCollection(api, profile.gameId, id, name, []);
   api.sendNotification({
     type: 'success',
     id: 'collection-created',
@@ -125,7 +125,7 @@ function createCollection(api: types.IExtensionApi, profile: types.IProfile, nam
       {
         title: 'Configure',
         action: dismiss => {
-          api.store.dispatch(startEditModPack(id));
+          api.store.dispatch(startEditCollection(id));
           dismiss();
         },
       },
@@ -182,11 +182,6 @@ function register(context: types.IExtensionContext,
   context.registerReducer(['session', 'collections'], sessionReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
-  context.registerDialog('collection-edit', EditDialog, () => ({
-    onClose: () => context.api.store.dispatch(startEditModPack(undefined)),
-    onExport: (modpackId: string) => null,
-  }));
-
   context.registerDialog('collection-install', InstallDialog, () => ({
     driver,
   }));
@@ -203,7 +198,7 @@ function register(context: types.IExtensionContext,
         onSetCallbacks(callbacks);
       },
       onCreateCollection: (profile: types.IProfile, name: string) =>
-        createCollection(context.api, profile, name),
+        createNewCollection(context.api, profile, name),
     }),
   });
 
@@ -255,7 +250,7 @@ function register(context: types.IExtensionContext,
     (modIds: string[]) => {
       const gameMode = selectors.activeGameId(state());
       doExportToFile(context.api, gameMode, modIds[0]);
-    }, (modIds: string[]) => isEditableModPack(state(), modIds));
+    }, (modIds: string[]) => isEditableCollection(state(), modIds));
 
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
     (modIds: string[]) => {
@@ -267,7 +262,7 @@ function register(context: types.IExtensionContext,
           collectionsCB.editCollection(modIds[0]);
         }
       }, 100);
-    }, (modIds: string[]) => isEditableModPack(context.api.store.getState(), modIds));
+    }, (modIds: string[]) => isEditableCollection(context.api.store.getState(), modIds));
 
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
@@ -286,17 +281,17 @@ function register(context: types.IExtensionContext,
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0])
         .catch(err => context.api.showErrorNotification('Failed to init collection', err));
-    }, (profileIds: string[]) => !profileModpackExists(context.api, profileIds[0]));
+    }, (profileIds: string[]) => !profileCollectionExists(context.api, profileIds[0]));
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Update Collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0])
         .catch(err => context.api.showErrorNotification('Failed to update collection', err));
-    }, (profileIds: string[]) => profileModpackExists(context.api, profileIds[0]));
+    }, (profileIds: string[]) => profileCollectionExists(context.api, profileIds[0]));
 
   context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
 
-  context.registerInstaller('modpack', 5, bbProm(testSupported), bbProm(install));
+  context.registerInstaller('collection', 5, bbProm(testSupported), bbProm(install));
 }
 
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
@@ -316,7 +311,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const state: () => types.IState = () => store.getState();
 
   api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
-    // automatically enable modpacks once they're installed
+    // automatically enable collections once they're installed
     const profileId = selectors.lastActiveProfileForGame(state(), gameId);
     const profile = selectors.profileById(state(), profileId);
     if (profile === undefined) {
@@ -336,11 +331,11 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const mod = mods[modId];
       if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
         try {
-          const modPackData = await fs.readFileAsync(
-            path.join(stagingPath, mod.installationPath, 'modpack.json'),
+          const collectionData = await fs.readFileAsync(
+            path.join(stagingPath, mod.installationPath, 'collection.json'),
             { encoding: 'utf-8' });
-          const modpack: IModPack = JSON.parse(modPackData);
-          postprocessPack(api, profile, modpack, mods);
+          const collection: ICollection = JSON.parse(collectionData);
+          postprocessCollection(api, profile, collection, mods);
         } catch (err) {
           log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
             + 'platform where the collection has been created.');

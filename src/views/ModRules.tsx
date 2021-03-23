@@ -2,14 +2,14 @@ import I18next from 'i18next';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { ComponentEx, Toggle, types, util } from 'vortex-api';
-import { IModPackModRule } from '../types/IModPack';
+import { ICollectionModRule } from '../types/IModPack';
 import { findModByRef } from '../util/findModByRef';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
-  modpack: types.IMod;
+  collection: types.IMod;
   mods: { [modId: string]: types.IMod };
-  rules: IModPackModRule[];
+  rules: ICollectionModRule[];
 }
 
 interface IModsPageState {
@@ -17,7 +17,7 @@ interface IModsPageState {
 
 type IProps = IModsPageProps;
 
-interface IModPackModRuleEx extends IModPackModRule {
+interface ICollectionModRuleEx extends ICollectionModRule {
   sourceName: string;
   referenceName: string;
 }
@@ -37,9 +37,9 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   public render(): React.ReactNode {
-    const { t, modpack, rules } = this.props;
+    const { t, collection, rules } = this.props;
 
-    const filtered = rules.filter(rule => !util.testModReference(modpack, rule.source));
+    const filtered = rules.filter(rule => !util.testModReference(collection, rule.source));
 
     let lastSourceName: string;
 
@@ -68,7 +68,7 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     );
   }
 
-  private insertNames(rule: IModPackModRule): IModPackModRuleEx {
+  private insertNames(rule: ICollectionModRule): ICollectionModRuleEx {
     return {
       ...rule,
       sourceName: this.renderReference(rule.source),
@@ -76,11 +76,11 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     };
   }
 
-  private ruleSort = (lhs: IModPackModRuleEx, rhs: IModPackModRuleEx) => {
+  private ruleSort = (lhs: ICollectionModRuleEx, rhs: ICollectionModRuleEx) => {
     return lhs.sourceName.localeCompare(rhs.sourceName);
   }
 
-  private renderRule(rule: IModPackModRuleEx, idx: number, separator: boolean): JSX.Element {
+  private renderRule(rule: ICollectionModRuleEx, idx: number, separator: boolean): JSX.Element {
     return (
       <ListGroupItem className={separator ? 'collection-rule-separator' : undefined} key={idx.toString()}>
         <Toggle checked={true} dataId={'foobar'} onToggle={this.toggleRule}>

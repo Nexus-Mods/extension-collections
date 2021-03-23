@@ -1,7 +1,6 @@
 import { MOD_TYPE } from '../../constants';
-import { initFromProfile } from '../../modpackCreate';
-import InstallDriver from '../../util/InstallDriver';
-import { makeModpackId } from '../../util/modpack';
+import { initFromProfile } from '../../collectionCreate';
+import { makeCollectionId } from '../../util/modpack';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
@@ -75,7 +74,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
       return prev;
     }, { foreign: [], own: [] });
 
-    const id = makeModpackId(profile.id);
+    const id = makeCollectionId(profile.id);
     const profilePack: types.IMod = mods[id];
     const PortalMenuX: any = PortalMenu;
 

@@ -41,7 +41,7 @@ function extractPluginRules(state: types.IState, plugins: string[]): IGamebryoRu
   };
 }
 
-export interface IModPackGamebryo {
+export interface ICollectionGamebryo {
   plugins: Array<{ name: string, enabled: boolean }>;
   pluginRules: IGamebryoRules;
 }
@@ -51,7 +51,7 @@ export async function generate(state: types.IState,
                                stagingPath: string,
                                modIds: string[],
                                mods: { [modId: string]: types.IMod })
-                               : Promise<IModPackGamebryo> {
+                               : Promise<ICollectionGamebryo> {
   const includedPlugins: string[] = [];
 
   const extensions = ['fallout4', 'skyrimse'].indexOf(gameId) === -1
@@ -86,7 +86,9 @@ function refName(iter: string | { name: string }): string {
   }
 }
 
-export async function parser(api: types.IExtensionApi, gameId: string, modpack: IModPackGamebryo) {
+export async function parser(api: types.IExtensionApi,
+                             gameId: string,
+                             collection: ICollectionGamebryo) {
   const state: types.IState = api.store.getState();
 
   /*
@@ -103,7 +105,7 @@ export async function parser(api: types.IExtensionApi, gameId: string, modpack: 
   });
   */
 
-  (modpack.plugins ?? []).forEach(plugin => {
+  (collection.plugins ?? []).forEach(plugin => {
     api.store.dispatch({ type: 'SET_PLUGIN_ENABLED', payload: {
       pluginName: plugin.name,
       enabled: plugin.enabled,
@@ -119,7 +121,7 @@ export async function parser(api: types.IExtensionApi, gameId: string, modpack: 
     .filter(noti => noti.id.startsWith('multiple-plugins-'))
     .forEach(noti => api.dismissNotification(noti.id));
 
-  (modpack.pluginRules?.plugins ?? []).forEach(plugin => {
+  (collection.pluginRules?.plugins ?? []).forEach(plugin => {
     const existing = (state as any).userlist.plugins.find(plug =>
       plug.name.toUpperCase() === plugin.name.toUpperCase());
 

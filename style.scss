@@ -2,36 +2,28 @@ $border-radius: 4px;
 $collection-thumbnail-width: 180px;
 $collection-thumbnail-height: 320px;
 
-#modpack-edit-dialog .modal-dialog {
-  width: 80vw;
-
-  .modal-body {
-    height: 80vh;
-  }
-}
-
-#table-modpack-mods .header-name {
+#table-collection-mods .header-name {
   p {
     white-space: nowrap;
   }
 }
 
-#table-modpack-mods .header-version,
-#table-modpack-mods .header-source,
-#table-modpack-mods .header-install-type,
-#table-modpack-mods .header-action {
+#table-collection-mods .header-version,
+#table-collection-mods .header-source,
+#table-collection-mods .header-install-type,
+#table-collection-mods .header-action {
   width: 200px;
 }
 
-#table-modpack-mods .cell-source {
+#table-collection-mods .cell-source {
   padding-right: 0;
 }
 
-#table-modpack-mods .cell-edit-source {
+#table-collection-mods .cell-edit-source {
   padding-left: 0;
 }
 
-#table-modpack-mods .cell-highlight {
+#table-collection-mods .cell-highlight {
   display: flex !important;
   align-items: center;
   > * {
@@ -39,7 +31,16 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-#modpack-edit-dialog .modpack-edit-export {
+/*
+#collection-edit-dialog .modal-dialog {
+  width: 80vw;
+
+  .modal-body {
+    height: 80vh;
+  }
+}
+
+#collection-edit-dialog .collection-edit-export {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -50,7 +51,7 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-#modpack-edit-tabs {
+#collection-edit-tabs {
   height: 100%;
   overflow-y: hidden;
   display: flex;
@@ -68,7 +69,7 @@ $collection-thumbnail-height: 320px;
     }
   }
 
-  #modpack-edit-tabs-pane-info {
+  #collection-edit-tabs-pane-info {
     > .panel {
       > form {
         max-width: 40em;
@@ -77,7 +78,7 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-#modpack-edit-tabs-pane-mod-rules > div {
+#collection-edit-tabs-pane-mod-rules > div {
   height: 100%;
   width: 100%;
   display: flex;
@@ -89,7 +90,7 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-#modpack-edit-tabs-pane-ini-tweaks {
+#collection-edit-tabs-pane-ini-tweaks {
   .table {
     max-width: 40em;
     td {
@@ -98,12 +99,28 @@ $collection-thumbnail-height: 320px;
   }
 }
 
+.collection-edit-header {
+  padding: $gutter-width;
+  margin-bottom: $half-gutter;
+}
+
+#collection-edit-tabs-tab-mods .badge {
+  margin-left: 0.5em;
+}
+
+#collection-edit-tabs-pane-mod-rules {
+  .toggle-container {
+    margin-top: 0;
+  }
+}
+*/
+
 .listitem-tweak {
   display: flex;
   align-items: flex-end;
 }
 
-.table-modpack-mods .highlight-base {
+.table-collection-mods .highlight-base {
   width: 2em;
   height: 2em;
   &:hover {
@@ -111,13 +128,13 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-.modpack-mods-container {
+.collection-mods-container {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-#modpack-install-dialog {
+#collection-install-dialog {
   .modal-dialog {
     width: 80vw;
     .modal-body {
@@ -125,18 +142,18 @@ $collection-thumbnail-height: 320px;
     }
   }
 
-  .modpack-flex-start {
+  .collection-flex-start {
     justify-content: center;
     align-items: center;
   }
 
-  .modpack-flex-disclaimer {
+  .collection-flex-disclaimer {
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
-  .modpack-flex-installing {
+  .collection-flex-installing {
     .carousel-control {
       display: flex;
       justify-content: center;
@@ -175,12 +192,12 @@ $collection-thumbnail-height: 320px;
     }
   }
 
-  .modpack-disclaimer-intro {
+  .collection-disclaimer-intro {
     font-size: large;
   }
 }
 
-.modpack-description-popover {
+.collection-description-popover {
   min-width: 60vw;
   max-width: 60vw;
   .popover-content {
@@ -533,22 +550,7 @@ $collection-thumbnail-height: 320px;
   padding: 1em;
 }
 
-.collection-edit-header {
-  padding: $gutter-width;
-  margin-bottom: $half-gutter;
-}
-
-#modpack-edit-tabs-tab-mods .badge {
-  margin-left: 0.5em;
-}
-
-#modpack-edit-tabs-pane-mod-rules {
-  .toggle-container {
-    margin-top: 0;
-  }
-}
-
-.table-modpack-mods.cell-required {
+.table-collection-mods.cell-required {
   .toggle-container {
     margin-top: 0;
   }
@@ -610,7 +612,7 @@ $collection-thumbnail-height: 320px;
   }
 }
 
-#popover-modpack {
+#popover-collection {
   .popover-content {
     max-height: 80vh;
     overflow: auto;

@@ -1,5 +1,5 @@
 {
-  "name": "modpacks",
+  "name": "collections",
   "description": "Allows creation of installation of mod packs (meta mods that install a bunch of other mods)",
   "version": "0.0.1",
   "main": "./out/index.js",

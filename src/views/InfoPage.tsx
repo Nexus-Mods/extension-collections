@@ -1,17 +1,15 @@
-import { IModPackInfo } from '../types/IModPack';
 import { validateName } from '../util/validation';
 
 import I18next from 'i18next';
 import * as React from 'react';
 import { ControlLabel, Form, FormGroup, HelpBlock } from 'react-bootstrap';
-import * as semver from 'semver';
 import * as url from 'url';
 import { ComponentEx, FormInput, types, util } from 'vortex-api';
 
 export interface IInfoPageProps {
   t: I18next.TFunction;
-  modpack: types.IMod;
-  onSetModPackInfo: (key: string, value: any) => void;
+  collection: types.IMod;
+  onSetCollectionInfo: (key: string, value: any) => void;
 }
 
 type IProps = IInfoPageProps;
@@ -30,16 +28,16 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
   }
 
   public render(): React.ReactNode {
-    const { t, modpack } = this.props;
+    const { t, collection } = this.props;
 
-    if (modpack === undefined) {
+    if (collection === undefined) {
       return null;
     }
 
-    const author = util.getSafe(modpack.attributes, ['author'], '');
-    const authorUrl = util.getSafe(modpack.attributes, ['authorURL'], '');
-    const description = modpack.attributes?.['shortDescription'] ?? '';
-    const name = util.renderModName(modpack);
+    const author = util.getSafe(collection.attributes, ['author'], '');
+    const authorUrl = util.getSafe(collection.attributes, ['authorURL'], '');
+    const description = collection.attributes?.['shortDescription'] ?? '';
+    const name = util.renderModName(collection);
 
     const authorValid = (author.length >= 2) ? 'success' : 'error';
     const nameValid = validateName(name);
@@ -73,7 +71,7 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
         <FormGroup controlId='shortDescription' validationState={descriptionValid}>
           <ControlLabel>{t('Summary')}</ControlLabel>
           <textarea
-            value={modpack.attributes['shortDescription']}
+            value={collection.attributes['shortDescription']}
             onChange={this.setter('shortDescription')}
             placeholder={t('Please provide a short description of your collection')}
             rows={4}
@@ -85,13 +83,13 @@ class InfoPage extends ComponentEx<IProps, IInfoPageState> {
   }
 
   private setter(key: string) {
-    const { onSetModPackInfo } = this.props;
+    const { onSetCollectionInfo } = this.props;
     if (this.mSetters[key] === undefined) {
       this.mSetters[key] = (value: any) => {
         if (value.currentTarget !== undefined) {
-         onSetModPackInfo(key, value.currentTarget.value);
+         onSetCollectionInfo(key, value.currentTarget.value);
         } else {
-         onSetModPackInfo(key, value);
+         onSetCollectionInfo(key, value);
         }
       };
     }

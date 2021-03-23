@@ -52,7 +52,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
           <FlexLayout type='column' className='collection-progress-flex'>
             {((activity['dependencies'] ?? []).length > 0)
               ? this.renderActivity(t('Checking Dependencies'))
-              : this.renderBars(pending, downloading, installing, done)}
+              : this.renderBars(installing, done)}
           </FlexLayout>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
@@ -82,10 +82,10 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
     );
   }
 
-  private renderBars(pending: IModEx[], downloading: IModEx[], installing: IModEx[], done: IModEx[]) {
+  private renderBars(installing: IModEx[], done: IModEx[]) {
     const {t, downloads, mods, totalSize} = this.props;
 
-    const curInstall = installing.length > 0
+    const curInstall = (installing.length > 0)
       ? installing.find(iter => iter.state === 'installing')
       : undefined;
 

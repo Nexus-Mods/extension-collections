@@ -1,7 +1,7 @@
 import * as gamebryo from './gamebryo';
 
 import { types } from 'vortex-api';
-import { IModPack } from '../../types/IModPack';
+import { ICollection } from '../../types/IModPack';
 
 const gameSupport = {
     skyrim: {
@@ -67,8 +67,10 @@ export function generateGameSpecifics(state: types.IState,
   }
 }
 
-export function parseGameSpecifics(api: types.IExtensionApi, gameId: string, modpack: IModPack) {
+export function parseGameSpecifics(api: types.IExtensionApi,
+                                   gameId: string,
+                                   collection: ICollection) {
   if ((gameSupport[gameId] !== undefined) && (gameSupport[gameId].parser !== undefined)) {
-    return gameSupport[gameId].parser(api, gameId, modpack);
+    return gameSupport[gameId].parser(api, gameId, collection);
   }
 }

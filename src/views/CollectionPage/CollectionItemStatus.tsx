@@ -4,7 +4,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { ProgressBar } from 'react-bootstrap';
 import { SelectUpDown, Spinner, types } from 'vortex-api';
-import { Option, Options, OptionValues } from 'react-select';
+import { Option, OptionValues } from 'react-select';
 
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;

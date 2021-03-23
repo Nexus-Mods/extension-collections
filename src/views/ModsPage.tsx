@@ -1,4 +1,4 @@
-import { IModPackSourceInfo, SourceType } from '../types/IModPack';
+import { ICollectionSourceInfo, SourceType } from '../types/IModPack';
 import { findModByRef } from '../util/findModByRef';
 
 import I18next from 'i18next';
@@ -10,12 +10,12 @@ import {
 
 export interface IModsPageProps {
   t: I18next.TFunction;
-  modpack: types.IMod;
+  collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   onSetModVersion: (modId: string, version: 'exact' | 'newest') => void;
   onAddRule: (rule: types.IModRule) => void;
   onRemoveRule: (rule: types.IModRule) => void;
-  onSetModpackAttribute: (path: string[], value: any) => void;
+  onSetCollectionAttribute: (path: string[], value: any) => void;
 }
 
 interface IModEntry {
@@ -176,9 +176,9 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       name: 'Install',
       description: 'How the mod should be installed on the user system',
       calc: (entry: IModEntry) => {
-        const { modpack } = this.props;
+        const { collection } = this.props;
         const installMode =
-          util.getSafe(modpack, ['attributes', 'modpack', 'installMode', entry.mod.id], 'fresh');
+          util.getSafe(collection, ['attributes', 'collection', 'installMode', entry.mod.id], 'fresh');
         return INSTALL_MODES[installMode];
       },
       placement: 'table',
@@ -193,7 +193,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         actions: false,
         choices: () => Object.keys(INSTALL_MODES).map(key => ({ key, text: INSTALL_MODES[key] })),
         onChangeValue: (source: IModEntry, value: any) => {
-          this.props.onSetModpackAttribute(['installMode', source.mod.id], value);
+          this.props.onSetCollectionAttribute(['installMode', source.mod.id], value);
         },
       },
     }, {
@@ -201,9 +201,9 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       name: 'Source',
       description: 'How the user acquires the mod',
       calc: (entry: IModEntry) => {
-        const { modpack } = this.props;
-        const type = util.getSafe(modpack,
-                                  ['attributes', 'modpack', 'source', entry.mod.id, 'type'],
+        const { collection } = this.props;
+        const type = util.getSafe(collection,
+                                  ['attributes', 'collection', 'source', entry.mod.id, 'type'],
                                   'nexus');
         return SOURCES[type];
       },
@@ -221,16 +221,16 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       placement: 'table',
       edit: {},
       calc: (entry: IModEntry) => {
-        const { modpack } = this.props;
-        const type = util.getSafe(modpack,
-                                  ['attributes', 'modpack', 'source', entry.mod.id, 'type'],
+        const { collection } = this.props;
+        const type = util.getSafe(collection,
+                                  ['attributes', 'collection', 'source', entry.mod.id, 'type'],
                                   'nexus');
         return SOURCES[type];
       },
       customRenderer: (entry: IModEntry) => {
-        const { t, modpack } = this.props;
-        const type = util.getSafe(modpack,
-                                  ['attributes', 'modpack', 'source', entry.mod.id, 'type'],
+        const { t, collection } = this.props;
+        const type = util.getSafe(collection,
+                                  ['attributes', 'collection', 'source', entry.mod.id, 'type'],
                                   'nexus');
         return (
           <tooltip.IconButton
@@ -252,8 +252,8 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       singleRowAction: true,
       multiRowAction: false,
       action: (instanceId: string) => {
-        const { onSetModpackAttribute, modpack } = this.props;
-        const value = util.getSafe(modpack.attributes, ['modpack', 'instructions', instanceId], '');
+        const { onSetCollectionAttribute, collection } = this.props;
+        const value = util.getSafe(collection.attributes, ['collection', 'instructions', instanceId], '');
         this.context.api.showDialog('info', 'Instructions', {
           text: 'These instructions will be shown before installing the mod. '
               + 'This will interrupt the installation process so please use it '
@@ -265,7 +265,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
         ], 'collection-set-instructions')
         .then(result => {
           if (result.action === 'Save') {
-            onSetModpackAttribute(['instructions', instanceId], result.input['instructions']);
+            onSetCollectionAttribute(['instructions', instanceId], result.input['instructions']);
           }
         });
       },
@@ -276,9 +276,9 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       singleRowAction: false,
       multiRowAction: true,
       action: (instanceIds: string[]) => {
-        const { onSetModpackAttribute, modpack } = this.props;
+        const { onSetCollectionAttribute, collection } = this.props;
 
-        const refMode = modpack.attributes?.modpack?.installMode?.[instanceIds[0]] ?? 'fresh';
+        const refMode = collection.attributes?.collection?.installMode?.[instanceIds[0]] ?? 'fresh';
 
         this.context.api.showDialog('question', 'Install Type', {
           text: 'Please select the install mode to apply to all selected mods',
@@ -294,7 +294,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
           if (result.action === 'Apply') {
             const selected = Object.keys(result.input).find(iter => result.input[iter]);
             instanceIds.forEach(modId => {
-              onSetModpackAttribute(['installMode', modId], selected);
+              onSetCollectionAttribute(['installMode', modId], selected);
             });
           }
         });
@@ -332,7 +332,7 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
 
   public componentWillReceiveProps(newProps: IProps) {
     if ((newProps.mods !== this.props.mods)
-        || (newProps.modpack !== this.props.modpack)) {
+        || (newProps.collection !== this.props.collection)) {
       const entries = this.generateEntries(newProps);
       this.nextState.entries = entries;
       this.nextState.problems = this.checkProblems(newProps, entries);
@@ -344,17 +344,17 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     const { entries } = this.state;
 
     return (
-      <div className='modpack-mods-container'>
+      <div className='collection-mods-container'>
         <Table
-          tableId='modpack-mods'
+          tableId='collection-mods'
           data={entries}
           staticElements={this.mColumns}
           actions={this.mActions}
           showDetails={false}
         />
-        <Usage infoId='modpack-mods'>
+        <Usage infoId='collection-mods'>
           <p>{t('Here you can configure which mods to install and how.')}</p>
-          <p>{t('Version: Choose whether the modpack will install exactly the version you '
+          <p>{t('Version: Choose whether the collection will install exactly the version you '
             + 'have yourself or whatever is current on Nexus Mods.')}</p>
           <p>{t('Required: Select whether the user has to install the mod or whether it\'s just '
             + 'a recommendation.')}</p>
@@ -379,13 +379,13 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private generateEntries(props: IProps) {
-    const { modpack, mods } = props;
+    const { collection, mods } = props;
 
-    if ((modpack === undefined) || (modpack.rules === undefined)) {
+    if ((collection === undefined) || (collection.rules === undefined)) {
       return {};
     }
 
-    return Object.values(modpack.rules)
+    return Object.values(collection.rules)
       .filter(rule => ['requires', 'recommends'].indexOf(rule.type) !== -1)
       .reduce((prev, rule) => {
         const mod = findModByRef(rule.reference, mods);
@@ -406,14 +406,14 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private updateProblems(props: IProps, mod: IModEntry): string[] {
-    const { t, modpack } = props;
+    const { t, collection } = props;
 
     const res: string[] = [];
 
     const source: string =
-      util.getSafe(modpack, ['attributes', 'modpack', 'source', mod.mod.id, 'type'], 'nexus');
+      util.getSafe(collection, ['attributes', 'collection', 'source', mod.mod.id, 'type'], 'nexus');
     const installMode: string =
-      util.getSafe(modpack, ['attributes', 'modpack', 'installMode', mod.mod.id], 'fresh');
+      util.getSafe(collection, ['attributes', 'collection', 'installMode', mod.mod.id], 'fresh');
 
     if ((source === 'nexus')
         && ((util.getSafe(mod.mod, ['attributes', 'modId'], undefined) === undefined)
@@ -457,16 +457,16 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       res.push(t('The mod has no version number set. This isn\'t strictly necessary, we use the '
                + 'file id to identify the exact version but for the purpose of informing the '
                + 'user it would be nicer if a version was specified. '
-               + '(Please don\'t forget to update the modpack)'));
+               + '(Please don\'t forget to update the collection)'));
     }
 
     return res;
   }
 
   private querySource(modId: string, type: SourceType) {
-    const { modpack, mods } = this.props;
-    const src: IModPackSourceInfo = util.getSafe(modpack,
-      ['attributes', 'modpack', 'source', modId], { type });
+    const { collection, mods } = this.props;
+    const src: ICollectionSourceInfo = util.getSafe(collection,
+      ['attributes', 'collection', 'source', modId], { type });
     const input: types.IInput[] = [];
 
     /*
@@ -505,21 +505,21 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       }, [
         { label: 'Save' },
       ]).then((result => {
-        this.props.onSetModpackAttribute(['source', modId], {
+        this.props.onSetCollectionAttribute(['source', modId], {
           type,
           url: result.input.url,
           instructions: result.input.instructions,
         });
       }));
     } else {
-      this.props.onSetModpackAttribute(['source', modId], { type });
+      this.props.onSetCollectionAttribute(['source', modId], { type });
     }
   }
 
   private onQuerySource = (evt: React.MouseEvent<any>) => {
-    const { modpack } = this.props;
+    const { collection } = this.props;
     const modId = evt.currentTarget.getAttribute('data-modid');
-    const type = modpack.attributes?.modpack?.source?.[modId]?.type ?? 'nexus';
+    const type = collection.attributes?.collection?.source?.[modId]?.type ?? 'nexus';
     
     return this.querySource(modId, type);
   }

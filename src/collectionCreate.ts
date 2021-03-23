@@ -1,13 +1,13 @@
-import { createModpackFromProfile } from './util/modpack';
+import { createCollectionFromProfile } from './util/modpack';
 
 import { actions, types } from 'vortex-api';
 
 export async function initFromProfile(api: types.IExtensionApi, profileId: string) {
-  const { id, name, updated } = await createModpackFromProfile(api, profileId);
+  const { id, name, updated } = await createCollectionFromProfile(api, profileId);
   api.store.dispatch(actions.setModEnabled(profileId, id, true));
   api.sendNotification({
     type: 'success',
-    id: 'modpack-created',
+    id: 'collection-created',
     title: updated ? 'Collection updated' : 'Collection created',
     message: name,
     actions: [

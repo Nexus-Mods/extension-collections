@@ -34,6 +34,9 @@ function nop() {
   // nop
 }
 
+/**
+ * Installation prompt that shows up when the user imports a collection
+ */
 class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   constructor(props: IProps) {
     super(props);
@@ -60,7 +63,6 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     }
 
     const game = util.getGame(profile.gameId);
-    // const name = driver.modPack !== undefined ? driver.modPack.attributes['name'] : '';
 
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
@@ -86,100 +88,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
         </Modal.Footer>
       </Modal>
     );
-
-    /*
-    return (
-      <Modal
-        id='modpack-install-dialog'
-        show={(driver.modPack !== undefined) && visible}
-        onHide={undefined}
-      >
-        <Modal.Header>
-          <Modal.Title>{t('Installing Collection "{{name}}"', { replace: { name } })}</Modal.Title>
-          {this.renderCurrentStep(driver.step)}
-        </Modal.Header>
-        <Modal.Body>
-          {this.renderContent(driver.step)}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            style={{ display: driver.canClose() ? undefined : 'none' }}
-            onClick={this.cancel}
-          >
-            {t('Close')}
-          </Button>
-          <Button style={{ display: driver.canHide() ? undefined : 'none' }} onClick={this.hide}>
-            {t('Hide')}
-          </Button>
-          <Button disabled={!driver.canContinue()} onClick={this.next}>{t('Next')}</Button>
-        </Modal.Footer>
-      </Modal>
-    );
-    */
   }
-
-  /*
-  private renderCurrentStep(step: Step): JSX.Element {
-    const { t } = this.props;
-
-    return (
-      <Steps step={step}>
-        <Steps.Step
-          key='start'
-          stepId='start'
-          title={t('Start')}
-          description={t('Introduction')}
-        />
-        <Steps.Step
-          key='disclaimer'
-          stepId='disclaimer'
-          title={t('Disclaimer')}
-          description={t('Disclaimer')}
-        />
-        <Steps.Step
-          key='installing'
-          stepId='installing'
-          title={t('Installing')}
-          description={t('Installing')}
-        />
-        <Steps.Step
-          key='review'
-          stepId='review'
-          title={t('Review')}
-          description={t('Installatino Results')}
-        />
-      </Steps>
-    );
-  }
-
-  private renderContent(step: Step): JSX.Element {
-    const { t, driver, i18n, isPremium, tReady } = this.props;
-
-    if (driver.modPack === undefined) {
-      return null;
-    }
-
-    switch (step) {
-      case 'start': return (
-        <InstallDialogStart t={t} isPremium={isPremium} driver={driver} />
-      );
-      case 'disclaimer': return (
-        <InstallDialogDisclaimer t={t} driver={driver} />
-      );
-      case 'installing': return (
-        <InstallDialogInstalling driver={driver} />
-      );
-      case 'review': return <InstallDialogReview t={t} driver={driver} />;
-      default: return null;
-    }
-  }
-  */
-
-  /*
-  private hide = () => {
-    this.props.onHide();
-  }
-  */
 
   private cancel = () => {
     this.props.driver.cancel();

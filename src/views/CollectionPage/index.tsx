@@ -1,6 +1,6 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, NEXUS_DOMAIN} from '../../constants';
-import { doExportToAPI } from '../../modpackExport';
+import { doExportToAPI } from '../../collectionExport';
 import { findDownloadIdByRef, findModByRef } from '../../util/findModByRef';
 import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';

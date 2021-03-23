@@ -1,7 +1,7 @@
 import { types } from 'vortex-api';
-import { IModPackGamebryo } from '../util/gameSupport/gamebryo';
+import { ICollectionGamebryo } from '../util/gameSupport/gamebryo';
 
-export interface IModPackInfo {
+export interface ICollectionInfo {
   author: string;
   authorUrl: string;
   name: string;
@@ -13,7 +13,7 @@ export type UpdatePolicy = 'exact' | 'latest' | 'prefer';
 
 export type SourceType = 'browse' | 'manual' | 'direct' | 'nexus' | 'bundle';
 
-export interface IModPackSourceInfo {
+export interface ICollectionSourceInfo {
   type: SourceType;
   url?: string;
   // textual download/installation instructions (used with source 'manual' and 'browse')
@@ -32,40 +32,40 @@ export interface IModPackSourceInfo {
   fileExpression?: string;
 }
 
-export interface IModPackModDetails {
+export interface ICollectionModDetails {
   type?: string;
 }
 
-export interface IModPackMod {
+export interface ICollectionMod {
   name: string;
   version: string;
   optional: boolean;
   domainName: string;
-  source: IModPackSourceInfo;
+  source: ICollectionSourceInfo;
   // hashes?: types.IFileListItem[];
   hashes?: any;
   // installer-specific data to replicate the choices the author made
   choices?: any;
   instructions?: string;
   author?: string;
-  details?: IModPackModDetails;
+  details?: ICollectionModDetails;
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';
 
-export interface IModPackModRule {
+export interface ICollectionModRule {
   source: types.IModReference;
   type: RuleType;
   reference: types.IModReference;
 }
 
-export interface IModPack extends Partial<IModPackGamebryo> {
-  info: IModPackInfo;
-  mods: IModPackMod[];
-  modRules: IModPackModRule[];
+export interface ICollection extends Partial<ICollectionGamebryo> {
+  info: ICollectionInfo;
+  mods: ICollectionMod[];
+  modRules: ICollectionModRule[];
 }
 
-export interface IModPackAttributes {
+export interface ICollectionAttributes {
   freshInstall?: { [modId: string]: boolean };
   instructions?: { [modId: string]: string };
   source?: { [modId: string]: { type: SourceType } };

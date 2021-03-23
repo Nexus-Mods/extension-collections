@@ -1,5 +1,5 @@
-import { IModPack, IModPackMod } from './types/IModPack';
-import { LOGO_NAME, modToPack } from './util/modpack';
+import { ICollection, ICollectionMod } from './types/IModPack';
+import { LOGO_NAME, modToCollection as modToCollection } from './util/modpack';
 import { makeProgressFunction } from './util/util';
 
 import * as PromiseBB from 'bluebird';
@@ -43,21 +43,21 @@ async function zip(zipPath: string, sourcePath: string): Promise<void> {
   await zipper.add(zipPath, files.map(fileName => path.join(sourcePath, fileName)));
 }
 
-async function generateModPackInfo(state: types.IState, gameId: string, collection: types.IMod,
-                                   progress: (percent: number, text: string) => void,
-                                   error: (message: string, replace: any) => void)
-                                   : Promise<IModPack> {
+async function generateCollectionInfo(state: types.IState, gameId: string, collection: types.IMod,
+                                      progress: (percent: number, text: string) => void,
+                                      error: (message: string, replace: any) => void)
+                                      : Promise<ICollection> {
   const mods = state.persistent.mods[gameId];
   const stagingPath = selectors.installPath(state);
-  return modToPack(state, gameId, stagingPath, collection, mods, progress, error);
+  return modToCollection(state, gameId, stagingPath, collection, mods, progress, error);
 }
 
-async function writePackToFile(state: types.IState, info: IModPack,
-                               mod: types.IMod, outputPath: string) {
+async function writeCollectionToFile(state: types.IState, info: ICollection,
+                                     mod: types.IMod, outputPath: string) {
   await fs.ensureDirWritableAsync(outputPath, () => PromiseBB.resolve());
 
   await fs.writeFileAsync(
-    path.join(outputPath, 'modpack.json'), JSON.stringify(info, undefined, 2));
+    path.join(outputPath, 'collection.json'), JSON.stringify(info, undefined, 2));
 
   const stagingPath = selectors.installPath(state);
   const modPath = path.join(stagingPath, mod.installationPath);
@@ -80,7 +80,7 @@ async function writePackToFile(state: types.IState, info: IModPack,
   await fs.copyAsync(path.join(modPath, BUNDLED_PATH), path.join(outputPath, BUNDLED_PATH));
 
   const zipPath = path.join(modPath,
-                            `modpack_${util.getSafe(mod.attributes, ['version'], '1.0.0')}.7z`);
+                            `collection_${util.getSafe(mod.attributes, ['version'], '1.0.0')}.7z`);
   try {
     await fs.removeAsync(zipPath);
   } catch (err) {
@@ -93,11 +93,11 @@ async function writePackToFile(state: types.IState, info: IModPack,
   return zipPath;
 }
 
-function filterInfoMod(mod: IModPackMod): IModPackMod {
+function filterInfoMod(mod: ICollectionMod): ICollectionMod {
   return _.omit(mod, ['hashes', 'choices', 'details', 'instructions']);
 }
 
-function filterInfo(input: IModPack): Partial<IModPack> {
+function filterInfo(input: ICollection): Partial<ICollection> {
   const info = input.info;
   return {
     info,
@@ -135,17 +135,17 @@ export async function doExportToAPI(api: types.IExtensionApi,
     errors.push({ message, replace });
   };
 
-  let info: IModPack;
+  let info: ICollection;
 
   let collectionId: number;
 
   try {
-    info = await generateModPackInfo(state, gameId, mod, progress, onError);
+    info = await generateCollectionInfo(state, gameId, mod, progress, onError);
     if (errors.length > 0) {
       await queryErrorsContinue(api, errors);
     }
     await withTmpDir(async tmpPath => {
-      const filePath = await writePackToFile(state, info, mod, tmpPath);
+      const filePath = await writeCollectionToFile(state, info, mod, tmpPath);
       const result: any = await util.toPromise(cb =>
         api.events.emit('submit-collection', filterInfo(info), filePath,
                         mod.attributes?.collectionId, cb));
@@ -196,8 +196,8 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
     const stagingPath = selectors.installPathForGame(state, gameId);
     const modPath = path.join(stagingPath, mod.installationPath);
     const outputPath = path.join(modPath, 'build');
-    const info = await generateModPackInfo(state, gameId, mod, progress, onError);
-    const zipPath = await writePackToFile(state, info, mod, outputPath);
+    const info = await generateCollectionInfo(state, gameId, mod, progress, onError);
+    const zipPath = await writeCollectionToFile(state, info, mod, outputPath);
     const dialogActions = [
       {
         title: 'Open', action: () => {

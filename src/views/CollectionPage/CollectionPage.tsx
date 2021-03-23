@@ -5,6 +5,7 @@ import InstallDriver from '../../util/InstallDriver';
 
 import { IModEx } from '../../types/IModEx';
 import { IRevisionEx } from '../../types/IRevisionEx';
+import { IStateEx } from '../../types/IStateEx';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
@@ -243,7 +244,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         name: 'Instructions',
         customRenderer: (mod: IModEx) => {
           const { collection } = this.props;
-          const instructions = collection.attributes?.modpack?.instructions?.[mod.id];
+          const instructions = collection.attributes?.collection?.instructions?.[mod.id];
           if (instructions === undefined) {
             return null;
           }
@@ -258,7 +259,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         },
         calc: mod => {
           const { collection } = this.props;
-          return collection.attributes?.modpack?.instructions?.[mod.id];
+          return collection.attributes?.collection?.instructions?.[mod.id];
         },
         placement: 'table',
         edit: {},
@@ -280,7 +281,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     this.nextState.modsEx = modsEx;
   }
 
-  public async componentWillReceiveProps(newProps: ICollectionPageProps) {
+  public async UNSAFE_componentWillReceiveProps(newProps: ICollectionPageProps) {
     if ((this.props.mods !== newProps.mods)
         || (this.props.profile !== newProps.profile)
         || (this.props.collection !== newProps.collection)
@@ -304,7 +305,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || (this.props.downloads !== newProps.downloads)
         || (this.props.collection !== newProps.collection)
         || this.installingNotificationsChanged(this.props, newProps)
-        || (this.props.activity !== newProps.activity)
+        || (this.props.activity.mods !== newProps.activity.mods)
         || (this.state.revisionInfo !== newState.revisionInfo)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
@@ -446,7 +447,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private showInstructions = (evt: React.MouseEvent<any>) => {
     const modId = evt.currentTarget.getAttribute('data-modid');
     const { collection, mods } = this.props;
-    const instructions = collection.attributes?.modpack?.instructions?.[modId];
+    const instructions = collection.attributes?.collection?.instructions?.[modId];
     const mod = mods[modId];
 
     const modName = util.renderModName(mod);
@@ -801,7 +802,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 }
 
-function mapStateToProps(state: types.IState, ownProps: ICollectionPageProps): IConnectedProps {
+function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConnectedProps {
   const { nexus } = state.persistent as any;
   const { collection } = ownProps;
 
@@ -809,7 +810,7 @@ function mapStateToProps(state: types.IState, ownProps: ICollectionPageProps): I
 
   if ((collection !== undefined) && (collection.attributes.revisionNumber !== undefined)) {
     const { collectionId, revisionNumber } = collection.attributes;
-    const collectionInfo: ICollection = (state.persistent as any).collections[collectionId];
+    const collectionInfo: ICollection = state.persistent.collections[collectionId];
     const revisionInfo: IRevisionEx =
       collectionInfo?.revisions?.find(rev => rev.revision === revisionNumber);
     votedSuccess = revisionInfo !== undefined

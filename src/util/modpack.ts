@@ -1,6 +1,6 @@
 import { BUNDLED_PATH, MOD_TYPE } from '../constants';
-import { IModPack, IModPackAttributes, IModPackInfo, IModPackMod,
-         IModPackModRule, IModPackSourceInfo } from '../types/IModPack';
+import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
+         ICollectionModRule, ICollectionSourceInfo } from '../types/IModPack';
 
 import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';
@@ -42,10 +42,10 @@ function toInt(input: string | number | undefined | null) {
 }
 
 function deduceSource(mod: types.IMod,
-                      sourceInfo: IModPackSourceInfo,
+                      sourceInfo: ICollectionSourceInfo,
                       versionMatcher: string)
-                      : IModPackSourceInfo {
-  const res: Partial<IModPackSourceInfo> = (sourceInfo !== undefined)
+                      : ICollectionSourceInfo {
+  const res: Partial<ICollectionSourceInfo> = (sourceInfo !== undefined)
     ? {..._.omit(sourceInfo, ['instructions'])}
     : { type: 'nexus' };
 
@@ -94,24 +94,12 @@ function deduceSource(mod: types.IMod,
     assign(res, 'fileExpression', sanitizeExpression(mod.attributes?.fileName));
   }
 
-  return res as IModPackSourceInfo;
+  return res as ICollectionSourceInfo;
 }
 
-/*
-export function initModPackMod(input: types.IMod): IModPackMod {
-  return {
-    name: util.renderModName(input),
-    version: util.getSafe(input, ['attributes', 'version'], ''),
-    optional: false,
-    domain_name: util.getSafe(input, ['attributes', 'downloadGame'], undefined),
-    source: deduceSource(input),
-  };
-}
-*/
-
-export function generateModPack(info: IModPackInfo,
-                                mods: IModPackMod[],
-                                modRules: IModPackModRule[]): IModPack {
+export function generateCollection(info: ICollectionInfo,
+                                   mods: ICollectionMod[],
+                                   modRules: ICollectionModRule[]): ICollection {
   return {
     info,
     mods,
@@ -119,14 +107,14 @@ export function generateModPack(info: IModPackInfo,
   };
 }
 
-async function rulesToModPackMods(collection: types.IMod,
+async function rulesToCollectionMods(collection: types.IMod,
                                   mods: { [modId: string]: types.IMod },
                                   stagingPath: string,
                                   gameId: string,
-                                  modpackInfo: IModPackAttributes,
+                                  collectionInfo: ICollectionAttributes,
                                   onProgress: (percent: number, text: string) => void,
                                   onError: (message: string, replace: any) => void)
-                                  : Promise<IModPackMod[]> {
+                                  : Promise<ICollectionMod[]> {
   let total = collection.rules.length;
 
   let finished = 0;
@@ -136,13 +124,13 @@ async function rulesToModPackMods(collection: types.IMod,
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
   await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
 
-  const result: IModPackMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
+  const result: ICollectionMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
       : findModByRef(rule.reference, mods);
 
     if ((mod === undefined) || (mod.type === MOD_TYPE)) {
-      // don't include the modpack itself (or any other modpack for that matter,
+      // don't include the collection itself (or any other collection for that matter,
       // nested collections aren't allowed)
       --total;
       return undefined;
@@ -153,7 +141,7 @@ async function rulesToModPackMods(collection: types.IMod,
       // This call is relatively likely to fail to do it before the hash calculation to
       // save the user time in case it does fail
       const source = deduceSource(mod,
-                                  modpackInfo.source?.[mod.id],
+                                  collectionInfo.source?.[mod.id],
                                   rule.reference.versionMatch);
 
       let hashes: any;
@@ -161,7 +149,7 @@ async function rulesToModPackMods(collection: types.IMod,
 
       let entries: IEntry[] = [];
 
-      const installMode: string = modpackInfo.installMode?.[mod.id] ?? 'fresh';
+      const installMode: string = collectionInfo.installMode?.[mod.id] ?? 'fresh';
 
       const modPath = path.join(stagingPath, mod.installationPath);
 
@@ -187,7 +175,7 @@ async function rulesToModPackMods(collection: types.IMod,
         --total;
       }
 
-      if (modpackInfo.source?.[mod.id]?.type === 'bundle') {
+      if (collectionInfo.source?.[mod.id]?.type === 'bundle') {
         const tlFiles = await fs.readdirAsync(modPath);
         const generatedName: string =
           `Bundled - ${(util as any).sanitizeFilename(util.renderModName(mod, { version: true }))}`;
@@ -208,7 +196,7 @@ async function rulesToModPackMods(collection: types.IMod,
 
       onProgress(Math.floor((finished / total) * 100), modName);
 
-      const res: IModPackMod = {
+      const res: ICollectionMod = {
         name: modName,
         version: mod.attributes?.version ?? '1.0.0',
         optional: rule.type === 'recommends',
@@ -216,7 +204,7 @@ async function rulesToModPackMods(collection: types.IMod,
         source,
         hashes,
         choices,
-        instructions: modpackInfo.instructions?.[mod.id],
+        instructions: collectionInfo.instructions?.[mod.id],
         author: mod.attributes?.author,
         details: {},
       };
@@ -239,7 +227,7 @@ async function rulesToModPackMods(collection: types.IMod,
   return result.filter(mod => (mod !== undefined) && (Object.keys(mod.source).length > 0));
 }
 
-export function makeBiDirRule(mod: types.IMod, rule: types.IModRule): IModPackModRule {
+export function makeBiDirRule(mod: types.IMod, rule: types.IModRule): ICollectionModRule {
   if (rule === undefined) {
     return undefined;
   }
@@ -254,7 +242,7 @@ export function makeBiDirRule(mod: types.IMod, rule: types.IModRule): IModPackMo
 }
 
 function makeTransferrable(mods: { [modId: string]: types.IMod },
-                           modpack: types.IMod,
+                           collection: types.IMod,
                            rule: types.IModRule): types.IModRule {
   if ((rule.reference.fileMD5 !== undefined)
       || (rule.reference.logicalFileName !== undefined)
@@ -282,7 +270,7 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 
   // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
   // the rules referencing it apply to newer versions
-  const mpRule = modpack.rules.find(iter => util.testModReference(mod, iter.reference));
+  const mpRule = collection.rules.find(iter => util.testModReference(mod, iter.reference));
   if ((mpRule !== undefined) && (mpRule.reference.versionMatch === '*')) {
     newRef.versionMatch = '*';
   }
@@ -296,28 +284,28 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 }
 
 function extractModRules(rules: types.IModRule[],
-                         modpack: types.IMod,
+                         collection: types.IMod,
                          mods: { [modId: string]: types.IMod },
-                         onError: (message: string, replace: any) => void): IModPackModRule[] {
-  return rules.reduce((prev: IModPackModRule[], rule: types.IModRule) => {
+                         onError: (message: string, replace: any) => void): ICollectionModRule[] {
+  return rules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
       : findModByRef(rule.reference, mods);
     if (mod === undefined) {
       onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id });
       return prev;
-    } else if (mod.id === modpack.id) {
+    } else if (mod.id === collection.id) {
       return prev;
     }
 
-    return [].concat(prev, (mod.rules || []).map((input: types.IModRule): IModPackModRule =>
-      makeBiDirRule(mod, makeTransferrable(mods, modpack, input))));
+    return [].concat(prev, (mod.rules || []).map((input: types.IModRule): ICollectionModRule =>
+      makeBiDirRule(mod, makeTransferrable(mods, collection, input))));
   }, [])
   // throw out rules that couldn't be converted
   .filter(rule => rule !== undefined);
 }
 
-export function modPackModToRule(mod: IModPackMod): types.IModRule {
+export function collectionModToRule(mod: ICollectionMod): types.IModRule {
   const downloadHint = ['manual', 'browse', 'direct'].includes(mod.source.type)
     ? {
       url: mod.source.url,
@@ -381,22 +369,22 @@ export function modPackModToRule(mod: IModPackMod): types.IModRule {
   } as any;
 }
 
-export async function modToPack(state: types.IState,
+export async function modToCollection(state: types.IState,
                                 gameId: string,
                                 stagingPath: string,
-                                modpack: types.IMod,
+                                      collection: types.IMod,
                                 mods: { [modId: string]: types.IMod },
                                 onProgress: (percent?: number, text?: string) => void,
                                 onError: (message: string, replace: any) => void)
-                                : Promise<IModPack> {
+                                      : Promise<ICollection> {
   if (selectors.activeGameId(state) !== gameId) {
     // this would be a bug
     return Promise.reject(new Error('Can only export collection for the active profile'));
   }
 
-  const modRules = extractModRules(modpack.rules, modpack, mods, onError);
+  const modRules = extractModRules(collection.rules, collection, mods, onError);
 
-  const includedMods = (modpack.rules as types.IModRule[])
+  const includedMods = (collection.rules as types.IModRule[])
     .map(rule => {
       if (rule.reference.id !== undefined) {
         return rule.reference.id;
@@ -417,20 +405,18 @@ export async function modToPack(state: types.IState,
 
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
-  const modpackInfo: IModPackInfo = {
-    // collection_id: util.getSafe(modpack.attributes, ['collectionId'], undefined),
-    author: modpack.attributes?.author ?? 'Anonymous',
-    authorUrl: modpack.attributes?.authorURL ?? '',
-    name: util.renderModName(modpack),
-    // version: util.getSafe(modpack.attributes, ['version'], '1.0.0'),
-    description: modpack.attributes?.shortDescription ?? '',
+  const collectionInfo: ICollectionInfo = {
+    author: collection.attributes?.author ?? 'Anonymous',
+    authorUrl: collection.attributes?.authorURL ?? '',
+    name: util.renderModName(collection),
+    description: collection.attributes?.shortDescription ?? '',
     domainName: gameId,
   };
 
-  const res: IModPack = {
-    info: modpackInfo,
-    mods: await rulesToModPackMods(modpack, mods, stagingPath, gameId,
-                                   modpack.attributes?.modpack ?? {},
+  const res: ICollection = {
+    info: collectionInfo,
+    mods: await rulesToCollectionMods(collection, mods, stagingPath, gameId,
+                                      collection.attributes?.collection ?? {},
                                    onProgress, onError),
     modRules,
     ...gameSpecific,
@@ -473,11 +459,11 @@ function createRulesFromProfile(profile: types.IProfile,
     });
 }
 
-export function makeModpackId(baseId: string): string {
+export function makeCollectionId(baseId: string): string {
   return `vortex_collection_${baseId}`;
 }
 
-export async function createModpack(api: types.IExtensionApi,
+export async function createCollection(api: types.IExtensionApi,
                                     gameId: string,
                                     id: string,
                                     name: string,
@@ -512,13 +498,13 @@ export async function createModpack(api: types.IExtensionApi,
 
     const deployPath = selectors.installPathForGame(state, gameId);
     await fs.copyAsync(path.join(__dirname, 'fallback_tile.jpg'), path.join(deployPath, id, LOGO_NAME))
-      .catch(err => api.showErrorNotification('Failed to install default modpack logo', err));
+      .catch(err => api.showErrorNotification('Failed to install default collection logo', err));
   } catch (err) {
     api.showErrorNotification('Failed to create collection', err);
   }
 }
 
-function updateModpack(api: types.IExtensionApi,
+function updateCollection(api: types.IExtensionApi,
                        gameId: string,
                        mod: types.IMod,
                        newRules: types.IModRule[]) {
@@ -540,13 +526,13 @@ function updateModpack(api: types.IExtensionApi,
   });
 }
 
-export async function createModpackFromProfile(api: types.IExtensionApi,
+export async function createCollectionFromProfile(api: types.IExtensionApi,
                                                profileId: string)
                                                : Promise<{ id: string, name: string, updated: boolean }> {
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
-  const id = makeModpackId(profileId);
+  const id = makeCollectionId(profileId);
   const name = `Collection: ${profile.name}`;
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
@@ -554,9 +540,9 @@ export async function createModpackFromProfile(api: types.IExtensionApi,
                                        mod?.rules ?? [], mod?.id);
 
   if (mod === undefined) {
-    await createModpack(api, profile.gameId, id, name, rules);
+    await createCollection(api, profile.gameId, id, name, rules);
   } else {
-    updateModpack(api, profile.gameId, mod, rules);
+    updateCollection(api, profile.gameId, mod, rules);
   }
 
   return { id, name, updated: mod !== undefined };

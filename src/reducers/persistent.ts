@@ -1,6 +1,6 @@
 import * as actions from '../actions/persistent';
 
-import { ICollection, IRevision } from '@nexusmods/nexus-api';
+import { ICollection } from '@nexusmods/nexus-api';
 import * as _ from 'lodash';
 import { types, util } from 'vortex-api';
 
