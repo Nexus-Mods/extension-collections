@@ -94,6 +94,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     t={t}
                     gameId={profile.gameId}
                     imageTime={imageTime}
+                    mods={mods}
                     incomplete={matchedReferences[mod.id].includes(null)}
                     collection={mod}
                     onView={onView}
@@ -126,6 +127,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   gameId={profile.gameId}
                   collection={mod}
                   imageTime={imageTime}
+                  mods={mods}
                   incomplete={matchedReferences[mod.id].includes(null)}
                   onEdit={onEdit}
                   onView={onView}

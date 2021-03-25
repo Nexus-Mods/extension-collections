@@ -12,6 +12,7 @@ import { AUTHOR_UNKNOWN } from '../../constants';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
+  language: string;
   gameId: string;
   collection: types.IMod;
   totalSize: number;
@@ -63,11 +64,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Uploaded')}</div>
-                    <div>{collection.attributes.uploadedTimestamp || t('Never')}</div>
+                    <div>{this.renderTime(collection.attributes.uploadedTimestamp)}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Last updated')}</div>
-                    <div>{collection.attributes.lastUpdateTime || t('Never')}</div>
+                    <div>{this.renderTime(collection.attributes.updatedTimestamp)}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Version')}</div>
@@ -111,6 +112,14 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
         </Media>
       </Panel>
     );
+  }
+
+  private renderTime(timestamp: number): string {
+    const { t, language } = this.props;
+    if (timestamp === undefined) {
+      return t('Never');
+    }
+    return (new Date(timestamp)).toLocaleString(language);
   }
 
   private voteSuccess = (success: boolean) => {

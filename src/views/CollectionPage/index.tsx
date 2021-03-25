@@ -15,7 +15,7 @@ import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { actions, ComponentEx, FlexLayout, MainPage, selectors, tooltip,
+import { actions, ComponentEx, FlexLayout, log, MainPage, selectors, tooltip,
           types, util } from 'vortex-api';
 
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
@@ -274,7 +274,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     return collections.reduce((prev, collection) => {
       prev[collection.id] =
-        (collection.rules || []).map(rule => findModByRef(rule.reference, mods) || null);
+        (collection.rules || []).map(rule => {
+          const mod = findModByRef(rule.reference, mods);
+          if (mod === undefined) {
+            log('debug', 'mod not found', JSON.stringify(rule.reference));
+          }
+          return mod ?? null;
+         });
       return prev;
     }, {});
   }
@@ -323,8 +329,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           });
         }
       } catch (err) {
-        if (!(err instanceof util.UserCanceled) && !(err instanceof util.ProcessCanceled)) {
-          api.showErrorNotification('Failed to publish to API', err);
+        if (!(err instanceof util.UserCanceled)
+            && !(err instanceof util.ProcessCanceled)) {
+          api.showErrorNotification('Failed to publish to API', err, {
+            allowReport: false,
+          });
         }
       }
     }

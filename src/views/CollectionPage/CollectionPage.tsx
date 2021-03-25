@@ -45,6 +45,7 @@ interface IConnectedProps {
   userInfo: any;
   votedSuccess: boolean;
   activity: { [id: string]: string };
+  language: string;
 }
 
 interface IActionProps {
@@ -184,7 +185,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         id: 'author',
         name: 'Author',
         calc: mod => (mod !== undefined)
-          ? util.getSafe(mod.attributes, ['author'], undefined) || this.props.t(AUTHOR_UNKNOWN)
+          ? mod.attributes?.author || this.props.t(AUTHOR_UNKNOWN)
           : this.props.t(AUTHOR_UNKNOWN),
         placement: 'table',
         edit: {},
@@ -314,7 +315,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activity, className, collection, driver, downloads,
+    const { t, activity, className, collection, driver, downloads, language,
             onVoteSuccess, profile, votedSuccess } = this.props;
     const { modsEx, revisionInfo } = this.state;
 
@@ -357,6 +358,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             ) : (
               <CollectionOverview
                 t={t}
+                language={language}
                 gameId={profile.gameId}
                 collection={collection}
                 totalSize={totalSize}
@@ -744,10 +746,16 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       enabled: false,
       collectionRule: rule,
       attributes: {
-        customFileName: util.getSafe(download, ['modInfo', 'name'], undefined),
+        customFileName: download?.modInfo?.name,
         fileName: download.localPath,
         fileSize: download.size ?? rule.reference.fileSize,
         name: dlId,
+        version: download.modInfo?.nexus?.fileInfo?.mod_version,
+        author: download.modInfo?.nexus?.modInfo?.user?.name,
+        category: download.modInfo?.nexus?.modInfo?.category_id,
+        source: download.modInfo?.nexus !== undefined ? 'nexus' : undefined,
+        modId: download.modInfo?.nexus?.ids?.modId,
+        downloadGame: download.game,
       },
     };
   }
@@ -779,6 +787,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           enabledTime: 0,
           attributes: {
             fileSize: rule.reference.fileSize,
+            author: rule.extra.author,
             ...(rule.extra || {}),
           },
           enabled: false,
@@ -822,6 +831,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     userInfo: nexus.userInfo,
     votedSuccess,
     activity: state.session.base.activity,
+    language: state.settings.interface.language,
   };
 }
 

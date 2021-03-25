@@ -314,10 +314,16 @@ export function collectionModToRule(mod: ICollectionMod): types.IModRule {
     }
     : undefined;
 
-  let versionMatch = `>=${semver.coerce(mod.version)?.version ?? '0.0.0'}+prefer`;
+  let coerced = semver.coerce(mod.version);
+
+  let versionMatch = !!coerced
+    ? `>=${coerced.version ?? '0.0.0'}+prefer`
+    : mod.version;
+
   if ((mod.source.updatePolicy === 'exact')
-      || (mod.source.type === 'bundle')) {
-    versionMatch = semver.coerce(mod.version)?.version ?? '0.0.0';
+      || (mod.source.type === 'bundle')
+      || (mod.hashes !== undefined)) {
+    versionMatch = !!coerced ? coerced.version : mod.version;
   } else if (mod.source.updatePolicy === 'latest') {
     versionMatch = '*';
   }
@@ -370,12 +376,12 @@ export function collectionModToRule(mod: ICollectionMod): types.IModRule {
 }
 
 export async function modToCollection(state: types.IState,
-                                gameId: string,
-                                stagingPath: string,
+                                      gameId: string,
+                                      stagingPath: string,
                                       collection: types.IMod,
-                                mods: { [modId: string]: types.IMod },
-                                onProgress: (percent?: number, text?: string) => void,
-                                onError: (message: string, replace: any) => void)
+                                      mods: { [modId: string]: types.IMod },
+                                      onProgress: (percent?: number, text?: string) => void,
+                                      onError: (message: string, replace: any) => void)
                                       : Promise<ICollection> {
   if (selectors.activeGameId(state) !== gameId) {
     // this would be a bug
@@ -417,7 +423,7 @@ export async function modToCollection(state: types.IState,
     info: collectionInfo,
     mods: await rulesToCollectionMods(collection, mods, stagingPath, gameId,
                                       collection.attributes?.collection ?? {},
-                                   onProgress, onError),
+                                      onProgress, onError),
     modRules,
     ...gameSpecific,
   };
@@ -464,10 +470,10 @@ export function makeCollectionId(baseId: string): string {
 }
 
 export async function createCollection(api: types.IExtensionApi,
-                                    gameId: string,
-                                    id: string,
-                                    name: string,
-                                    rules: types.IModRule[]) {
+                                       gameId: string,
+                                       id: string,
+                                       name: string,
+                                       rules: types.IModRule[]) {
   const state: types.IState = api.store.getState();
 
   const mod: types.IMod = {
@@ -505,9 +511,9 @@ export async function createCollection(api: types.IExtensionApi,
 }
 
 function updateCollection(api: types.IExtensionApi,
-                       gameId: string,
-                       mod: types.IMod,
-                       newRules: types.IModRule[]) {
+                          gameId: string,
+                          mod: types.IMod,
+                          newRules: types.IModRule[]) {
   api.store.dispatch(actions.setModAttribute(gameId, mod.id, 'editable', true));
 
   const removedRules: types.IModRule[] = [];
@@ -527,8 +533,8 @@ function updateCollection(api: types.IExtensionApi,
 }
 
 export async function createCollectionFromProfile(api: types.IExtensionApi,
-                                               profileId: string)
-                                               : Promise<{ id: string, name: string, updated: boolean }> {
+                                                  profileId: string)
+    : Promise<{ id: string, name: string, updated: boolean }> {
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 

@@ -11,6 +11,7 @@ export interface IBaseProps {
   t: I18next.TFunction;
   gameId: string;
   collection: types.IMod;
+  mods?: { [modId: string]: types.IMod };
   incomplete?: boolean;
   details: boolean;
   imageTime: number;
@@ -30,7 +31,7 @@ type IProps = IBaseProps & IConnectedProps;
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, details, imageTime, profile, stagingPath } = this.props;
+    const { t, collection, details, imageTime, mods, profile, stagingPath } = this.props;
 
     if (collection === undefined) {
       return null;
@@ -39,8 +40,18 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     const logoPath = path.join(stagingPath, collection.installationPath, 'logo.jpg');
     const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);
 
-    const mods = (collection.rules || [])
+    const refMods = (collection.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
+
+    const totalSize = Object.values(collection.rules ?? []).reduce((prev, rule) => {
+      if (rule.reference.fileSize !== undefined) {
+        return prev + rule.reference.fileSize;
+      } else if ((rule.reference.id !== undefined) && (mods !== undefined)) {
+        return prev + mods[rule.reference.id]?.attributes?.fileSize ?? 0;
+      } else {
+        return prev;
+      }
+    }, 0);
 
     return (
       <Panel className='collection-thumbnail' bsStyle={active ? 'primary' : 'default'}>
@@ -53,7 +64,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           <div className='gradient' />
           {details ? (
             <div className='collection-status-container'>
-              {this.renderCollectionStatus(active, mods)}
+              {this.renderCollectionStatus(active, refMods)}
             </div>
           ) : null}
           {details ? (
@@ -77,8 +88,8 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                   || `${t(AUTHOR_UNKNOWN)}`}
               </div>
               <div className='details'>
-                <span><Icon name='mods' />{mods.length}</span>
-                <span><Icon name='archive' />??? MB</span>
+                <span><Icon name='mods' />{refMods.length}</span>
+                <span><Icon name='archive' />{util.bytesToString(totalSize)}</span>
               </div>
             </div>
           ) : null}

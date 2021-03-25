@@ -84,7 +84,7 @@ export async function install(files: string[],
 }
 
 /**
- * postprocess a modpack. This is called after dependencies for the pack have been installed.
+ * postprocess a collection. This is called after dependencies for the pack have been installed.
  * It may get called multiple times so it has to take care to not break if any data already
  * exists
  */

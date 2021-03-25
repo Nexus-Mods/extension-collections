@@ -376,7 +376,11 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
         await util.toPromise<string>(cb => api.events.emit('start-install-download', dlId, {}, cb));
       }
     } catch (err) {
-      api.showErrorNotification('Failed to add collection', err);
+      if (!(err instanceof util.UserCanceled)) {
+        api.showErrorNotification('Failed to add collection', err, {
+          allowReport: !(err instanceof util.ProcessCanceled),
+        });
+      }
     }
   });
 
