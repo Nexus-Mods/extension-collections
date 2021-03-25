@@ -30,7 +30,7 @@ export interface ICollectionPageProps {
   profile: types.IProfile;
   collection: types.IMod;
   driver: InstallDriver;
-  cache: InfoCache;
+  // cache: InfoCache;
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
@@ -207,11 +207,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           }
 
           const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
-          const revMod = revMods.find(iter => iter.file.mod.id === mod.attributes.modId);
+          const revMod = revMods.find(iter => iter.file.modId === mod.attributes.modId);
 
-          const name = revMod?.file.mod.uploader.name;
-          // const avatar = revMod?.file.mod.uploader.avatar?.url || AVATAR_FALLBACK;
-          const avatar = revMod?.file.mod.uploader.avatar || AVATAR_FALLBACK;
+          const name = revMod?.file?.owner?.name;
+          const avatar = revMod?.file?.owner?.avatar || AVATAR_FALLBACK;
 
           return (
             <div>
@@ -271,11 +270,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   public async componentDidMount() {
     const { collection } = this.props;
 
-    if (collection.attributes.revisionNumber !== undefined) {
-      const collectionInfo = await this.props.cache.getRevisionInfo(
-        collection.attributes.collectionId, collection.attributes.revisionNumber);
-      this.nextState.revisionInfo = collectionInfo.revisions
-        .find(rev => rev.revision === collection.attributes.revisionNumber);
+    if (collection.attributes.revisionId !== undefined) {
+      this.nextState.revisionInfo = await
+        this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
     }
 
     const modsEx = this.initModsEx(this.props);
@@ -290,11 +287,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || this.installingNotificationsChanged(this.props, newProps)) {
       this.nextState.modsEx = this.updateModsEx(this.props, newProps);
       const { collection } = this.props;
-      if (collection.attributes.revisionNumber !== undefined) {
-        const collectionInfo = await this.props.cache.getRevisionInfo(
-          collection.attributes.collectionId, collection.attributes.revisionNumber);
-        this.nextState.revisionInfo = collectionInfo.revisions
-          .find(rev => rev.revision === collection.attributes.revisionNumber);
+      if (collection.attributes.revisionId !== undefined) {
+        this.nextState.revisionInfo = await
+          this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
       }
     }
   }

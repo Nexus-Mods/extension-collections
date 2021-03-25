@@ -1,7 +1,7 @@
 import * as gamebryo from './gamebryo';
 
 import { types } from 'vortex-api';
-import { ICollection } from '../../types/IModPack';
+import { ICollection } from '../../types/ICollection';
 
 const gameSupport = {
     skyrim: {

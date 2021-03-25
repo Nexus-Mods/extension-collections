@@ -1,6 +1,6 @@
 import { BUNDLED_PATH, MOD_TYPE } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
-         ICollectionModRule, ICollectionSourceInfo } from '../types/IModPack';
+         ICollectionModRule, ICollectionSourceInfo } from '../types/ICollection';
 
 import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';

@@ -1,6 +1,6 @@
 import { MOD_TYPE } from '../../constants';
 import { initFromProfile } from '../../collectionCreate';
-import { makeCollectionId } from '../../util/modpack';
+import { makeCollectionId } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
 

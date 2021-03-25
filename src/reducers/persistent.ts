@@ -7,15 +7,19 @@ import { types, util } from 'vortex-api';
 const persistentReducer: types.IReducerSpec = {
   reducers: {
     [actions.updateCollectionInfo as any]: (state, payload) => {
-      const { collectionId, revisionInfo }:
-        { collectionId: string, revisionInfo: ICollection } = payload;
+      const { collectionId, collectionInfo } = payload;
 
-      return util.setSafe(state, [collectionId], revisionInfo);
+      return util.setSafe(state, ['collections', collectionId], collectionInfo);
+    },
+    [actions.updateRevisionInfo as any]: (state, payload) => {
+      const { revisionId, revisionInfo } = payload;
+
+      return util.setSafe(state, ['revisions', revisionId], revisionInfo);
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
-      const { collectionId, revisionId, success } = payload;
+      const { revisionId, success } = payload;
 
-      const revPath = [collectionId, 'revisions', revisionId];
+      const revPath = ['revisions', revisionId];
 
       // we update the success_rate inside the revision info as well, so it gets updated
       // immediately, not just after it got fetched the next time.
@@ -34,6 +38,8 @@ const persistentReducer: types.IReducerSpec = {
     },
   },
   defaults: {
+    collections: {},
+    revisions: {},
   },
 };
 

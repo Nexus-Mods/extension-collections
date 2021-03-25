@@ -23,7 +23,6 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   secondary: boolean;
 
   driver: InstallDriver;
-  cache: InfoCache;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
 }
@@ -122,7 +121,6 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 t={t}
                 className='collection-details'
                 driver={this.props.driver}
-                cache={this.props.cache}
                 profile={profile}
                 collection={collection}
                 mods={mods}
@@ -256,7 +254,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const collection = mods[modId];
 
-    const { collectionId, revisionId } = collection.attributes;
+    const { revisionId } = collection.attributes;
 
     if (revisionId === undefined) {
       return;
@@ -265,7 +263,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const voted = (api.emitAndAwait('rate-nexus-collection-revision',
                                     parseInt(revisionId, 10), success ? 10 : -10))[0];
     if (voted) {
-      api.store.dispatch(updateSuccessRate(collectionId, revisionId, success));
+      api.store.dispatch(updateSuccessRate(revisionId, success));
     }
   }
 

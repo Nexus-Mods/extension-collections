@@ -1,4 +1,4 @@
-import { ICollectionSourceInfo, SourceType } from '../types/IModPack';
+import { ICollectionSourceInfo, SourceType } from '../types/ICollection';
 import { findModByRef } from '../util/findModByRef';
 
 import I18next from 'i18next';

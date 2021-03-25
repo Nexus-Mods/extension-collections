@@ -1,4 +1,4 @@
-import { ICollection } from '@nexusmods/nexus-api';
+import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import { actions, log, types, util } from 'vortex-api';
 import { IRevisionEx } from '../types/IRevisionEx';
@@ -21,6 +21,7 @@ class InstallDriver {
   private mInstallingMod: string;
   private mInstallDone: boolean = false;
   private mCollectionInfo: ICollection;
+  private mRevisionInfo: IRevision;
   private mInfoCache: InfoCache;
 
   constructor(api: types.IExtensionApi) {
@@ -80,6 +81,10 @@ class InstallDriver {
     this.mUpdateHandlers.push(cb);
   }
 
+  public get infoCache() {
+    return this.mInfoCache;
+  }
+
   public get step() {
     return this.mStep;
   }
@@ -108,12 +113,12 @@ class InstallDriver {
     return nexusInfo?.ids?.collectionId || modInfo?.ids?.collectionId;
   }
 
-  public get revisionNumber(): number {
+  public get revisionId(): string {
     const state: types.IState = this.mApi.store.getState();
     const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
     const nexusInfo = modInfo?.nexus;
 
-    return nexusInfo?.ids?.revisionNumber || modInfo?.ids?.revisionNumber;
+    return nexusInfo?.ids?.revisionId || modInfo?.ids?.revisionId;
   }
 
   public get collectionInfo(): ICollection {
@@ -121,8 +126,7 @@ class InstallDriver {
   }
 
   public get revisionInfo(): IRevisionEx {
-    const revisionNumber = this.revisionNumber;
-    return this.mCollectionInfo.revisions.find(rev => rev.revision === revisionNumber);
+    return this.mRevisionInfo;
   }
 
   public get installDone(): boolean {
@@ -182,11 +186,15 @@ class InstallDriver {
     const nexusInfo = modInfo?.nexus;
 
     const collectionId = this.collectionId;
-    const revisionNumber = this.revisionNumber;
+    const revisionId = this.revisionId;
 
-    if ((collectionId !== undefined) && (revisionNumber !== undefined)) {
+    if (collectionId !== undefined) {
       this.mCollectionInfo = nexusInfo?.collectionInfo
-        ?? await this.mInfoCache.getRevisionInfo(collectionId, revisionNumber);
+        ?? await this.mInfoCache.getCollectionInfo(collectionId);
+    }
+    if (revisionId !== undefined) {
+      this.mRevisionInfo = nexusInfo?.revisionInfo
+        ?? await this.mInfoCache.getRevisionInfo(revisionId)
     }
 
     this.mApi.events.emit('view-collection', this.mCollection.id);

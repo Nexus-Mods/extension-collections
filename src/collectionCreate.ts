@@ -1,4 +1,4 @@
-import { createCollectionFromProfile } from './util/modpack';
+import { createCollectionFromProfile } from './util/transformCollection';
 
 import { actions, types } from 'vortex-api';
 

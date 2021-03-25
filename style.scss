@@ -411,6 +411,7 @@ $collection-thumbnail-height: 320px;
 
   .title {
     color: $text-color-disabled;
+    white-space: nowrap;
   }
 }
 
@@ -418,6 +419,7 @@ $collection-thumbnail-height: 320px;
 .collection-overview {
   margin: $half-gutter;
   overflow: hidden;
+  padding-right: 1em;
 
   .media {
     margin-bottom: $half-gutter;
@@ -444,6 +446,11 @@ $collection-thumbnail-height: 320px;
   .nav-button {
     @extend .btn-embed;
   }
+}
+
+.collection-page-detail-bar > .layout-container {
+  align-items: center;
+  gap: 1em;
 }
 
 .collection-details {
@@ -628,6 +635,24 @@ $collection-thumbnail-height: 320px;
 .collection-health-indicator {
   .icon-button {
     @extend .btn-embed;
+  }
+
+  margin-top: auto;
+  margin-bottom: auto;
+  height: auto !important;
+  border: $border-width solid $border-color;
+  padding: 0.5em;
+
+  :first-child svg {
+    margin-right: 0.5em;
+  }
+
+  > * {
+    padding: 0 1em;
+  }
+
+  > :not(:last-child) {
+    border-right: 1px solid $border-color;
   }
 }
 

@@ -1,10 +1,10 @@
 import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
-import { ICollection } from './types/IModPack';
+import { ICollection } from './types/ICollection';
 import InfoCache from './util/InfoCache';
 import InstallDriver from './util/InstallDriver';
-import { createCollection, makeCollectionId } from './util/modpack';
+import { createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import CollectionsMainPage from './views/CollectionPage';
 // import EditDialog from './views/EditDialog';
@@ -111,7 +111,6 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 }
 
 let driver: InstallDriver;
-let cache: InfoCache;
 
 function createNewCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
   const id = makeCollectionId(shortid());
@@ -138,7 +137,6 @@ function genAttributeExtractor(api: types.IExtensionApi) {
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
     const collectionId = modInfo.download?.modInfo?.nexus?.ids?.collectionId;
     const revisionNumber = modInfo.download?.modInfo?.nexus?.ids?.revisionNumber;
-    const modId = modInfo.download?.modInfo?.nexus?.ids?.modId;
     const referenceTag = modInfo.download?.modInfo?.referenceTag;
 
     const result: { [key: string]: any } = {
@@ -192,7 +190,6 @@ function register(context: types.IExtensionContext,
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
-      cache,
       onSetupCallbacks: (callbacks: ICallbackMap) => {
         collectionsCB = callbacks;
         onSetCallbacks(callbacks);

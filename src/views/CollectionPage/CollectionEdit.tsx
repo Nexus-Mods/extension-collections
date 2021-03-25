@@ -1,7 +1,7 @@
-import { ICollectionInfo, ICollectionModRule } from '../../types/IModPack';
+import { ICollectionInfo, ICollectionModRule } from '../../types/ICollection';
 import { findModByRef } from '../../util/findModByRef';
 import { getIniFiles } from '../../util/gameSupport';
-import { makeBiDirRule } from '../../util/modpack';
+import { makeBiDirRule } from '../../util/transformCollection';
 
 import { NAMESPACE } from '../../constants';
 

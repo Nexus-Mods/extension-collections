@@ -1,8 +1,8 @@
-import { ICollection } from './types/IModPack';
+import { ICollection } from './types/ICollection';
 
 import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
-import { collectionModToRule } from './util/modpack';
+import { collectionModToRule } from './util/transformCollection';
 
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
