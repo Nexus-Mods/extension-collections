@@ -6,6 +6,7 @@ import { Image as BSImage, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { Icon, IconBar, Image, PureComponentEx, selectors, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
+import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 export interface IBaseProps {
   t: I18next.TFunction;
@@ -31,7 +32,8 @@ type IProps = IBaseProps & IConnectedProps;
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, details, imageTime, mods, profile, stagingPath } = this.props;
+    const { t, collection, details, imageTime,
+            incomplete, mods, profile, stagingPath } = this.props;
 
     if (collection === undefined) {
       return null;
@@ -58,38 +60,38 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         <Panel.Body className='collection-thumbnail-body'>
           <Image
             className={'thumbnail-img'}
-            srcs={[logoPath + `?_r=${imageTime}`, path.join(__dirname, 'fallback_tile.jpg')]}
+            srcs={[logoPath + `?_r=${imageTime}`, path.join(__dirname, 'fallback_tile.png')]}
             circle={false}
           />
           <div className='gradient' />
+          <div className='author'>
+            <BSImage
+              src='assets/images/noavatar.png'
+              circle
+            />
+            {collection.attributes.author ?? `${t(AUTHOR_UNKNOWN)}`}
+          </div>
           {details ? (
-            <div className='collection-status-container'>
-              {this.renderCollectionStatus(active, refMods)}
-            </div>
-          ) : null}
-          {details ? (
-            <div className='collection-version-container'>
-              <div className='collection-version'>
-                {util.getSafe(collection.attributes, ['version'], '0.0.0')}
-              </div>
-            </div>
+            <CollectionReleaseStatus
+              t={t}
+              active={active}
+              collection={collection}
+              incomplete={incomplete}
+            />
           ) : null}
           {details ? (
             <div className='bottom'>
               <div className='name'>
                 {util.renderModName(collection, { version: false })}
               </div>
-              <div className='author'>
-                <BSImage
-                  src='assets/images/noavatar.png'
-                  circle
-                />
-                {util.getSafe(collection.attributes, ['author'], undefined)
-                  || `${t(AUTHOR_UNKNOWN)}`}
-              </div>
-              <div className='details'>
-                <span><Icon name='mods' />{refMods.length}</span>
-                <span><Icon name='archive' />{util.bytesToString(totalSize)}</span>
+               <div className='details'>
+                <div><Icon name='mods' />{refMods.length}</div>
+                <div><Icon name='archive' />{util.bytesToString(totalSize)}</div>
+                <div className='revision-number'>
+                  {t('Revision {{number}}', { replace: {
+                    number: collection.attributes.version ?? '0',
+                  } })}
+                </div>
               </div>
             </div>
           ) : null}
@@ -144,22 +146,6 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     }
 
     return result;
-  }
-
-  private renderCollectionStatus(active: boolean, mods: types.IModRule[]) {
-    const { t, collection, incomplete } = this.props;
-    if (active) {
-      if (incomplete) {
-        return <div className='collection-status'>{t('Incomplete')}</div>;
-      } else if ((util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined)
-                 && util.getSafe(collection.attributes, ['editable'], false)) {
-        return <div className='collection-status'>{t('Published')}</div>;
-      } else {
-        return <div className='collection-status'>{t('Enabled')}</div>;
-      }
-    } else {
-      return null;
-    }
   }
 
   private renderMenu(): JSX.Element[] {

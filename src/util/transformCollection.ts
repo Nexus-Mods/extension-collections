@@ -503,7 +503,7 @@ export async function createCollection(api: types.IExtensionApi,
     });
 
     const deployPath = selectors.installPathForGame(state, gameId);
-    await fs.copyAsync(path.join(__dirname, 'fallback_tile.jpg'), path.join(deployPath, id, LOGO_NAME))
+    await fs.copyAsync(path.join(__dirname, 'fallback_tile.png'), path.join(deployPath, id, LOGO_NAME))
       .catch(err => api.showErrorNotification('Failed to install default collection logo', err));
   } catch (err) {
     api.showErrorNotification('Failed to create collection', err);

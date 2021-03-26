@@ -9,6 +9,7 @@ import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, NEXUS_BASE_URL } from '../../constants';
+import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
@@ -18,13 +19,14 @@ interface ICollectionOverviewProps {
   totalSize: number;
   revision: IRevision;
   votedSuccess: boolean;
+  incomplete: boolean;
   onClose: () => void;
   onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, gameId, revision, totalSize, votedSuccess } = this.props;
+    const { t, collection, gameId, incomplete, revision, totalSize, votedSuccess } = this.props;
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
@@ -44,8 +46,16 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
           <Media.Body>
             <FlexLayout type='column'>
               <FlexLayout.Fixed>
-                <div className='collection-title'>
-                  {util.renderModName(collection)}
+                <div className='collection-overview-title'>
+                  <div className='collection-title'>
+                    {util.renderModName(collection)}
+                  </div>
+                  <CollectionReleaseStatus
+                    t={t}
+                    active={true}
+                    collection={collection}
+                    incomplete={incomplete}
+                  />
                 </div>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>

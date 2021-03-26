@@ -1,6 +1,6 @@
 $border-radius: 4px;
-$collection-thumbnail-width: 180px;
-$collection-thumbnail-height: 320px;
+$collection-thumbnail-width: 230px;
+$collection-thumbnail-height: 288px;
 
 #table-collection-mods .header-name {
   p {
@@ -296,12 +296,11 @@ $collection-thumbnail-height: 320px;
   .bottom {
     position: absolute;
     bottom: 6%;
-    left: 0;
-    right: 0;
+    left: 1em;
+    right: 1em;
 
     display: flex;
     flex-direction: column;
-    align-items: center;
 
     .name {
       @extend .h3;
@@ -310,33 +309,39 @@ $collection-thumbnail-height: 320px;
     .details {
       font-size: smaller;
       color: $text-color-disabled;
+      display: flex;
 
       > *:not(:first-child) {
-        margin-left: 0.5em;
+        margin-left: 1em;
       }
     }
+  }
 
-    .author {
-      img {
-        width: 16px;
-        height: 16px;
-        margin-right: 0.5em;
-      }
+  .revision-number {
+    background-color: $brand-bg;
+    padding: 0 0.5em;
+  }
+
+  .author {
+    position: absolute;
+    top: 0.5em;
+    left: 0.5em;
+
+    img {
+      width: 16px;
+      height: 16px;
+      margin-right: 0.5em;
     }
   }
 
   .collection-status-container {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 0.5em;
+    right: 0.5em;
 
-    .collection-status {
-      background-color: $brand-primary;
-      text-transform: uppercase;
-      padding: 0 0.5em;
-    }
   }
 
+  /*
   .collection-version-container {
     position: absolute;
     top: 8px;
@@ -347,6 +352,7 @@ $collection-thumbnail-height: 320px;
       color: $text-color-disabled;
     }
   }
+  */
 
   .hover-content {
     border-radius: $border-radius;
@@ -369,6 +375,12 @@ $collection-thumbnail-height: 320px;
       margin-right: 1em;
     }
   }
+}
+
+.collection-status {
+  background-color: $brand-primary;
+  text-transform: uppercase;
+  padding: 0 0.5em;
 }
 
 .collection-list {
@@ -421,6 +433,10 @@ $collection-thumbnail-height: 320px;
   overflow: hidden;
   padding-right: 1em;
 
+  .panel {
+    border: none;
+  }
+
   .media {
     margin-bottom: $half-gutter;
     max-height: 25vh;
@@ -428,6 +444,14 @@ $collection-thumbnail-height: 320px;
 
   .collection-thumbnail {
     margin: 0 $half-gutter;
+  }
+
+  .collection-overview-title {
+    display: flex;
+    align-items: center;
+    > .collection-status {
+      margin-left: 1em;
+    }
   }
 
   .collection-title {

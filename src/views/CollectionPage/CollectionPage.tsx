@@ -361,6 +361,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 onVoteSuccess={onVoteSuccess}
                 revision={revisionInfo}
                 votedSuccess={votedSuccess}
+                incomplete={incomplete}
               />
             )}
         </FlexLayout.Fixed>
