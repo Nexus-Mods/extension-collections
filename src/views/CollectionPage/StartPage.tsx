@@ -151,7 +151,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     <PortalMenuX
                       open={createOpen}
                       target={this.mCreateRef.current}
-                      onClose={nop}
+                      onClose={this.onHide}
                       onClick={this.clickCreate}
                       onSelect={this.select}
                       useMousePosition={this.state.mousePosition}
@@ -268,6 +268,10 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         }
       });
     }
+  }
+
+  private onHide = () => {
+    this.nextState.createOpen = false;
   }
 
   private clickCreate = (evt: React.MouseEvent<any>) => {

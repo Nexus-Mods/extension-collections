@@ -31,26 +31,6 @@ $collection-thumbnail-height: 288px;
   }
 }
 
-/*
-#collection-edit-dialog .modal-dialog {
-  width: 80vw;
-
-  .modal-body {
-    height: 80vh;
-  }
-}
-
-#collection-edit-dialog .collection-edit-export {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  > button {
-    margin: $half-gutter;
-  }
-}
-
 #collection-edit-tabs {
   height: 100%;
   overflow-y: hidden;
@@ -113,7 +93,6 @@ $collection-thumbnail-height: 288px;
     margin-top: 0;
   }
 }
-*/
 
 .listitem-tweak {
   display: flex;

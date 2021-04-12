@@ -78,7 +78,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, mods, notifications, profile } = this.props;
+    const { t, downloads, driver, mods, notifications, profile } = this.props;
     const { matchedReferences, selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
@@ -138,6 +138,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   profile={profile}
                   collection={collection}
                   mods={mods}
+                  driver={this.props.driver}
                 />
               )}
           </FlexLayout.Flex>

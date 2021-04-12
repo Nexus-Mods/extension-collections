@@ -138,7 +138,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
   }
 
   private openUrl = () => {
-    const { collection, revision } = this.props;
+    const { revision } = this.props;
     util.opn(`${NEXUS_BASE_URL}/${revision.collection.game.domainName}/collections/${revision.collection.id}`)
   }
 

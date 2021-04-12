@@ -27,8 +27,8 @@ class CollectionOverviewInstalling
     const { t, driver } = this.props;
     const { displayModIdx } = this.state;
 
-    const displayMod: ICollectionRevisionMod = driver.revisionInfo.modFiles[displayModIdx];
-    const modCount = driver.revisionInfo.modFiles.length;
+    const displayMod: ICollectionRevisionMod = driver.revisionInfo?.modFiles?.[displayModIdx];
+    const modCount = driver.revisionInfo?.modFiles?.length;
 
     const uploaderName = displayMod?.['mod']?.uploader?.name || AUTHOR_UNKNOWN;
     const authorName = displayMod?.['mod']?.author?.name || AUTHOR_UNKNOWN;
@@ -40,7 +40,7 @@ class CollectionOverviewInstalling
             <FlexLayout type='column'>
               <FlexLayout.Fixed>
                 <div className='installing-mod-title'>
-                  {displayMod.file.mod.name}
+                  {displayMod?.file?.mod?.name ?? ''}
                 </div>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>
@@ -63,13 +63,13 @@ class CollectionOverviewInstalling
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Version')}</div>
-                    <div>{displayMod.file.version || '???'}</div>
+                    <div>{displayMod?.file?.version || '???'}</div>
                   </FlexLayout.Fixed>
                 </FlexLayout>
               </FlexLayout.Fixed>
               <FlexLayout.Flex>
                 <div className='collection-description'>
-                  {displayMod.file.mod.summary}
+                  {displayMod?.file?.mod?.summary ?? ''}
                 </div>
               </FlexLayout.Flex>
             </FlexLayout>
@@ -77,7 +77,12 @@ class CollectionOverviewInstalling
           <FlexLayout.Flex>
             <FlexLayout type='column' className='collection-installing-image-pane'>
               <FlexLayout.Flex>
-    {/*<Image className='installing-mod-image' src={displayMod.file.mod.picture_url} />*/}
+                {(displayMod?.file?.mod?.pictureUrl !== undefined)
+                  ? <Image
+                      className='installing-mod-image'
+                      src={displayMod?.file?.mod?.pictureUrl}
+                    />
+                  : null}
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
                 <tooltip.IconButton
