@@ -46,8 +46,12 @@ class InfoCache {
 
   private async cacheRevisionInfo(revisionId: string): Promise<IRevision> {
     const { store } = this.mApi;
+    const revIdNum = parseInt(revisionId, 10);
+    if (Number.isNaN(revIdNum)) {
+      return Promise.reject(new Error('invalid revision id: ' + revisionId));
+    }
     const revisionInfo = (await this.mApi.emitAndAwait(
-        'get-nexus-collection-revision', parseInt(revisionId, 10)))[0];
+        'get-nexus-collection-revision', revIdNum))[0];
     if (!!revisionInfo) {
       store.dispatch(updateRevisionInfo(revisionId, revisionInfo));
     }
