@@ -8,11 +8,11 @@
   "scripts": {
     "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --display-error-details --progress --profile --color",
     "copy_7z": "copyfiles -u 1 -f node_modules/7z-bin/win/7z.* dist/win",
-    "copy_assets": "copyfiles -f src/icons.svg dist && copyfiles -f style.scss dist && copyfiles -f src/assets/fallback_tile.png dist",
+    "copy_assets": "copyfiles -f src/icons.svg dist && copyfiles -f src/collectionicon.svg dist && copyfiles -f style.scss dist && copyfiles -f src/assets/fallback_tile.png dist",
     "build": "npm run webpack && npm run copy_assets && npm run copy_7z && extractInfo"
   },
   "devDependencies": {
-    "@types/node": "^8.9.4",
+    "@types/node": "^14.14.37",
     "@types/react": "16.8.2",
     "@types/react-bootstrap": "^0.32.16",
     "@types/react-redux": "7.0.1",
