@@ -2,6 +2,7 @@ import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
+import { addCollectionAction, addCollectionCondition, removeCollectionAction, removeCollectionCondition } from './util/changeCollection';
 import InfoCache from './util/InfoCache';
 import InstallDriver from './util/InstallDriver';
 import { createCollection, makeCollectionId } from './util/transformCollection';
@@ -212,6 +213,13 @@ function register(context: types.IExtensionContext,
     memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())] ?? {});
   const collectionOptions = memoize(generateCollectionOptions);
 
+  let collectionChangedCB: () => void;
+
+  const collectionChanged = new util.Debouncer(() => {
+    collectionChangedCB?.();
+    return null;
+  }, 500);
+
   const collectionAttribute: types.ITableAttribute<types.IMod> = {
     id: 'collection',
     name: 'Collection',
@@ -226,10 +234,12 @@ function register(context: types.IExtensionContext,
       return React.createElement('div', {}, collectionsString);
     },
     calc: (mod: types.IMod) => {
-      const gameMode = selectors.activeGameId(state());
       const collections = collectionsMap()[mod.id];
       return (collections === undefined)
         ? '' : collections.map(iter => iter.id);
+    },
+    externalData: (onChanged: () => void) => {
+      collectionChangedCB = onChanged;
     },
     isToggleable: true,
     edit: {},
@@ -240,7 +250,7 @@ function register(context: types.IExtensionContext,
     groupName: (modId: string) =>
       util.renderModName(state().persistent.mods[selectors.activeGameId(state())][modId]),
     isDefaultVisible: false,
-  } as any;
+  };
   context.registerTableAttribute('mods', collectionAttribute);
 
   context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
@@ -285,6 +295,28 @@ function register(context: types.IExtensionContext,
       initFromProfile(context.api, profileIds[0])
         .catch(err => context.api.showErrorNotification('Failed to update collection', err));
     }, (profileIds: string[]) => profileCollectionExists(context.api, profileIds[0]));
+
+  context.registerAction('mods-action-icons', 300, 'collection', {}, 'Add to Collection...',
+    (instanceIds: string[]) => addCollectionAction(context.api, instanceIds)
+        .then(() => collectionChanged.schedule())
+        .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
+    (instanceIds: string[]) => addCollectionCondition(context.api, instanceIds));
+  context.registerAction('mods-multirow-actions', 300, 'collection', {}, 'Add to Collection...',
+    (instanceIds: string[]) => addCollectionAction(context.api, instanceIds)
+        .then(() => collectionChanged.schedule())
+        .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
+    (instanceIds: string[]) => addCollectionCondition(context.api, instanceIds));
+
+  context.registerAction('mods-action-icons', 300, 'collection', {}, 'Remove from Collection...',
+    (instanceIds: string[]) => removeCollectionAction(context.api, instanceIds)
+        .then(() => collectionChanged.schedule())
+        .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
+    (instanceIds: string[]) => removeCollectionCondition(context.api, instanceIds));
+  context.registerAction('mods-multirow-actions', 300, 'collection', {}, 'Remove from Collection...',
+    (instanceIds: string[]) => removeCollectionAction(context.api, instanceIds)
+        .then(() => collectionChanged.schedule())
+        .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
+    (instanceIds: string[]) => removeCollectionCondition(context.api, instanceIds));
 
   context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
 
