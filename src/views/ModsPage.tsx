@@ -5,7 +5,7 @@ import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import {
-  ComponentEx, Icon, ITableRowAction, Table, TableTextFilter,
+  ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, Table, TableTextFilter,
   tooltip, types, Usage, util } from 'vortex-api';
 
 export interface IModsPageProps {
@@ -382,6 +382,18 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
   public render(): React.ReactNode {
     const { t } = this.props;
     const { entries } = this.state;
+
+
+    if (Object.keys(entries).length === 0) {
+      return (
+        <EmptyPlaceholder
+          icon='layout-list'
+          text={t('There are no mods in this collection')}
+          subtext={t('Is it a collection when there\'s nothing in it?')}
+          fill={true}
+        />
+      );
+    }
 
     return (
       <div className='collection-mods-container'>
