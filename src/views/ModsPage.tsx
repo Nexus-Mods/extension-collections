@@ -271,6 +271,46 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
       },
     },
     {
+      title: 'Requires',
+      icon: 'requires',
+      singleRowAction: false,
+      multiRowAction: true,
+      condition: (instanceIds: string[]) =>
+        instanceIds.find(id => this.state.entries[id]?.rule?.type === 'recommends') !== undefined,
+      action: (instanceIds: string[]) => {
+        const { onAddRule, onRemoveRule } = this.props;
+        const { entries } = this.state;
+        instanceIds.forEach(id => {
+          if (entries[id]?.rule?.type === 'recommends') {
+            const newRule = _.cloneDeep(entries[id].rule);
+            onRemoveRule(entries[id].rule);
+            newRule.type = 'requires';
+            onAddRule(newRule);
+          }
+        });
+      },
+    },
+    {
+      title: 'Recommends',
+      icon: 'recommends',
+      singleRowAction: false,
+      multiRowAction: true,
+      condition: (instanceIds: string[]) =>
+        instanceIds.find(id => this.state.entries[id]?.rule?.type === 'requires') !== undefined,
+      action: (instanceIds: string[]) => {
+        const { onAddRule, onRemoveRule } = this.props;
+        const { entries } = this.state;
+        instanceIds.forEach(id => {
+          if (entries[id].rule?.type === 'requires') {
+            const newRule = _.cloneDeep(entries[id].rule);
+            onRemoveRule(entries[id].rule);
+            newRule.type = 'recommends';
+            onAddRule(newRule);
+          }
+        });
+      },
+    },
+    {
       title: 'Set Install Type',
       icon: 'edit',
       singleRowAction: false,
