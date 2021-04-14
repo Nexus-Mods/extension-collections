@@ -1,6 +1,7 @@
 import { ICollectionInfo, ICollectionModRule } from '../../types/ICollection';
 import { findModByRef } from '../../util/findModByRef';
-import { getIniFiles } from '../../util/gameSupport';
+import { getIniFiles, getInterface } from '../../util/gameSupport';
+import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
 
 import { NAMESPACE } from '../../constants';
@@ -10,6 +11,7 @@ import IniTweaks from '../IniTweaks';
 import ModRules from '../ModRules';
 import ModsPage from '../ModsPage';
 
+import { IRevision } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { Badge, Panel, Tab, Tabs } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
@@ -21,6 +23,7 @@ export interface ICollectionEditBaseProps {
   profile: types.IProfile;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
+  driver: InstallDriver;
 }
 
 interface IConnectedProps {
@@ -40,6 +43,7 @@ interface ICollectionEditState {
   collectionInfo: ICollectionInfo;
   collectionMods: { [modId: string]: types.IMod };
   collectionRules: ICollectionModRule[];
+  revision: IRevision;
 }
 
 const emptyCollectionInfo: ICollectionInfo = {
@@ -59,6 +63,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       collectionInfo: emptyCollectionInfo,
       collectionMods: {},
       collectionRules: [],
+      revision: undefined,
     });
   }
 
@@ -75,13 +80,14 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
   public render(): React.ReactNode {
     const { t, mods, collection, profile } = this.props;
-    const { page } = this.state;
+    const { page, revision } = this.state;
 
     if (profile === undefined) {
       return null;
     }
 
     const iniFiles = getIniFiles(profile.gameId);
+    const Interface = getInterface(profile.gameId);
 
     return (
       <FlexLayout type='column'>
@@ -105,7 +111,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               eventKey='mods'
               title={<div>{t('Mods')}<Badge>{(collection.rules || []).length}</Badge></div>}
             >
-              <Panel>
+              <Panel style={{ position: 'relative' }}>
                 <ModsPage
                   mods={mods}
                   collection={collection}
@@ -134,13 +140,20 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 </Panel>
               </Tab>
             ) : null}
+            {(Interface !== undefined) ? (
+              <Tab key='gamespecific' eventKey='gamespecific' title={t('Game specific')}>
+                <Panel>
+                  <Interface collection={collection} revisionInfo={revision} />
+                </Panel>
+              </Tab>
+            ) : null}
           </Tabs>
         </FlexLayout.Flex>
       </FlexLayout>
     );
   }
 
-  private updateState(props: ICollectionEditProps) {
+  private async updateState(props: ICollectionEditProps) {
     this.nextState.page = 'info';
     if (props.collection !== undefined) {
       const { collection, mods } = props;
@@ -160,6 +173,11 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
           prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
           return prev;
         }, []);
+
+      if (collection.attributes?.revisionId !== undefined) {
+        this.nextState.revision = await
+          this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
+      }
     }
   }
 

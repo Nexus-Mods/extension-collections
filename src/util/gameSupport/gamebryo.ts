@@ -1,5 +1,7 @@
 import * as path from 'path';
+import React = require('react');
 import { fs, types, util } from 'vortex-api';
+import { IGameSpecificInterfaceProps } from '../../types/IGameSpecificInterfaceProps';
 
 interface IGamebryoLO {
   name: string;
@@ -143,4 +145,10 @@ export async function parser(api: types.IExtensionApi,
       });
     });
   });
+}
+
+
+export function Interface(props: IGameSpecificInterfaceProps): JSX.Element
+{
+  return React.createElement('p', undefined, 'Gamebryo-specific stuff here');
 }
