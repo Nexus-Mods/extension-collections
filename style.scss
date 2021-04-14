@@ -380,13 +380,6 @@ $collection-thumbnail-height: 288px;
   }
 }
 
-#collection-page {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
 .collection-detail-cell {
   padding: 0 0.5em;
 
@@ -701,4 +694,18 @@ $collection-thumbnail-height: 288px;
 
 .mod-modtype-collection {
   background: rgba(255, 215, 0, 0.1);
+
+  >.cell-name {
+    &::before {
+      content: '';
+      mask-image: var(--collection-icon);
+      -webkit-mask-image: var(--collection-icon);
+      background-color: white;
+      width: 1.2em;
+      height: 1.2em;
+      display: inline-block;
+      vertical-align: text-top;
+      margin-right: 0.5em;
+    }
+  }
 }

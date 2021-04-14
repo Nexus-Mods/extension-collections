@@ -21,6 +21,7 @@ import memoize from 'memoize-one';
 import * as path from 'path';
 import * as React from 'react';
 import { generate as shortid } from 'shortid';
+import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
@@ -433,6 +434,10 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
 
   util.installIconSet('collections', path.join(__dirname, 'icons.svg'))
     .catch(err => api.showErrorNotification('failed to install icon set', err));
+
+  const iconPath = path.join(__dirname, 'collectionicon.svg');
+  document.getElementById('content').style
+    .setProperty('--collection-icon', `url(${pathToFileURL(iconPath).href})`);
 }
 
 function init(context: types.IExtensionContext): boolean {
