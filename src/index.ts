@@ -2,8 +2,6 @@ import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
-import { addCollectionAction, addCollectionCondition, removeCollectionAction, removeCollectionCondition } from './util/changeCollection';
-import InfoCache from './util/InfoCache';
 import InstallDriver from './util/InstallDriver';
 import { createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
@@ -12,7 +10,11 @@ import CollectionsMainPage from './views/CollectionPage';
 import InstallDialog from './views/InstallDialog';
 
 import { MOD_TYPE } from './constants';
-import { initFromProfile } from './collectionCreate';
+import {
+  addCollectionAction, addCollectionCondition,
+  initFromProfile,
+  removeCollectionAction, removeCollectionCondition
+} from './collectionCreate';
 import { doExportToFile } from './collectionExport';
 import { install, postprocessCollection, testSupported } from './collectionInstall';
 

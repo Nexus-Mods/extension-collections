@@ -31,6 +31,10 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
 
+    const published =
+      (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined)
+      && util.getSafe(collection.attributes, ['editable'], false);
+
     return (
       <Panel className='collection-overview'>
         <Media>
@@ -120,13 +124,15 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                     ) : null}
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed>
-                    <tooltip.IconButton
-                      tooltip={t('Opens the collection page in your webbrowser')}
-                      icon='open-in-browser'
-                      onClick={this.openUrl}
-                    >
-                      {t('View')}
-                    </tooltip.IconButton>
+                    {published ? (
+                      <tooltip.IconButton
+                        tooltip={t('Opens the collection page in your webbrowser')}
+                        icon='open-in-browser'
+                        onClick={this.openUrl}
+                      >
+                        {t('View')}
+                      </tooltip.IconButton>
+                    ) : null}
                   </FlexLayout.Fixed>
                 </FlexLayout>
               </FlexLayout.Fixed>

@@ -30,8 +30,9 @@ class CollectionOverviewInstalling
     const displayMod: ICollectionRevisionMod = driver.revisionInfo?.modFiles?.[displayModIdx];
     const modCount = driver.revisionInfo?.modFiles?.length;
 
-    const uploaderName = displayMod?.['mod']?.uploader?.name || AUTHOR_UNKNOWN;
-    const authorName = displayMod?.['mod']?.author?.name || AUTHOR_UNKNOWN;
+    const uploaderName = displayMod?.file?.owner?.name || AUTHOR_UNKNOWN;
+    const uploaderAvatar = displayMod?.file?.owner?.avatar || 'assets/images/noavatar.png';
+    const authorName = displayMod?.file?.mod?.author || AUTHOR_UNKNOWN;
 
     return (
       <Panel className='installing-mod-overview'>
@@ -48,7 +49,7 @@ class CollectionOverviewInstalling
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <FlexLayout type='row'>
                       <Image
-                        src='assets/images/noavatar.png'
+                        src={uploaderAvatar}
                         circle
                       />
                       <div>

@@ -783,7 +783,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           enabledTime: 0,
           attributes: {
             fileSize: rule.reference.fileSize,
-            author: rule.extra.author,
             ...(rule.extra || {}),
           },
           enabled: false,

@@ -15,7 +15,7 @@ function CollectionReleaseStatus(props: ICollectionReleaseStatusProps) {
     if (incomplete) {
       return <div className='collection-status'>{t('Incomplete')}</div>;
     } else if ((util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined)
-      && util.getSafe(collection.attributes, ['editable'], false)) {
+               && util.getSafe(collection.attributes, ['editable'], false)) {
       return <div className='collection-status'>{t('Published')}</div>;
     } else {
       return <div className='collection-status'>{t('Enabled')}</div>;
