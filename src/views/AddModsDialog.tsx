@@ -111,8 +111,6 @@ function AddModsDialog(props: IAddModsDialogProps) {
     setSelection(new Set(modIds));
   }, [setSelection]);
 
-  console.log('render addmodsdialog');
-
   const TableX: any = Table;
   return (
     <Modal

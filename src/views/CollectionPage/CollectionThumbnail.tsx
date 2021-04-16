@@ -106,7 +106,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   private get actions() {
-    const { incomplete, onEdit, onPublish, onRemove, onResume, onView } = this.props;
+    const { collection, incomplete, onEdit, onPublish, onRemove, onResume, onView } = this.props;
 
     const result = [];
 
@@ -139,7 +139,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
 
     if (onPublish) {
       result.push({
-        title: 'Publish',
+        title: collection.attributes?.collectionId !== undefined ? 'Update' : 'Publish',
         icon: 'clone',
         action: (instanceIds: string[]) => onPublish(instanceIds[0]),
       });

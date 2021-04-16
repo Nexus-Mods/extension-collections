@@ -7,7 +7,7 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Image, Media, Panel } from 'react-bootstrap';
-import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
+import { ComponentEx, FlexLayout, Spinner, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, NEXUS_BASE_URL } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 
@@ -26,14 +26,19 @@ interface ICollectionOverviewProps {
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
   public render(): JSX.Element {
-    const { t, collection, gameId, incomplete, revision, totalSize, votedSuccess } = this.props;
+    const { t, collection, gameId, incomplete, revision, votedSuccess } = this.props;
+
+    if (revision === undefined) {
+      return (
+        <Spinner />
+      );
+    }
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
 
     const published =
-      (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined)
-      && util.getSafe(collection.attributes, ['editable'], false);
+      (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined);
 
     return (
       <Panel className='collection-overview'>
