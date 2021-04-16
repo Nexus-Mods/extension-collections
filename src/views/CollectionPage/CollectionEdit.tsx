@@ -6,6 +6,8 @@ import { makeBiDirRule } from '../../util/transformCollection';
 
 import { NAMESPACE } from '../../constants';
 
+import { startAddModsToCollection } from '../../actions/session';
+
 import InfoPage from '../InfoPage';
 import IniTweaks from '../IniTweaks';
 import ModRules from '../ModRules';
@@ -34,6 +36,7 @@ interface IActionProps {
   onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) => void;
   onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
+  onAddModsDialog: (collectionId: string) => void;
 }
 
 type ICollectionEditProps = ICollectionEditBaseProps & IConnectedProps & IActionProps;
@@ -120,6 +123,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   onAddRule={this.addRule}
                   onRemoveRule={this.removeRule}
                   onSetCollectionAttribute={this.setCollectionAttribute}
+                  onAddModsDialog={this.addModsDialog}
                 />
               </Panel>
             </Tab>
@@ -206,6 +210,10 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     this.props.onSetModAttribute(profile.gameId, collection.id, 'collection',
       util.setSafe(attr, attrPath, value));
   }
+
+  private addModsDialog = (collectionId: string) => {
+    this.props.onAddModsDialog(collectionId);
+  }
 }
 
 function mapStateToProps(state: any, ownProps: ICollectionEditBaseProps): IConnectedProps {
@@ -223,6 +231,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.addModRule(gameId, modId, rule)),
     onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
       dispatch(actions.removeModRule(gameId, modId, rule)),
+    onAddModsDialog: (collectionId: string) =>
+      dispatch(startAddModsToCollection(collectionId)),
   };
 }
 

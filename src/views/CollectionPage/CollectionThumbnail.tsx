@@ -181,4 +181,4 @@ function mapStateToProps(state: types.IState, ownProps: IBaseProps): IConnectedP
 
 export default
   connect(mapStateToProps)(
-    CollectionThumbnail) as React.ComponentClass<IBaseProps>;
+    CollectionThumbnail) as React.ComponentType<IBaseProps>;

@@ -7,6 +7,7 @@ import * as React from 'react';
 import {
   ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, Table, TableTextFilter,
   tooltip, types, Usage, util } from 'vortex-api';
+import { Button } from 'react-bootstrap';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
@@ -16,6 +17,7 @@ export interface IModsPageProps {
   onAddRule: (rule: types.IModRule) => void;
   onRemoveRule: (rule: types.IModRule) => void;
   onSetCollectionAttribute: (path: string[], value: any) => void;
+  onAddModsDialog: (modId: string) => void;
 }
 
 interface IModEntry {
@@ -383,13 +385,25 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
     const { t } = this.props;
     const { entries } = this.state;
 
+    const addModsButton = () => {
+      return (<Button
+        id='btn-more-mods'
+        className='collection-add-mods-btn'
+        onClick={this.addMods}
+        bsStyle='ghost'
+      >
+        <Icon name='add' />
+        {t('Add more mods')}
+      </Button>);
+    }
 
     if (Object.keys(entries).length === 0) {
       return (
         <EmptyPlaceholder
           icon='layout-list'
           text={t('There are no mods in this collection')}
-          subtext={t('Is it a collection when there\'s nothing in it?')}
+          // subtext={t('Is it a collection when there\'s nothing in it?')}
+          subtext={addModsButton()}
           fill={true}
         />
       );
@@ -422,12 +436,18 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
             + 'Do this only for stuff created during setup (e.g. generated LODs, '
             + 'customized configuration files and such). '
             + 'You must not include any material you don\'t hold the copyright to. '
-            + 'Also Do not provide direct download links unless you have express permission to '
+            + 'Also: Do not provide direct download links unless you have express permission to '
             + 'do so.')}
           </p>
         </Usage>
+        {addModsButton()}
       </div>
     );
+  }
+
+  private addMods = () =>  {
+    const { collection, onAddModsDialog } = this.props;
+    onAddModsDialog(collection.id);
   }
 
   private generateEntries(props: IProps) {

@@ -710,3 +710,29 @@ $collection-thumbnail-height: 288px;
     }
   }
 }
+
+#add-mods-to-collection-dialog {
+  .modal-dialog {
+    width: 80%;
+
+    .modal-body {
+      height: 50vh;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}
+
+.collection-add-mods-btn {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#table-collection-add-mods {
+  .header-name {
+    white-space: nowrap;
+  }
+  .cell-selected {
+    text-align: center;
+  }
+}

@@ -58,7 +58,7 @@ export function removeCollectionCondition(api: types.IExtensionApi, instanceIds:
 }
 
 export function alreadyIncluded(rules, modId): boolean {
-  return rules.find(rule => rule.reference.id === modId) !== undefined;
+  return rules?.find?.(rule => rule.reference.id === modId) !== undefined;
 }
 
 export function addCollectionAction(api: types.IExtensionApi, instanceIds: string[]) {
@@ -67,7 +67,8 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
   const mods = state.persistent.mods[gameId];
   const collections = Object.keys(mods)
     .filter(collectionId => {
-      if (mods[collectionId].type !== MOD_TYPE) {
+      if ((mods[collectionId].type !== MOD_TYPE)
+          || (mods[collectionId].attributes?.editable === false)) {
         return false;
       }
 
@@ -115,7 +116,8 @@ export function removeCollectionAction(api: types.IExtensionApi, instanceIds: st
   const mods = state.persistent.mods[gameId];
   const collections = Object.keys(mods)
     .filter(collectionId => {
-      if (mods[collectionId].type !== MOD_TYPE) {
+      if ((mods[collectionId].type !== MOD_TYPE)
+          || (mods[collectionId].attributes?.editable === false)) {
         return false;
       }
 

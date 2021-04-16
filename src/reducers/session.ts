@@ -6,11 +6,16 @@ const sessionReducer: types.IReducerSpec = {
   reducers: {
     [actions.startEditCollection as any]: (state, payload) => {
       const { modId } = payload;
-      return util.setSafe(state, ['modId'], modId);
+      return util.setSafe(state, ['editCollectionId'], modId);
+    },
+    [actions.startAddModsToCollection as any]: (state, payload) => {
+      const { collectionId } = payload;
+      return util.setSafe(state, ['addModsId'], collectionId);
     },
   },
   defaults: {
-      modId: undefined,
+    editCollectionId: undefined,
+    addModsId: undefined,
   },
 };
 

@@ -5,6 +5,7 @@ import { ICollection } from './types/ICollection';
 import InstallDriver from './util/InstallDriver';
 import { createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
+import AddModsDialog from './views/AddModsDialog';
 import CollectionsMainPage from './views/CollectionPage';
 // import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
@@ -12,6 +13,7 @@ import InstallDialog from './views/InstallDialog';
 import { MOD_TYPE } from './constants';
 import {
   addCollectionAction, addCollectionCondition,
+  alreadyIncluded,
   initFromProfile,
   removeCollectionAction, removeCollectionCondition
 } from './collectionCreate';
@@ -186,6 +188,25 @@ function register(context: types.IExtensionContext,
 
   context.registerDialog('collection-install', InstallDialog, () => ({
     driver,
+  }));
+
+  context.registerDialog('add-mod-to-collection', AddModsDialog, () => ({
+    onAddSelection: (collectionId: string, modIds: string[]) => {
+      const state = context.api.getState();
+      const gameId = selectors.activeGameId(state);
+      const collection = state.persistent.mods[gameId][collectionId];
+
+      modIds.forEach(modId => {
+        if (!alreadyIncluded(collection.rules, modId)) {
+          context.api.store.dispatch(actions.addModRule(gameId, collectionId, {
+            type: 'requires',
+            reference: {
+              id: modId,
+            },
+          }));
+        }
+      });
+    },
   }));
 
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
