@@ -340,7 +340,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     return (
       <FlexLayout type='column' className={className}>
-        <FlexLayout.Fixed>
+        <FlexLayout.Fixed className='collection-overview-panel'>
           {incomplete
             && (driver.collectionInfo !== undefined)
             && (driver.collection.id === collection.id)
