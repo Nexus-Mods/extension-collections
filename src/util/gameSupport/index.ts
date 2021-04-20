@@ -39,8 +39,8 @@ const gameSupport = {
         gameSettingsFiles: ['Fallout4Custom.ini', 'Fallout4Prefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
-    },
         interface: gamebryo.Interface,
+    },
     falloutnv: {
         gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini'],
         generator: gamebryo.generate,

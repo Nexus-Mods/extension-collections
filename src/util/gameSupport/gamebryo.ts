@@ -147,8 +147,6 @@ export async function parser(api: types.IExtensionApi,
   });
 }
 
-
-export function Interface(props: IGameSpecificInterfaceProps): JSX.Element
-{
+export function Interface(props: IGameSpecificInterfaceProps): JSX.Element {
   return React.createElement('p', undefined, 'Gamebryo-specific stuff here');
 }
