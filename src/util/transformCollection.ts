@@ -110,7 +110,7 @@ export function generateCollection(info: ICollectionInfo,
 async function rulesToCollectionMods(collection: types.IMod,
                                   mods: { [modId: string]: types.IMod },
                                   stagingPath: string,
-                                  gameId: string,
+                                  game: types.IGame,
                                   collectionInfo: ICollectionAttributes,
                                   onProgress: (percent: number, text: string) => void,
                                   onError: (message: string, replace: any) => void)
@@ -196,11 +196,15 @@ async function rulesToCollectionMods(collection: types.IMod,
 
       onProgress(Math.floor((finished / total) * 100), modName);
 
+      const dlGame: types.IGame = (mod.attributes?.downloadGame !== undefined)
+        ? util.getGame(mod.attributes.downloadGame)
+        : game;
+
       const res: ICollectionMod = {
         name: modName,
         version: mod.attributes?.version ?? '1.0.0',
         optional: rule.type === 'recommends',
-        domainName: mod.attributes?.downloadGame ?? gameId,
+        domainName: (util as any).nexusGameId(dlGame),
         source,
         hashes,
         choices,
@@ -410,18 +414,20 @@ export async function modToCollection(state: types.IState,
   }
 
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
+  
+  const game = util.getGame(gameId);
 
   const collectionInfo: ICollectionInfo = {
     author: collection.attributes?.author ?? 'Anonymous',
     authorUrl: collection.attributes?.authorURL ?? '',
     name: util.renderModName(collection),
     description: collection.attributes?.shortDescription ?? '',
-    domainName: gameId,
+    domainName: (util as any).nexusGameId(game),
   };
 
   const res: ICollection = {
     info: collectionInfo,
-    mods: await rulesToCollectionMods(collection, mods, stagingPath, gameId,
+    mods: await rulesToCollectionMods(collection, mods, stagingPath, game,
                                       collection.attributes?.collection ?? {},
                                       onProgress, onError),
     modRules,
