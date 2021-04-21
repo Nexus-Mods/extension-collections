@@ -1,15 +1,18 @@
 import CollectionThumbnail from './CollectionThumbnail';
+import CollectionModDetails from './CollectionModDetails';
+import SlideshowControls from './SlideshowControls';
 
 import HealthIndicator from '../HealthIndicator';
 
-import { IRevision } from '@nexusmods/nexus-api';
+import { ICollectionRevisionMod, IRevision } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { Image, Media, Panel } from 'react-bootstrap';
+import { Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, Spinner, tooltip, types, util } from 'vortex-api';
-import { AUTHOR_UNKNOWN, NEXUS_BASE_URL } from '../../constants';
+import { NEXUS_BASE_URL } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
+import { IModEx } from '../../types/IModEx';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
@@ -20,13 +23,23 @@ interface ICollectionOverviewProps {
   revision: IRevision;
   votedSuccess: boolean;
   incomplete: boolean;
+  modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
+  onDeselectMods: () => void;
   onClose: () => void;
   onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
 
-class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
+class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx: number }> {
+  constructor(props: ICollectionOverviewProps) {
+    super(props);
+
+    this.initState({ selIdx: 0 });
+  }
+
   public render(): JSX.Element {
-    const { t, collection, gameId, incomplete, revision, votedSuccess } = this.props;
+    const { t, collection, gameId, incomplete, modSelection, revision, votedSuccess } = this.props;
+
+    const { selIdx } = this.state;
 
     if (revision === undefined) {
       return (
@@ -40,8 +53,15 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
     const published =
       (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined);
 
+    const modDetails = modSelection.length > 0;
+
+    const classes = ['collection-overview'];
+    if (modDetails) {
+      classes.push('collection-mod-selection');
+    }
+
     return (
-      <Panel className='collection-overview'>
+      <Panel className={classes.join(' ')}>
         <Media>
           <Media.Left>
             <CollectionThumbnail
@@ -65,38 +85,43 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
                     collection={collection}
                     incomplete={incomplete}
                   />
+                  <div className='flex-filler'></div>
+                  {modSelection.length > 1 ? (
+                    <>
+                      <SlideshowControls
+                        t={t}
+                        numItems={modSelection.length}
+                        onChangeItem={this.setSelection}
+                        autoProgressTimeMS={5000}
+                      />
+                      <div className='flex-filler'></div>
+                      <tooltip.IconButton
+                        className='btn-embed'
+                        tooltip={t('Deselects mods')}
+                        icon='close'
+                        onClick={this.props.onDeselectMods}
+                      />
+                    </>
+                  ) : null}
                 </div>
               </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                    {/*
-                <FlexLayout type='row'>
-                  <FlexLayout.Fixed className='collection-detail-cell'>
-                    <FlexLayout type='row'>
-                      <Image
-                        src='assets/images/noavatar.png'
-                        circle
-                      />
-                      <div>
-                        <div className='title'>{t('Curated by')}</div>
-                        <div>{collection.attributes.author || AUTHOR_UNKNOWN}</div>
-                      </div>
-                    </FlexLayout>
-                  </FlexLayout.Fixed>
-                  <FlexLayout.Fixed className='collection-detail-cell'>
-                    <div className='title'>{t('Version')}</div>
-                    <div>{collection.attributes.version || '0.0.0'}</div>
-                  </FlexLayout.Fixed>
-                  <FlexLayout.Fixed className='collection-detail-cell'>
-                    <div className='title'>{t('File size')}</div>
-                    <div>{util.bytesToString(totalSize)}</div>
-                  </FlexLayout.Fixed>
-                </FlexLayout>
-                      */}
-              </FlexLayout.Fixed>
-              <FlexLayout.Flex>
+              <FlexLayout.Flex className='collection-description-container'>
                 <div className='collection-description'>
                   {util.getSafe(collection.attributes, ['description'], t('No description'))}
                 </div>
+              </FlexLayout.Flex>
+              <FlexLayout.Flex>
+                {
+                  modDetails ? (
+                    <CollectionModDetails
+                      t={t}
+                      local={modSelection[selIdx]?.local}
+                      remote={modSelection[selIdx]?.remote}
+                    />
+                  ) : (
+                    null
+                  )
+                }
               </FlexLayout.Flex>
               <FlexLayout.Fixed className='collection-page-detail-bar'>
                 <FlexLayout type='row'>
@@ -146,6 +171,10 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, {}> {
         </Media>
       </Panel>
     );
+  }
+
+  private setSelection = (idx: number) => {
+    this.nextState.selIdx = idx % this.props.modSelection.length;
   }
 
   private openUrl = () => {

@@ -112,7 +112,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
               icon='nav-back'
               onClick={this.deselectCollection}
             >
-              {t('Back to Collections')}
+              {t('View All Collections')}
             </tooltip.IconButton>
           </FlexLayout.Fixed>
           <FlexLayout.Flex>

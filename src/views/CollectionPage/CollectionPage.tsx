@@ -56,6 +56,7 @@ interface IActionProps {
 interface IComponentState {
   modsEx: { [modId: string]: IModEx };
   revisionInfo: IRevision;
+  modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
 }
 
 const getCollator = (() => {
@@ -78,12 +79,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mUpdateDebouncer: util.Debouncer;
   private mModActions: ITableRowAction[];
   private mTableContainerRef: Element;
+  private mLastModsFinal: { [ruleId: string]: IModEx };
 
   constructor(props: IProps) {
     super(props);
     this.initState({
       modsEx: {},
       revisionInfo: undefined,
+      modSelection: [],
     });
 
     this.mModActions = [
@@ -303,6 +306,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || this.installingNotificationsChanged(this.props, newProps)
         || (this.props.activity.mods !== newProps.activity.mods)
         || (this.state.revisionInfo !== newState.revisionInfo)
+        || (this.state.modSelection !== newState.modSelection)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
     }
@@ -312,7 +316,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   public render(): JSX.Element {
     const { t, activity, className, collection, driver, downloads, language,
             onVoteSuccess, profile, votedSuccess } = this.props;
-    const { modsEx, revisionInfo } = this.state;
+    const { modSelection, modsEx, revisionInfo } = this.state;
 
     if (collection === undefined) {
       return null;
@@ -338,6 +342,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       return prev;
     }, {});
 
+    if ((this.mLastModsFinal === undefined)
+        || !_.isEqual(this.mLastModsFinal, modsFinal)) {
+      this.mLastModsFinal = modsFinal;
+    }
+
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed className='collection-overview-panel'>
@@ -359,9 +368,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 totalSize={totalSize}
                 onClose={this.close}
                 onVoteSuccess={onVoteSuccess}
+                onDeselectMods={this.unselectMods}
                 revision={revisionInfo}
                 votedSuccess={votedSuccess}
                 incomplete={incomplete}
+                modSelection={modSelection}
               />
             )}
         </FlexLayout.Fixed>
@@ -370,11 +381,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             <Panel.Body>
               <Table
                 tableId='mods'
-                showDetails={true}
-                data={modsFinal}
+                showDetails={false}
+                data={this.mLastModsFinal}
                 staticElements={this.mAttributes}
                 actions={this.mModActions}
                 columnBlacklist={['collection']}
+                onChangeSelection={this.changeModSelection}
               />
             </Panel.Body>
           </Panel>
@@ -383,7 +395,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           <Panel>
             <CollectionProgress
               t={t}
-              mods={modsFinal}
+              mods={this.mLastModsFinal}
               downloads={downloads}
               totalSize={totalSize}
               activity={activity}
@@ -429,6 +441,22 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private close = () => {
     this.props.onView(undefined);
+  }
+
+  private unselectMods = () => {
+    this.nextState.modSelection = [];
+  }
+
+  private changeModSelection = (modIds: string[]) => {
+    const { modsEx, revisionInfo } = this.state;
+
+    this.nextState.modSelection = modIds.map(modId => {
+      const mod = modsEx[modId];
+      return {
+        local: mod,
+        remote: revisionInfo.modFiles.find(file => file.fileId === mod.attributes.fileId),
+      };
+    });
   }
 
   private setModEnabled = (modId: string, enabled: boolean) => {

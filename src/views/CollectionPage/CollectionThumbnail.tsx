@@ -10,6 +10,7 @@ import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 export interface IBaseProps {
   t: I18next.TFunction;
+  className?: string;
   gameId: string;
   collection: types.IMod;
   mods?: { [modId: string]: types.IMod };
@@ -55,11 +56,17 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       }
     }, 0);
 
+    const classes = ['collection-thumbnail'];
+
+    if (this.props.className !== undefined) {
+      classes.push(this.props.className);
+    }
+
     return (
-      <Panel className='collection-thumbnail' bsStyle={active ? 'primary' : 'default'}>
+      <Panel className={classes.join(' ')} bsStyle={active ? 'primary' : 'default'}>
         <Panel.Body className='collection-thumbnail-body'>
           <Image
-            className={'thumbnail-img'}
+            className='thumbnail-img'
             srcs={[logoPath + `?_r=${imageTime}`, path.join(__dirname, 'fallback_tile.png')]}
             circle={false}
           />
