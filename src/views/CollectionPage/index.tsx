@@ -29,6 +29,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
 
 interface IConnectedProps {
   profile: types.IProfile;
+  game: types.IGameStored;
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
@@ -78,7 +79,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, driver, mods, notifications, profile } = this.props;
+    const { t, downloads, game, mods, notifications, profile } = this.props;
     const { matchedReferences, selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
@@ -91,6 +92,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       content = (
         <StartPage
           t={t}
+          game={game}
           profile={profile}
           mods={mods}
           matchedReferences={matchedReferences}
@@ -319,8 +321,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             actions: [
               {
                 title: 'Open in Browser', action: () => {
+                  const game = selectors.gameById(api.getState(), profile.gameId);
                   // tslint:disable-next-line: max-line-length
-                  const url = `${NEXUS_BASE_URL}/${profile.gameId}/collections/${collectionId}`;
+                  const domainName = (util as any).nexusGameId(game);
+                  const url = `${NEXUS_BASE_URL}/${domainName}/collections/${collectionId}`;
                   util.opn(url).catch(() => null);
                 },
               },
@@ -349,7 +353,9 @@ const emptyObj = {};
 
 function mapStateToProps(state: types.IState): IConnectedProps {
   const profile = selectors.activeProfile(state);
+  const game = selectors.gameById(state, profile.gameId);
   return {
+    game,
     profile,
     mods: state.persistent.mods[profile.gameId] || emptyObj,
     notifications: state.session.notifications.notifications,

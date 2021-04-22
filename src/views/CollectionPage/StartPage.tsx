@@ -12,6 +12,7 @@ import { ComponentEx, EmptyPlaceholder, Icon, PortalMenu, types, util } from 'vo
 
 export interface IStartPageProps {
   t: i18next.TFunction;
+  game: types.IGameStored;
   profile: types.IProfile;
   mods: { [modId: string]: types.IMod };
   matchedReferences: { [collectionId: string]: types.IMod[] };
@@ -185,10 +186,10 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   private openCollections = async () => {
-    const { profile } = this.props;
+    const { game, profile } = this.props;
     const { api } = this.context;
     const collections: ICollection[] =
-      (await api.emitAndAwait('get-nexus-collections', profile.gameId))[0];
+      (await api.emitAndAwait('get-nexus-collections', (util as any).nexusGameId(game)))[0];
     if ((collections === undefined) || (collections.length === 0)) {
       api.sendNotification({ message: 'No collections for this game', type: 'error' });
       return;
@@ -215,9 +216,12 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           game: profile.gameId,
           name: selectedCollection.name,
           source: 'nexus',
-          ids: {
-            collectionId: collId.toString(),
-            revisionNumber: latest.revision,
+          nexus: {
+            ids: {
+              collectionId: collId.toString(),
+              revisionId: latest.id,
+              revisionNumber: latest.revision,
+            },
           },
         };
         const downloadURLs: IDownloadURL[] =
