@@ -24,9 +24,9 @@ interface ICollectionOverviewProps {
   votedSuccess: boolean;
   incomplete: boolean;
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
-  onDeselectMods: () => void;
-  onClose: () => void;
-  onVoteSuccess: (collectionId: string, success: boolean) => void;
+  onDeselectMods?: () => void;
+  onClose?: () => void;
+  onVoteSuccess?: (collectionId: string, success: boolean) => void;
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx: number }> {
@@ -40,12 +40,6 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     const { t, collection, gameId, incomplete, modSelection, revision, votedSuccess } = this.props;
 
     const { selIdx } = this.state;
-
-    if (revision === undefined) {
-      return (
-        <Spinner />
-      );
-    }
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
@@ -154,7 +148,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                     ) : null}
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed>
-                    {published ? (
+                    {(published && (revision !== undefined)) ? (
                       <tooltip.IconButton
                         tooltip={t('Opens the collection page in your webbrowser')}
                         icon='open-in-browser'
@@ -192,7 +186,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
   private voteSuccess = (success: boolean) => {
     const { collection, onVoteSuccess } = this.props;
-    onVoteSuccess(collection.id, success);
+    onVoteSuccess?.(collection.id, success);
   }
 }
 

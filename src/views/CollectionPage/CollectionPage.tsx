@@ -30,7 +30,6 @@ export interface ICollectionPageProps {
   profile: types.IProfile;
   collection: types.IMod;
   driver: InstallDriver;
-  // cache: InfoCache;
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
@@ -347,10 +346,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       this.mLastModsFinal = modsFinal;
     }
 
+    const installing = incomplete
+            && (driver.collectionInfo !== undefined)
+            && (driver.collection.id === collection.id);
+
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed className='collection-overview-panel'>
-          {incomplete
+          {/*incomplete
             && (driver.collectionInfo !== undefined)
             && (driver.collection.id === collection.id)
             ? (
@@ -374,7 +377,23 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 incomplete={incomplete}
                 modSelection={modSelection}
               />
-            )}
+            )*/}
+            <CollectionOverview
+              t={t}
+              language={language}
+              gameId={profile.gameId}
+              collection={collection}
+              totalSize={totalSize}
+              revision={revisionInfo}
+              votedSuccess={votedSuccess}
+              onClose={this.close}
+              onVoteSuccess={onVoteSuccess}
+              onDeselectMods={this.unselectMods}
+              incomplete={incomplete}
+              modSelection={(installing
+                ? revisionInfo?.modFiles?.map?.(file => ({ local: undefined, remote: file }))
+                : modSelection) ?? []}
+            />
         </FlexLayout.Fixed>
         <FlexLayout.Flex className='collection-mods-panel'>
           <Panel ref={this.setTableContainerRef}>
@@ -454,7 +473,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       const mod = modsEx[modId];
       return {
         local: mod,
-        remote: revisionInfo.modFiles.find(file => file.fileId === mod.attributes.fileId),
+        remote: revisionInfo?.modFiles?.find?.(file => file.fileId === mod.attributes.fileId),
       };
     });
   }

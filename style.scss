@@ -240,6 +240,7 @@ $collection-thumbnail-height: 288px;
 
   > .collection-thumbnail-body.panel-body {
     padding: 0;
+    height: 100%;
 
     > img {
       max-width: 100%;
@@ -412,18 +413,56 @@ $collection-thumbnail-height: 288px;
 .collection-overview {
   overflow: hidden;
   padding-right: 1em;
+  padding: $half-gutter;
+  height: calc(#{$collection-thumbnail-height} + #{$gutter-width} + 2 * #{$border-width}) !important;
 
   .panel {
     border: none;
   }
 
   .media {
-    margin-bottom: $half-gutter;
-    max-height: 25vh;
+    // margin-bottom: $half-gutter;
+    height: 100%;
+
+    .media-left {
+      height: 100%;
+    }
   }
 
   .collection-thumbnail {
     margin: 0 $half-gutter;
+    // max-width: $collection-thumbnail-width;
+    // max-height: 100%;
+    // width: auto;
+    height: auto;
+    width: auto;
+
+    .thumbnail-img {
+      transition: max-width 500ms, max-height 500ms;
+      max-width: $collection-thumbnail-width !important;
+      max-height: $collection-thumbnail-height !important;
+    }
+  }
+
+  &.collection-mod-selection {
+    .collection-thumbnail {
+      .thumbnail-img {
+        max-width: calc(#{$collection-thumbnail-width} / 2) !important;
+        max-height: calc(#{$collection-thumbnail-height} / 2) !important;
+      }
+    }
+
+    .collection-page-detail-bar {
+      display: none;
+    }
+
+    .collection-description-container-outer {
+      display: none;
+    }
+
+    .collection-title {
+      color: $text-color-disabled;
+    }
   }
 
   .collection-overview-title {
@@ -440,15 +479,23 @@ $collection-thumbnail-height: 288px;
 }
 
 .installing-mod-overview.panel {
-  height: 425px;
-  max-height: 25vh;
-
   .installing-mod-title {
     @extend .h3;
   }
 
   .nav-button {
     @extend .btn-embed;
+  }
+
+  .collection-mod-detail-imagecontainer {
+    height: 100%;
+  }
+
+  .installing-mod-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
   }
 }
 
@@ -746,4 +793,56 @@ $collection-thumbnail-height: 288px;
   .cell-selected {
     text-align: center;
   }
+}
+
+.slideshow-controls {
+  margin: 0 4em;
+  display: flex;
+  .btn {
+    @extend .btn-embed;
+  }
+}
+
+.flex-filler {
+  flex: 1 1 0;
+}
+
+.button-with-timer {
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin: 0 1em;
+
+  svg {
+    margin-right: 0 !important;
+  }
+
+  .icon {
+    // in a button with timer the progress circle determins the bounds
+    // width 100% feels a bit hacky but the icon remains in the correct aspect ratio and
+    // if we limit width as well we get odd sub-pixel scaling
+    width: 100%;
+    height: 0.7em;
+    position: absolute;
+  }
+}
+
+.slideshow-timer {
+  width: 1.5em;
+  height: 1.5em;
+  // border: 3px solid transparent;
+  stroke: $brand-primary;
+
+  .timer-background {
+    stroke: $text-color-disabled;
+    opacity: 0.5;
+  }
+}
+
+.timer-circle {
+  animation-name: circle-fill;
+}
+
+@keyframes circle-fill {
+  to { stroke-dasharray: 0 100; }
 }
