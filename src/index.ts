@@ -19,6 +19,7 @@ import {
 } from './collectionCreate';
 import { doExportToFile } from './collectionExport';
 import { install, postprocessCollection, testSupported } from './collectionInstall';
+import { onCollectionUpdate } from './eventHandlers';
 
 import * as PromiseBB from 'bluebird';
 import memoize from 'memoize-one';
@@ -142,11 +143,13 @@ function genAttributeExtractor(api: types.IExtensionApi) {
   // tslint:disable-next-line:no-shadowed-variable
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
     const collectionId = modInfo.download?.modInfo?.nexus?.ids?.collectionId;
+    const revisionId = modInfo.download?.modInfo?.nexus?.ids?.revisionId;
     const revisionNumber = modInfo.download?.modInfo?.nexus?.ids?.revisionNumber;
     const referenceTag = modInfo.download?.modInfo?.referenceTag;
 
     const result: { [key: string]: any } = {
       collectionId,
+      revisionId,
       revisionNumber,
       referenceTag,
     };
@@ -397,6 +400,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     });
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
+  api.events.on('collection-update', onCollectionUpdate(api));
 
   api.events.on('did-finish-download', (dlId: string, outcome: string) => {
     if (outcome === 'finished') {
