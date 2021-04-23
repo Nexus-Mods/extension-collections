@@ -89,6 +89,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       return null;
     }
 
+    const game = util.getGame(profile.gameId);
+
     const iniFiles = getIniFiles(profile.gameId);
     const Interface = getInterface(profile.gameId);
 
@@ -145,9 +147,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               </Tab>
             ) : null}
             {(Interface !== undefined) ? (
-              <Tab key='gamespecific' eventKey='gamespecific' title={t('Game specific')}>
+              <Tab key='gamespecific' eventKey='gamespecific' title={game.name}>
                 <Panel>
-                  <Interface collection={collection} revisionInfo={revision} />
+                  <Interface t={t} collection={collection} revisionInfo={revision} />
                 </Panel>
               </Tab>
             ) : null}

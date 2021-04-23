@@ -79,6 +79,22 @@ $collection-thumbnail-height: 288px;
   }
 }
 
+#collection-edit-tabs-pane-gamespecific {
+  .collection-rule-type {
+    font-weight: bold;
+    display: inline;
+  }
+
+  th {
+    border-bottom: 0;
+  }
+
+  .collection-plugin-remove {
+    display: flex;
+    justify-content: center;
+  }
+}
+
 .collection-edit-header {
   padding: $gutter-width;
   margin-bottom: $half-gutter;

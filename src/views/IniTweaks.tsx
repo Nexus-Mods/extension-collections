@@ -128,7 +128,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
               + 'to a user\'s setup when they use your collection.')}
           </p>
           <p>
-            {t('Users can toggle these ini tweaks individually so may want to set up '
+            {t('Users can toggle these ini tweaks individually so you may want to set up '
               + 'multiple tweaks to give users granular control.')}
           </p>
         </ControlLabel>
