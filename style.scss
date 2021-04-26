@@ -515,6 +515,10 @@ $collection-thumbnail-height: 288px;
   }
 }
 
+#collection-page {
+  overflow-y: auto;
+}
+
 .collection-page-detail-bar > .layout-container {
   align-items: center;
   gap: 1em;
