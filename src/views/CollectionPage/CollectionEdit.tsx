@@ -11,7 +11,7 @@ import { startAddModsToCollection } from '../../actions/session';
 import InfoPage from '../InfoPage';
 import IniTweaks from '../IniTweaks';
 import ModRules from '../ModRules';
-import ModsPage from '../ModsPage';
+import ModsEditPage from '../ModsEditPage';
 
 import { IRevision } from '@nexusmods/nexus-api';
 import * as React from 'react';
@@ -117,7 +117,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               title={<div>{t('Mods')}<Badge>{(collection.rules || []).length}</Badge></div>}
             >
               <Panel style={{ position: 'relative' }}>
-                <ModsPage
+                <ModsEditPage
                   mods={mods}
                   collection={collection}
                   t={t}

@@ -321,7 +321,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       return null;
     }
 
-    const incomplete = Object.values(modsEx).find(mod => mod.state !== 'installed') !== undefined;
+    const incomplete = Object.values(modsEx)
+      .find(mod => (mod.state !== 'installed')
+                && (mod.collectionRule.type === 'requires')) !== undefined;
 
     const totalSize = Object.values(modsEx).reduce((prev, mod) => {
       const size = util.getSafe(mod, ['attributes', 'fileSize'], 0);

@@ -57,6 +57,10 @@ class InstallDriver {
           this.mInstallingMod = undefined;
           this.mApi.dismissNotification('installing-collection');
           this.triggerUpdate();
+
+          if (!recommendations) {
+            api.events.emit('install-recommendations', profileId, [modId]);
+          }
         }
       });
   }

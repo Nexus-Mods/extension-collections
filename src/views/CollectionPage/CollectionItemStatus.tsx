@@ -61,10 +61,16 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
           <div className='progress-title'>{t('Downloading...')}</div>
         </div>
       );
-    } else if (mod.state === 'downloaded') {
-      return <div><Spinner />{t('Install pending')}</div>;
     } else {
-      return <div><Spinner />{t('Download pending')}</div>;
+      if (mod.collectionRule.type === 'recommends') {
+        return <div>{t('Optional')}</div>
+      } else {
+        if (mod.state === 'downloaded') {
+          return <div><Spinner />{t('Install pending')}</div>;
+        } else {
+          return <div><Spinner />{t('Download pending')}</div>;
+        }
+      }
     }
   }
 

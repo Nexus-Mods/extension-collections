@@ -46,7 +46,7 @@ const INSTALL_MODES = {
   clone: 'Replicate',
 };
 
-class ModsPage extends ComponentEx<IProps, IModsPageState> {
+class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
   private mLang: string;
   private mCollator: Intl.Collator;
 
@@ -597,4 +597,4 @@ class ModsPage extends ComponentEx<IProps, IModsPageState> {
   }
 }
 
-export default ModsPage;
+export default ModsEditPage;

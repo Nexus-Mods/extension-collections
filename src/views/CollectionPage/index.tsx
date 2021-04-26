@@ -275,13 +275,15 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     return collections.reduce((prev, collection) => {
       prev[collection.id] =
-        (collection.rules || []).map(rule => {
-          const mod = findModByRef(rule.reference, mods);
-          if (mod === undefined) {
-            log('debug', 'mod not found', JSON.stringify(rule.reference));
-          }
-          return mod ?? null;
-         });
+        (collection.rules || [])
+          .filter(rule => rule.type === 'requires')
+          .map(rule => {
+            const mod = findModByRef(rule.reference, mods);
+            if (mod === undefined) {
+              log('debug', 'mod not found', JSON.stringify(rule.reference));
+            }
+            return mod ?? null;
+          });
       return prev;
     }, {});
   }

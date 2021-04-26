@@ -38,11 +38,13 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
 
     const { pending, downloading, installing, done } =
       Object.values(mods).reduce<IModGroups>((prev, mod) => {
-        prev[group(mod.state)].push(mod);
+        if (mod.collectionRule.type === 'requires') {
+          prev[group(mod.state)].push(mod);
+        }
         return prev;
       }, { pending: [], downloading: [], installing: [], done: [] });
 
-      if ((downloading.length === 0) && (installing.length === 0) && (pending.length === 0)) {
+    if ((downloading.length === 0) && (installing.length === 0) && (pending.length === 0)) {
       return null;
     }
 
