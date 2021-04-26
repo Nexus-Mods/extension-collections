@@ -136,6 +136,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   collection={collection}
                   mods={mods}
                   rules={this.state.collectionRules}
+                  onSetCollectionAttribute={this.setCollectionAttribute}
                 />
               </Panel>
             </Tab>

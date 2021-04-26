@@ -71,3 +71,8 @@ export interface ICollectionAttributes {
   source?: { [modId: string]: { type: SourceType } };
   installMode?: { [modId: string]: string };
 }
+
+export interface ICollectionModRuleEx extends ICollectionModRule {
+  sourceName: string;
+  referenceName: string;
+}

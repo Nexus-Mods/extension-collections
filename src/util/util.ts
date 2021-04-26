@@ -1,5 +1,8 @@
 import * as PromiseBB from 'bluebird';
-import { types } from 'vortex-api';
+import { createHash } from 'crypto';
+import { types, util } from 'vortex-api';
+import { ICollectionModRuleEx } from '../types/ICollection';
+import { findModByRef } from './findModByRef';
 
 export function makeProgressFunction(api: types.IExtensionApi) {
   const notificationId = api.sendNotification({
@@ -65,4 +68,20 @@ export function bbProm<T>(func: (...args: any[]) => Promise<T>): (...args: any[]
 
 export function getUnfulfilledNotificationId(collectionId: string) {
   return `collection-incomplete-${collectionId}`;
+}
+
+export function md5sum(input: string): string {
+  const hash = createHash('md5');
+  hash.update(input);
+  return hash.digest('hex');
+}
+
+export function renderReference(ref: types.IModReference,
+                                mods: { [modId: string]: types.IMod }): string {
+  const mod = findModByRef(ref, mods);
+  return util.renderModReference(ref, mod);
+}
+
+export function ruleId(rule: ICollectionModRuleEx): string {
+  return md5sum(`${rule.sourceName}-${rule.type}-${rule.referenceName}`)
 }

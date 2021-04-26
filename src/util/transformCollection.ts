@@ -1,9 +1,10 @@
 import { BUNDLED_PATH, MOD_TYPE } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
-         ICollectionModRule, ICollectionSourceInfo } from '../types/ICollection';
+         ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
 import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';
+import { renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
 import Zip = require('node-7z');
@@ -287,6 +288,19 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
   } as any;
 }
 
+function ruleEnabled(rule: ICollectionModRule,
+                     mods: { [modId: string]: types.IMod },
+                     collection: types.IMod) {
+  const ruleEx: ICollectionModRuleEx = {
+    ...rule,
+    sourceName: renderReference(rule.source, mods),
+    referenceName: renderReference(rule.reference, mods),
+  }
+  const id = ruleId(ruleEx);
+
+  return collection.attributes?.collection?.rule?.[id] ?? true;
+}
+
 function extractModRules(rules: types.IModRule[],
                          collection: types.IMod,
                          mods: { [modId: string]: types.IMod },
@@ -306,7 +320,7 @@ function extractModRules(rules: types.IModRule[],
       makeBiDirRule(mod, makeTransferrable(mods, collection, input))));
   }, [])
   // throw out rules that couldn't be converted
-  .filter(rule => rule !== undefined);
+  .filter(rule => (rule !== undefined) && ruleEnabled(rule, mods, collection));
 }
 
 export function collectionModToRule(mod: ICollectionMod): types.IModRule {

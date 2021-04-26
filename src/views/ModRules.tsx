@@ -2,25 +2,21 @@ import I18next from 'i18next';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { ComponentEx, Toggle, types, util } from 'vortex-api';
-import { ICollectionModRule } from '../types/ICollection';
-import { findModByRef } from '../util/findModByRef';
+import { ICollectionModRule, ICollectionModRuleEx } from '../types/ICollection';
+import { renderReference, ruleId } from '../util/util';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   rules: ICollectionModRule[];
+  onSetCollectionAttribute: (path: string[], value: any) => void;
 }
 
 interface IModsPageState {
 }
 
 type IProps = IModsPageProps;
-
-interface ICollectionModRuleEx extends ICollectionModRule {
-  sourceName: string;
-  referenceName: string;
-}
 
 class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   constructor(props: IProps) {
@@ -71,8 +67,8 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   private insertNames(rule: ICollectionModRule): ICollectionModRuleEx {
     return {
       ...rule,
-      sourceName: this.renderReference(rule.source),
-      referenceName: this.renderReference(rule.reference),
+      sourceName: renderReference(rule.source, this.props.mods),
+      referenceName: renderReference(rule.reference, this.props.mods),
     };
   }
 
@@ -81,9 +77,17 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private renderRule(rule: ICollectionModRuleEx, idx: number, separator: boolean): JSX.Element {
+    const { collection } = this.props;
+
+    // md5-hashing to prevent excessive id names and special characters as a key
+    // in application state
+    const id = ruleId(rule);
+
+    const checked = collection.attributes?.collection?.rule?.[id] ?? true;
+
     return (
       <ListGroupItem className={separator ? 'collection-rule-separator' : undefined} key={idx.toString()}>
-        <Toggle checked={true} dataId={'foobar'} onToggle={this.toggleRule}>
+        <Toggle checked={checked} dataId={id} onToggle={this.toggleRule}>
           <div className='rule-name'>{rule.sourceName}</div>
           <div className='rule-type'>{rule.type}</div>
           <div className='rule-name'>{rule.referenceName}</div>
@@ -93,12 +97,8 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private toggleRule = (newValue: boolean, dataId: string) => {
-    // nop
-  }
-
-  private renderReference(ref: types.IModReference): string {
-    const mod = findModByRef(ref, this.props.mods);
-    return (util as any).renderModReference(ref, mod);
+    const { onSetCollectionAttribute } = this.props;
+    onSetCollectionAttribute(['rule', dataId], newValue);
   }
 }
 
