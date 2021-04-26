@@ -12,7 +12,7 @@ import CollectionOverview from './CollectionOverview';
 import CollectionOverviewInstalling from './CollectionOverviewInstalling';
 import CollectionProgress, { ICollectionProgressProps } from './CollectionProgress';
 
-import { ICollection, ICollectionRevisionMod, IRevision } from '@nexusmods/nexus-api';
+import { ICollection, ICollectionRevisionMod, IModFile, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
@@ -128,8 +128,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             <CollectionItemStatus
               t={this.props.t}
               mod={mod}
-              notifications={this.props.notifications}
               download={download}
+              notifications={this.props.notifications}
               container={this.mTableContainerRef}
               onSetModEnabled={this.setModEnabled}
             />
@@ -203,13 +203,20 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             return (
               <div>
                 <Image circle src={AVATAR_FALLBACK} />
-                {t(AUTHOR_UNKNOWN)}
+                {mod?.attributes?.uploader || t(AUTHOR_UNKNOWN)}
               </div>
             );
           }
 
           const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
-          const revMod = revMods.find(iter => iter.file.modId === mod.attributes.modId);
+          const matchRepo = (ref: IModFile) => {
+            const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
+            const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
+
+            return modId.toString() === ref.modId.toString()
+               && fileId.toString() === ref.fileId.toString();
+          }
+          const revMod = revMods.find(iter => matchRepo(iter.file));
 
           const name = revMod?.file?.owner?.name;
           const avatar = revMod?.file?.owner?.avatar || AVATAR_FALLBACK;
