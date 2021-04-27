@@ -1,4 +1,4 @@
-import { MOD_TYPE } from '../../constants';
+import { MOD_TYPE, NEXUS_BASE_URL } from '../../constants';
 import { initFromProfile } from '../../collectionCreate';
 import { makeCollectionId } from '../../util/transformCollection';
 
@@ -186,8 +186,12 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   private openCollections = async () => {
-    const { game, profile } = this.props;
-    const { api } = this.context;
+    const { game } = this.props;
+
+    util.opn(`${NEXUS_BASE_URL}/${(util as any).nexusGameId(game)}/collections`)
+
+
+    /*
     const collections: ICollection[] =
       (await api.emitAndAwait('get-nexus-collections', (util as any).nexusGameId(game)))[0];
     if ((collections === undefined) || (collections.length === 0)) {
@@ -237,6 +241,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         }
       }
     }
+    */
   }
 
   private refreshImages() {
