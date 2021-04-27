@@ -294,12 +294,16 @@ $collection-thumbnail-height: 288px;
     bottom: 6%;
     left: 1em;
     right: 1em;
-
     display: flex;
+
     flex-direction: column;
 
     .name {
       @extend .h3;
+
+      .btn {
+        @extend .btn-embed;
+      }
     }
 
     .details {
@@ -309,6 +313,24 @@ $collection-thumbnail-height: 288px;
 
       > *:not(:first-child) {
         margin-left: 1em;
+      }
+    }
+  }
+
+  &:hover {
+    .bottom {
+      &.editable {
+        &.no-hover {
+          display: none;
+        }
+      }
+    }
+  }
+
+  &:not(:hover) {
+    .bottom {
+      &.hover {
+        display: none;
       }
     }
   }
@@ -359,9 +381,18 @@ $collection-thumbnail-height: 288px;
       align-items: center;
       margin-left: auto;
       margin-right: auto;
-      justify-content: center;
+      margin-top: 5em;
+      // justify-content: center;
       > .btn {
         justify-content: center;
+      }
+    }
+
+    .collection-name {
+      display: flex;
+      .form-control {
+        font-family: $font-family-base;
+        font-size: medium;
       }
     }
   }

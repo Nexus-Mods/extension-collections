@@ -21,6 +21,8 @@ import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, ComponentEx, FlexLayout, types, util } from 'vortex-api';
 
+const INIT_PAGE = 'mods';
+
 export interface ICollectionEditBaseProps {
   profile: types.IProfile;
   collection: types.IMod;
@@ -62,7 +64,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     super(props);
 
     this.initState({
-      page: 'info',
+      page: INIT_PAGE,
       collectionInfo: emptyCollectionInfo,
       collectionMods: {},
       collectionRules: [],
@@ -102,6 +104,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
         </FlexLayout.Fixed>
         <FlexLayout.Flex>
           <Tabs id='collection-edit-tabs' activeKey={page} onSelect={this.setCurrentPage}>
+            {/*
             <Tab key='info' eventKey='info' title={t('Info')}>
               <Panel>
                 <InfoPage
@@ -111,6 +114,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 />
               </Panel>
             </Tab>
+            */}
             <Tab
               key='mods'
               eventKey='mods'
@@ -161,7 +165,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 
   private async updateState(props: ICollectionEditProps) {
-    this.nextState.page = 'info';
+    this.nextState.page = INIT_PAGE;
     if (props.collection !== undefined) {
       const { collection, mods } = props;
 

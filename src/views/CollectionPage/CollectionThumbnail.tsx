@@ -2,9 +2,10 @@ import * as Promise from 'bluebird';
 import I18next from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
-import { Image as BSImage, Panel } from 'react-bootstrap';
+import { FormControl, Image as BSImage, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { Icon, IconBar, Image, PureComponentEx, selectors, types, util } from 'vortex-api';
+import * as Redux from 'redux';
+import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 
@@ -29,12 +30,71 @@ interface IConnectedProps {
   profile: types.IProfile;
 }
 
-type IProps = IBaseProps & IConnectedProps;
+interface IActionProps {
+  onSetModAttribute: (gameId: string, modId: string, key: string, value: any) => void;
+}
+
+type IProps = IBaseProps & IConnectedProps & IActionProps;
+
+interface IModNameFieldProps {
+  t: types.TFunction;
+  name: string;
+  onChange: (name: string) => void;
+}
+
+function ModNameField(props: IModNameFieldProps) {
+  const { t, name, onChange } = props;
+
+  const [editing, setEditing] = React.useState(false);
+  const [tempName, setTempName] = React.useState(name);
+
+  const changeInput = React.useCallback((evt: React.FormEvent<any>) => {
+    setTempName(evt.currentTarget.value);
+  }, [setTempName]);
+
+  const apply = React.useCallback(() => {
+    onChange(tempName);
+    setEditing(false);
+  }, [setEditing, tempName]);
+
+  const keyPress = React.useCallback((evt: React.KeyboardEvent<any>) => {
+    if (evt.key === 'Enter') {
+      apply();
+    }
+  }, []);
+
+  const startEdit = React.useCallback(() => {
+    setEditing(true);
+  }, [setEditing]);
+
+  return (
+    <div className='collection-name'>
+      {editing ? (
+        <>
+          <FormControl
+            type='text'
+            value={tempName}
+            placeholder={t('Collection Name')}
+            onChange={changeInput}
+            autoFocus={true}
+            onKeyPress={keyPress}
+          />
+          <tooltip.IconButton icon='input-confirm' tooltip={t('Save name')} onClick={apply} />
+        </>
+      ) : (
+        <>
+          {tempName}
+          <tooltip.IconButton icon='edit' tooltip={t('Change name')} onClick={startEdit} />
+        </>
+      )}
+    </div>
+  );
+}
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   public render(): JSX.Element {
     const { t, collection, details, imageTime,
-            incomplete, mods, profile, stagingPath } = this.props;
+            incomplete, mods, onEdit, profile, stagingPath } = this.props;
 
     if (collection === undefined) {
       return null;
@@ -43,10 +103,10 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     const logoPath = path.join(stagingPath, collection.installationPath, 'logo.jpg');
     const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);
 
-    const refMods = (collection.rules ?? [])
+    const refMods: types.IModRule[] = (collection.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
 
-    const totalSize = Object.values(collection.rules ?? []).reduce((prev, rule) => {
+    const totalSize: number = Object.values(collection.rules ?? []).reduce((prev, rule) => {
       if (rule.reference.fileSize !== undefined) {
         return prev + rule.reference.fileSize;
       } else if ((rule.reference.id !== undefined) && (mods !== undefined)) {
@@ -87,7 +147,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             />
           ) : null}
           {details ? (
-            <div className='bottom'>
+            <div className={`bottom ${onEdit !== undefined ? 'editable' : ''} no-hover`}>
               <div className='name'>
                 {util.renderModName(collection, { version: false })}
               </div>
@@ -104,7 +164,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           ) : null}
           {(this.actions.length > 0) ? (
             <div className='hover-menu'>
-              {this.renderMenu()}
+              {this.renderMenu(refMods, totalSize)}
             </div>
           ) : null}
         </Panel.Body>
@@ -155,16 +215,16 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     return result;
   }
 
-  private renderMenu(): JSX.Element[] {
-    const { t, collection: mod } = this.props;
+  private renderMenu(refMods: types.IModRule[], totalSize: number): JSX.Element[] {
+    const { t, collection, onEdit } = this.props;
 
     return [(
       <div key='primary-buttons' className='hover-content'>
         <IconBar
-          id={`collection-thumbnail-${mod.id}`}
+          id={`collection-thumbnail-${collection.id}`}
           className='buttons'
           group={`collection-actions`}
-          instanceId={mod.id}
+          instanceId={collection.id}
           staticElements={this.actions}
           collapse={false}
           buttonType='text'
@@ -172,8 +232,35 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           clickAnywhere={true}
           t={t}
         />
+
+        <div className='bottom hover'>
+          {onEdit !== undefined ? (
+          <div className='name'>
+            <ModNameField
+              t={t}
+              name={util.renderModName(collection, { version: false })}
+              onChange={this.changeName}
+            />
+          </div>
+          ) : null}
+          <div className='details'>
+            <div><Icon name='mods' />{refMods.length}</div>
+            <div><Icon name='archive' />{util.bytesToString(totalSize)}</div>
+            <div className='revision-number'>
+              {t('Revision {{number}}', { replace: {
+                number: collection.attributes.version ?? '0',
+              } })}
+            </div>
+          </div>
+        </div>
       </div>
     )];
+  }
+
+  private changeName = (name: string) => {
+    const { collection, onSetModAttribute, profile } = this.props;
+
+    onSetModAttribute(profile.gameId, collection.id, 'customFileName', name);
   }
 }
 
@@ -186,6 +273,13 @@ function mapStateToProps(state: types.IState, ownProps: IBaseProps): IConnectedP
   };
 }
 
+function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
+  return {
+    onSetModAttribute: (gameId: string, modId: string, key: string, value: any) =>
+      dispatch(actions.setModAttribute(gameId, modId, key, value)),
+  };
+}
+
 export default
-  connect(mapStateToProps)(
+  connect(mapStateToProps, mapDispatchToProps)(
     CollectionThumbnail) as React.ComponentType<IBaseProps>;
