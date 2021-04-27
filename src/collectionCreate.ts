@@ -29,14 +29,16 @@ export function addCollectionCondition(api: types.IExtensionApi, instanceIds: st
   const mods = state.persistent.mods[gameId];
   return Object.keys(mods)
     .find(collectionId => {
-      if (mods[collectionId].type !== MOD_TYPE) {
+      if ((mods[collectionId].type !== MOD_TYPE)
+          || (mods[collectionId].attributes?.editable !== true)) {
         return false;
       }
 
       const rules = mods[collectionId].rules ?? [];
 
       // only offer the option if there is at least one mod assigned to a collection
-      return instanceIds.find(modId => !alreadyIncluded(rules, modId)) !== undefined;
+      return instanceIds.find(modId =>
+        !alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) !== undefined;
     }) !== undefined;
 }
 
@@ -46,7 +48,8 @@ export function removeCollectionCondition(api: types.IExtensionApi, instanceIds:
   const mods = state.persistent.mods[gameId];
   return Object.keys(mods)
     .find(collectionId => {
-      if (mods[collectionId].type !== MOD_TYPE) {
+      if ((mods[collectionId].type !== MOD_TYPE)
+          || (mods[collectionId].attributes?.editable !== true)) {
         return false;
       }
 
@@ -64,11 +67,15 @@ export function alreadyIncluded(rules, modId): boolean {
 export function addCollectionAction(api: types.IExtensionApi, instanceIds: string[]) {
   const state = api.getState();
   const gameId = selectors.activeGameId(state);
+
   const mods = state.persistent.mods[gameId];
+
+  const filtered = instanceIds.filter(modId => (mods[modId].type !== MOD_TYPE));
+
   const collections = Object.keys(mods)
     .filter(collectionId => {
       if ((mods[collectionId].type !== MOD_TYPE)
-          || (mods[collectionId].attributes?.editable === false)) {
+          || (mods[collectionId].attributes?.editable !== true)) {
         return false;
       }
 
@@ -76,12 +83,12 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
 
       // only offer the option if there is at least one mod selected that is not
       // already in that collection
-      return instanceIds.find(modId => !alreadyIncluded(rules, modId)) !== undefined;
+      return filtered.find(modId => !alreadyIncluded(rules, modId)) !== undefined;
     });
 
   return api.showDialog('question', 'Add Mods to Collection', {
     text: 'Please select the collection to add the mods to',
-    message: instanceIds.map(modId => util.renderModName(mods[modId])).join('\n'),
+    message: filtered.map(modId => util.renderModName(mods[modId])).join('\n'),
     choices: collections.map((modId, idx) => ({
       id: modId,
       text: util.renderModName(mods[modId]),
@@ -96,8 +103,8 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
         const collectionId = Object.keys(result.input).find(target => result.input[target]);
         const rules = mods[collectionId].rules ?? [];
 
-        instanceIds.forEach(modId => {
-          if (!alreadyIncluded(rules, modId)) {
+        filtered.forEach(modId => {
+          if (!alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) {
             api.store.dispatch(actions.addModRule(gameId, collectionId, {
               type: 'requires',
               reference: {
@@ -117,7 +124,7 @@ export function removeCollectionAction(api: types.IExtensionApi, instanceIds: st
   const collections = Object.keys(mods)
     .filter(collectionId => {
       if ((mods[collectionId].type !== MOD_TYPE)
-          || (mods[collectionId].attributes?.editable === false)) {
+          || (mods[collectionId].attributes?.editable !== true)) {
         return false;
       }
 
