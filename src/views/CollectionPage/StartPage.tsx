@@ -163,7 +163,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                         disabled={profilePack !== undefined}
                         title={(profilePack !== undefined)
                           ? t('You already have a collection connected to this profile')
-                          : t('Foobar')}
+                          : t('Creates a collection from the mods in the active profile')}
                       >
                         {t('From current profile ({{profileName}})', {
                           replace: {
