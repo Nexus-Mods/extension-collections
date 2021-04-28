@@ -110,7 +110,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       if (rule.reference.fileSize !== undefined) {
         return prev + rule.reference.fileSize;
       } else if ((rule.reference.id !== undefined) && (mods !== undefined)) {
-        return prev + mods[rule.reference.id]?.attributes?.fileSize ?? 0;
+        return prev + (mods[rule.reference.id]?.attributes?.fileSize ?? 0);
       } else {
         return prev;
       }
