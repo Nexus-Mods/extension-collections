@@ -62,9 +62,11 @@ async function getIncludedPlugins(gameId: string,
   const includedPlugins: string[] = [];
 
   await Promise.all(modIds.map(async modId => {
-    const files = await fs.readdirAsync(path.join(stagingPath, mods[modId].installationPath));
-    const plugins = files.filter(fileName => extensions.has(path.extname(fileName).toLowerCase()));
-    includedPlugins.push(...plugins);
+    if (mods[modId] !== undefined) {
+      const files = await fs.readdirAsync(path.join(stagingPath, mods[modId].installationPath));
+      const plugins = files.filter(fileName => extensions.has(path.extname(fileName).toLowerCase()));
+      includedPlugins.push(...plugins);
+    }
   }));
 
   return includedPlugins;
