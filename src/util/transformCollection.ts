@@ -503,7 +503,7 @@ export async function createCollection(api: types.IExtensionApi,
     state: 'installed',
     attributes: {
       name,
-      version: '1.0.0',
+      version: '0',
       installTime: new Date(),
       author: state.persistent['nexus']?.userInfo?.name ?? 'Anonymous',
       editable: true,
