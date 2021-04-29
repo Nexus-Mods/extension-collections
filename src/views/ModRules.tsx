@@ -26,12 +26,6 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     });
   }
 
-  public componentWillReceiveProps(newProps: IProps) {
-    if (newProps.mods !== this.props.mods) {
-      // nop
-    }
-  }
-
   public render(): React.ReactNode {
     const { t, collection, rules } = this.props;
 

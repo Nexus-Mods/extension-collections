@@ -72,7 +72,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }
   }
 
-  public componentWillReceiveProps(newProps: ICollectionsMainPageProps) {
+  public UNSAFE_componentWillReceiveProps(newProps: ICollectionsMainPageProps) {
     if (this.props.mods !== newProps.mods) {
       this.nextState.matchedReferences = this.updateMatchedReferences(newProps);
     }

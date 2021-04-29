@@ -76,7 +76,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     this.updateState(this.props);
   }
 
-  public componentWillReceiveProps(newProps: ICollectionEditProps) {
+  public UNSAFE_componentWillReceiveProps(newProps: ICollectionEditProps) {
     if (util.getSafe(newProps.collection, ['id'], undefined)
         !== util.getSafe(this.props.collection, ['id'], undefined)) {
       this.updateState(newProps);
@@ -190,11 +190,6 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
           this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
       }
     }
-  }
-
-  private setCollectionInfo = (key: string, value: any) => {
-    const { profile, collection, onSetModAttributes } = this.props;
-    onSetModAttributes(profile.gameId, collection.id, { [key]: value });
   }
 
   private setCurrentPage = (page: any) => {

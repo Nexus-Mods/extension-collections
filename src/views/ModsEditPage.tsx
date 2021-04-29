@@ -372,7 +372,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     this.nextState.problems = this.checkProblems(this.props, entries);
   }
 
-  public componentWillReceiveProps(newProps: IProps) {
+  public UNSAFE_componentWillReceiveProps(newProps: IProps) {
     if ((newProps.mods !== this.props.mods)
         || (newProps.collection !== this.props.collection)) {
       const entries = this.generateEntries(newProps);

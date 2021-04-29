@@ -108,7 +108,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
     });
   }
 
-  public componentWillMount() {
+  public componentDidMount() {
     this.refreshTweaks();
   }
 
