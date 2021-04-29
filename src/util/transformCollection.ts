@@ -9,6 +9,7 @@ import { renderReference, ruleId } from './util';
 import * as _ from 'lodash';
 import Zip = require('node-7z');
 import * as path from 'path';
+import * as Redux from 'redux';
 import * as semver from 'semver';
 import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
@@ -538,18 +539,21 @@ function updateCollection(api: types.IExtensionApi,
 
   const removedRules: types.IModRule[] = [];
   // remove rules not found in newRules
-  mod.rules.forEach(rule => {
-    if (newRules.find(iter => _.isEqual(rule, iter)) === undefined) {
-      removedRules.push(rule);
-      api.store.dispatch(actions.removeModRule(gameId, mod.id, rule));
-    }
-  });
+  util.batchDispatch(api.store, mod.rules.reduce((prev: Redux.Action[], rule: types.IModRule) => {
+      if (newRules.find(iter => _.isEqual(rule, iter)) === undefined) {
+        removedRules.push(rule);
+        prev.push(actions.removeModRule(gameId, mod.id, rule));
+      }
+      return prev;
+    }, []));
   // add rules not found in the old list
-  newRules.forEach(rule => {
+
+  util.batchDispatch(api.store, newRules.reduce((prev: Redux.Action[], rule: types.IModRule) => {
     if (mod.rules.find(iter => _.isEqual(rule, iter)) === undefined) {
-      api.store.dispatch(actions.addModRule(gameId, mod.id, rule));
+      prev.push(actions.addModRule(gameId, mod.id, rule));
     }
-  });
+    return prev;
+  }, []));
 }
 
 export async function createCollectionFromProfile(api: types.IExtensionApi,

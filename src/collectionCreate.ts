@@ -1,6 +1,7 @@
 import { MOD_TYPE } from './constants';
 import { createCollectionFromProfile } from './util/transformCollection';
 
+import * as Redux from 'redux';
 import { actions, selectors, types, util } from 'vortex-api';
 
 export async function initFromProfile(api: types.IExtensionApi, profileId: string) {
@@ -103,16 +104,17 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
         const collectionId = Object.keys(result.input).find(target => result.input[target]);
         const rules = mods[collectionId].rules ?? [];
 
-        filtered.forEach(modId => {
+        util.batchDispatch(api.store, filtered.reduce((prev: Redux.Action[], modId: string) => {
           if (!alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) {
-            api.store.dispatch(actions.addModRule(gameId, collectionId, {
+            prev.push(actions.addModRule(gameId, collectionId, {
               type: 'requires',
               reference: {
                 id: modId,
               },
             }));
           }
-        });
+          return prev;
+        }, []));
       }
     });
 }
@@ -151,16 +153,17 @@ export function removeCollectionAction(api: types.IExtensionApi, instanceIds: st
         const collectionId = Object.keys(result.input).find(target => result.input[target]);
         const rules = mods[collectionId].rules ?? [];
 
-        instanceIds.forEach(modId => {
+        util.batchDispatch(api.store, instanceIds.reduce((prev: Redux.Action[], modId: string) => {
           if (alreadyIncluded(rules, modId)) {
-            api.store.dispatch(actions.removeModRule(gameId, collectionId, {
+            prev.push(actions.removeModRule(gameId, collectionId, {
               type: 'requires',
               reference: {
                 id: modId,
               },
             }));
           }
-        });
+          return prev;
+        }, []));
       }
     });
 }
