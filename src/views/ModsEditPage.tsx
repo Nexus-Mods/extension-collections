@@ -417,7 +417,11 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           staticElements={this.mColumns}
           actions={this.mActions}
           showDetails={false}
-        />
+        >
+          <div id='collection-add-mods-container'>
+            {addModsButton()}
+          </div>
+        </Table>
         <Usage infoId='collection-mods'>
           <p>{t('Here you can configure which mods to install and how.')}</p>
           <p>{t('Version: Choose whether the collection will install exactly the version you '
@@ -440,7 +444,6 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
             + 'do so.')}
           </p>
         </Usage>
-        {addModsButton()}
       </div>
     );
   }

@@ -68,10 +68,15 @@ $collection-thumbnail-height: 288px;
   .btn {
     margin: auto 1em;
 
-    &:first-child {
+    &:first-of-type {
       margin-left: 2rem;
     }
   }
+}
+
+#collection-add-mods-container {
+  display: flex;
+  justify-content: center;
 }
 
 #collection-edit-tabs-pane-mod-rules > div {
