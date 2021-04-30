@@ -61,7 +61,7 @@ function ModNameField(props: IModNameFieldProps) {
     if (evt.key === 'Enter') {
       apply();
     }
-  }, []);
+  }, [apply]);
 
   const startEdit = React.useCallback(() => {
     setEditing(true);
