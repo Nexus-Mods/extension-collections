@@ -151,7 +151,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 </Panel>
               </Tab>
             ) : null}
-            {(Interface !== undefined) ? (
+            {!!Interface ? (
               <Tab key='gamespecific' eventKey='gamespecific' title={game.name}>
                 <Panel>
                   <Interface t={t} collection={collection} revisionInfo={revision} />
