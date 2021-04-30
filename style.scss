@@ -58,6 +58,18 @@ $collection-thumbnail-height: 288px;
   }
 }
 
+.collection-edit-header {
+  h3 {
+    margin-top: auto;
+    margin-bottom: auto;
+    padding-right: 1em;
+    border-right: $border-width solid $border-color;
+  }
+  .btn {
+    margin: auto 1em;
+  }
+}
+
 #collection-edit-tabs-pane-mod-rules > div {
   height: 100%;
   width: 100%;

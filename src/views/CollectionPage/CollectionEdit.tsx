@@ -19,7 +19,7 @@ import { Badge, Panel, Tab, Tabs } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, ComponentEx, FlexLayout, types, util } from 'vortex-api';
+import { actions, ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 
 const INIT_PAGE = 'mods';
 
@@ -28,6 +28,8 @@ export interface ICollectionEditBaseProps {
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   driver: InstallDriver;
+  onRemove: (modId: string) => void;
+  onUpload: (modId: string) => void;
 }
 
 interface IConnectedProps {
@@ -99,7 +101,23 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     return (
       <FlexLayout type='column'>
         <FlexLayout.Fixed className='collection-edit-header'>
-          <h3>{t('Edit Collection')} / {util.renderModName(collection)}</h3>
+          <FlexLayout type='row'>
+            <h3>{t('Edit Collection')} / {util.renderModName(collection)}</h3>
+            <tooltip.IconButton
+              icon='delete'
+              tooltip={t('Remove this collection')}
+              onClick={this.remove}
+            >
+              {t('Remove')}
+            </tooltip.IconButton>
+            <tooltip.IconButton
+              icon='collection-export'
+              tooltip={t('Upload to Nexus Mods')}
+              onClick={this.upload}
+            >
+              {t('Upload')}
+            </tooltip.IconButton>
+          </FlexLayout>
           {t('Set up your mod collection\'s rules and site preferences.')}
         </FlexLayout.Fixed>
         <FlexLayout.Flex>
@@ -194,6 +212,16 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
   private setCurrentPage = (page: any) => {
     this.nextState.page = page;
+  }
+
+  private remove = () => {
+    const { collection, onRemove } = this.props;
+    onRemove(collection.id);
+  }
+
+  private upload = () => {
+    const { collection, onUpload } = this.props;
+    onUpload(collection.id);
   }
 
   private addRule = (rule: types.IModRule) => {
