@@ -202,11 +202,15 @@ async function rulesToCollectionMods(collection: types.IMod,
         ? util.getGame(mod.attributes.downloadGame)
         : game;
 
+      // workaround where Vortex has no support for the game this download came from
+      const domainName = (dlGame !== undefined)
+        ? util.nexusGameId(dlGame) : mod.attributes?.downloadGame;
+
       const res: ICollectionMod = {
         name: modName,
         version: mod.attributes?.version ?? '1.0.0',
         optional: rule.type === 'recommends',
-        domainName: (util as any).nexusGameId(dlGame),
+        domainName,
         source,
         hashes,
         choices,
