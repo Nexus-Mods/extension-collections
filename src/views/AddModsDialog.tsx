@@ -83,7 +83,7 @@ function AddModsDialog(props: IAddModsDialogProps) {
     : undefined;
 
   const mods = state.persistent.mods[gameId];
-  const modsWithState = React.useMemo(() => Object.keys(mods)
+  const modsWithState = React.useMemo(() => Object.keys(mods ?? {})
     .reduce((prev, modId) => {
       if (!alreadyIncluded(collection?.rules, modId)) {
         prev[modId] = {

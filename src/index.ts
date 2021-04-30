@@ -271,11 +271,11 @@ function register(context: types.IExtensionContext,
     isToggleable: true,
     edit: {},
     filter: new OptionsFilter((() =>
-      collectionOptions(state().persistent.mods[selectors.activeGameId(state())])) as any,
+      collectionOptions(state().persistent.mods[selectors.activeGameId(state())] ?? {})) as any,
       false, false),
     isGroupable: true,
     groupName: (modId: string) =>
-      util.renderModName(state().persistent.mods[selectors.activeGameId(state())][modId]),
+      util.renderModName(state().persistent.mods[selectors.activeGameId(state())]?.[modId]),
     isDefaultVisible: false,
   };
   context.registerTableAttribute('mods', collectionAttribute);
