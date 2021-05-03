@@ -2,6 +2,8 @@ import * as gamebryo from './gamebryo';
 
 import { log, types, util } from 'vortex-api';
 import { ICollection } from '../../types/ICollection';
+import { IGameSpecificInterfaceProps } from '../../types/IGameSpecificInterfaceProps';
+import { IGameSupportEntry } from '../../types/IGameSupportEntry';
 
 const gameSupport = {
     skyrim: {
@@ -54,8 +56,8 @@ const gameSupport = {
     },
 };
 
-export function addGameSupport(entry: types.ICollectionsGameSupportEntry) {
-  if ((entry as types.ICollectionsGameSupportEntry) === undefined) {
+export function addGameSupport(entry: IGameSupportEntry) {
+  if ((entry as IGameSupportEntry) === undefined) {
     throw new util.DataInvalid('Failed attempt to add gamesupport entry - invalid argument');
   }
 
@@ -101,7 +103,7 @@ export function parseGameSpecifics(api: types.IExtensionApi,
   }
 }
 
-export function getInterface(gameId: string): React.ComponentType<types.IGameSpecificInterfaceProps> {
+export function getInterface(gameId: string): React.ComponentType<IGameSpecificInterfaceProps> {
   if (gameSupport[gameId] === undefined) {
     return null;
   } else {

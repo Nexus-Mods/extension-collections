@@ -3,6 +3,7 @@ import React = require('react');
 import { Button, ControlLabel, Table } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
 import { fs, Icon, selectors, Spinner, tooltip, types, util } from 'vortex-api';
+import { IGameSpecificInterfaceProps } from '../../types/IGameSpecificInterfaceProps';
 
 interface IGamebryoLO {
   name: string;
@@ -280,7 +281,7 @@ export function PluginRule(props: IPluginRuleProps) {
   );
 }
 
-export function Interface(props: types.IGameSpecificInterfaceProps): JSX.Element {
+export function Interface(props: IGameSpecificInterfaceProps): JSX.Element {
   const { t, collection } = props;
 
   const [pluginRules, setPluginRules] = React.useState<IRule[]>(null);
