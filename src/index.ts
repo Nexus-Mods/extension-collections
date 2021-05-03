@@ -29,7 +29,6 @@ import * as React from 'react';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
-import { IGameSupportEntry } from './types/IGameSupportEntry';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -351,7 +350,7 @@ function register(context: types.IExtensionContext,
 
   context.registerInstaller('collection', 5, bbProm(testSupported), bbProm(install));
 
-  context.registerGameSpecificCollectionsData = ((gameSupportEntry: IGameSupportEntry) => {
+  context.registerGameSpecificCollectionsData = ((gameSupportEntry: types.ICollectionsGameSupportEntry) => {
     try {
       addGameSupport(gameSupportEntry);
     } catch (err) {
@@ -360,7 +359,7 @@ function register(context: types.IExtensionContext,
   }) as any;
 
   context.registerAPI('addGameSpecificCollectionsData',
-    (gameSupportEntry: IGameSupportEntry, cb?: (err: Error) => void) => {
+    (gameSupportEntry: types.ICollectionsGameSupportEntry, cb?: (err: Error) => void) => {
     try {
       addGameSupport(gameSupportEntry);
     } catch (err) {
