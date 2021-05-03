@@ -66,10 +66,8 @@ export function addGameSupport(entry: IGameSupportEntry) {
   }
 
   gameSupport[entry.gameId] = {
-    generator: (state, gameId, stagingPath, modIds, mods) =>
-      entry.generator({ state, gameId, stagingPath, modIds, mods }),
-    parser: (api, gameId, collection) =>
-      entry.parser({ api, gameId, collection }),
+    generator: entry.generator,
+    parser: entry.parser,
     interface: (props) => entry.interface(props),
   };
 }
