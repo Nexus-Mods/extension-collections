@@ -1,8 +1,9 @@
 import * as gamebryo from './gamebryo';
 
-import { types } from 'vortex-api';
+import { log, types, util } from 'vortex-api';
 import { ICollection } from '../../types/ICollection';
 import { IGameSpecificInterfaceProps } from '../../types/IGameSpecificInterfaceProps';
+import { IGameSupportEntry } from '../../types/IGameSupportEntry';
 
 const gameSupport = {
     skyrim: {
@@ -54,6 +55,24 @@ const gameSupport = {
         interface: gamebryo.Interface,
     },
 };
+
+export function addGameSupport(entry: IGameSupportEntry) {
+  if ((entry as IGameSupportEntry) === undefined) {
+    throw new util.DataInvalid('Failed attempt to add gamesupport entry - invalid argument');
+  }
+
+  if (gameSupport[entry.gameId] !== undefined) {
+    return;
+  }
+
+  gameSupport[entry.gameId] = {
+    generator: (state, gameId, stagingPath, modIds, mods) =>
+      entry.generator({ state, gameId, stagingPath, modIds, mods }),
+    parser: (api, gameId, collection) =>
+      entry.parser({ api, gameId, collection }),
+    interface: (props) => entry.interface(props),
+  };
+}
 
 export function getIniFiles(gameId: string): string[] {
   if (gameSupport[gameId] === undefined) {
