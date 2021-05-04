@@ -831,6 +831,10 @@ $collection-thumbnail-height: 288px;
 .mod-modtype-collection {
   background: rgba(255, 215, 0, 0.1);
 
+  .table-sort-column {
+    background: rgba(255, 215, 0, 0.1);
+  }
+
   >.cell-name {
     &::before {
       content: '';

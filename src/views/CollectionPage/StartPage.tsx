@@ -4,7 +4,6 @@ import { makeCollectionId } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
-import { ICollection, IDownloadURL } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
@@ -18,7 +17,7 @@ export interface IStartPageProps {
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
   onEdit: (modId: string) => void;
-  onPublish: (modId: string) => void;
+  onUpload: (modId: string) => void;
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
   onResume: (modId: string) => void;
@@ -61,7 +60,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, profile, matchedReferences, mods, onEdit, onPublish,
+    const { t, profile, matchedReferences, mods, onEdit, onUpload,
             onRemove, onResume, onView } = this.props;
     const { createOpen, imageTime } = this.state;
 
@@ -133,7 +132,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                   onEdit={onEdit}
                   onView={onView}
                   onRemove={onRemove}
-                  onPublish={onPublish}
+                  onUpload={onUpload}
                   onResume={onResume}
                   details={true}
                 />)}

@@ -22,7 +22,7 @@ export interface IBaseProps {
   onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
-  onPublish?: (modId: string) => void;
+  onUpload?: (modId: string) => void;
 }
 
 interface IConnectedProps {
@@ -173,7 +173,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   private get actions() {
-    const { collection, incomplete, onEdit, onPublish, onRemove, onResume, onView } = this.props;
+    const { collection, incomplete, onEdit, onUpload, onRemove, onResume, onView } = this.props;
 
     const result = [];
 
@@ -204,11 +204,11 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       });
     }
 
-    if (onPublish) {
+    if (onUpload) {
       result.push({
-        title: collection.attributes?.collectionId !== undefined ? 'Update' : 'Publish',
+        title: collection.attributes?.collectionId !== undefined ? 'Update' : 'Upload',
         icon: 'clone',
-        action: (instanceIds: string[]) => onPublish(instanceIds[0]),
+        action: (instanceIds: string[]) => onUpload(instanceIds[0]),
       });
     }
 

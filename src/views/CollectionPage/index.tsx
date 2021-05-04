@@ -99,7 +99,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           onView={this.view}
           onEdit={this.edit}
           onRemove={this.remove}
-          onPublish={this.publish}
+          onUpload={this.upload}
           onCreateCollection={this.createCollection}
           onResume={this.resume}
         />
@@ -141,6 +141,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   collection={collection}
                   mods={mods}
                   driver={this.props.driver}
+                  onRemove={this.remove}
+                  onUpload={this.upload}
                 />
               )}
           </FlexLayout.Flex>
@@ -205,7 +207,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         collectionName: util.renderModName(mods[modId]),
       },
       checkboxes: [
-        { id: 'delete', text: t('Delete installed mods'), value: false },
+        { id: 'delete', text: t('Remove installed mods'), value: false },
       ],
     }, [
       { label: 'Cancel' },
@@ -293,7 +295,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       'Are you sure you want to remove the collection "{{collectionName}}"?');
   }
 
-  private publish = async (modId: string) => {
+  private upload = async (modId: string) => {
     const { mods, profile } = this.props;
 
     const { api } = this.context;
@@ -310,10 +312,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       },
     }, [
       { label: 'Cancel' },
-      { label: 'Publish' },
+      { label: 'Upload' },
     ]);
 
-    if (choice.action === 'Publish') {
+    if (choice.action === 'Upload') {
       try {
         const collectionId = await doExportToAPI(api, profile.gameId, modId);
         if (collectionId !== undefined) {
