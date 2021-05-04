@@ -2,6 +2,7 @@ import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
+import { addGameSupport } from './util/gameSupport/index';
 import InstallDriver from './util/InstallDriver';
 import { createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
@@ -28,6 +29,7 @@ import * as React from 'react';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
+import { IGameSupportEntry } from './types/IGameSupportEntry';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -348,6 +350,27 @@ function register(context: types.IExtensionContext,
   context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
 
   context.registerInstaller('collection', 5, bbProm(testSupported), bbProm(install));
+
+  context.registerGameSpecificCollectionsData = ((gameSupportEntry: IGameSupportEntry) => {
+    try {
+      addGameSupport(gameSupportEntry);
+    } catch (err) {
+      context.api.showErrorNotification('Failed to add game specific data to collection', err);
+    }
+  }) as any;
+
+  context.registerAPI('addGameSpecificCollectionsData',
+    (gameSupportEntry: IGameSupportEntry, cb?: (err: Error) => void) => {
+    try {
+      addGameSupport(gameSupportEntry);
+    } catch (err) {
+      if (cb) {
+        cb(err);
+      } else {
+        context.api.showErrorNotification('Failed to add game specific data to collection', err);
+      }
+    }
+  }, { minArguments: 1 });
 }
 
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
