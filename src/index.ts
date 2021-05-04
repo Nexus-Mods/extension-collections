@@ -351,7 +351,7 @@ function register(context: types.IExtensionContext,
 
   context.registerInstaller('collection', 5, bbProm(testSupported), bbProm(install));
 
-  context.registerGameSpecificCollectionsData = ((gameSupportEntry: IGameSupportEntry) => {
+  context['registerGameSpecificCollectionsData'] = ((gameSupportEntry: IGameSupportEntry) => {
     try {
       addGameSupport(gameSupportEntry);
     } catch (err) {
