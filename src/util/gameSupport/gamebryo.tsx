@@ -3,7 +3,7 @@ import React = require('react');
 import { Button, ControlLabel, Table } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
 import { fs, Icon, selectors, Spinner, tooltip, types, util } from 'vortex-api';
-import { IGameSpecificInterfaceProps } from '../../types/IGameSpecificInterfaceProps';
+import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 
 interface IGamebryoLO {
   name: string;
@@ -283,7 +283,7 @@ export function PluginRule(props: IPluginRuleProps) {
   );
 }
 
-export function Interface(props: IGameSpecificInterfaceProps): JSX.Element {
+export function Interface(props: IExtendedInterfaceProps): JSX.Element {
   const { t, collection } = props;
 
   const [pluginRules, setPluginRules] = React.useState<IRule[]>(null);
@@ -306,7 +306,7 @@ export function Interface(props: IGameSpecificInterfaceProps): JSX.Element {
       .then(plugins => {
         const pluginsL = plugins.map(plug => plug.toLowerCase());
         const rules = plugins.reduce((prev: IRule[], plugin: string) => {
-          const plug: ILOOTPlugin = userlist.plugins
+          const plug: ILOOTPlugin = (userlist?.plugins ?? [])
             .find(iter => iter.name.toLowerCase() === plugin.toLowerCase());
 
           const byRef = (name: string | ILootReference): boolean => pluginsL.includes(ruleId(name));

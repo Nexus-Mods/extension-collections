@@ -1,6 +1,7 @@
 import { ICollectionInfo, ICollectionModRule } from '../../types/ICollection';
+import { IExtensionFeature } from '../../util/extension';
 import { findModByRef } from '../../util/findModByRef';
-import { getIniFiles, getInterface } from '../../util/gameSupport';
+import { getInterface } from '../../util/gameSupport';
 import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
 
@@ -8,8 +9,6 @@ import { NAMESPACE } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
-import InfoPage from '../InfoPage';
-import IniTweaks from '../IniTweaks';
 import ModRules from '../ModRules';
 import ModsEditPage from '../ModsEditPage';
 
@@ -28,6 +27,7 @@ export interface ICollectionEditBaseProps {
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   driver: InstallDriver;
+  exts: IExtensionFeature[];
   onRemove: (modId: string) => void;
   onUpload: (modId: string) => void;
 }
@@ -86,7 +86,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 
   public render(): React.ReactNode {
-    const { t, mods, collection, profile } = this.props;
+    const { t, mods, collection, exts, profile } = this.props;
     const { page, revision } = this.state;
 
     if (profile === undefined) {
@@ -95,7 +95,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     const game = util.getGame(profile.gameId);
 
-    const iniFiles = getIniFiles(profile.gameId);
+    const extInterfaces = exts.filter(ext => ext.editComponent !== undefined);
+
     const Interface = getInterface(profile.gameId);
 
     return (
@@ -122,17 +123,6 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
         </FlexLayout.Fixed>
         <FlexLayout.Flex>
           <Tabs id='collection-edit-tabs' activeKey={page} onSelect={this.setCurrentPage}>
-            {/*
-            <Tab key='info' eventKey='info' title={t('Info')}>
-              <Panel>
-                <InfoPage
-                  t={t}
-                  collection={collection}
-                  onSetCollectionInfo={this.setCollectionInfo}
-                />
-              </Panel>
-            </Tab>
-            */}
             <Tab
               key='mods'
               eventKey='mods'
@@ -162,17 +152,27 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                 />
               </Panel>
             </Tab>
-            {((iniFiles || []).length > 0) ? (
-              <Tab key='ini-tweaks' eventKey='ini-tweaks' title={t('Ini Tweaks')}>
+            {extInterfaces.map(ext => (
+              <Tab key={ext.id} eventKey={ext.id} title={ext.title(t)}>
                 <Panel>
-                  <IniTweaks modId={collection !== undefined ? collection.id : undefined} />
+                  <ext.editComponent
+                    t={t}
+                    gameId={profile.gameId}
+                    collection={collection}
+                    revisionInfo={revision}
+                  />
                 </Panel>
               </Tab>
-            ) : null}
+            ))}
             {!!Interface ? (
               <Tab key='gamespecific' eventKey='gamespecific' title={game.name}>
                 <Panel>
-                  <Interface t={t} collection={collection} revisionInfo={revision} />
+                  <Interface
+                    t={t}
+                    gameId={profile.gameId}
+                    collection={collection}
+                    revisionInfo={revision}
+                  />
                 </Panel>
               </Tab>
             ) : null}

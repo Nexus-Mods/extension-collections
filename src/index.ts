@@ -2,6 +2,7 @@ import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
+import { addExtension } from './util/extension';
 import { addGameSupport } from './util/gameSupport/index';
 import InstallDriver from './util/InstallDriver';
 import { createCollection, makeCollectionId } from './util/transformCollection';
@@ -21,6 +22,7 @@ import {
 import { doExportToFile } from './collectionExport';
 import { install, postprocessCollection, testSupported } from './collectionInstall';
 import { onCollectionUpdate } from './eventHandlers';
+import initIniTweaks from './initweaks';
 
 import * as PromiseBB from 'bluebird';
 import memoize from 'memoize-one';
@@ -30,6 +32,7 @@ import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 import { IGameSupportEntry } from './types/IGameSupportEntry';
+import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -357,7 +360,17 @@ function register(context: types.IExtensionContext,
     } catch (err) {
       context.api.showErrorNotification('Failed to add game specific data to collection', err);
     }
-  }) as any;
+  });
+
+  context['registerCollectionFeature'] =
+    (id: string,
+     generate: (gameId: string, includedMods: string[]) => Promise<any>,
+     parse: (gameId: string, collection: any) => Promise<void>,
+     title: (t: types.TFunction) => string,
+     condition?: (state: types.IState, gameId: string) => boolean,
+     editComponent?: React.ComponentType<IExtendedInterfaceProps>) =>  {
+      addExtension({ id, generate, parse, condition, title, editComponent });
+    };
 
   context.registerAPI('addGameSpecificCollectionsData',
     (gameSupportEntry: IGameSupportEntry, cb?: (err: Error) => void) => {
@@ -494,6 +507,8 @@ function init(context: types.IExtensionContext): boolean {
   let collectionsCB: ICallbackMap;
 
   register(context, (callbacks: ICallbackMap) => collectionsCB = callbacks);
+
+  initIniTweaks(context);
 
   context.once(() => {
     once(context.api, () => collectionsCB);

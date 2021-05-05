@@ -2,6 +2,7 @@ import { BUNDLED_PATH, MOD_TYPE } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
          ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
+import { findExtensions, IExtensionFeature } from './extension';
 import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
@@ -432,6 +433,12 @@ export async function modToCollection(state: types.IState,
     return Promise.reject(new Error('Can only export collections that are fully installed'));
   }
 
+  const exts: IExtensionFeature[] = findExtensions(state, gameId);
+  const extData: any = {};
+  for (let ext of exts) {
+    Object.assign(extData, await ext.generate(gameId, includedMods));
+  }
+
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
   
   const game = util.getGame(gameId);
@@ -450,6 +457,7 @@ export async function modToCollection(state: types.IState,
                                       collection.attributes?.collection ?? {},
                                       onProgress, onError),
     modRules,
+    ...extData,
     ...gameSpecific,
   };
 

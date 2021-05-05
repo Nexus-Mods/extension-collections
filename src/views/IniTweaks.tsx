@@ -1,5 +1,5 @@
 import { NAMESPACE } from '../constants';
-import { getIniFiles } from '../util/gameSupport';
+import { IExtendedInterfaceProps } from '../types/IExtendedInterfaceProps';
 
 import * as Promise from 'bluebird';
 import I18next from 'i18next';
@@ -14,17 +14,17 @@ import { ThunkDispatch } from 'redux-thunk';
 import { actions, ComponentEx, fs, PureComponentEx, selectors,
          Toggle, types, util, Icon } from 'vortex-api';
 
+// TODO: overhaul me, this is doing direct fs operations
+
 // copy&paste from src/extensions/mod_management/InstallManager.ts
 const INI_TWEAKS_PATH = 'Ini Tweaks';
 
-interface IBaseProps {
-  modId: string;
+export interface IBaseProps extends  IExtendedInterfaceProps {
+  settingsFiles: string[];
 }
 
 interface IConnectedProps {
-  gameMode: string;
   modsPath: string;
-  mod: types.IMod;
 }
 
 interface IActionProps {
@@ -113,10 +113,10 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, mod } = this.props;
+    const { t, collection } = this.props;
     const { tweaks } = this.state;
 
-    if (mod === undefined) {
+    if (collection === undefined) {
       return null;
     }
 
@@ -153,14 +153,13 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private addIniTweak = () => {
-    const { gameMode, mod, modsPath } = this.props;
-    const files = getIniFiles(gameMode);
+    const { gameId, collection, modsPath, settingsFiles } = this.props;
     this.context.api.showDialog('question', 'Name', {
       text: 'Please enter a name for the ini tweak',
       input: [
         { id: 'name', type: 'text' },
       ],
-      choices: files.map((fileName, idx) => ({
+      choices: settingsFiles.map((fileName, idx) => ({
         text: fileName,
         value: idx === 0,
         id: fileName,
@@ -171,7 +170,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
       { label: 'Confirm' },
     ]).then(res => {
       if (res.action === 'Confirm') {
-        const tweaksPath = path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH);
+        const tweaksPath = path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH);
         let selectedIni = Object.keys(res.input)
           .find(key => (path.extname(key) === '.ini') && res.input[key] === true);
         if (selectedIni === undefined) {
@@ -191,13 +190,13 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderTweak = (fileName: string): JSX.Element => {
-    const { t, mod, modsPath } = this.props;
-    const isEnabled = util.getSafe(mod, ['enabledINITweaks'], []).indexOf(fileName) !== -1;
+    const { t, collection, modsPath } = this.props;
+    const isEnabled = util.getSafe(collection, ['enabledINITweaks'], []).indexOf(fileName) !== -1;
     return (
       <Tweak
         t={t}
         key={`tweak-${fileName}`}
-        tweaksPath={path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH)}
+        tweaksPath={path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH)}
         fileName={fileName}
         enabled={isEnabled}
         onToggle={this.toggle}
@@ -205,10 +204,10 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private refreshTweaks = () => {
-    const { mod, modsPath } = this.props;
+    const { collection, modsPath } = this.props;
 
-    if ((mod !== undefined) && (mod.installationPath !== undefined)) {
-      fs.readdirAsync(path.join(modsPath, mod.installationPath, INI_TWEAKS_PATH))
+    if ((collection !== undefined) && (collection.installationPath !== undefined)) {
+      fs.readdirAsync(path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH))
         .then((files: string[]) => {
           this.nextState.tweaks = files;
         })
@@ -217,17 +216,14 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private toggle = (fileName: string, enabled: boolean) => {
-    const { gameMode, mod, onSetINITweakEnabled } = this.props;
-    onSetINITweakEnabled(gameMode, mod.id, fileName, enabled);
+    const { collection, gameId, onSetINITweakEnabled } = this.props;
+    onSetINITweakEnabled(gameId, collection.id, fileName, enabled);
   }
 }
 
-function mapStateToProps(state: types.IState, ownProps: IBaseProps): IConnectedProps {
-  const gameMode = selectors.activeGameId(state);
+function mapStateToProps(state: types.IState, ownProps: IExtendedInterfaceProps): IConnectedProps {
   return {
-    gameMode,
     modsPath: selectors.installPath(state),
-    mod: util.getSafe(state, ['persistent', 'mods', gameMode, ownProps.modId], undefined),
   };
 }
 
@@ -241,8 +237,8 @@ function mapDispatchToProps(dispatch: ThunkDispatch<types.IState, null, Redux.Ac
   };
 }
 
-const TweakListConnected = withTranslation(['common', NAMESPACE])(
+const TweakListConnected = withTranslation([NAMESPACE, 'common'])(
   connect(mapStateToProps, mapDispatchToProps)(
-    TweakList) as any) as React.ComponentClass<IBaseProps>;
+    TweakList) as any) as React.ComponentType<IBaseProps>;
 
 export default TweakListConnected;

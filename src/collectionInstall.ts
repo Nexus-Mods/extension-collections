@@ -1,5 +1,6 @@
 import { ICollection } from './types/ICollection';
 
+import { findExtensions, IExtensionFeature } from './util/extension';
 import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
 import { collectionModToRule } from './util/transformCollection';
@@ -98,6 +99,12 @@ export async function postprocessCollection(api: types.IExtensionApi,
       api.store.dispatch(actions.addModRule(profile.gameId, sourceMod.id, rule));
     }
   });
+
+  const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
+
+  for (let ext of exts) {
+    await ext.parse(profile.gameId, collection);
+  }
 
   parseGameSpecifics(api, profile.gameId, collection);
 }

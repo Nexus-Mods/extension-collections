@@ -1,8 +1,8 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, NEXUS_DOMAIN} from '../../constants';
 import { doExportToAPI } from '../../collectionExport';
+import { findExtensions, IExtensionFeature } from '../../util/extension';
 import { findDownloadIdByRef, findModByRef } from '../../util/findModByRef';
-import InfoCache from '../../util/InfoCache';
 import InstallDriver from '../../util/InstallDriver';
 
 import CollectionEdit from './CollectionEdit';
@@ -33,6 +33,7 @@ interface IConnectedProps {
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
+  exts: IExtensionFeature[];
 }
 
 interface IActionProps {
@@ -143,6 +144,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   driver={this.props.driver}
                   onRemove={this.remove}
                   onUpload={this.upload}
+                  exts={this.props.exts}
                 />
               )}
           </FlexLayout.Flex>
@@ -364,6 +366,7 @@ function mapStateToProps(state: types.IState): IConnectedProps {
     mods: state.persistent.mods[profile.gameId] || emptyObj,
     notifications: state.session.notifications.notifications,
     downloads: state.persistent.downloads.files,
+    exts: findExtensions(state, profile.gameId),
   };
 }
 

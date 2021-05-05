@@ -2,54 +2,46 @@ import * as gamebryo from './gamebryo';
 
 import { log, types, util } from 'vortex-api';
 import { ICollection } from '../../types/ICollection';
-import { IGameSpecificInterfaceProps } from '../../types/IGameSpecificInterfaceProps';
+import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 import { IGameSupportEntry } from '../../types/IGameSupportEntry';
 
 const gameSupport = {
     skyrim: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     skyrimse: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     skyrimvr: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     fallout3: {
-        gameSettingsFiles: ['Fallout.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     fallout4: {
-        gameSettingsFiles: ['Fallout4.ini', 'Fallout4Prefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     fallout4vr: {
-        gameSettingsFiles: ['Fallout4Custom.ini', 'Fallout4Prefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     falloutnv: {
-        gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
     oblivion: {
-        gameSettingsFiles: ['Oblivion.ini'],
         generator: gamebryo.generate,
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
@@ -70,14 +62,6 @@ export function addGameSupport(entry: IGameSupportEntry) {
     parser: entry.parser,
     interface: (props) => entry.interface(props),
   };
-}
-
-export function getIniFiles(gameId: string): string[] {
-  if (gameSupport[gameId] === undefined) {
-    return [];
-  } else {
-    return gameSupport[gameId].gameSettingsFiles || [];
-  }
 }
 
 export function generateGameSpecifics(state: types.IState,
@@ -101,7 +85,7 @@ export function parseGameSpecifics(api: types.IExtensionApi,
   }
 }
 
-export function getInterface(gameId: string): React.ComponentType<IGameSpecificInterfaceProps> {
+export function getInterface(gameId: string): React.ComponentType<IExtendedInterfaceProps> {
   if (gameSupport[gameId] === undefined) {
     return null;
   } else {

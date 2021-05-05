@@ -1,4 +1,4 @@
-import { IGameSpecificInterfaceProps } from './IGameSpecificInterfaceProps';
+import { IExtendedInterfaceProps } from './IExtendedInterfaceProps';
 
 import { types } from 'vortex-api';
 import { ICollection } from './ICollection';
@@ -15,5 +15,5 @@ export interface IGameSupportEntry {
            gameId: string,
            collection: ICollection) => Promise<void>;
 
-  interface: (props: IGameSpecificInterfaceProps) => JSX.Element;
+  interface: (props: IExtendedInterfaceProps) => JSX.Element;
 }
