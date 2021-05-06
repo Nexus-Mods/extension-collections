@@ -168,7 +168,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   }
 
   private setSelection = (idx: number) => {
-    this.nextState.selIdx = idx % this.props.modSelection.length;
+    if (this.props.modSelection.length === 0) {
+      this.nextState.selIdx = 0;
+    } else {
+      this.nextState.selIdx = idx % this.props.modSelection.length;
+    }
   }
 
   private openUrl = () => {
