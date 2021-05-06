@@ -97,13 +97,8 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
         notiActions.unshift({
           title: 'Resume',
           action: dismiss => {
+            driver.start(profile, collection);
             dismiss();
-            const localRules = collection.rules.filter(onlyLocalRules);
-            localRules.forEach(rule => {
-              api.store.dispatch(actions.removeModRule(profile.gameId, modId, rule));
-            });
-            api.events.emit('install-dependencies', profile.id, [collection.id], true);
-            api.store.dispatch(actions.setOpenMainPage('Collections', false));
           }
         });
       }
