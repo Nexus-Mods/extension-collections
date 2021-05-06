@@ -1,6 +1,8 @@
 $border-radius: 4px;
 $collection-thumbnail-width: 230px;
 $collection-thumbnail-height: 288px;
+$collection-mod-image-width: 360px;
+$collection-mod-image-height: 200px;
 
 #table-collection-mods .header-name {
   p {
@@ -483,11 +485,11 @@ $collection-thumbnail-height: 288px;
   }
 }
 
-.collection-overview {
+.collection-overview.panel {
   overflow: hidden;
   padding-right: 1em;
   padding: $half-gutter;
-  height: calc(#{$collection-thumbnail-height} + #{$gutter-width} + 2 * #{$border-width}) !important;
+  height: calc(#{$collection-thumbnail-height} + #{$gutter-width} + 2 * #{$border-width});
 
   .panel {
     border: none;
@@ -518,11 +520,18 @@ $collection-thumbnail-height: 288px;
   }
 
   &.collection-mod-selection {
-    .collection-thumbnail {
+    height: calc(#{$collection-mod-image-height} + #{$gutter-width} + 2 * #{$border-width});
+
+   .collection-thumbnail {
       .thumbnail-img {
         max-width: calc(#{$collection-thumbnail-width} / 2) !important;
         max-height: calc(#{$collection-thumbnail-height} / 2) !important;
       }
+    }
+
+    .installing-mod-image {
+      max-width: $collection-mod-image-width;
+      max-height: $collection-mod-image-height;
     }
 
     .collection-page-detail-bar {
