@@ -78,7 +78,6 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   }
 
   private renderActivity(message: string) {
-    const { t } = this.props;
     return (
       <div><Spinner/>{message}</div>
     );

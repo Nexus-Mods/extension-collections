@@ -355,6 +355,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       this.mLastModsFinal = modsFinal;
     }
 
+    // during installation we display only the remote information in the header area,
+    // that's why we require driver.collectionInfo to be set
     const installing = incomplete
             && (driver.collectionInfo !== undefined)
             && (driver.collection.id === collection.id);

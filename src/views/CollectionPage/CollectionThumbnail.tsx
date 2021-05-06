@@ -179,15 +179,24 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
 
     if (onView) {
       result.push({
-        title: incomplete ? 'Resume' : 'View',
+        title: 'View',
         icon: 'show',
         action: (instanceIds: string[]) => {
-          if (incomplete && (onResume !== undefined)) {
-            onResume(instanceIds[0]);
-          }
           onView(instanceIds[0]);
         },
       });
+      if (incomplete && (onResume !== undefined)) {
+        result.push({
+          title: 'Resume',
+          icon: 'resume',
+          action: (instanceIds: string[]) => {
+            if (onResume !== undefined) {
+              onResume(instanceIds[0]);
+            }
+            onView(instanceIds[0]);
+          },
+        });
+      }
     }
     if (onEdit) {
       result.push({
