@@ -25,6 +25,8 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
+
+  resetCB: (cb: () => void) => void;
 }
 
 interface IConnectedProps {
@@ -58,7 +60,6 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       viewMode: 'view',
     });
 
-    console.log('construct collections main page', props);
     if (props.onSetupCallbacks !== undefined) {
       props.onSetupCallbacks({
         viewCollection: (collectionId: string) => {
@@ -71,6 +72,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         },
       });
     }
+
+    props.resetCB?.(this.resetMainPage);
   }
 
   public UNSAFE_componentWillReceiveProps(newProps: ICollectionsMainPageProps) {
@@ -168,6 +171,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
   private deselectCollection = () => {
     this.nextState.selectedCollection = undefined;
+  }
+
+  private resetMainPage = () => {
+    this.deselectCollection();
   }
 
   private view = (modId: string) => {

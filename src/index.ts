@@ -212,6 +212,8 @@ function register(context: types.IExtensionContext,
     },
   }));
 
+  let resetPageCB: () => void;
+
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
     group: 'per-game',
@@ -224,8 +226,10 @@ function register(context: types.IExtensionContext,
       },
       onCreateCollection: (profile: types.IProfile, name: string) =>
         createNewCollection(context.api, profile, name),
+      resetCB: (cb) => resetPageCB = cb,
     }),
-  });
+    onReset: () => resetPageCB?.(),
+  } as any);
 
   context.registerModType(MOD_TYPE, 200, () => true,
     () => undefined, () => PromiseBB.resolve(false), {
