@@ -182,6 +182,8 @@ function generateCollectionOptions(mods: { [modId: string]: types.IMod })
 
 interface ICallbackMap { [cbName: string]: (...args: any[]) => void; }
 
+let collectionChangedCB: () => void;
+
 function register(context: types.IExtensionContext,
                   onSetCallbacks: (callbacks: ICallbackMap) => void) {
   let collectionsCB: ICallbackMap;
@@ -243,8 +245,6 @@ function register(context: types.IExtensionContext,
   const collectionsMap = () =>
     memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())] ?? {});
   const collectionOptions = memoize(generateCollectionOptions);
-
-  let collectionChangedCB: () => void;
 
   const collectionChanged = new util.Debouncer(() => {
     collectionChangedCB?.();
@@ -400,6 +400,23 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
 
   const state: () => types.IState = () => store.getState();
+
+  interface IModsDict { [gameId: string]: { [modId: string]: types.IMod } };
+
+  api.onStateChange(['persistent', 'mods'], (prev: IModsDict, cur: IModsDict) => {
+    const gameMode = selectors.activeGameId(api.getState());
+    const prevG = prev[gameMode] ?? {};
+    const curG = cur[gameMode] ?? {};
+    const allIds =
+      Array.from(new Set([].concat(Object.keys(prev[gameMode]), Object.keys(cur[gameMode]))));
+    const changed = allIds.find(modId =>
+      ((prevG[modId]?.type === MOD_TYPE) || (curG[modId]?.type === MOD_TYPE))
+      && (prevG[modId]?.attributes?.customFileName
+          !== curG[modId]?.attributes?.customFileName));
+    if (changed !== undefined) {
+      collectionChangedCB?.();
+    }
+  });
 
   api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
     // automatically enable collections once they're installed
