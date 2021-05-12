@@ -10,7 +10,7 @@ $collection-mod-image-height: 200px;
   }
 }
 
-#table-collection-mods .header-version,
+#table-collection-mods .header-version-match,
 #table-collection-mods .header-source,
 #table-collection-mods .header-install-type,
 #table-collection-mods .header-action {
@@ -224,7 +224,7 @@ $collection-mod-image-height: 200px;
   }
 }
 
-.collection-create-btn {
+.collection-add-btn {
   position: relative;
 
   &.panel {
@@ -250,10 +250,6 @@ $collection-mod-image-height: 200px;
     align-items: center;
     justify-content: center;
 
-    > * {
-      margin-bottom: $half-gutter;
-    }
-
     > .icon {
       width: 32px;
       height: 32px;
@@ -263,7 +259,23 @@ $collection-mod-image-height: 200px;
   }
 
   .collection-create-label {
-    @extend .h4;
+    @extend .h5;
+  }
+
+  .hover-content {
+    border-radius: $border-radius;
+    display: flex;
+
+    > .btn-group-vertical {
+      width: 128px;
+      align-items: center;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 5em;
+      > .btn {
+        justify-content: center;
+      }
+    }
   }
 }
 
@@ -688,6 +700,18 @@ $collection-mod-image-height: 200px;
 
   .collection-estimate {
     color: $text-color-disabled;
+  }
+}
+
+#collection-start-page {
+  .collection-tab {
+    > a {
+      display: flex;
+      align-items: center;
+      > svg {
+        margin-right: 0.5em;
+      }
+    }
   }
 }
 

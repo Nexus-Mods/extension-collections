@@ -55,7 +55,9 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       id: 'name',
       name: 'Mod Name',
       description: 'Mod Name',
-      calc: (entry: IModEntry) => util.renderModName(entry.mod),
+      calc: (entry: IModEntry) => (entry.mod !== undefined)
+        ? util.renderModName(entry.mod)
+        : util.renderModReference(entry.rule.reference),
       placement: 'table',
       edit: {},
       isDefaultSort: true,
@@ -72,11 +74,20 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       id: 'highlight',
       name: 'Tag',
       description: 'Mod Highlights',
-      customRenderer: (mod: IModEntry) => {
-        const color = util.getSafe(mod.mod.attributes, ['color'], '');
-        const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
-        const hasProblem = (this.state.problems[mod.mod.id] !== undefined)
-                        && (this.state.problems[mod.mod.id].length > 0);
+      customRenderer: (entry: IModEntry) => {
+        if (entry.mod === undefined) {
+          return (
+            <tooltip.Icon
+              name='feedback-error'
+              tooltip={this.props.t('This mod isn\'t installed.')}
+            />
+          );
+        }
+
+        const color = util.getSafe(entry.mod.attributes, ['color'], '');
+        const icon = util.getSafe(entry.mod.attributes, ['icon'], '');
+        const hasProblem = (this.state.problems[entry.mod.id] !== undefined)
+                        && (this.state.problems[entry.mod.id].length > 0);
         const hasHighlight = color || icon;
 
         if (!color && !icon  && !hasProblem) {
@@ -93,16 +104,19 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
             {hasProblem ? (
               <tooltip.Icon
                 name='incompatible'
-                tooltip={this.state.problems[mod.mod.id].join('\n')}
+                tooltip={this.state.problems[entry.mod.id].join('\n')}
               />
             ) : null}
           </>
         );
       },
-      calc: (mod: IModEntry) => {
-        const color = util.getSafe(mod.mod.attributes, ['color'], '');
-        const icon = util.getSafe(mod.mod.attributes, ['icon'], '');
-        const problems = this.state.problems[mod.mod.id] || [];
+      calc: (entry: IModEntry) => {
+        if (entry.mod === undefined) {
+          return 'not-installed';
+        }
+        const color = util.getSafe(entry.mod.attributes, ['color'], '');
+        const icon = util.getSafe(entry.mod.attributes, ['icon'], '');
+        const problems = this.state.problems[entry.mod.id] || [];
 
         return `${color} - ${icon} - ${problems.join(',')}`;
       },
@@ -133,42 +147,112 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         },
       },
     }, {
-      id: 'version',
+      id: 'source',
+      name: 'Source',
+      description: 'How the user acquires the mod',
+      calc: (entry: IModEntry) => {
+        const id = entry.mod?.id ?? entry.rule?.reference?.id;
+        const { collection } = this.props;
+        const type = util.getSafe(collection,
+                                  ['attributes', 'collection', 'source', id, 'type'],
+                                  'nexus');
+        return SOURCES[type];
+      },
+      placement: 'table',
+      edit: {
+        inline: true,
+        actions: false,
+        choices: () => Object.keys(SOURCES).map(key => ({ key, text: SOURCES[key] })),
+        onChangeValue: (entry: IModEntry, value: any) => {
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+          if (id !== undefined) {
+            this.querySource(id, value);
+          }
+        },
+      },
+    }, {
+      id: 'edit-source',
+      placement: 'table',
+      edit: {},
+      calc: (entry: IModEntry) => {
+        const { collection } = this.props;
+        const id = entry.mod?.id ?? entry.rule?.reference?.id;
+
+        const type = util.getSafe(collection,
+                                  ['attributes', 'collection', 'source', id, 'type'],
+                                  'nexus');
+        return SOURCES[type];
+      },
+      customRenderer: (entry: IModEntry) => {
+        const { t, collection } = this.props;
+        const id = entry.mod?.id ?? entry.rule?.reference?.id;
+        const type = util.getSafe(collection,
+                                  ['attributes', 'collection', 'source', id, 'type'],
+                                  'nexus');
+        return (
+          <tooltip.IconButton
+            icon='edit'
+            disabled={(entry.mod === undefined) || ['nexus', 'bundle'].includes(type)}
+            tooltip={t('Edit Source')}
+            data-modid={id}
+            onClick={this.onQuerySource}
+          />
+        );
+      },
+    }, {
+      id: 'version-match',
       name: 'Version',
       description: 'The version to install',
-      calc: (mod: IModEntry) => {
+      calc: (entry: IModEntry) => {
+        const { collection } = this.props;
         const { t } = this.props;
-        if (mod.rule.reference.versionMatch === '*') {
+        const id = entry.mod?.id ?? entry.rule?.reference?.id;
+        const version = entry.mod?.attributes?.['version'] ?? t('N/A');
+
+        if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+          return t('Current ({{version}})', { replace: { version } });
+        }
+
+        if (entry.rule.reference.versionMatch === '*') {
           return t('Latest');
-        } else if ((mod.rule.reference.versionMatch || '').endsWith('+prefer')) {
-          return t('Prefer current ({{version}})',
-                   { replace: { version: mod.mod.attributes['version'] } });
+        } else if ((entry.rule.reference.versionMatch || '').endsWith('+prefer')) {
+          return t('Prefer current ({{version}})', { replace: { version } });
         } else {
-          return t('Current ({{version}})',
-                   { replace: { version: mod.mod.attributes['version'] } });
+          return t('Current ({{version}})', { replace: { version } });
         }
       },
       placement: 'table',
       edit: {
         inline: true,
         actions: false,
-        choices: (mod?: IModEntry) => {
-          const { t } = this.props;
+        choices: (entry: IModEntry) => {
+          const { t, collection } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+          const version = entry.mod?.attributes?.['version'] ?? t('N/A');
+
+          if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+            return [
+              { key: 'exact', text: t('Current ({{version}})', { replace: { version } }) },
+            ];
+          }
+
           return [
-            { key: 'exact', text: t('Current ({{version}})',
-                                    { replace: { version: mod.mod.attributes['version'] } }) },
-            { key: 'prefer', text: t('Prefer current ({{version}})',
-                                     { replace: { version: mod.mod.attributes['version'] } }) },
+            { key: 'exact', text: t('Current ({{version}})', { replace: { version } }) },
+            { key: 'prefer', text: t('Prefer current ({{version}})', { replace: { version } }) },
             { key: 'newest', text: t('Latest') },
           ];
         },
-        onChangeValue: (source: IModEntry, value: any) => {
-          this.props.onRemoveRule(source.rule);
-          const newRule = _.cloneDeep(source.rule);
+        onChangeValue: (entry: IModEntry, value: any) => {
+          if (entry.mod === undefined) {
+            return;
+          }
+
+          this.props.onRemoveRule(entry.rule);
+          const newRule = _.cloneDeep(entry.rule);
           newRule.reference.versionMatch = (value === 'exact')
-            ? source.mod.attributes['version']
+            ? entry.mod.attributes['version']
             : (value === 'prefer')
-            ? '>=' + source.mod.attributes['version'] + '+prefer'
+            ? '>=' + entry.mod.attributes['version'] + '+prefer'
             : '*';
           this.props.onAddRule(newRule);
         },
@@ -179,8 +263,14 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       description: 'How the mod should be installed on the user system',
       calc: (entry: IModEntry) => {
         const { collection } = this.props;
+        const id = entry.mod?.id ?? entry.rule?.reference?.id;
+
+        if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+          return INSTALL_MODES['clone'];
+        }
+
         const installMode =
-          util.getSafe(collection, ['attributes', 'collection', 'installMode', entry.mod.id], 'fresh');
+          util.getSafe(collection, ['attributes', 'collection', 'installMode', id], 'fresh');
         return INSTALL_MODES[installMode];
       },
       placement: 'table',
@@ -193,56 +283,22 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       edit: {
         inline: true,
         actions: false,
-        choices: () => Object.keys(INSTALL_MODES).map(key => ({ key, text: INSTALL_MODES[key] })),
-        onChangeValue: (source: IModEntry, value: any) => {
-          this.props.onSetCollectionAttribute(['installMode', source.mod.id], value);
+        choices: (entry: IModEntry) => {
+          const { collection } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+
+          if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+            return [{ key: 'clone', text: INSTALL_MODES['clone'] }];
+          }
+
+          return Object.keys(INSTALL_MODES).map(key => ({ key, text: INSTALL_MODES[key] }));
         },
-      },
-    }, {
-      id: 'source',
-      name: 'Source',
-      description: 'How the user acquires the mod',
-      calc: (entry: IModEntry) => {
-        const { collection } = this.props;
-        const type = util.getSafe(collection,
-                                  ['attributes', 'collection', 'source', entry.mod.id, 'type'],
-                                  'nexus');
-        return SOURCES[type];
-      },
-      placement: 'table',
-      edit: {
-        inline: true,
-        actions: false,
-        choices: () => Object.keys(SOURCES).map(key => ({ key, text: SOURCES[key] })),
-        onChangeValue: (source: IModEntry, value: any) => {
-          this.querySource(source.mod.id, value);
+        onChangeValue: (entry: IModEntry, value: any) => {
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+          if (id !== undefined) {
+            this.props.onSetCollectionAttribute(['installMode', id], value);
+          }
         },
-      },
-    }, {
-      id: 'edit-source',
-      placement: 'table',
-      edit: {},
-      calc: (entry: IModEntry) => {
-        const { collection } = this.props;
-        const type = util.getSafe(collection,
-                                  ['attributes', 'collection', 'source', entry.mod.id, 'type'],
-                                  'nexus');
-        return SOURCES[type];
-      },
-      customRenderer: (entry: IModEntry) => {
-        const { t, collection } = this.props;
-        const type = util.getSafe(collection,
-                                  ['attributes', 'collection', 'source', entry.mod.id, 'type'],
-                                  'nexus');
-        return (
-          <tooltip.IconButton
-            icon='edit'
-            disabled={['nexus', 'bundle'].includes(type)}
-            tooltip={t('Edit Source')}
-            data-modid={entry.mod.id}
-            onClick={this.onQuerySource}
-          />
-        );
       },
     },
   ];
@@ -464,8 +520,9 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       .filter(rule => ['requires', 'recommends'].indexOf(rule.type) !== -1)
       .reduce((prev, rule) => {
         const mod = findModByRef(rule.reference, mods);
-        if (mod !== undefined) {
-          prev[mod.id] = { rule, mod };
+        const id = mod?.id ?? rule.reference.id;
+        if (id !== undefined) {
+          prev[id] = { rule, mod };
         }
         return prev;
       }, {});
@@ -475,24 +532,31 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                         entries: { [modId: string]: IModEntry })
                         : { [modId: string]: string[] } {
     return Object.values(entries).reduce((prev, entry) => {
-      prev[entry.mod.id] = this.updateProblems(props, entry);
+      const id = entry.mod?.id ?? entry.rule.reference.id;
+      if (id !== undefined) {
+        prev[id] = this.updateProblems(props, entry);
+      }
       return prev;
     }, {});
   }
 
-  private updateProblems(props: IProps, mod: IModEntry): string[] {
+  private updateProblems(props: IProps, entry: IModEntry): string[] {
     const { t, collection } = props;
+
+    if (entry.mod === undefined) {
+      return;
+    }
 
     const res: string[] = [];
 
     const source: string =
-      util.getSafe(collection, ['attributes', 'collection', 'source', mod.mod.id, 'type'], 'nexus');
+      util.getSafe(collection, ['attributes', 'collection', 'source', entry.mod.id, 'type'], 'nexus');
     const installMode: string =
-      util.getSafe(collection, ['attributes', 'collection', 'installMode', mod.mod.id], 'fresh');
+      util.getSafe(collection, ['attributes', 'collection', 'installMode', entry.mod.id], 'fresh');
 
     if ((source === 'nexus')
-        && ((util.getSafe(mod.mod, ['attributes', 'modId'], undefined) === undefined)
-            || (util.getSafe(mod.mod, ['attributes', 'modId'], undefined) === undefined))) {
+        && ((util.getSafe(entry.mod, ['attributes', 'modId'], undefined) === undefined)
+            || (util.getSafe(entry.mod, ['attributes', 'modId'], undefined) === undefined))) {
       res.push(t('When using nexus as a source both the mod id and file id have to be known. '
                 + 'If you didn\'t download the mod through Vortex they will not be set. '
                 + 'To solve this you have to change the source of the mod to "Nexus", '
@@ -500,7 +564,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                 + 'check mods for updates which should fill in the file id.'));
     }
 
-    if (mod.rule.reference.versionMatch === '*') {
+    if (entry.rule.reference.versionMatch === '*') {
       if (installMode === 'clone') {
         res.push(t('"Replicate" install can only be used when installing '
                   + 'a specific version of a mod. This will definitively break '
@@ -521,14 +585,14 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     }
 
     if ((installMode === 'choices')
-        && (util.getSafe(mod.mod, ['attributes', 'installerChoices'], undefined) === undefined)) {
+        && (util.getSafe(entry.mod, ['attributes', 'installerChoices'], undefined) === undefined)) {
       res.push(t('The installer choices for this mod haven\'t been saved. '
                + 'This currently only works with xml-based fomods installed with '
                + 'Vortex 1.1.0 or later. '
                + 'You may have to reinstall the mod for this to work.'));
     }
 
-    if (mod.rule.reference.versionMatch === '') {
+    if (entry.rule.reference.versionMatch === '') {
       res.push(t('The mod has no version number set. This isn\'t strictly necessary, we use the '
                + 'file id to identify the exact version but for the purpose of informing the '
                + 'user it would be nicer if a version was specified. '
@@ -539,7 +603,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private querySource(modId: string, type: SourceType) {
-    const { collection, mods } = this.props;
+    const { collection } = this.props;
     const src: ICollectionSourceInfo = util.getSafe(collection,
       ['attributes', 'collection', 'source', modId], { type });
     const input: types.IInput[] = [];

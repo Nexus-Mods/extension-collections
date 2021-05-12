@@ -1,14 +1,15 @@
 import { ICollection, ICollectionMod } from './types/ICollection';
 import { LOGO_NAME, modToCollection as modToCollection } from './util/transformCollection';
 import { makeProgressFunction } from './util/util';
+import { BUNDLED_PATH } from './constants';
 
+import { ICreateCollectionResult } from '@nexusmods/nexus-api';
 import * as PromiseBB from 'bluebird';
 import * as _ from 'lodash';
 import Zip = require('node-7z');
 import * as path from 'path';
 import { dir as tmpDir } from 'tmp';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
-import { BUNDLED_PATH } from './constants';
 
 async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -146,12 +147,15 @@ export async function doExportToAPI(api: types.IExtensionApi,
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writeCollectionToFile(state, info, mod, tmpPath);
-      const result: any = await util.toPromise(cb =>
+      const result: ICreateCollectionResult = await util.toPromise(cb =>
         api.events.emit('submit-collection', filterInfo(info), filePath,
                         mod.attributes?.collectionId, cb));
       collectionId = result.collectionId;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', result.revisionId));
+      const version = parseInt((mod.attributes?.version ?? '0'), 10);
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'version',
+        (version + 1).toString()));
     });
     progressEnd();
   } catch (err) {

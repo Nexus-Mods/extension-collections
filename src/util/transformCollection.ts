@@ -502,6 +502,69 @@ export function makeCollectionId(baseId: string): string {
   return `vortex_collection_${baseId}`;
 }
 
+/**
+ * clone an existing collection
+ * @returns on success, returns the new collection id. on failure, returns undefined,
+ *          in that case an error notification has already been reported
+ */
+export async function cloneCollection(api: types.IExtensionApi,
+                                      gameId: string,
+                                      id: string,
+                                      sourceId: string)
+                                      : Promise<string> {
+  const state = api.getState();
+  const t = api.translate;
+
+  const userInfo = state.persistent['nexus']?.userInfo;
+  const mods = (state.persistent.mods[gameId] ?? {});
+  const existingCollection = mods[sourceId];
+
+  const ownCollection = existingCollection.attributes?.uploader === userInfo?.name;
+  const name = ownCollection
+    ? existingCollection.attributes?.name
+    : t('Copy of {name}', { replace: { name: existingCollection.attributes?.name } });
+
+  const mod: types.IMod = {
+    id,
+    type: MOD_TYPE,
+    state: 'installed',
+    attributes: {
+      name,
+      version: ownCollection ? existingCollection.attributes?.version : '0',
+      installTime: new Date(),
+      author: userInfo?.name ?? 'Anonymous',
+      editable: true,
+      collection: existingCollection.attributes?.collection,
+    },
+    installationPath: id,
+    rules: existingCollection.rules,
+  };
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      api.events.emit('create-mod', gameId, mod, (error: Error) => {
+        if (error !== null) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+    const deployPath = selectors.installPathForGame(state, gameId);
+    const sourcePath = path.join(deployPath, sourceId);
+    const clonePath = path.join(deployPath, id);
+    const files: string[] = await fs.readdirAsync(sourcePath);
+    for (const file of files) {
+      await fs.copyAsync(path.join(sourcePath, file), path.join(clonePath, file));
+    }
+
+    return id;
+  } catch (err) {
+    api.showErrorNotification('Failed to clone collection', err);
+    return undefined;
+  }
+}
+
 export async function createCollection(api: types.IExtensionApi,
                                        gameId: string,
                                        id: string,

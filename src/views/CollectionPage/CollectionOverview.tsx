@@ -9,10 +9,11 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Media, Panel } from 'react-bootstrap';
-import { ComponentEx, FlexLayout, Spinner, tooltip, types, util } from 'vortex-api';
+import { ActionDropdown, ComponentEx, FlexLayout, IconBar, tooltip, types, util } from 'vortex-api';
 import { NEXUS_BASE_URL } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 import { IModEx } from '../../types/IModEx';
+import { IActionDefinition } from 'vortex-api/lib/types/IActionDefinition';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
@@ -26,14 +27,41 @@ interface ICollectionOverviewProps {
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
   onDeselectMods?: () => void;
   onClose?: () => void;
+  onClone?: (collectionId: string) => void;
+  onRemove?: (collectionId: string) => void;
   onVoteSuccess?: (collectionId: string, success: boolean) => void;
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx: number }> {
+  private mWorkshopActions: IActionDefinition[];
+
   constructor(props: ICollectionOverviewProps) {
     super(props);
 
     this.initState({ selIdx: 0 });
+
+    this.mWorkshopActions = [
+      {
+        title: 'View on NexusMods',
+        action: this.openUrl,
+        condition: () => (this.props.collection.attributes?.collectionId !== undefined)
+                      && (this.props.revision !== undefined),
+        icon: 'open-in-browser',
+      },
+      {
+        title: 'Clone (Workshop)',
+        action: this.cloneCollection,
+        condition: () => this.props.onClone !== undefined,
+        icon: 'clone',
+      },
+      {
+        title: 'Remove',
+        action: this.remove,
+        condition: () => this.props.onRemove !== undefined,
+        icon: 'remove',
+      },
+    ];
+
   }
 
   public render(): JSX.Element {
@@ -43,9 +71,6 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
-
-    const published =
-      (util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined);
 
     const modDetails = modSelection.length > 0;
 
@@ -148,15 +173,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                     ) : null}
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed>
-                    {(published && (revision !== undefined)) ? (
-                      <tooltip.IconButton
-                        tooltip={t('Opens the collection page in your webbrowser')}
-                        icon='open-in-browser'
-                        onClick={this.openUrl}
-                      >
-                        {t('View')}
-                      </tooltip.IconButton>
-                    ) : null}
+                    <ActionDropdown
+                      t={t}
+                      id='collection-workshop-actions'
+                      staticElements={this.mWorkshopActions}
+                    />
                   </FlexLayout.Fixed>
                 </FlexLayout>
               </FlexLayout.Fixed>
@@ -178,6 +199,20 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   private openUrl = () => {
     const { revision } = this.props;
     util.opn(`${NEXUS_BASE_URL}/${revision.collection.game.domainName}/collections/${revision.collection.id}`)
+  }
+
+  private cloneCollection = () => {
+    const { onClone, collection } = this.props;
+    if ((onClone !== undefined) && (collection !== undefined)) {
+      onClone(collection.id);
+    }
+  }
+
+  private remove = () => {
+    const { onRemove, collection } = this.props;
+    if ((onRemove !== undefined) && (collection !== undefined)) {
+      onRemove(collection.id);
+    }
   }
 
   private renderTime(timestamp: number): string {

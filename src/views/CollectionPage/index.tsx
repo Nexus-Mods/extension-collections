@@ -24,6 +24,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
 
   driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
+  onCloneCollection: (collectionId: string) => Promise<string>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
 
   resetCB: (cb: () => void) => void;
@@ -49,6 +50,7 @@ interface IComponentState {
   selectedCollection: string;
   matchedReferences: { [collectionId: string]: types.IMod[] };
   viewMode: 'view' | 'edit';
+  activeTab: string;
 }
 
 class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, IComponentState> {
@@ -58,6 +60,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       selectedCollection: undefined,
       matchedReferences: this.updateMatchedReferences(this.props),
       viewMode: 'view',
+      activeTab: 'active-collections',
     });
 
     if (props.onSetupCallbacks !== undefined) {
@@ -84,7 +87,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
   public render(): JSX.Element {
     const { t, downloads, game, mods, notifications, profile } = this.props;
-    const { matchedReferences, selectedCollection, viewMode } = this.state;
+    const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
       ? mods[selectedCollection]
@@ -100,12 +103,14 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           profile={profile}
           mods={mods}
           matchedReferences={matchedReferences}
+          activeTab={activeTab}
           onView={this.view}
           onEdit={this.edit}
           onRemove={this.remove}
           onUpload={this.upload}
           onCreateCollection={this.createCollection}
           onResume={this.resume}
+          onSetActiveTab={this.setActiveTab}
         />
       );
     } else {
@@ -135,6 +140,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 onView={this.view}
                 onPause={this.pause}
                 onCancel={this.cancel}
+                onClone={this.clone}
                 onResume={this.resume}
                 onVoteSuccess={this.voteSuccess}
               />
@@ -162,6 +168,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         </MainPage.Body>
       </MainPage>
     );
+  }
+
+  private setActiveTab = (tabId: string) => {
+    this.nextState.activeTab = tabId;
   }
 
   private createCollection = (name: string) => {
@@ -197,6 +207,39 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         this.context.api.events.emit('pause-download', dlId);
       }
     });
+  }
+
+  private async removeWorkshop(modId: string) {
+    const { mods, profile } = this.props
+    const { api } = this.context;
+
+    const result = await api.showDialog('question',
+      'Are you sure you want to remove the collection "{{collectionName}}"?', {
+        text: 'You are removing this collection from your machine '
+            + 'but not from the NexusMods website.\n'
+            + 'You will lose any changes you made to this collection since the last upload. '
+            + 'This operation can not be undone.\n'
+            + 'The mods themselves will not be removed.',
+        parameters: {
+          collectionName: util.renderModName(mods[modId])
+        },
+      }, [
+        { label: 'Cancel' },
+        { label: 'Remove' },
+      ]
+    );
+
+    if (result.action === 'Remove') {
+      await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
+    }
+  }
+
+  private clone = async (collectionId: string) => {
+    const id: string = await this.props.onCloneCollection(collectionId);
+    if (id !== undefined) {
+      this.nextState.selectedCollection = id;
+      this.nextState.viewMode = 'edit';
+    }
   }
 
   private cancel = async (modId: string, message?: string) => {
@@ -300,14 +343,32 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   private remove = (modId: string) => {
-    return this.cancel(modId,
-      'Are you sure you want to remove the collection "{{collectionName}}"?');
+    const { mods } = this.props;
+
+    if (mods[modId].attributes?.editable) {
+      return this.removeWorkshop(modId);
+    } else {
+      return this.cancel(modId,
+        'Are you sure you want to remove the collection "{{collectionName}}"?');
+    }
   }
 
-  private upload = async (modId: string) => {
+  private upload = async (collectionId: string) => {
     const { mods, profile } = this.props;
 
     const { api } = this.context;
+
+    if (mods[collectionId].rules.find(rule => findModByRef(rule.reference, mods)) !== undefined) {
+      await api.showDialog('error', 'Collection isn\'t fully installed', {
+        text: 'You can only upload collections that are fully installed on this system.\n'
+            + 'If you have removed mods that were part of this collection you may want to remove '
+            + 'them from the collection as well. If this collection is connected to a '
+            + 'profile you can simply update from that.'
+      }, [
+        { label: 'Close' },
+      ]);
+      return;
+    }
 
     const choice = await api.showDialog('question', 'Confirm publishing', {
       text: 'Are you sure you want to upload the collection "{{collectionName}}"? '
@@ -317,7 +378,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           + 'agree to release your Collection (the list itself, instructions, ....) to '
           + 'the public domain.',
       parameters: {
-        collectionName: util.renderModName(mods[modId]),
+        collectionName: util.renderModName(mods[collectionId]),
       },
     }, [
       { label: 'Cancel' },
@@ -326,8 +387,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     if (choice.action === 'Upload') {
       try {
-        const collectionId = await doExportToAPI(api, profile.gameId, modId);
-        if (collectionId !== undefined) {
+        const nexusCollId = await doExportToAPI(api, profile.gameId, collectionId);
+        if (nexusCollId !== undefined) {
           api.sendNotification({
             type: 'success',
             message: 'Collection submitted',
@@ -337,7 +398,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   const game = selectors.gameById(api.getState(), profile.gameId);
                   // tslint:disable-next-line: max-line-length
                   const domainName = (util as any).nexusGameId(game);
-                  const url = `${NEXUS_BASE_URL}/${domainName}/collections/${collectionId}`;
+                  const url = `${NEXUS_BASE_URL}/${domainName}/collections/${nexusCollId}`;
                   util.opn(url).catch(() => null);
                 },
               },

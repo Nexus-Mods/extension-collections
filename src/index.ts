@@ -5,7 +5,7 @@ import { ICollection } from './types/ICollection';
 import { addExtension } from './util/extension';
 import { addGameSupport } from './util/gameSupport/index';
 import InstallDriver from './util/InstallDriver';
-import { createCollection, makeCollectionId } from './util/transformCollection';
+import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
 import CollectionsMainPage from './views/CollectionPage';
@@ -119,6 +119,33 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
 let driver: InstallDriver;
 
+async function cloneInstalledCollection(api: types.IExtensionApi, collectionId: string) {
+  const state = api.getState();
+  const gameMode = selectors.activeGameId(state);
+  const mods = state.persistent.mods[gameMode];
+
+  const result: types.IDialogResult = await api.showDialog(
+    'question',
+    'Clone collection "{{collectionName}}"?', {
+    text: 'Cloning a collection means you can make edits to the collection in the workshop '
+      + 'and share your changes with the community.\n'
+      + 'If this collection is your own, your uploads will be revisions of that existing '
+      + 'collection, otherwise you will create a new collection associated with your own '
+      + 'account.',
+    parameters: {
+      collectionName: util.renderModName(mods[collectionId]),
+    },
+  }, [
+    { label: 'Cancel' },
+    { label: 'Clone' },
+  ]);
+
+  if (result.action === 'Clone') {
+  const id = makeCollectionId(shortid());
+    return await cloneCollection(api, gameMode, id, collectionId);
+  }
+}
+
 function createNewCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
   const id = makeCollectionId(shortid());
   createCollection(api, profile.gameId, id, name, []);
@@ -226,6 +253,8 @@ function register(context: types.IExtensionContext,
         collectionsCB = callbacks;
         onSetCallbacks(callbacks);
       },
+      onCloneCollection: (collectionId: string) =>
+        cloneInstalledCollection(context.api, collectionId),
       onCreateCollection: (profile: types.IProfile, name: string) =>
         createNewCollection(context.api, profile, name),
       resetCB: (cb) => resetPageCB = cb,
@@ -267,7 +296,7 @@ function register(context: types.IExtensionContext,
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
       return (collections === undefined)
-        ? '' : collections.map(iter => iter.id);
+        ? '' : collections.map(iter => util.renderModName(iter));
     },
     externalData: (onChanged: () => void) => {
       collectionChangedCB = onChanged;

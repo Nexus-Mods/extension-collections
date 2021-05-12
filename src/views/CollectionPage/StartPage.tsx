@@ -6,13 +6,14 @@ import CollectionThumbnail from './CollectionThumbnail';
 
 import i18next from 'i18next';
 import * as React from 'react';
-import { Dropdown, MenuItem, Panel, PanelGroup } from 'react-bootstrap';
-import { ComponentEx, EmptyPlaceholder, Icon, PortalMenu, types, util } from 'vortex-api';
+import { Panel, Tab, Tabs } from 'react-bootstrap';
+import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util } from 'vortex-api';
 
 export interface IStartPageProps {
   t: i18next.TFunction;
   game: types.IGameStored;
   profile: types.IProfile;
+  activeTab: string;
   mods: { [modId: string]: types.IMod };
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
@@ -21,6 +22,7 @@ export interface IStartPageProps {
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
   onResume: (modId: string) => void;
+  onSetActiveTab: (tabId: string) => void;
 }
 
 interface IComponentState {
@@ -47,6 +49,82 @@ function validateCollectionName(t: i18next.TFunction, input: string): string {
   return undefined;
 }
 
+interface IAddCardProps {
+  t: types.TFunction;
+  onClick: () => void;
+}
+
+function AddCard(props: IAddCardProps) {
+  const { t, onClick } = props;
+
+  const classes = ['collection-add-btn'];
+
+  return (
+    <Panel className={classes.join(' ')} bsStyle='default' onClick={onClick}>
+      <Panel.Body className='collection-thumbnail-body'>
+        <EmptyPlaceholder
+          icon='browse'
+          text={t('Discover more collections')}
+        />
+      </Panel.Body>
+    </Panel>
+  );
+}
+
+interface ICreateCardProps {
+  t: types.TFunction;
+  onCreateFromProfile: () => void;
+  onCreateEmpty: () => void;
+}
+
+function CreateCard(props: ICreateCardProps) {
+  const { t } = props;
+
+  const classes = ['collection-add-btn'];
+
+  const actions: types.IActionDefinition[] = [
+    {
+      title: 'From Profile',
+      icon: 'profile',
+      action: (instanceIds: string[]) => {
+        props.onCreateFromProfile();
+      },
+    }, {
+      title: 'Empty',
+      icon: 'show',
+      action: (instanceIds: string[]) => {
+        props.onCreateEmpty();
+      },
+    }
+  ];
+
+  return (
+    <Panel className={classes.join(' ')} bsStyle='default'>
+      <Panel.Body className='collection-thumbnail-body'>
+        <EmptyPlaceholder
+          icon='browse'
+          text={t('Create a collection')}
+          fill
+        />
+        <div className='hover-menu'>
+          <div key='primary-buttons' className='hover-content'>
+            <IconBar
+              className='buttons'
+              group={`collection-actions`}
+              staticElements={actions}
+              collapse={false}
+              buttonType='text'
+              orientation='vertical'
+              clickAnywhere={true}
+              t={t}
+            />
+          </div>
+        </div>
+      </Panel.Body>
+    </Panel>
+  );
+}
+
 class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private mCreateRef: React.RefObject<any> = React.createRef();
 
@@ -60,9 +138,9 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, profile, matchedReferences, mods, onEdit, onUpload,
+    const { t, activeTab, profile, matchedReferences, mods, onEdit, onUpload,
             onRemove, onResume, onView } = this.props;
-    const { createOpen, imageTime } = this.state;
+    const { imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     const {foreign, own} = collections.reduce((prev, mod) => {
@@ -75,20 +153,22 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     }, { foreign: [], own: [] });
 
     const id = makeCollectionId(profile.id);
-    const profilePack: types.IMod = mods[id];
-    const PortalMenuX: any = PortalMenu;
 
     return (
-      <PanelGroup id='collection-panel-group'>
-        <Panel expanded={true} eventKey='foreign' onToggle={nop}>
-          <Panel.Heading>
-            <Icon name={true ? 'showhide-down' : 'showhide-right'} />
-            <Panel.Title>{t('Collections')}</Panel.Title>
-          </Panel.Heading>
-          <Panel.Body collapsible>
-            <div className='collection-list'>
-              {(foreign.length > 0)
-                ? foreign.map(mod =>
+      <Tabs id='collection-start-page' activeKey={activeTab} onSelect={this.setActiveTab}>
+        <Tab
+          tabClassName='collection-tab'
+          eventKey='active-collections'
+          title={<><Icon name='add'/>{t('Added Collections')}</>}
+        >
+          <Panel>
+            <Panel.Heading>
+              <Panel.Title>{t('View and manage all the added collections.')}</Panel.Title>
+            </Panel.Heading>
+            <Panel.Body>
+              <div className='collection-list'>
+                <AddCard t={t} onClick={this.openCollections} />
+                {foreign.map(mod =>
                   <CollectionThumbnail
                     key={mod.id}
                     t={t}
@@ -101,87 +181,51 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     onRemove={onRemove}
                     onResume={onResume}
                     details={true}
-                  />)
-                : (
-                  <EmptyPlaceholder
-                    icon='layout-list'
-                    text={t('You have not installed any Collections yet')}
-                    subtext={<a onClick={this.openCollections}>{t('Come get some')}</a>}
-                  />
-                )
-              }
-            </div>
-          </Panel.Body>
-        </Panel>
-        <Panel expanded={true} eventKey='custom' onToggle={nop}>
-          <Panel.Heading>
-            <Icon name={true ? 'showhide-down' : 'showhide-right'} />
-            <Panel.Title>{t('My Collections')}</Panel.Title>
-          </Panel.Heading>
-          <Panel.Body collapsible>
-            <div className='collection-list'>
-              {own.map(mod =>
-                <CollectionThumbnail
-                  key={mod.id}
+                  />)}
+              </div>
+            </Panel.Body>
+          </Panel>
+        </Tab>
+        <Tab
+          tabClassName='collection-tab'
+          eventKey='collection-workshop'
+          title={<><Icon name='highlight-tool' />{t('Workshop')}</>}
+        >
+          <Panel>
+            <Panel.Heading>
+              <Panel.Title>{t('Build your own collections and share them on NexusMods.')}</Panel.Title>
+            </Panel.Heading>
+            <Panel.Body>
+              <div className='collection-list'>
+                <CreateCard
                   t={t}
-                  gameId={profile.gameId}
-                  collection={mod}
-                  imageTime={imageTime}
-                  mods={mods}
-                  incomplete={matchedReferences[mod.id].includes(null)}
-                  onEdit={onEdit}
-                  onView={onView}
-                  onRemove={onRemove}
-                  onUpload={onUpload}
-                  onResume={onResume}
-                  details={true}
-                />)}
-              <Panel className='collection-create-btn'>
-                <Panel.Body onClick={this.clickCreate}>
-                  <Icon name='add' />
-                  <div className='collection-create-label'>{t('Create Collection')}</div>
-                  <Dropdown
-                    id='create-collection-dropdown'
-                    open={createOpen}
-                    onToggle={nop}
-                    ref={this.mCreateRef}
-                  >
-                    {/* oh you say we need this react-bootstrap? here you go...  */}
-                    <Dropdown.Toggle bsRole='toggle' style={{ display: 'none' }} />
-                    <PortalMenuX
-                      open={createOpen}
-                      target={this.mCreateRef.current}
-                      onClose={this.onHide}
-                      onClick={this.clickCreate}
-                      onSelect={this.select}
-                      useMousePosition={this.state.mousePosition}
-                      bsRole='menu'
-                    >
-                      <MenuItem
-                        eventKey='profile'
-                        disabled={profilePack !== undefined}
-                        title={(profilePack !== undefined)
-                          ? t('You already have a collection connected to this profile')
-                          : t('Creates a collection from the mods in the active profile')}
-                      >
-                        {t('From current profile ({{profileName}})', {
-                          replace: {
-                            profileName: profile.name,
-                          },
-                        })}
-                      </MenuItem>
-                      <MenuItem eventKey='empty'>{t('Empty (for game {{gameName}})', { replace: {
-                        gameName: profile.gameId,
-                      }})}</MenuItem>
-                    </PortalMenuX>
-                  </Dropdown>
-                </Panel.Body>
-              </Panel>
-            </div>
-          </Panel.Body>
-        </Panel>
-      </PanelGroup>
+                  onCreateFromProfile={this.fromProfile}
+                  onCreateEmpty={this.fromEmpty}
+                />
+                {own.map(mod =>
+                  <CollectionThumbnail
+                    key={mod.id}
+                    t={t}
+                    gameId={profile.gameId}
+                    collection={mod}
+                    imageTime={imageTime}
+                    mods={mods}
+                    incomplete={matchedReferences[mod.id].includes(null)}
+                    onEdit={onEdit}
+                    onRemove={onRemove}
+                    onUpload={onUpload}
+                    details={true}
+                  />)}
+              </div>
+            </Panel.Body>
+          </Panel>
+        </Tab>
+      </Tabs>
     );
+  }
+
+  private setActiveTab = (tabId: any) => {
+    this.props.onSetActiveTab(tabId);
   }
 
   private openCollections = async () => {
@@ -243,48 +287,39 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     */
   }
 
-  private refreshImages() {
-    this.nextState.imageTime = Date.now();
+  private fromProfile = () => {
+    const { profile } = this.props;
+    initFromProfile(this.context.api, profile.id)
+      .then(() => this.refreshImages())
+      .catch(err => this.context.api.showErrorNotification('Failed to init collection', err));
   }
 
-  private select = (eventKey: string) => {
-    const { t, profile, onCreateCollection } = this.props;
-
-    if (eventKey === 'profile') {
-      initFromProfile(this.context.api, profile.id)
-        .then(() => this.refreshImages())
-        .catch(err => this.context.api.showErrorNotification('Failed to init collection', err));
-    } else {
-      this.context.api.showDialog('question', 'Name', {
-        text: 'Please enter a name for your new collection',
-        input: [{ id: 'name', label: 'Name', type: 'text' }],
-        condition: (content: types.IDialogContent): types.ConditionResults => {
-          const validation = validateCollectionName(t, content.input[0].value || '');
-          if (validation !== undefined) {
-            return [{ actions: ['Create'], errorText: validation, id: 'name' }];
-          } else {
-            return [];
-          }
-        },
-      }, [
-        { label: 'Cancel' },
-        { label: 'Create', default: true },
-      ])
+  private fromEmpty = () => {
+    const { t, onCreateCollection } = this.props;
+    this.context.api.showDialog('question', 'Name', {
+      text: 'Please enter a name for your new collection',
+      input: [{ id: 'name', label: 'Name', type: 'text' }],
+      condition: (content: types.IDialogContent): types.ConditionResults => {
+        const validation = validateCollectionName(t, content.input[0].value || '');
+        if (validation !== undefined) {
+          return [{ actions: ['Create'], errorText: validation, id: 'name' }];
+        } else {
+          return [];
+        }
+      },
+    }, [
+      { label: 'Cancel' },
+      { label: 'Create', default: true },
+    ])
       .then((result: types.IDialogResult) => {
         if (result.action === 'Create') {
           onCreateCollection(result.input['name']);
         }
       });
-    }
   }
 
-  private onHide = () => {
-    this.nextState.createOpen = false;
-  }
-
-  private clickCreate = (evt: React.MouseEvent<any>) => {
-    this.nextState.mousePosition = { x: evt.clientX, y: evt.clientY };
-    this.nextState.createOpen = !this.state.createOpen;
+  private refreshImages() {
+    this.nextState.imageTime = Date.now();
   }
 }
 

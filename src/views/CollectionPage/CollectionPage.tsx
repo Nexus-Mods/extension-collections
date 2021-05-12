@@ -36,6 +36,7 @@ export interface ICollectionPageProps {
   onView: (modId: string) => void;
   onPause: (collectionId: string) => void;
   onCancel: (collectionId: string) => void;
+  onClone: (collectionId: string) => void;
   onResume: (collectionId: string) => void;
   onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
@@ -398,6 +399,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               revision={revisionInfo}
               votedSuccess={votedSuccess}
               onClose={this.close}
+              onClone={this.clone}
+              onRemove={this.remove}
               onVoteSuccess={onVoteSuccess}
               onDeselectMods={this.unselectMods}
               incomplete={incomplete}
@@ -475,6 +478,28 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private unselectMods = () => {
     this.nextState.modSelection = [];
+  }
+
+  private clone = (collectionId: string) => {
+    const { modsEx } = this.state;
+
+    const incomplete = Object.values(modsEx)
+      .find(mod => (mod.state !== 'installed')) !== undefined;
+
+    if (incomplete) {
+      return this.context.api.showDialog('info', 'Cloning not possible', {
+        text: 'You can only clone a collection that is fully installed, including all '
+            + 'its optional mods.',
+      }, [
+        { label: 'Close' },
+      ]);
+    } else {
+      this.props.onClone(collectionId);
+    }
+  }
+
+  private remove = (collectionId: string) => {
+    this.props.onCancel(collectionId);
   }
 
   private changeModSelection = (modIds: string[]) => {
