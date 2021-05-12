@@ -33,6 +33,7 @@ import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 import { IGameSupportEntry } from './types/IGameSupportEntry';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
+import { findModByRef } from './util/findModByRef';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -195,6 +196,11 @@ function generateCollectionMap(mods: { [modId: string]: types.IMod })
   collections.forEach(coll => coll.rules.forEach(rule => {
     if (rule.reference.id !== undefined) {
       util.setdefault(result, rule.reference.id, []).push(coll);
+    } else {
+      const installed = findModByRef(rule.reference, mods);
+      if (installed !== undefined) {
+        util.setdefault(result, installed.id, []).push(coll);
+      }
     }
   }));
 
@@ -297,7 +303,7 @@ function register(context: types.IExtensionContext,
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
       return (collections === undefined)
-        ? '' : collections.map(iter => util.renderModName(iter));
+        ? '' : collections.map(iter => iter.id)
     },
     externalData: (onChanged: () => void) => {
       collectionChangedCB = onChanged;
