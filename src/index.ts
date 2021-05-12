@@ -68,7 +68,8 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
       util.getSafe(state.persistent.mods, [profile.gameId, modId], undefined);
 
     if ((collection !== undefined)
-        && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)) {
+        && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)
+        && !collection.attributes?.editable) {
 
       const collectionProfile = Object.keys(state.persistent.profiles)
         .find(iter => makeCollectionId(iter) === modId);
