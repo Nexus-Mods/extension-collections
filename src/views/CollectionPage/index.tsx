@@ -358,12 +358,17 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const { api } = this.context;
 
-    if (mods[collectionId].rules.find(rule => findModByRef(rule.reference, mods)) !== undefined) {
+    const missing = mods[collectionId].rules.filter(rule =>
+      ['requires', 'recommends'].includes(rule.type)
+      && (findModByRef(rule.reference, mods) === undefined));
+    if (missing.length > 0) {
       await api.showDialog('error', 'Collection isn\'t fully installed', {
         text: 'You can only upload collections that are fully installed on this system.\n'
             + 'If you have removed mods that were part of this collection you may want to remove '
             + 'them from the collection as well. If this collection is connected to a '
-            + 'profile you can simply update from that.'
+            + 'profile you can simply update from that.',
+        message:
+          missing.map(rule => util.renderModReference(rule.reference)).join('\n')
       }, [
         { label: 'Close' },
       ]);
