@@ -137,7 +137,7 @@ export function removeCollectionAction(api: types.IExtensionApi, instanceIds: st
     });
 
   return api.showDialog('question', 'Remove Mods from Collection', {
-    text: 'Please select the collection to remove the mods from',
+    text: 'Please select the (modifiable) collection to remove the mods from',
     message: instanceIds.map(modId => util.renderModName(mods[modId])).join('\n'),
     choices: collections.map((modId, idx) => ({
       id: modId,
@@ -154,13 +154,9 @@ export function removeCollectionAction(api: types.IExtensionApi, instanceIds: st
         const rules = mods[collectionId].rules ?? [];
 
         util.batchDispatch(api.store, instanceIds.reduce((prev: Redux.Action[], modId: string) => {
-          if (alreadyIncluded(rules, modId)) {
-            prev.push(actions.removeModRule(gameId, collectionId, {
-              type: 'requires',
-              reference: {
-                id: modId,
-              },
-            }));
+          const ruleToRemove = rules.find(rule => rule.reference.id === modId);
+          if (ruleToRemove !== undefined) {
+            prev.push(actions.removeModRule(gameId, collectionId, ruleToRemove));
           }
           return prev;
         }, []));
