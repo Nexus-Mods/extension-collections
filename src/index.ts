@@ -12,15 +12,15 @@ import CollectionsMainPage from './views/CollectionPage';
 // import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
 
-import { MOD_TYPE } from './constants';
 import {
   addCollectionAction, addCollectionCondition,
   alreadyIncluded,
   initFromProfile,
-  removeCollectionAction, removeCollectionCondition
+  removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
 import { doExportToFile } from './collectionExport';
 import { install, postprocessCollection, testSupported } from './collectionInstall';
+import { MOD_TYPE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 
@@ -31,8 +31,8 @@ import * as React from 'react';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
-import { IGameSupportEntry } from './types/IGameSupportEntry';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
+import { IGameSupportEntry } from './types/IGameSupportEntry';
 import { findModByRef } from './util/findModByRef';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
@@ -93,7 +93,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
             initFromProfile(api, collectionProfile)
               .then(dismiss)
               .catch(err => api.showErrorNotification('Failed to update collection', err));
-          }
+          },
         });
       } else {
         notiActions.unshift({
@@ -101,7 +101,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
           action: dismiss => {
             driver.start(profile, collection);
             dismiss();
-          }
+          },
         });
       }
 
@@ -143,8 +143,8 @@ async function cloneInstalledCollection(api: types.IExtensionApi, collectionId: 
   ]);
 
   if (result.action === 'Clone') {
-  const id = makeCollectionId(shortid());
-    return await cloneCollection(api, gameMode, id, collectionId);
+    const id = makeCollectionId(shortid());
+    return cloneCollection(api, gameMode, id, collectionId);
   }
 }
 
@@ -276,10 +276,15 @@ function register(context: types.IExtensionContext,
     noConflicts: true,
   } as any);
 
-  const state: () => types.IState = () => context.api.store.getState();
+  const stateFunc: () => types.IState = () => context.api.store.getState();
+
+  const emptyObj = {};
+
+  const collectionsMapFunc = memoize(generateCollectionMap);
 
   const collectionsMap = () =>
-    memoize(generateCollectionMap)(state().persistent.mods[selectors.activeGameId(state())] ?? {});
+    collectionsMapFunc(
+      stateFunc().persistent.mods[selectors.activeGameId(stateFunc())] ?? emptyObj);
   const collectionOptions = memoize(generateCollectionOptions);
 
   const collectionChanged = new util.Debouncer(() => {
@@ -303,28 +308,30 @@ function register(context: types.IExtensionContext,
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
       return (collections === undefined)
-        ? '' : collections.map(iter => iter.id)
+        ? '' : collections.map(iter => iter.id);
     },
     externalData: (onChanged: () => void) => {
       collectionChangedCB = onChanged;
     },
     isToggleable: true,
     edit: {},
-    filter: new OptionsFilter((() =>
-      collectionOptions(state().persistent.mods[selectors.activeGameId(state())] ?? {})) as any,
+    filter: new OptionsFilter((() => {
+      const mods = stateFunc().persistent.mods[selectors.activeGameId(stateFunc())] ?? {};
+      return collectionOptions(mods);
+    }) as any,
       false, false),
     isGroupable: true,
     groupName: (modId: string) =>
-      util.renderModName(state().persistent.mods[selectors.activeGameId(state())]?.[modId]),
+      util.renderModName(stateFunc().persistent.mods[selectors.activeGameId(stateFunc())]?.[modId]),
     isDefaultVisible: false,
   };
   context.registerTableAttribute('mods', collectionAttribute);
 
   context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
     (modIds: string[]) => {
-      const gameMode = selectors.activeGameId(state());
+      const gameMode = selectors.activeGameId(stateFunc());
       doExportToFile(context.api, gameMode, modIds[0]);
-    }, (modIds: string[]) => isEditableCollection(state(), modIds));
+    }, (modIds: string[]) => isEditableCollection(stateFunc(), modIds));
 
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
     (modIds: string[]) => {
@@ -340,11 +347,11 @@ function register(context: types.IExtensionContext,
 
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
-      const profile: types.IProfile = selectors.activeProfile(state());
+      const profile: types.IProfile = selectors.activeProfile(stateFunc());
       context.api.events.emit('install-recommendations', profile.id, modIds);
     }, (modIds: string[]) => {
-      const gameMode = selectors.activeGameId(state());
-      const mod = state().persistent.mods[gameMode][modIds[0]];
+      const gameMode = selectors.activeGameId(stateFunc());
+      const mod = stateFunc().persistent.mods[gameMode][modIds[0]];
       if (mod === undefined) {
         return false;
       }
@@ -379,7 +386,8 @@ function register(context: types.IExtensionContext,
         .then(() => collectionChanged.schedule())
         .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
     (instanceIds: string[]) => removeCollectionCondition(context.api, instanceIds));
-  context.registerAction('mods-multirow-actions', 300, 'collection', {}, 'Remove from Collection...',
+  context.registerAction('mods-multirow-actions', 300, 'collection', {},
+                         'Remove from Collection...',
     (instanceIds: string[]) => removeCollectionAction(context.api, instanceIds)
         .then(() => collectionChanged.schedule())
         .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
