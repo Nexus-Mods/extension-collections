@@ -2,7 +2,7 @@ import * as path from 'path';
 import React = require('react');
 import { Button, ControlLabel, Table } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
-import { fs, Icon, selectors, Spinner, tooltip, types, util } from 'vortex-api';
+import { fs, Icon, log, selectors, Spinner, tooltip, types, util } from 'vortex-api';
 import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 
 interface IGamebryoLO {
@@ -63,9 +63,18 @@ async function getIncludedPlugins(gameId: string,
 
   await Promise.all(modIds.map(async modId => {
     if (mods[modId] !== undefined) {
-      const files = await fs.readdirAsync(path.join(stagingPath, mods[modId].installationPath));
-      const plugins = files.filter(fileName => extensions.has(path.extname(fileName).toLowerCase()));
-      includedPlugins.push(...plugins);
+      try {
+        const files = await fs.readdirAsync(path.join(stagingPath, mods[modId].installationPath));
+        const plugins = files.filter(fileName =>
+          extensions.has(path.extname(fileName).toLowerCase()));
+        includedPlugins.push(...plugins);
+      } catch (err) {
+        // failure to read the mod staging folder probably means something changed in parallel,
+        // could be the user removing the directory or something.
+        // Not really a point reporting this from this extension, if the files are gone the mod
+        // contains no plugins, simple as that
+        log('warn', 'failed to read plugins included in mod', err.message);
+      }
     }
   }));
 
@@ -289,8 +298,8 @@ export function Interface(props: IExtendedInterfaceProps): JSX.Element {
   const [pluginRules, setPluginRules] = React.useState<IRule[]>(null);
   const store = useStore();
   const gameId = useSelector(selectors.activeGameId);
-  const mods = useSelector((state: types.IState) => state.persistent.mods[gameId]);
-  const userlist: ILOOTList = useSelector((state: any) => state.userlist);
+  const mods = useSelector((selState: types.IState) => selState.persistent.mods[gameId]);
+  const userlist: ILOOTList = useSelector((selState: any) => selState.userlist);
 
   const state = store.getState();
 
