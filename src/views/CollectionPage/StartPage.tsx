@@ -63,7 +63,7 @@ function AddCard(props: IAddCardProps) {
     <Panel className={classes.join(' ')} bsStyle='default' onClick={onClick}>
       <Panel.Body className='collection-thumbnail-body'>
         <EmptyPlaceholder
-          icon='browse'
+          icon='folder-add'
           text={t('Discover more collections')}
         />
       </Panel.Body>
@@ -102,7 +102,7 @@ function CreateCard(props: ICreateCardProps) {
     <Panel className={classes.join(' ')} bsStyle='default'>
       <Panel.Body className='collection-thumbnail-body'>
         <EmptyPlaceholder
-          icon='browse'
+          icon='add'
           text={t('Create a collection')}
           fill
         />

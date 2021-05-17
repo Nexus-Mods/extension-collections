@@ -102,7 +102,7 @@ export async function postprocessCollection(api: types.IExtensionApi,
 
   const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
 
-  for (let ext of exts) {
+  for (const ext of exts) {
     await ext.parse(profile.gameId, collection);
   }
 

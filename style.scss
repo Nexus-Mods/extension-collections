@@ -279,12 +279,6 @@ $collection-mod-image-height: 200px;
   }
 }
 
-.collection-list {
-  .collection-thumbnail.panel {
-    margin: $half-gutter;
-  }
-}
-
 .collection-thumbnail {
   position: relative;
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.35);
@@ -456,6 +450,25 @@ $collection-mod-image-height: 200px;
 
   > .placeholder {
     margin: auto;
+  }
+
+  .collection-thumbnail.panel {
+    margin: $half-gutter;
+  }
+
+  .collection-thumbnail-body {
+    .placeholder {
+      .placeholder-icon {
+        width: 52px;
+        height: 52px;
+      }
+
+      .placeholder-text {
+        font-size: 1.4em;
+        text-align: center;
+        margin-top: 1em;
+      }
+    }
   }
 }
 
