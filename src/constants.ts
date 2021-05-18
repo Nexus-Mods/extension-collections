@@ -9,6 +9,5 @@ export const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memb
 export const BUNDLED_PATH = 'bundled';
 
 // limits
-export const NAME_LENGTH_MIN = 4;
-export const NAME_LENGTH_SOFT_LIMIT = 40;
-export const NAME_LENGTH_HARD_LIMIT = 75;
+export const MIN_COLLECTION_NAME_LENGTH = 4;
+export const MAX_COLLECTIION_NAME_LENGTH = 36;

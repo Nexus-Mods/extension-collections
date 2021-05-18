@@ -210,7 +210,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   private async removeWorkshop(modId: string) {
-    const { mods, profile } = this.props
+    const { mods, profile } = this.props;
     const { api } = this.context;
 
     const result = await api.showDialog('question',
@@ -221,12 +221,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             + 'This operation can not be undone.\n'
             + 'The mods themselves will not be removed.',
         parameters: {
-          collectionName: util.renderModName(mods[modId])
+          collectionName: util.renderModName(mods[modId]),
         },
       }, [
         { label: 'Cancel' },
         { label: 'Remove' },
-      ]
+      ],
     );
 
     if (result.action === 'Remove') {
@@ -368,7 +368,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             + 'them from the collection as well. If this collection is connected to a '
             + 'profile you can simply update from that.',
         message:
-          missing.map(rule => util.renderModReference(rule.reference)).join('\n')
+          missing.map(rule => util.renderModReference(rule.reference)).join('\n'),
       }, [
         { label: 'Close' },
       ]);

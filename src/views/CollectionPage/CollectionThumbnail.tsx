@@ -2,11 +2,11 @@ import * as Promise from 'bluebird';
 import I18next from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
-import { FormControl, Image as BSImage, Panel } from 'react-bootstrap';
+import { FormControl, FormGroup, Image as BSImage, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
-import { AUTHOR_UNKNOWN } from '../../constants';
+import { AUTHOR_UNKNOWN, MAX_COLLECTIION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 export interface IBaseProps {
@@ -49,12 +49,23 @@ function ModNameField(props: IModNameFieldProps) {
   const [tempName, setTempName] = React.useState(name);
 
   const changeInput = React.useCallback((evt: React.FormEvent<any>) => {
-    setTempName(evt.currentTarget.value);
+    setTempName(evt.currentTarget.value.slice(0, MAX_COLLECTIION_NAME_LENGTH));
   }, [setTempName]);
 
+  const validationState = React.useCallback(() => {
+    if ((tempName.length < MIN_COLLECTION_NAME_LENGTH)
+        || (tempName.length > MAX_COLLECTIION_NAME_LENGTH)) {
+      return 'error';
+    } else {
+      return 'success';
+    }
+  }, [tempName]);
+
   const apply = React.useCallback(() => {
-    onChange(tempName);
-    setEditing(false);
+    if (validationState() === 'success') {
+      onChange(tempName);
+      setEditing(false);
+    }
   }, [setEditing, tempName]);
 
   const keyPress = React.useCallback((evt: React.KeyboardEvent<any>) => {
@@ -71,14 +82,19 @@ function ModNameField(props: IModNameFieldProps) {
     <div className='collection-name'>
       {editing ? (
         <>
-          <FormControl
-            type='text'
-            value={tempName}
-            placeholder={t('Collection Name')}
-            onChange={changeInput}
-            autoFocus={true}
-            onKeyPress={keyPress}
-          />
+          <FormGroup
+            controlId='formBasicText'
+            validationState={validationState()}
+          >
+            <FormControl
+              type='text'
+              value={tempName}
+              placeholder={t('Collection Name')}
+              onChange={changeInput}
+              autoFocus={true}
+              onKeyPress={keyPress}
+            />
+          </FormGroup>
           <tooltip.IconButton icon='input-confirm' tooltip={t('Save name')} onClick={apply} />
         </>
       ) : (
