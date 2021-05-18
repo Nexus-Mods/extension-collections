@@ -175,7 +175,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   private get actions() {
     const { collection, incomplete, onEdit, onUpload, onRemove, onResume, onView } = this.props;
 
-    const result = [];
+    const result: types.IActionDefinition[] = [];
 
     if (onView) {
       result.push({
@@ -218,6 +218,15 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         title: collection.attributes?.collectionId !== undefined ? 'Update' : 'Upload',
         icon: 'clone',
         action: (instanceIds: string[]) => onUpload(instanceIds[0]),
+        condition: () => {
+          const refMods: types.IModRule[] = (collection.rules ?? [])
+            .filter(rule => ['requires', 'recommends'].includes(rule.type));
+          if (refMods.length === 0) {
+            return (this.props.t('Can\'t upload an empty collection')) as string;
+          } else {
+            return true;
+          }
+        },
       });
     }
 
