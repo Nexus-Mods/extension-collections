@@ -79,7 +79,7 @@ function ModNameField(props: IModNameFieldProps) {
   }, [setEditing]);
 
   return (
-    <div className='collection-name'>
+    <div className={`collection-name ${editing ? 'editing' : 'displaying'}`}>
       {editing ? (
         <>
           <FormGroup
@@ -99,7 +99,7 @@ function ModNameField(props: IModNameFieldProps) {
         </>
       ) : (
         <>
-          {tempName}
+          <div>{tempName}</div>
           <tooltip.IconButton icon='edit' tooltip={t('Change name')} onClick={startEdit} />
         </>
       )}
@@ -163,11 +163,20 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             />
           ) : null}
           {details ? (
-            <div className={`bottom ${onEdit !== undefined ? 'editable' : ''} no-hover`}>
-              <div className='name'>
+            <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
+              <div className='name no-hover'>
                 {util.renderModName(collection, { version: false })}
               </div>
-               <div className='details'>
+              {onEdit !== undefined ? (
+                <div className='name hover'>
+                  <ModNameField
+                    t={t}
+                    name={util.renderModName(collection, { version: false })}
+                    onChange={this.changeName}
+                  />
+                </div>
+                ) : null}
+              <div className='details'>
                 <div><Icon name='mods' />{refMods.length}</div>
                 <div><Icon name='archive' />{util.bytesToString(totalSize)}</div>
                 <div className='revision-number'>
@@ -179,7 +188,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             </div>
           ) : null}
           {(this.actions.length > 0) ? (
-            <div className='hover-menu'>
+            <div className='thumbnail-hover-menu'>
               {this.renderMenu(refMods, totalSize)}
             </div>
           ) : null}
@@ -266,27 +275,6 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           clickAnywhere={true}
           t={t}
         />
-
-        <div className='bottom hover'>
-          {onEdit !== undefined ? (
-          <div className='name'>
-            <ModNameField
-              t={t}
-              name={util.renderModName(collection, { version: false })}
-              onChange={this.changeName}
-            />
-          </div>
-          ) : null}
-          <div className='details'>
-            <div><Icon name='mods' />{refMods.length}</div>
-            <div><Icon name='archive' />{util.bytesToString(totalSize)}</div>
-            <div className='revision-number'>
-              {t('Revision {{number}}', { replace: {
-                number: collection.attributes.version ?? '0',
-              } })}
-            </div>
-          </div>
-        </div>
       </div>
     )];
   }

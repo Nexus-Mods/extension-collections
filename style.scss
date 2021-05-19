@@ -349,17 +349,76 @@ $collection-mod-image-height: 200px;
   &:hover {
     .bottom {
       &.editable {
-        &.no-hover {
+        .no-hover {
           display: none;
         }
+      }
+    }
+
+    .thumbnail-hover-menu {
+      .hover-content {
+        opacity: 1.0;
       }
     }
   }
 
   &:not(:hover) {
     .bottom {
-      &.hover {
+      .hover {
         display: none;
+      }
+    }
+    .thumbnail-hover-menu {
+      .hover-content {
+        opacity: 0;
+      }
+    }
+  }
+
+  .thumbnail-hover-menu {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+
+    .btn {
+      pointer-events: all;
+    }
+
+    .hover-content {
+      width: 100%;
+      height: 100%;
+    }
+
+    .buttons .btn {
+      border: 0px;
+      display: flex;
+      width: 100%;
+      margin: 4px;
+    }
+  }
+
+  .hover {
+    .collection-name {
+      .form-group {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .no-hover {
+    margin-right: 1.5em;
+  }
+
+  .hover {
+    .collection-name {
+      &.displaying {
+        align-items: flex-end;
       }
     }
   }
@@ -388,22 +447,23 @@ $collection-mod-image-height: 200px;
 
   }
 
-  /*
-  .collection-version-container {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    line-height: 1;
+  .collection-name {
+    display: flex;
+    .form-control {
+      font-family: $font-family-base;
+      font-size: medium;
+    }
 
-    .collection-version {
-      color: $text-color-disabled;
+    .btn {
+      margin-left: 0.5em;
+      font-size: medium;
     }
   }
-  */
 
   .hover-content {
     border-radius: $border-radius;
     display: flex;
+    background-color: unset !important;
 
     > .btn-group-vertical {
       width: 128px;
@@ -414,19 +474,6 @@ $collection-mod-image-height: 200px;
       // justify-content: center;
       > .btn {
         justify-content: center;
-      }
-    }
-
-    .collection-name {
-      display: flex;
-      .form-control {
-        font-family: $font-family-base;
-        font-size: medium;
-      }
-
-      .btn {
-        margin-left: 0.5em;
-        font-size: medium;
       }
     }
   }
