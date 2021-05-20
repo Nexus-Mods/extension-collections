@@ -5,7 +5,7 @@ import { getInterface } from '../../util/gameSupport';
 import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
 
-import { NAMESPACE } from '../../constants';
+import { NAMESPACE, NEXUS_BASE_URL } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
@@ -118,6 +118,14 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
             >
               {t('Upload')}
             </tooltip.IconButton>
+            <tooltip.IconButton
+              icon='open-ext'
+              tooltip={t('Open site')}
+              onClick={this.openUrl}
+              disabled={revision === undefined}
+            >
+              {t('View Site')}
+            </tooltip.IconButton>
           </FlexLayout>
           {t('Set up your mod collection\'s rules and site preferences.')}
         </FlexLayout.Fixed>
@@ -222,6 +230,11 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   private upload = () => {
     const { collection, onUpload } = this.props;
     onUpload(collection.id);
+  }
+
+  private openUrl = () => {
+    const { collection } = this.state.revision;
+    util.opn(`${NEXUS_BASE_URL}/${collection.game.domainName}/collections/${collection.id}`);
   }
 
   private addRule = (rule: types.IModRule) => {
