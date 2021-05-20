@@ -36,7 +36,7 @@ function isSupported(gameId: string) {
 
 function TweakListWrap(prop: IExtendedInterfaceProps): JSX.Element {
   return React.createElement(TweakList, {
-    settingsFiles: gameSupport[prop.gameId],
+    settingsFiles: gameSupport[prop.gameId].gameSettingsFiles,
     ...prop,
   });
 }
