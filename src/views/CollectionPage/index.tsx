@@ -1,6 +1,6 @@
 import { updateSuccessRate } from '../../actions/persistent';
-import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, NEXUS_DOMAIN} from '../../constants';
 import { doExportToAPI } from '../../collectionExport';
+import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, NEXUS_DOMAIN} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import { findDownloadIdByRef, findModByRef } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
@@ -54,6 +54,7 @@ interface IComponentState {
 }
 
 class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, IComponentState> {
+  private mMatchRefDebouncer: util.Debouncer;
   constructor(props: ICollectionsMainPageProps) {
     super(props);
     this.initState({
@@ -77,12 +78,21 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }
 
     props.resetCB?.(this.resetMainPage);
+
+    this.mMatchRefDebouncer = new util.Debouncer(() => {
+      this.nextState.matchedReferences = this.updateMatchedReferences(this.props);
+      return Promise.resolve();
+    }, 2000);
   }
 
   public UNSAFE_componentWillReceiveProps(newProps: ICollectionsMainPageProps) {
     if (this.props.mods !== newProps.mods) {
-      this.nextState.matchedReferences = this.updateMatchedReferences(newProps);
+      this.mMatchRefDebouncer.schedule();
     }
+  }
+
+  public componentWillUnmount() {
+    this.mMatchRefDebouncer.clear();
   }
 
   public render(): JSX.Element {
@@ -333,9 +343,6 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           .filter(rule => rule.type === 'requires')
           .map(rule => {
             const mod = findModByRef(rule.reference, mods);
-            if (mod === undefined) {
-              log('debug', 'mod not found', JSON.stringify(rule.reference));
-            }
             return mod ?? null;
           });
       return prev;

@@ -1,11 +1,20 @@
 import * as _ from 'lodash';
+import * as Redux from 'redux';
 import * as semver from 'semver';
-import { types, util } from 'vortex-api';
+import { actions, types, util } from 'vortex-api';
 
 export function findModByRef(reference: types.IModReference,
                              mods: { [modId: string]: types.IMod }): types.IMod {
-  return Object.values(mods).find((mod: types.IMod): boolean =>
+  if ((reference['idHint'] !== undefined)
+      && (util.testModReference(mods[reference['idHint']], reference))) {
+    // fast-path if we have an id from a previous match
+    return mods[reference['idHint']];
+  }
+
+  const res = Object.values(mods).find((mod: types.IMod): boolean =>
     util.testModReference(mod, reference));
+
+  return res;
 }
 
 export function isFuzzyVersion(versionMatch: string) {
