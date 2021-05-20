@@ -53,6 +53,8 @@ interface IComponentState {
   activeTab: string;
 }
 
+const emptyObj = {};
+
 class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, IComponentState> {
   private mMatchRefDebouncer: util.Debouncer;
   constructor(props: ICollectionsMainPageProps) {
@@ -112,7 +114,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           game={game}
           profile={profile}
           mods={mods}
-          matchedReferences={matchedReferences}
+          matchedReferences={matchedReferences ?? emptyObj}
           activeTab={activeTab}
           onView={this.view}
           onEdit={this.edit}
@@ -434,8 +436,6 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     driver.start(profile, mods[modId]);
   }
 }
-
-const emptyObj = {};
 
 function mapStateToProps(state: types.IState): IConnectedProps {
   const profile = selectors.activeProfile(state);

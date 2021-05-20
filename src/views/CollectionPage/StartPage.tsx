@@ -126,8 +126,6 @@ function CreateCard(props: ICreateCardProps) {
 }
 
 class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
-  private mCreateRef: React.RefObject<any> = React.createRef();
-
   constructor(props: IStartPageProps) {
     super(props);
     this.initState({
@@ -175,7 +173,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     gameId={profile.gameId}
                     imageTime={imageTime}
                     mods={mods}
-                    incomplete={matchedReferences[mod.id].includes(null)}
+                    incomplete={matchedReferences[mod.id]?.includes?.(null)}
                     collection={mod}
                     onView={onView}
                     onRemove={onRemove}
@@ -212,7 +210,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     collection={mod}
                     imageTime={imageTime}
                     mods={mods}
-                    incomplete={matchedReferences[mod.id].includes(null)}
+                    incomplete={matchedReferences[mod.id]?.includes?.(null)}
                     onEdit={onEdit}
                     onRemove={onRemove}
                     onUpload={onUpload}
