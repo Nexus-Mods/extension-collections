@@ -1,5 +1,5 @@
-import { MOD_TYPE, NEXUS_BASE_URL } from '../../constants';
 import { initFromProfile } from '../../collectionCreate';
+import { MOD_TYPE, NEXUS_BASE_URL } from '../../constants';
 import { makeCollectionId } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
@@ -95,7 +95,7 @@ function CreateCard(props: ICreateCardProps) {
       action: (instanceIds: string[]) => {
         props.onCreateEmpty();
       },
-    }
+    },
   ];
 
   return (
@@ -193,7 +193,9 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         >
           <Panel>
             <Panel.Heading>
-              <Panel.Title>{t('Build your own collections and share them on NexusMods.')}</Panel.Title>
+              <Panel.Title>
+                {t('Build your own collections and share them on NexusMods.')}
+              </Panel.Title>
             </Panel.Heading>
             <Panel.Body>
               <div className='collection-list'>
@@ -231,8 +233,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private openCollections = async () => {
     const { game } = this.props;
 
-    util.opn(`${NEXUS_BASE_URL}/${(util as any).nexusGameId(game)}/collections`)
-
+    util.opn(`${NEXUS_BASE_URL}/${(util as any).nexusGameId(game)}/collections`);
 
     /*
     const collections: ICollection[] =

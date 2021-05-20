@@ -1,7 +1,7 @@
 import I18next from 'i18next';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
-import { ComponentEx, Toggle, types, util } from 'vortex-api';
+import { ComponentEx, log, Toggle, types, util } from 'vortex-api';
 import { ICollectionModRule, ICollectionModRuleEx } from '../types/ICollection';
 import { renderReference, ruleId } from '../util/util';
 
@@ -80,7 +80,10 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     const checked = collection.attributes?.collection?.rule?.[id] ?? true;
 
     return (
-      <ListGroupItem className={separator ? 'collection-rule-separator' : undefined} key={idx.toString()}>
+      <ListGroupItem
+        className={separator ? 'collection-rule-separator' : undefined}
+        key={idx.toString()}
+      >
         <Toggle checked={checked} dataId={id} onToggle={this.toggleRule}>
           <div className='rule-name'>{rule.sourceName}</div>
           <div className='rule-type'>{rule.type}</div>
