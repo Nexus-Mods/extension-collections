@@ -214,6 +214,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
             const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
 
+            if ((modId === undefined) || (fileId === undefined)
+                || (ref.modId === undefined) || (ref.fileId === undefined)) {
+              return false;
+            }
+
             return modId.toString() === ref.modId.toString()
                && fileId.toString() === ref.fileId.toString();
           }
