@@ -62,7 +62,7 @@ function deduceSource(mod: types.IMod,
       throw new Error(`"${mod.id}" is missing mod id or file id`);
     }
 
-    res.modId = toInt(modId)
+    res.modId = toInt(modId);
     res.fileId = toInt(fileId);
   }
 
@@ -111,19 +111,19 @@ export function generateCollection(info: ICollectionInfo,
 }
 
 async function rulesToCollectionMods(collection: types.IMod,
-                                  mods: { [modId: string]: types.IMod },
-                                  stagingPath: string,
-                                  game: types.IGame,
-                                  collectionInfo: ICollectionAttributes,
-                                  onProgress: (percent: number, text: string) => void,
-                                  onError: (message: string, replace: any) => void)
-                                  : Promise<ICollectionMod[]> {
+                                     mods: { [modId: string]: types.IMod },
+                                     stagingPath: string,
+                                     game: types.IGame,
+                                     collectionInfo: ICollectionAttributes,
+                                     onProgress: (percent: number, text: string) => void,
+                                     onError: (message: string, replace: any) => void)
+                                     : Promise<ICollectionMod[]> {
   let total = collection.rules.length;
 
   let finished = 0;
 
   const zipper = new Zip();
-  const collectionPath = path.join(stagingPath, collection.installationPath)
+  const collectionPath = path.join(stagingPath, collection.installationPath);
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
   await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
 
@@ -301,7 +301,7 @@ function ruleEnabled(rule: ICollectionModRule,
     ...rule,
     sourceName: renderReference(rule.source, mods),
     referenceName: renderReference(rule.reference, mods),
-  }
+  };
   const id = ruleId(ruleEx);
 
   return collection.attributes?.collection?.rule?.[id] ?? true;
@@ -338,7 +338,7 @@ export function collectionModToRule(mod: ICollectionMod): types.IModRule {
     }
     : undefined;
 
-  let coerced = semver.coerce(mod.version);
+  const coerced = semver.coerce(mod.version);
 
   let versionMatch = !!coerced
     ? `>=${coerced.version ?? '0.0.0'}+prefer`
@@ -435,12 +435,12 @@ export async function modToCollection(state: types.IState,
 
   const exts: IExtensionFeature[] = findExtensions(state, gameId);
   const extData: any = {};
-  for (let ext of exts) {
+  for (const ext of exts) {
     Object.assign(extData, await ext.generate(gameId, includedMods));
   }
 
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
-  
+
   const game = util.getGame(gameId);
 
   const collectionInfo: ICollectionInfo = {
@@ -520,9 +520,11 @@ export async function cloneCollection(api: types.IExtensionApi,
   const existingCollection = mods[sourceId];
 
   const ownCollection = existingCollection.attributes?.uploader === userInfo?.name;
-  const name = ownCollection
-    ? existingCollection.attributes?.name
-    : t('Copy of {name}', { replace: { name: existingCollection.attributes?.name } });
+  const name = 'Copy of ' + existingCollection.attributes?.name;
+
+  const customFileName = ownCollection
+    ? existingCollection.attributes?.customFileName
+    : t('Copy of {{name}}', { replace: { name: existingCollection.attributes?.customFileName } });
 
   const mod: types.IMod = {
     id,
@@ -530,6 +532,7 @@ export async function cloneCollection(api: types.IExtensionApi,
     state: 'installed',
     attributes: {
       name,
+      customFileName,
       version: ownCollection ? existingCollection.attributes?.version : '0',
       installTime: new Date(),
       author: userInfo?.name ?? 'Anonymous',
@@ -599,7 +602,8 @@ export async function createCollection(api: types.IExtensionApi,
     });
 
     const deployPath = selectors.installPathForGame(state, gameId);
-    await fs.copyAsync(path.join(__dirname, 'fallback_tile.png'), path.join(deployPath, id, LOGO_NAME))
+    await fs.copyAsync(path.join(__dirname, 'fallback_tile.png'),
+                       path.join(deployPath, id, LOGO_NAME))
       .catch(err => api.showErrorNotification('Failed to install default collection logo', err));
   } catch (err) {
     api.showErrorNotification('Failed to create collection', err);
