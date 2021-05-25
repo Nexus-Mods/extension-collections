@@ -241,7 +241,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     if (onUpload) {
       result.push({
         title: collection.attributes?.collectionId !== undefined ? 'Update' : 'Upload',
-        icon: 'clone',
+        icon: 'upload',
         action: (instanceIds: string[]) => onUpload(instanceIds[0]),
         condition: () => {
           const refMods: types.IModRule[] = (collection.rules ?? [])
@@ -270,7 +270,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           instanceId={collection.id}
           staticElements={this.actions}
           collapse={false}
-          buttonType='text'
+          buttonType='both'
           orientation='vertical'
           clickAnywhere={true}
           t={t}

@@ -474,6 +474,10 @@ $collection-mod-image-height: 200px;
       // justify-content: center;
       > .btn {
         justify-content: center;
+        align-items: center;
+        > .icon {
+          margin-right: 0.5em;
+        }
       }
     }
   }
