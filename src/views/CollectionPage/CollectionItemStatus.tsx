@@ -3,8 +3,8 @@ import { IModEx } from '../../types/IModEx';
 import i18next from 'i18next';
 import * as React from 'react';
 import { ProgressBar } from 'react-bootstrap';
-import { SelectUpDown, Spinner, types } from 'vortex-api';
 import { Option, OptionValues } from 'react-select';
+import { SelectUpDown, Spinner, types } from 'vortex-api';
 
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;
@@ -63,7 +63,7 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
       );
     } else {
       if (mod.collectionRule.type === 'recommends') {
-        return <div>{t('Optional')}</div>
+        return <div>{t('Optional')}</div>;
       } else {
         if (mod.state === 'downloaded') {
           return <div><Spinner />{t('Install pending')}</div>;

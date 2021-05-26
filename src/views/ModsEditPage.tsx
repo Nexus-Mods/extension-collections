@@ -4,10 +4,10 @@ import { findModByRef } from '../util/findModByRef';
 import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
+import { Button } from 'react-bootstrap';
 import {
   ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, Table, TableTextFilter,
   tooltip, types, Usage, util } from 'vortex-api';
-import { Button } from 'react-bootstrap';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
@@ -300,34 +300,53 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           }
         },
       },
+    }, {
+      id: 'instructions',
+      name: 'Instructions',
+      icon: 'edit',
+      calc: (entry: IModEntry) => {
+        const { collection } = this.props;
+
+        if (entry.mod === undefined) {
+          return null;
+        }
+
+        return collection.attributes?.collection?.instructions?.[entry.mod.id];
+      },
+      customRenderer: (entry: IModEntry, detailCell: boolean, t: types.TFunction) => {
+        const { collection } = this.props;
+
+        if (entry.mod === undefined) {
+          return null;
+        }
+
+        const instructions = collection.attributes?.collection?.instructions?.[entry.mod.id];
+        return (instructions ?? '').length > 0 ? (
+          <tooltip.IconButton
+            icon='edit'
+            tooltip={t('Edit Instructions')}
+            data-modid={entry.mod.id}
+            onClick={this.changeInstructions}
+          >
+            {t('Edit')}
+          </tooltip.IconButton>
+        ) : (
+          <tooltip.IconButton
+            icon='add'
+            tooltip={t('Add Instructions')}
+            data-modid={entry.mod.id}
+            onClick={this.changeInstructions}
+          >
+            {t('Add')}
+          </tooltip.IconButton>
+        );
+      },
+      placement: 'table',
+      edit: {},
     },
   ];
 
   private mActions: ITableRowAction[] = [
-    {
-      title: 'Set Instructions',
-      icon: 'edit',
-      singleRowAction: true,
-      multiRowAction: false,
-      action: (instanceId: string) => {
-        const { onSetCollectionAttribute, collection } = this.props;
-        const value = util.getSafe(collection.attributes, ['collection', 'instructions', instanceId], '');
-        this.context.api.showDialog('info', 'Instructions', {
-          text: 'These instructions will be shown before installing the mod. '
-              + 'This will interrupt the installation process so please use it '
-              + 'only if you have to',
-          input: [ { label: 'Instructions', id: 'instructions', type: 'textarea' as any, value } ],
-        }, [
-          { label: 'Cancel' },
-          { label: 'Save' },
-        ], 'collection-set-instructions')
-        .then(result => {
-          if (result.action === 'Save') {
-            onSetCollectionAttribute(['instructions', instanceId], result.input['instructions']);
-          }
-        });
-      },
-    },
     {
       title: 'Requires',
       icon: 'requires',
@@ -451,7 +470,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         <Icon name='add' />
         {t('Add more mods')}
       </Button>);
-    }
+    };
 
     if (Object.keys(entries).length === 0) {
       return (
@@ -550,9 +569,9 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     const res: string[] = [];
 
     const source: string =
-      util.getSafe(collection, ['attributes', 'collection', 'source', entry.mod.id, 'type'], 'nexus');
+      collection.attributes?.collection?.source?.[entry.mod.id]?.type ?? 'nexus';
     const installMode: string =
-      util.getSafe(collection, ['attributes', 'collection', 'installMode', entry.mod.id], 'fresh');
+      collection?.attributes?.collection?.installMode?.[entry.mod.id] ?? 'fresh';
 
     if ((source === 'nexus')
         && ((util.getSafe(entry.mod, ['attributes', 'modId'], undefined) === undefined)
@@ -655,11 +674,33 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     }
   }
 
+  private changeInstructions = (evt: React.MouseEvent<any>) => {
+    const { collection, onSetCollectionAttribute } = this.props;
+    const modId = evt.currentTarget.getAttribute('data-modid');
+
+    const value = collection.attributes?.collection?.instructions?.[modId] ?? '';
+
+    this.context.api.showDialog('info', 'Instructions', {
+      text: 'These instructions will be shown before installing the mod. '
+          + 'This will interrupt the installation process so please use it '
+          + 'only if you have to',
+      input: [ { label: 'Instructions', id: 'instructions', type: 'textarea' as any, value } ],
+    }, [
+      { label: 'Cancel' },
+      { label: 'Save' },
+    ], 'collection-set-instructions')
+    .then(result => {
+      if (result.action === 'Save') {
+        onSetCollectionAttribute(['instructions', modId], result.input['instructions']);
+      }
+    });
+  }
+
   private onQuerySource = (evt: React.MouseEvent<any>) => {
     const { collection } = this.props;
     const modId = evt.currentTarget.getAttribute('data-modid');
     const type = collection.attributes?.collection?.source?.[modId]?.type ?? 'nexus';
-    
+
     return this.querySource(modId, type);
   }
 }

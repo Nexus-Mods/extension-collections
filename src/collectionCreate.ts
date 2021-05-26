@@ -94,7 +94,7 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
       id: modId,
       text: util.renderModName(mods[modId]),
       value: idx === 0,
-    }))
+    })),
   }, [
     { label: 'Cancel' },
     { label: 'Add' },
@@ -143,7 +143,7 @@ export function removeCollectionAction(api: types.IExtensionApi, instanceIds: st
       id: modId,
       text: util.renderModName(mods[modId]),
       value: idx === 0,
-    }))
+    })),
   }, [
     { label: 'Cancel' },
     { label: 'Remove' },
