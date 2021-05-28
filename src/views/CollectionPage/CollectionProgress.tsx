@@ -101,7 +101,6 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
       return prev + size;
     }, 0);
 
-
     return (
       <>
         <ProgressBar

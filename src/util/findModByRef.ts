@@ -44,20 +44,22 @@ export function testDownloadReference(download: types.IDownload,
     return false;
   }
 
-  if (!(download.game || []).includes(reference.gameId)) {
-    return false;
-  }
+  const modId = download.modInfo?.meta?.details?.modId
+              ?? download.modInfo?.nexus?.ids?.modId;
+
+  const fileId = download.modInfo?.meta?.details?.fileId
+              ?? download.modInfo?.nexus?.ids?.fileId;
 
   const lookup = {
     fileMD5: download.fileMD5,
     fileName: download.localPath,
     fileSizeBytes: download.size,
-    version: util.getSafe(download, ['modInfo', 'version'], undefined),
-    logicalFileName: util.getSafe(download, ['modInfo', 'name'], undefined),
+    version: download.modInfo?.version,
+    logicalFileName: download.modInfo?.name,
     game: download.game,
     source: download.modInfo?.source,
-    modId: download.modInfo?.nexus?.ids?.modId,
-    fileId: download.modInfo?.nexus?.ids?.fileId,
+    modId,
+    fileId,
   };
 
   return util.testModReference(lookup, reference);

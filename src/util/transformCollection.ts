@@ -329,7 +329,8 @@ function extractModRules(rules: types.IModRule[],
   .filter(rule => (rule !== undefined) && ruleEnabled(rule, mods, collection));
 }
 
-export function collectionModToRule(mod: ICollectionMod): types.IModRule {
+export function collectionModToRule(knownGames: types.IGameStored[],
+                                    mod: ICollectionMod): types.IModRule {
   const downloadHint = ['manual', 'browse', 'direct'].includes(mod.source.type)
     ? {
       url: mod.source.url,
@@ -354,21 +355,13 @@ export function collectionModToRule(mod: ICollectionMod): types.IModRule {
   const reference: types.IModReference = {
     description: mod.name,
     fileMD5: mod.source.md5,
-    gameId: mod.domainName,
+    gameId: (util as any).convertGameIdReverse(knownGames, mod.domainName),
     fileSize: mod.source.fileSize,
     versionMatch,
     logicalFileName: mod.source.type === 'bundle' ? undefined : mod.source.logicalFilename,
     fileExpression: mod.source.type === 'bundle' ? undefined : mod.source.fileExpression,
+    tag: shortid(),
   };
-
-  if (downloadHint !== undefined) {
-    // if the mod gets downloaded from a foreign source it will be next to impossible
-    // to later match the actual download against the reference.
-    // To help with that we generate a random tag that needs to be carried over to every
-    // download downloaded from this rule and every mod installed from that so that
-    // we don't re-download the same file again and again.
-    reference['tag'] = shortid();
-  }
 
   if (mod.source.type === 'nexus') {
     if (!mod.source.modId || !mod.source.fileId) {

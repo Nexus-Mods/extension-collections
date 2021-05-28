@@ -18,11 +18,11 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
+import ReactDOM = require('react-dom');
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
          TableTextFilter, tooltip, types, util } from 'vortex-api';
-import ReactDOM = require('react-dom');
 
 export interface ICollectionPageProps {
   t: i18next.TFunction;
@@ -221,7 +221,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
             return modId.toString() === ref.modId.toString()
                && fileId.toString() === ref.fileId.toString();
-          }
+          };
           const revMod = revMods.find(iter => matchRepo(iter.file));
 
           const name = revMod?.file?.owner?.name;
@@ -820,6 +820,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private modFromDownload(dlId: string, download: types.IDownload, rule: types.IModRule): IModEx {
+    const modId = download.modInfo?.meta?.details?.modId
+                ?? download.modInfo?.nexus?.ids?.modId;
+
     return {
       id: dlId,
       type: '',
@@ -838,7 +841,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         author: download.modInfo?.nexus?.modInfo?.user?.name,
         category: download.modInfo?.nexus?.modInfo?.category_id,
         source: download.modInfo?.nexus !== undefined ? 'nexus' : undefined,
-        modId: download.modInfo?.nexus?.ids?.modId,
+        modId,
         downloadGame: download.game,
       },
     };

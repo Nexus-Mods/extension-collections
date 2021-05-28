@@ -1,5 +1,8 @@
-import CollectionThumbnail from './CollectionThumbnail';
+import { NEXUS_BASE_URL } from '../../constants';
+import { IModEx } from '../../types/IModEx';
 import CollectionModDetails from './CollectionModDetails';
+import CollectionReleaseStatus from './CollectionReleaseStatus';
+import CollectionThumbnail from './CollectionThumbnail';
 import SlideshowControls from './SlideshowControls';
 
 import HealthIndicator from '../HealthIndicator';
@@ -9,11 +12,7 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Media, Panel } from 'react-bootstrap';
-import { ActionDropdown, ComponentEx, FlexLayout, IconBar, tooltip, types, util } from 'vortex-api';
-import { NEXUS_BASE_URL } from '../../constants';
-import CollectionReleaseStatus from './CollectionReleaseStatus';
-import { IModEx } from '../../types/IModEx';
-import { IActionDefinition } from 'vortex-api/lib/types/IActionDefinition';
+import { ActionDropdown, ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
@@ -33,7 +32,7 @@ interface ICollectionOverviewProps {
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx: number }> {
-  private mWorkshopActions: IActionDefinition[];
+  private mWorkshopActions: types.IActionDefinition[];
 
   constructor(props: ICollectionOverviewProps) {
     super(props);
@@ -104,7 +103,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                     collection={collection}
                     incomplete={incomplete}
                   />
-                  <div className='flex-filler'></div>
+                  <div className='flex-filler'/>
                   {modSelection.length > 1 ? (
                     <>
                       <SlideshowControls
@@ -113,7 +112,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                         onChangeItem={this.setSelection}
                         autoProgressTimeMS={5000}
                       />
-                      <div className='flex-filler'></div>
+                      <div className='flex-filler'/>
                       <tooltip.IconButton
                         className='btn-embed'
                         tooltip={t('Deselects mods')}
@@ -189,16 +188,15 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   }
 
   private setSelection = (idx: number) => {
-    if (this.props.modSelection.length === 0) {
-      this.nextState.selIdx = 0;
-    } else {
-      this.nextState.selIdx = idx % this.props.modSelection.length;
-    }
+    this.nextState.selIdx = (this.props.modSelection.length === 0)
+      ? 0
+      : idx % this.props.modSelection.length;
   }
 
   private openUrl = () => {
     const { revision } = this.props;
-    util.opn(`${NEXUS_BASE_URL}/${revision.collection.game.domainName}/collections/${revision.collection.id}`)
+    const { collection } = revision;
+    util.opn(`${NEXUS_BASE_URL}/${collection.game.domainName}/collections/${collection.id}`);
   }
 
   private cloneCollection = () => {

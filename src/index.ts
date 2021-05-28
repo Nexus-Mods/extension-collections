@@ -19,7 +19,7 @@ import {
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
 import { doExportToFile } from './collectionExport';
-import { install, postprocessCollection, testSupported } from './collectionInstall';
+import { makeInstall, postprocessCollection, testSupported } from './collectionInstall';
 import { MOD_TYPE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
@@ -395,7 +395,8 @@ function register(context: types.IExtensionContext,
 
   context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
 
-  context.registerInstaller('collection', 5, bbProm(testSupported), bbProm(install));
+  context.registerInstaller('collection', 5,
+                            bbProm(testSupported), bbProm(makeInstall(context.api)));
 
   context['registerGameSpecificCollectionsData'] = ((gameSupportEntry: IGameSupportEntry) => {
     try {
@@ -445,7 +446,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
 
   const state: () => types.IState = () => store.getState();
 
-  interface IModsDict { [gameId: string]: { [modId: string]: types.IMod } };
+  interface IModsDict { [gameId: string]: { [modId: string]: types.IMod }; }
 
   api.onStateChange(['persistent', 'mods'], (prev: IModsDict, cur: IModsDict) => {
     const gameMode = selectors.activeGameId(api.getState());

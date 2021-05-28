@@ -8,7 +8,7 @@ import { collectionModToRule } from './util/transformCollection';
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
 import * as path from 'path';
-import { actions, fs, log, types } from 'vortex-api';
+import { actions, fs, log, selectors, types } from 'vortex-api';
 
 /**
  * supported test for use in registerInstaller
@@ -24,64 +24,68 @@ export async function testSupported(files: string[], gameId: string)
 /**
  * installer function to be used with registerInstaller
  */
-export async function install(files: string[],
-                              destinationPath: string,
-                              gameId: string,
-                              progressDelegate: types.ProgressDelegate)
-                              : Promise<types.IInstallResult> {
-  const collectionData = await fs.readFileAsync(path.join(destinationPath, 'collection.json'),
-                                                { encoding: 'utf-8' });
+export function makeInstall(api: types.IExtensionApi) {
+  return async (files: string[],
+                destinationPath: string,
+                gameId: string,
+                progressDelegate: types.ProgressDelegate)
+                : Promise<types.IInstallResult> => {
+    const collectionData = await fs.readFileAsync(path.join(destinationPath, 'collection.json'),
+      { encoding: 'utf-8' });
 
-  const collection: ICollection = JSON.parse(collectionData);
+    const collection: ICollection = JSON.parse(collectionData);
 
-  /*
-  if (!isIModPack(modpack)) {
-    const errorText = isIModPack.errors.length > 10
-      ? ajv.errorsText(isIModPack.errors.slice(0, 10)) + '...'
-      : ajv.errorsText(isIModPack.errors);
+    /*
+    if (!isIModPack(modpack)) {
+      const errorText = isIModPack.errors.length > 10
+        ? ajv.errorsText(isIModPack.errors.slice(0, 10)) + '...'
+        : ajv.errorsText(isIModPack.errors);
 
-    log('warn', 'invalid mod pack', { errorText });
-    return Promise.reject(new Error('invalid modpack (see log for details)'));
-  }
-  */
+      log('warn', 'invalid mod pack', { errorText });
+      return Promise.reject(new Error('invalid modpack (see log for details)'));
+    }
+    */
 
-  const filesToCopy = files
-    .filter(filePath => !filePath.endsWith(path.sep)
-                     && (filePath.split(path.sep)[0] !== BUNDLED_PATH));
+    const filesToCopy = files
+      .filter(filePath => !filePath.endsWith(path.sep)
+        && (filePath.split(path.sep)[0] !== BUNDLED_PATH));
 
-  const bundled = files
-    .filter(filePath => !filePath.endsWith(path.sep)
-                     && (filePath.split(path.sep)[0] === BUNDLED_PATH));
+    const bundled = files
+      .filter(filePath => !filePath.endsWith(path.sep)
+        && (filePath.split(path.sep)[0] === BUNDLED_PATH));
 
-  return Promise.resolve({
-    instructions: [
-      {
-        type: 'attribute' as any,
-        key: 'customFileName',
-        value: collection.info.name,
-      },
-      {
-        type: 'setmodtype' as any,
-        value: MOD_TYPE,
-      },
-      ...filesToCopy.map(filePath => ({
-        type: 'copy' as any,
-        source: filePath,
-        destination: filePath,
-      })),
-      ...bundled.map(filePath => ({
-        type: 'copy' as any,
-        source: filePath,
-        destination: path.basename(filePath),
-        section: 'download',
-      })),
-      ...collection.mods.map(mod => (
+    const knownGames = selectors.knownGames(api.getState());
+
+    return Promise.resolve({
+      instructions: [
         {
-          type: 'rule' as any,
-          rule: collectionModToRule(mod),
+          type: 'attribute' as any,
+          key: 'customFileName',
+          value: collection.info.name,
+        },
+        {
+          type: 'setmodtype' as any,
+          value: MOD_TYPE,
+        },
+        ...filesToCopy.map(filePath => ({
+          type: 'copy' as any,
+          source: filePath,
+          destination: filePath,
         })),
-    ],
-  });
+        ...bundled.map(filePath => ({
+          type: 'copy' as any,
+          source: filePath,
+          destination: path.basename(filePath),
+          section: 'download',
+        })),
+        ...collection.mods.map(mod => (
+          {
+            type: 'rule' as any,
+            rule: collectionModToRule(knownGames, mod),
+          })),
+      ],
+    });
+  };
 }
 
 /**
