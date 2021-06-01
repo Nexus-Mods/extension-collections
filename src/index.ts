@@ -200,7 +200,7 @@ function generateCollectionMap(mods: { [modId: string]: types.IMod })
 
   const result: { [modId: string]: types.IMod[] } = {};
 
-  collections.forEach(coll => coll.rules.forEach(rule => {
+  collections.forEach(coll => (coll.rules ?? []).forEach(rule => {
     if (rule.reference.id !== undefined) {
       util.setdefault(result, rule.reference.id, []).push(coll);
     } else {
