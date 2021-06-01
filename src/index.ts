@@ -187,8 +187,15 @@ function genAttributeExtractor(api: types.IExtensionApi) {
   };
 }
 
+let lastRun;
+
 function generateCollectionMap(mods: { [modId: string]: types.IMod })
     : { [modId: string]: types.IMod[] } {
+
+  if (lastRun !== undefined) {
+    log('debug', 'mods changed', util.objDiff(lastRun, mods));
+  }
+  lastRun = mods;
   const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
 
   const result: { [modId: string]: types.IMod[] } = {};

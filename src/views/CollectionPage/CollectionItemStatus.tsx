@@ -13,11 +13,12 @@ interface ICollectionItemStatusProps {
   notifications: types.INotification[];
   container: Element;
   onSetModEnabled: (modId: string, enabled: boolean) => void;
+  installing: boolean;
 }
 
 class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {}> {
   public render(): JSX.Element {
-    const { t, container, mod } = this.props;
+    const { t, container, installing, mod } = this.props;
 
     if (mod.state === 'installed') {
       const options = [
@@ -65,10 +66,11 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
       if (mod.collectionRule.type === 'recommends') {
         return <div>{t('Optional')}</div>;
       } else {
+        const indicator = installing ? <Spinner/> : null;
         if (mod.state === 'downloaded') {
-          return <div><Spinner />{t('Install pending')}</div>;
+          return <div>{indicator}{t('Install pending')}</div>;
         } else {
-          return <div><Spinner />{t('Download pending')}</div>;
+          return <div>{indicator}{t('Download pending')}</div>;
         }
       }
     }

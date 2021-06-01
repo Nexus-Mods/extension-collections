@@ -80,6 +80,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mModActions: ITableRowAction[];
   private mTableContainerRef: Element;
   private mLastModsFinal: { [ruleId: string]: IModEx };
+  private mInstalling: boolean = false;
 
   constructor(props: IProps) {
     super(props);
@@ -125,6 +126,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           const download = (mod.archiveId !== undefined)
             ? this.props.downloads[mod.archiveId]
             : undefined;
+
           return (
             <CollectionItemStatus
               t={this.props.t}
@@ -132,6 +134,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               download={download}
               notifications={this.props.notifications}
               container={this.mTableContainerRef}
+              installing={this.mInstalling}
               onSetModEnabled={this.setModEnabled}
             />
           );
@@ -363,7 +366,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     // during installation we display only the remote information in the header area,
     // that's why we require driver.collectionInfo to be set
-    const installing = incomplete
+    this.mInstalling = incomplete
             && (driver.collectionInfo !== undefined)
             && (driver.collection.id === collection.id);
 
@@ -409,7 +412,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               onVoteSuccess={onVoteSuccess}
               onDeselectMods={this.unselectMods}
               incomplete={incomplete}
-              modSelection={(installing
+              modSelection={(this.mInstalling
                 ? revisionInfo?.modFiles?.map?.(file => ({ local: undefined, remote: file }))
                 : modSelection) ?? []}
             />
