@@ -130,12 +130,11 @@ export async function parser(api: types.IExtensionApi,
   });
   */
 
-  (collection.plugins ?? []).forEach(plugin => {
-    api.store.dispatch({ type: 'SET_PLUGIN_ENABLED', payload: {
+  util.batchDispatch(api.store, collection.plugins.map(plugin => ({
+    type: 'SET_PLUGIN_ENABLED', payload: {
       pluginName: plugin.name,
       enabled: plugin.enabled,
-    } });
-  });
+    } })));
 
   // dismiss all "mod x contains multiple plugins" notifications because we're enabling plugins
   // automatically.
@@ -146,28 +145,30 @@ export async function parser(api: types.IExtensionApi,
     .filter(noti => noti.id.startsWith('multiple-plugins-'))
     .forEach(noti => api.dismissNotification(noti.id));
 
-  (collection.pluginRules?.plugins ?? []).forEach(plugin => {
-    const existing = (state as any).userlist.plugins.find(plug =>
-      plug.name.toUpperCase() === plugin.name.toUpperCase());
+  util.batchDispatch(api.store, (collection.pluginRules?.plugins ?? []).reduce(
+    (prev, plugin) => {
+      const existing = (state as any).userlist.plugins.find(plug =>
+        plug.name.toUpperCase() === plugin.name.toUpperCase());
 
-    ['requires', 'incompatible', 'after'].forEach(type => {
-      const lootType = toLootType(type);
-      (plugin[type] || []).forEach(ref => {
-        const match = iter => refName(iter).toUpperCase() === ref.toUpperCase();
+      ['requires', 'incompatible', 'after'].forEach(type => {
+        const lootType = toLootType(type);
+        (plugin[type] || []).forEach(ref => {
+          const match = iter => refName(iter).toUpperCase() === ref.toUpperCase();
 
-        if (util.getSafe(existing, [lootType], []).find(match) === undefined) {
-          api.store.dispatch({
-            type: 'ADD_USERLIST_RULE',
-            payload: {
-              pluginId: plugin.name.toLowerCase(),
-              reference: ref,
-              type,
-            },
-          });
-        }
+          if (util.getSafe(existing, [lootType], []).find(match) === undefined) {
+            prev.push({
+              type: 'ADD_USERLIST_RULE',
+              payload: {
+                pluginId: plugin.name.toLowerCase(),
+                reference: ref,
+                type,
+              },
+            });
+          }
+        });
       });
-    });
-  });
+      return prev;
+  }, []));
 }
 
 interface ILocalizedMessage {

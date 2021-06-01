@@ -8,7 +8,7 @@ import { collectionModToRule } from './util/transformCollection';
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
 import * as path from 'path';
-import { actions, fs, log, selectors, types } from 'vortex-api';
+import { actions, fs, selectors, types, util } from 'vortex-api';
 
 /**
  * supported test for use in registerInstaller
@@ -97,12 +97,13 @@ export async function postprocessCollection(api: types.IExtensionApi,
                                             profile: types.IProfile,
                                             collection: ICollection,
                                             mods: { [modId: string]: types.IMod }) {
-  collection.modRules.forEach(rule => {
+  util.batchDispatch(api.store, collection.modRules.reduce((prev, rule) => {
     const sourceMod = findModByRef(rule.source, mods);
     if (sourceMod !== undefined) {
-      api.store.dispatch(actions.addModRule(profile.gameId, sourceMod.id, rule));
+      prev.push(actions.addModRule(profile.gameId, sourceMod.id, rule));
     }
-  });
+    return prev;
+  }, []));
 
   const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
 
