@@ -97,7 +97,7 @@ export async function postprocessCollection(api: types.IExtensionApi,
                                             profile: types.IProfile,
                                             collection: ICollection,
                                             mods: { [modId: string]: types.IMod }) {
-  util.batchDispatch(api.store, collection.modRules.reduce((prev, rule) => {
+  util.batchDispatch(api.store, (collection.modRules ?? []).reduce((prev, rule) => {
     const sourceMod = findModByRef(rule.source, mods);
     if (sourceMod !== undefined) {
       prev.push(actions.addModRule(profile.gameId, sourceMod.id, rule));
