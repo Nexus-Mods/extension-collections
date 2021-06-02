@@ -1,4 +1,5 @@
 import I18next from 'i18next';
+import memoize from 'memoize-one';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { ComponentEx, log, Toggle, types, util } from 'vortex-api';
@@ -19,6 +20,9 @@ interface IModsPageState {
 type IProps = IModsPageProps;
 
 class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
+  private mAugmentedRules = memoize((rules: ICollectionModRule[]) =>
+    rules.map(rule => this.augmentRule(rule)));
+
   constructor(props: IProps) {
     super(props);
 
@@ -27,7 +31,9 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   public render(): React.ReactNode {
-    const { t, collection, rules } = this.props;
+    const { t, collection } = this.props;
+
+    const rules = this.mAugmentedRules(this.props.rules);
 
     const filtered = rules.filter(rule => !util.testModReference(collection, rule.source));
 
@@ -46,7 +52,6 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
         </ControlLabel>
         <ListGroup>
           {filtered
-            .map(rule => this.insertNames(rule))
             .sort(this.ruleSort)
             .map((rule, idx) => {
               const separator: boolean = rule.sourceName !== lastSourceName;
@@ -58,7 +63,7 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     );
   }
 
-  private insertNames(rule: ICollectionModRule): ICollectionModRuleEx {
+  private augmentRule(rule: ICollectionModRule): ICollectionModRuleEx {
     return {
       ...rule,
       sourceName: renderReference(rule.source, this.props.mods),
