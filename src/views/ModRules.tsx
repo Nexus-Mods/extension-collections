@@ -40,7 +40,7 @@ class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
     let lastSourceName: string;
 
     return (
-      <div id='collection-mod-rules'>
+      <div id='collection-mod-rules' className='collection-rules-edit'>
         <ControlLabel>
           <p>
             {t('By default the collection will replicate all your custom rules that dictate '

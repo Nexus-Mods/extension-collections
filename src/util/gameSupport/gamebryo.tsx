@@ -1,8 +1,8 @@
 import * as path from 'path';
 import React = require('react');
-import { Button, ControlLabel, Table } from 'react-bootstrap';
+import { Button, ControlLabel, ListGroup, ListGroupItem, Table } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
-import { fs, Icon, log, selectors, Spinner, tooltip, types, util } from 'vortex-api';
+import { fs, Icon, log, selectors, Spinner, Toggle, tooltip, types, util } from 'vortex-api';
 import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 
 interface IGamebryoLO {
@@ -15,7 +15,10 @@ function getEnabledPlugins(state: types.IState,
                            plugins: string[])
                            : Array<{ name: string, enabled: boolean }> {
   const gamebryoLO: { [id: string]: IGamebryoLO } = state['loadOrder'];
-  return plugins.map(pluginName => gamebryoLO[pluginName.toLowerCase()])
+  return plugins.map(pluginName => ({
+    ...gamebryoLO[pluginName.toLowerCase()],
+    name: pluginName,
+  }))
     .filter(lo => (lo !== undefined) && (lo.name !== undefined))
     .sort((lhs, rhs) => lhs.loadOrder - rhs.loadOrder)
     .map(lo => ({ name: lo.name, enabled: lo.enabled }));
@@ -23,6 +26,7 @@ function getEnabledPlugins(state: types.IState,
 
 interface IUserlistEntry {
   name: string;
+  group?: string;
   after: string[];
 }
 
@@ -41,7 +45,7 @@ function extractPluginRules(state: types.IState, plugins: string[]): IGamebryoRu
   // aren't included in the pack
   return {
     plugins: customisedPlugins,
-    groups: state['loadOrder'].groups,
+    groups: state['userlist'].groups,
   };
 }
 
@@ -114,22 +118,29 @@ function refName(iter: string | { name: string }): string {
 export async function parser(api: types.IExtensionApi,
                              gameId: string,
                              collection: ICollectionGamebryo) {
-  const state: types.IState = api.store.getState();
+  const state: types.IState = api.getState();
 
-  /*
-  api.store.dispatch({
-    type: 'SET_PLUGIN_ORDER',
-    payload: modpack.plugins.map(plugin => plugin.name),
-  });
-  api.store.dispatch({
-    type: 'UPDATE_PLUGIN_ORDER',
-    payload: {
-      pluginList: modpack.plugins.filter(plugin => plugin.enabled).map(plugin => plugin.name),
-      setEnabled: true,
-    },
-  });
-  */
+  // set up groups and their rules
+  util.batchDispatch(api.store, collection.pluginRules.groups.reduce((prev, group) => {
+    if ((state as any).userlist.groups[group.name] === undefined) {
+      prev.push({
+        type: 'ADD_PLUGIN_GROUP', payload: {
+          group: group.name,
+        },
+      });
+    }
+    group.after.forEach(after => {
+      prev.push({
+        type: 'ADD_GROUP_RULE', payload: {
+          groupId: group.name,
+          reference: after,
+        },
+      });
+    });
+    return prev;
+  }, []));
 
+  // set up plugins and their rules
   util.batchDispatch(api.store, collection.plugins.map(plugin => ({
     type: 'SET_PLUGIN_ENABLED', payload: {
       pluginName: plugin.name,
@@ -150,23 +161,35 @@ export async function parser(api: types.IExtensionApi,
       const existing = (state as any).userlist.plugins.find(plug =>
         plug.name.toUpperCase() === plugin.name.toUpperCase());
 
-      ['requires', 'incompatible', 'after'].forEach(type => {
-        const lootType = toLootType(type);
-        (plugin[type] || []).forEach(ref => {
-          const match = iter => refName(iter).toUpperCase() === ref.toUpperCase();
+      if (existing !== undefined) {
+        if (plugin.group !== undefined) {
+          prev.push({
+            type: 'SET_PLUGIN_GROUP',
+            payload: {
+              pluginId: plugin.name.toLowerCase(),
+              group: plugin.group,
+            },
+          });
+        }
 
-          if (util.getSafe(existing, [lootType], []).find(match) === undefined) {
-            prev.push({
-              type: 'ADD_USERLIST_RULE',
-              payload: {
-                pluginId: plugin.name.toLowerCase(),
-                reference: ref,
-                type,
-              },
-            });
-          }
+        ['requires', 'incompatible', 'after'].forEach(type => {
+          const lootType = toLootType(type);
+          (plugin[type] || []).forEach(ref => {
+            const match = iter => refName(iter).toUpperCase() === ref.toUpperCase();
+
+            if (util.getSafe(existing, [lootType], []).find(match) === undefined) {
+              prev.push({
+                type: 'ADD_USERLIST_RULE',
+                payload: {
+                  pluginId: plugin.name.toLowerCase(),
+                  reference: ref,
+                  type,
+                },
+              });
+            }
+          });
         });
-      });
+      }
       return prev;
   }, []));
 }
@@ -261,35 +284,48 @@ interface IRule {
   name: string;
   ref: string | ILootReference;
   type: string;
+  isGroup?: boolean;
+}
+
+function renderRefName(rule: IRule): string {
+  return typeof(rule.ref) === 'string'
+    ? rule.ref
+    : rule.ref.display;
 }
 
 interface IPluginRuleProps {
   t: types.TFunction;
   rule: IRule;
-  onRemove: (pluginId: string, referenceId: string, type: string) => void;
+  onRemove: (rule: IRule) => void;
+}
+
+function renderType(t: types.TFunction, type: string) {
+  if (type === 'assigned') {
+    return t('assigned to group');
+  } else {
+    return t(type);
+  }
 }
 
 export function PluginRule(props: IPluginRuleProps) {
   const { t, onRemove, rule } = props;
 
   const remove = React.useCallback((evt: React.MouseEvent<any>) => {
-    onRemove(rule.name.toLowerCase(), rule.ref as any, rule.type);
+    onRemove(rule);
   }, [rule]);
 
   return (
-    <tr>
-      <td className='collection-plugin-name'>
-        {rule.name} <p className='collection-rule-type'>{ruleType(t, rule.type)}</p> {rule.ref}
-      </td>
-      <td className='collection-plugin-remove'>
-        <tooltip.IconButton
-          className='btn-embed'
-          icon='remove'
-          tooltip={t('Remove plugin rule')}
-          onClick={remove}
-        />
-      </td>
-    </tr>
+    <ListGroupItem>
+      <div className='rule-name'>{rule.isGroup ? t('Group') + ' ' : ''}{rule.name}</div>
+      <div className='rule-type'>{renderType(t, rule.type)}</div>
+      <div className='rule-name'>{renderRefName(rule)}</div>
+      <tooltip.IconButton
+        className='btn-embed remove-btn'
+        icon='remove'
+        tooltip={t('Remove plugin rule')}
+        onClick={remove}
+      />
+    </ListGroupItem>
   );
 }
 
@@ -297,6 +333,8 @@ export function Interface(props: IExtendedInterfaceProps): JSX.Element {
   const { t, collection } = props;
 
   const [pluginRules, setPluginRules] = React.useState<IRule[]>(null);
+  const [groupAssignments, setGroupAssignments] =
+    React.useState<{ [name: string]: string }>(null);
   const store = useStore();
   const gameId = useSelector(selectors.activeGameId);
   const mods = useSelector((selState: types.IState) => selState.persistent.mods[gameId]);
@@ -315,7 +353,10 @@ export function Interface(props: IExtendedInterfaceProps): JSX.Element {
     getIncludedPlugins(gameId, stagingPath, mods, modIds)
       .then(plugins => {
         const pluginsL = plugins.map(plug => plug.toLowerCase());
-        const rules = plugins.reduce((prev: IRule[], plugin: string) => {
+
+        const rules: IRule[] = [];
+        const assignments: { [plugin: string]: string } = {};
+        for (const plugin of plugins) {
           const plug: ILOOTPlugin = (userlist?.plugins ?? [])
             .find(iter => iter.name.toLowerCase() === plugin.toLowerCase());
 
@@ -327,42 +368,57 @@ export function Interface(props: IExtendedInterfaceProps): JSX.Element {
           });
 
           if (plug !== undefined) {
-            prev.push(...(plug.after ?? []).filter(byRef).map(aft => toRule(aft, 'after')));
-            prev.push(...(plug.req ?? []).filter(byRef).map(req => toRule(req, 'requires')));
-            prev.push(...(plug.inc ?? []).filter(byRef).map(inc => toRule(inc, 'incompatible')));
-          }
+            rules.push(...(plug.after ?? []).filter(byRef).map(aft => toRule(aft, 'after')));
+            rules.push(...(plug.req ?? []).filter(byRef).map(req => toRule(req, 'requires')));
+            rules.push(...(plug.inc ?? []).filter(byRef).map(inc => toRule(inc, 'incompatible')));
 
-          return prev;
-        }, []);
+            if (plug.group !== undefined) {
+              assignments[plug.name] = plug.group;
+            }
+          }
+        }
         setPluginRules(rules);
+        setGroupAssignments(assignments);
       });
   }, [collection, mods, userlist, setPluginRules]);
 
-  const removeRule = React.useCallback((pluginId: string, reference: string, type: string) => {
+  const removeRule = React.useCallback((rule: IRule) => {
     store.dispatch({ type: 'REMOVE_USERLIST_RULE', payload: {
-      pluginId, reference, type,
+      pluginId: rule.name.toLowerCase(), reference: rule.ref, type: rule.type,
     } });
   }, [store]);
 
+  const removeGroupRule = React.useCallback((rule: IRule) => {
+    store.dispatch({ type: 'REMOVE_GROUP_RULE', payload: {
+      groupId: rule.name.toLowerCase(), reference: rule.ref,
+    } });
+  }, [store]);
+
+  const unassignGroup = React.useCallback((rule: IRule) => {
+    store.dispatch({ type: 'SET_PLUGIN_GROUP', payload: {
+      pluginId: rule.name.toLowerCase(), group: undefined,
+    } });
+  }, [store]);
+
+  const grpsFlattened: IRule[] = userlist.groups.reduce((prev: IRule[], grp) => {
+    (grp.after ?? []).forEach(aft => {
+      prev.push({ name: grp.name, ref: aft, type: 'after' });
+    });
+    return prev;
+  }, []);
+
   return (
-    <div>
+    <div className='collection-rules-edit collection-scrollable'>
       <ControlLabel>
         <p>
           {t('The collection will include your custom load order rules so that '
             + 'users of your collection will get the same load order.')}
           <br/>
-          {t('Rules you remove here are also removed from your own setup')}
+          {t('Rules you remove here are also removed from your actual setup.')}
         </p>
       </ControlLabel>
       {(pluginRules !== null) ? (
-        <Table id='collection-userlist-table'>
-          <thead>
-            <tr>
-              <th className='header-plugin-rule'>{t('Rule')}</th>
-              <th className='header-remove'>{t('Remove')}</th>
-            </tr>
-          </thead>
-          <tbody>
+        <ListGroup>
             {pluginRules.map(rule => (
               <PluginRule
                 t={t}
@@ -370,10 +426,30 @@ export function Interface(props: IExtendedInterfaceProps): JSX.Element {
                 rule={rule}
                 onRemove={removeRule}
               />))}
-          </tbody>
-        </Table>
-      ) : <Spinner />
-      }
+        </ListGroup>
+      ) : <Spinner />}
+      {(groupAssignments !== null) ? (
+        <ListGroup>
+          {Object.keys(groupAssignments).map(pluginName => (
+            <PluginRule
+              t={t}
+              key={`${pluginName}_assigned_${groupAssignments[pluginName]}`}
+              rule={{ name: pluginName, type: 'assigned', ref: groupAssignments[pluginName] }}
+              onRemove={unassignGroup}
+            />
+          ))}
+        </ListGroup>
+      ) : <Spinner />}
+      <ListGroup>
+        {(grpsFlattened.map(grp => (
+          <PluginRule
+            t={t}
+            key={`${grp.name}_after_${grp.ref}`}
+            rule={grp}
+            onRemove={removeGroupRule}
+          />
+        )))}
+      </ListGroup>
     </div>
   );
 }
