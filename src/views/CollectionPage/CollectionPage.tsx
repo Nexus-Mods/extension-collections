@@ -72,6 +72,9 @@ const getCollator = (() => {
   };
 })();
 
+const STATUS_ORDER: string[] =
+  ['Download Pending', 'Downloading', 'Install Pending', 'Installing', 'Disabled', 'Enabled'];
+
 type IProps = ICollectionPageProps & IConnectedProps & IActionProps;
 
 class CollectionPage extends ComponentEx<IProps, IComponentState> {
@@ -141,19 +144,24 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         },
         calc: (mod: IModEx) => {
           if (mod.state === 'installing') {
-            return 'Installing';
+            return ['Installing'];
           } else if (mod.state === 'downloading') {
-            return 'Downloading';
-          } else if ((mod.state === null) || (mod.state === 'downloaded')) {
-            return 'Pending';
+            return ['Downloading'];
+          } else if (mod.state === null) {
+            return ['Download Pending', 'Pending'];
+          } else if (mod.state === 'downloaded') {
+            return ['Install Pending', 'Pending'];
           }
-          return mod.enabled === true ? 'Enabled' : 'Disabled';
+          return [mod.enabled === true ? 'Enabled' : 'Disabled'];
         },
         placement: 'table',
         isToggleable: false,
         edit: {},
         noShrink: true,
-        isSortable: false,
+        isSortable: true,
+        sortFunc: (lhs: string[], rhs: string[]): number => {
+          return STATUS_ORDER.indexOf(lhs[0]) - STATUS_ORDER.indexOf(rhs[0]);
+        },
         filter: new OptionsFilter([
           { value: 'Enabled', label: 'Enabled' },
           { value: 'Disabled', label: 'Disabled' },
@@ -161,7 +169,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           { value: 'Downloading', label: 'Downloading' },
           { value: 'Pending', label: 'Pending' },
         ], true, false),
-      } as any,
+      },
       {
         id: 'name',
         name: 'Name',
