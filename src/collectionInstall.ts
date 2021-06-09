@@ -1,7 +1,6 @@
 import { ICollection } from './types/ICollection';
 
 import { findExtensions, IExtensionFeature } from './util/extension';
-import { findModByRef } from './util/findModByRef';
 import { parseGameSpecifics } from './util/gameSupport';
 import { collectionModToRule } from './util/transformCollection';
 
@@ -98,7 +97,7 @@ export async function postprocessCollection(api: types.IExtensionApi,
                                             collection: ICollection,
                                             mods: { [modId: string]: types.IMod }) {
   util.batchDispatch(api.store, (collection.modRules ?? []).reduce((prev, rule) => {
-    const sourceMod = findModByRef(rule.source, mods);
+    const sourceMod = util.findModByRef(rule.source, mods);
     if (sourceMod !== undefined) {
       prev.push(actions.addModRule(profile.gameId, sourceMod.id, rule));
     }

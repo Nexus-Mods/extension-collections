@@ -2,7 +2,6 @@ import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import { actions, log, types, util } from 'vortex-api';
 import { IRevisionEx } from '../types/IRevisionEx';
-import { findModByRef } from './findModByRef';
 import InfoCache from './InfoCache';
 import { getUnfulfilledNotificationId } from './util';
 
@@ -223,7 +222,7 @@ class InstallDriver {
     const required = this.mCollection.rules
       .filter(rule => rule.type === 'requires');
     this.mRequiredMods = required
-      .filter(rule => findModByRef(rule.reference, mods) === undefined);
+      .filter(rule => util.findModByRef(rule.reference, mods) === undefined);
 
     if (this.mRequiredMods.length === 0) {
       this.mInstallDone = false;

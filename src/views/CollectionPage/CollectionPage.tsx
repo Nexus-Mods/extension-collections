@@ -1,6 +1,4 @@
-import { AUTHOR_UNKNOWN, AVATAR_FALLBACK } from '../../constants';
-import { findDownloadIdByRef, findModByRef, testDownloadReference } from '../../util/findModByRef';
-import InfoCache from '../../util/InfoCache';
+import { testDownloadReference } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
 
 import { IModEx } from '../../types/IModEx';
@@ -861,7 +859,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private modFromRule(props: ICollectionPageProps, rule: types.IModRule): IModEx {
     const { downloads, mods, profile } = props;
 
-    const mod: types.IMod = findModByRef(rule.reference, mods);
+    const mod: types.IMod = util.findModByRef(rule.reference, mods);
 
     if (mod !== undefined) {
       return {
@@ -870,7 +868,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         collectionRule: rule,
       };
     } else {
-      const dlId: string = findDownloadIdByRef(rule.reference, downloads);
+      const dlId: string = util.findDownloadByRef(rule.reference, downloads);
 
       if (dlId !== undefined) {
         return this.modFromDownload(dlId, downloads[dlId], rule);
@@ -894,8 +892,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     }
   }
 
-  private initModsEx(props: ICollectionPageProps)
-                     : { [modId: string]: IModEx } {
+  private initModsEx(props: ICollectionPageProps): { [modId: string]: IModEx } {
     const { collection } = props;
 
     return (collection.rules || [])

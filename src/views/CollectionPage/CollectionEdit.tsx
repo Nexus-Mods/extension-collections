@@ -1,6 +1,5 @@
 import { ICollectionInfo, ICollectionModRule } from '../../types/ICollection';
 import { IExtensionFeature } from '../../util/extension';
-import { findModByRef } from '../../util/findModByRef';
 import { getInterface } from '../../util/gameSupport';
 import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
@@ -198,7 +197,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       const includedMods: { [modId: string]: types.IMod } = collection.rules
         .filter(rule => rule.type === 'requires')
         .reduce((prev, rule) => {
-          const mod = findModByRef(rule.reference, mods);
+          const mod = util.findModByRef(rule.reference, mods);
           if (mod !== undefined) {
             prev[mod.id] = mod;
           }

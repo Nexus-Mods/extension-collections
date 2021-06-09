@@ -1,8 +1,7 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
-import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, NEXUS_DOMAIN} from '../../constants';
+import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
-import { findDownloadIdByRef, findModByRef } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
 
 import CollectionEdit from './CollectionEdit';
@@ -214,10 +213,17 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const collection = mods[modId];
     collection.rules.forEach(rule => {
-      const dlId = findDownloadIdByRef(rule.reference, downloads);
+      const dlId = util.findDownloadByRef(rule.reference, downloads);
       if (dlId !== undefined) {
         this.context.api.events.emit('pause-download', dlId);
       }
+    });
+    const { api } = this.context;
+    api.events.emit('cancel-dependency-install', modId);
+    api.sendNotification({
+      type: 'success',
+      title: 'Collection pausing',
+      message: 'Already queued mod installations will still finish',
     });
   }
 
@@ -288,7 +294,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     // either way, all running downloads are canceled
     const collection = mods[modId];
     await Promise.all(collection.rules.map(async rule => {
-      const dlId = findDownloadIdByRef(rule.reference, downloads);
+      const dlId = util.findDownloadByRef(rule.reference, downloads);
 
       if (dlId !== undefined) {
         const download = state.persistent.downloads.files[dlId];
@@ -301,7 +307,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     if (result.input.delete) {
       await Promise.all(collection.rules.map(async rule => {
-        const mod = findModByRef(rule.reference, mods);
+        const mod = util.findModByRef(rule.reference, mods);
         if (mod !== undefined) {
           await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, mod.id, cb));
         }
@@ -344,7 +350,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         (collection.rules || [])
           .filter(rule => rule.type === 'requires')
           .map(rule => {
-            const mod = findModByRef(rule.reference, mods);
+            const mod = util.findModByRef(rule.reference, mods);
             return mod ?? null;
           });
       return prev;
@@ -369,7 +375,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const missing = mods[collectionId].rules.filter(rule =>
       ['requires', 'recommends'].includes(rule.type)
-      && (findModByRef(rule.reference, mods) === undefined));
+      && (util.findModByRef(rule.reference, mods) === undefined));
     if (missing.length > 0) {
       await api.showDialog('error', 'Collection isn\'t fully installed', {
         text: 'You can only upload collections that are fully installed on this system.\n'

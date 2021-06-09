@@ -1,5 +1,4 @@
 import { ICollectionSourceInfo, SourceType } from '../types/ICollection';
-import { findModByRef } from '../util/findModByRef';
 
 import I18next from 'i18next';
 import * as _ from 'lodash';
@@ -538,7 +537,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     return Object.values(collection.rules)
       .filter(rule => ['requires', 'recommends'].indexOf(rule.type) !== -1)
       .reduce((prev, rule) => {
-        const mod = findModByRef(rule.reference, mods);
+        const mod = util.findModByRef(rule.reference, mods);
         const id = mod?.id ?? rule.reference.id;
         if (id !== undefined) {
           prev[id] = { rule, mod };

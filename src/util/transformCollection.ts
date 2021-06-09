@@ -3,7 +3,6 @@ import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
          ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
 import { findExtensions, IExtensionFeature } from './extension';
-import { findModByRef } from './findModByRef';
 import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
 
@@ -130,7 +129,7 @@ async function rulesToCollectionMods(collection: types.IMod,
   const result: ICollectionMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
-      : findModByRef(rule.reference, mods);
+      : util.findModByRef(rule.reference, mods);
 
     if ((mod === undefined) || (mod.type === MOD_TYPE)) {
       // don't include the collection itself (or any other collection for that matter,
@@ -270,7 +269,7 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
   // a rule that doesn't contain any of the above markers will likely not be able to match
   // anything on a different system
 
-  const mod = findModByRef(rule.reference, mods);
+  const mod = util.findModByRef(rule.reference, mods);
 
   if (mod === undefined) {
     log('warn', 'mod enabled in collection isn\'t installed', JSON.stringify(rule));
@@ -314,7 +313,7 @@ function extractModRules(rules: types.IModRule[],
   return rules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
-      : findModByRef(rule.reference, mods);
+      : util.findModByRef(rule.reference, mods);
     if (mod === undefined) {
       onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id });
       return prev;
@@ -412,7 +411,7 @@ export async function modToCollection(state: types.IState,
       if (rule.reference.id !== undefined) {
         return rule.reference.id;
       } else {
-        const mod = findModByRef(rule.reference, mods);
+        const mod = util.findModByRef(rule.reference, mods);
         if (mod !== undefined) {
           return mod.id;
         }

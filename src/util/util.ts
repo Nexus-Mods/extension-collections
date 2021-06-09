@@ -2,7 +2,6 @@ import * as PromiseBB from 'bluebird';
 import { createHash } from 'crypto';
 import { types, util } from 'vortex-api';
 import { ICollectionModRuleEx } from '../types/ICollection';
-import { findModByRef } from './findModByRef';
 
 export function makeProgressFunction(api: types.IExtensionApi) {
   const notificationId = api.sendNotification({
@@ -78,7 +77,7 @@ export function md5sum(input: string): string {
 
 export function renderReference(ref: types.IModReference,
                                 mods: { [modId: string]: types.IMod }): string {
-  const mod = findModByRef(ref, mods);
+  const mod = util.findModByRef(ref, mods);
   return util.renderModReference(ref, mod);
 }
 
