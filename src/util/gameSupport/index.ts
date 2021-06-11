@@ -48,22 +48,6 @@ const gameSupport = {
     },
 };
 
-export function addGameSupport(entry: IGameSupportEntry) {
-  if ((entry as IGameSupportEntry) === undefined) {
-    throw new util.DataInvalid('Failed attempt to add gamesupport entry - invalid argument');
-  }
-
-  if (gameSupport[entry.gameId] !== undefined) {
-    return;
-  }
-
-  gameSupport[entry.gameId] = {
-    generator: entry.generator,
-    parser: entry.parser,
-    interface: (props) => entry.interface(props),
-  };
-}
-
 export function generateGameSpecifics(state: types.IState,
                                       gameId: string,
                                       stagingPath: string,
