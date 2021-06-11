@@ -1,6 +1,6 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
-import { MOD_TYPE, NAMESPACE, NEXUS_BASE_URL} from '../../constants';
+import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_BASE_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
@@ -220,7 +220,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     });
     const { api } = this.context;
     api.events.emit('cancel-dependency-install', modId);
+
+    api.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
     api.sendNotification({
+      id: 'collection-pausing',
       type: 'success',
       title: 'Collection pausing',
       message: 'Already queued mod installations will still finish',

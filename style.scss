@@ -689,13 +689,10 @@ $collection-mod-image-height: 200px;
 
   .table-header-cell.header-collection_status {
     min-width: 12em;
+    max-width: 12em;
   }
 
-  .table-header-cell.header-filesize {
-    min-width: 7em;
-  }
-
-  .table-mods.cell-collection_status {
+  .table-collection-mods.cell-collection_status {
     white-space: nowrap;
     .icon-spinner {
       margin-right: 0.5em;
@@ -716,13 +713,19 @@ $collection-mod-image-height: 200px;
   }
 }
 
-.table-mods.cell-collection {
-  white-space: nowrap;
+.table-collection-mods.cell-required {
+  text-align: center;
 }
 
 .collection-progress-flex {
   padding: $half-gutter;
   justify-content: space-evenly;
+  align-items: center;
+
+  .progressbar {
+    width: 100%;
+    margin: 1em;
+  }
 
   .progressbar-labels {
     >div {
@@ -733,15 +736,44 @@ $collection-mod-image-height: 200px;
 
 .collection-pause-cancel-flex {
   justify-content: center;
-  padding: $half-gutter;
+  padding: 0 $half-gutter;
   > .btn {
-    margin: $half-gutter 0;
-    min-width: 100px;
+    margin: 0 $half-gutter;
+    padding: 0.5em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid $border-color;
+    &:hover {
+      border: 2px solid $brand-primary;
+    }
+
+    &.btn-pause-resume {
+      border-radius: 999px;
+      width: 3em;
+      height: 3em;
+    }
+
+    &.btn-cancel {
+      border-radius: 0.5em;
+      height: 3em;
+      padding: 0.5em 1em;
+    }
   }
 }
 
+.collection-banner-container {
+  margin-left: $half-gutter;
+}
+
 .collection-premium-banner {
-  padding: $gutter-width;
+  padding: $half-gutter;
+  width: 25em;
+  height: 100%;
+
+  > .layout-container {
+    align-items: center;
+  }
 
   .collection-table-container {
     background: url(assets/images/ad-banner.png);
@@ -762,8 +794,18 @@ $collection-mod-image-height: 200px;
     padding: 4px 30px !important;
   }
 
+  .icon {
+    width: 2em;
+    height: 2em;
+    margin-right: 0.5em;
+  }
+
   .collection-estimate {
     color: $text-color-disabled;
+  }
+
+  .collection-premium-highlight {
+    color: $brand-primary;
   }
 }
 

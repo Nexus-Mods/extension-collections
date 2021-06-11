@@ -1,3 +1,4 @@
+import { AUTHOR_UNKNOWN, AVATAR_FALLBACK, INSTALLING_NOTIFICATION_ID } from '../../constants';
 import { testDownloadReference } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
 
@@ -7,8 +8,7 @@ import { IStateEx } from '../../types/IStateEx';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
-import CollectionOverviewInstalling from './CollectionOverviewInstalling';
-import CollectionProgress, { ICollectionProgressProps } from './CollectionProgress';
+import CollectionProgress from './CollectionProgress';
 
 import { ICollection, ICollectionRevisionMod, IModFile, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
@@ -19,6 +19,7 @@ import { Image, Panel } from 'react-bootstrap';
 import ReactDOM = require('react-dom');
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
+import * as semver from 'semver';
 import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
          TableTextFilter, tooltip, types, util } from 'vortex-api';
 
@@ -122,7 +123,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         name: 'Status',
         description: 'Is mod enabled in current profile',
         icon: 'check-o',
-        position: 500,
         customRenderer: (mod: IModEx) => {
           const download = (mod.archiveId !== undefined)
             ? this.props.downloads[mod.archiveId]
@@ -136,15 +136,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               notifications={this.props.notifications}
               container={this.mTableContainerRef}
               installing={this.mInstalling}
-              onSetModEnabled={this.setModEnabled}
             />
           );
         },
         calc: (mod: IModEx) => {
           if (mod.state === 'installing') {
-            return ['Installing'];
+            return ['Installing', mod.progress];
           } else if (mod.state === 'downloading') {
-            return ['Downloading'];
+            return ['Downloading', mod.progress];
           } else if (mod.state === null) {
             return ['Download Pending', 'Pending'];
           } else if (mod.state === 'downloaded') {
@@ -169,6 +168,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         ], true, false),
       },
       {
+        id: 'required',
+        name: 'Required',
+        description: 'Is the mod required for this collection',
+        placement: 'table',
+        calc: (mod: IModEx) => mod.collectionRule.type === 'requires',
+        edit: {},
+      },
+      {
         id: 'name',
         name: 'Name',
         calc: mod => (mod.state !== null)
@@ -187,80 +194,62 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       {
         id: 'version',
         name: 'Version',
-        calc: mod => (mod.state !== null)
-          ? util.getSafe(mod.attributes, ['version'], '0.0.0')
-          : mod.collectionRule.reference.versionMatch,
+        calc: mod => {
+          let verString = (mod.state !== null)
+            ? util.getSafe(mod.attributes, ['version'], '0.0.0')
+            : mod.collectionRule.reference.versionMatch;
+          if (verString.endsWith('+prefer')) {
+            const sv = semver.minVersion(verString);
+            verString = sv.version;
+          }
+          return verString;
+        },
         placement: 'table',
         edit: {},
-      },
-      {
-        id: 'author',
-        name: 'Author',
-        calc: mod => (mod !== undefined)
-          ? mod.attributes?.author || this.props.t(AUTHOR_UNKNOWN)
-          : this.props.t(AUTHOR_UNKNOWN),
-        placement: 'table',
-        edit: {},
-        isToggleable: true,
-        isSortable: true,
       },
       {
         id: 'uploader',
         name: 'Uploader',
         customRenderer: (mod: IModEx) => {
           const { t } = this.props;
-          if (mod === undefined) {
-            return (
-              <div>
-                <Image circle src={AVATAR_FALLBACK} />
-                {mod?.attributes?.uploader || t(AUTHOR_UNKNOWN)}
-              </div>
-            );
+
+          let name: string;
+          let avatar: string;
+          if (this.state.revisionInfo !== undefined) {
+            const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
+            const matchRepo = (ref: IModFile) => {
+              const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
+              const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
+
+              if ((modId === undefined) || (fileId === undefined)
+                  || (ref.modId === undefined) || (ref.fileId === undefined)) {
+                return false;
+              }
+
+              return modId.toString() === ref.modId.toString()
+                && fileId.toString() === ref.fileId.toString();
+            };
+            const revMod = revMods.find(iter => matchRepo(iter.file));
+
+            name = mod.attributes?.uploader || revMod?.file?.owner?.name;
+            avatar = mod.attributes?.uploaderAvatar
+                  || revMod?.file?.owner?.avatar;
+          } else if (mod.attributes !== undefined) {
+            name = mod.attributes?.uploader;
+            avatar = mod.attributes?.uploaderAvatar;
           }
-
-          const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
-          const matchRepo = (ref: IModFile) => {
-            const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
-            const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
-
-            if ((modId === undefined) || (fileId === undefined)
-                || (ref.modId === undefined) || (ref.fileId === undefined)) {
-              return false;
-            }
-
-            return modId.toString() === ref.modId.toString()
-               && fileId.toString() === ref.fileId.toString();
-          };
-          const revMod = revMods.find(iter => matchRepo(iter.file));
-
-          const name = revMod?.file?.owner?.name;
-          const avatar = revMod?.file?.owner?.avatar || AVATAR_FALLBACK;
 
           return (
             <div>
-              <Image circle src={avatar} />
-              {name}
+              <Image circle src={avatar || AVATAR_FALLBACK} />
+              {name || t(AUTHOR_UNKNOWN)}
             </div>
           );
         },
         calc: mod => mod?.attributes?.author || this.props.t(AUTHOR_UNKNOWN),
         placement: 'table',
         edit: {},
-        isToggleable: true,
-        isSortable: true,
-      },
-      {
-        id: 'filesize',
-        name: 'File Size',
-        description: 'Total size of the file',
-        icon: 'chart-bars',
-        customRenderer: (mod: IModEx) =>
-          <span>{mod?.attributes?.fileSize !== undefined
-            ? util.bytesToString(mod?.attributes?.fileSize)
-            : '???'}</span>,
-        calc: mod => mod?.attributes?.fileSize,
-        placement: 'table',
-        edit: {},
+        isToggleable: false,
         isSortable: true,
       },
       {
@@ -335,7 +324,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activity, className, collection, driver, downloads, language,
+    const { t, activity, className, collection, driver, downloads, language, notifications,
             onVoteSuccess, profile, votedSuccess } = this.props;
     const { modSelection, modsEx, revisionInfo } = this.state;
 
@@ -390,30 +379,27 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           <Panel ref={this.setTableContainerRef}>
             <Panel.Body>
               <Table
-                tableId='mods'
+                tableId='collection-mods'
                 showDetails={false}
                 data={modsEx}
                 staticElements={this.mAttributes}
                 actions={this.mModActions}
-                columnBlacklist={['collection']}
                 onChangeSelection={this.changeModSelection}
               />
             </Panel.Body>
           </Panel>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
-          <Panel>
-            <CollectionProgress
-              t={t}
-              mods={this.mLastModsFinal}
-              downloads={downloads}
-              totalSize={totalSize}
-              activity={activity}
-              onCancel={this.cancel}
-              onPause={this.pause}
-              onResume={this.resume}
-            />
-          </Panel>
+          <CollectionProgress
+            t={t}
+            mods={modsEx}
+            downloads={downloads}
+            totalSize={totalSize}
+            activity={activity}
+            onCancel={this.cancel}
+            onPause={this.mInstalling ? this.pause : undefined}
+            onResume={this.mInstalling ? undefined : this.resume}
+          />
         </FlexLayout.Fixed>
       </FlexLayout>
     );

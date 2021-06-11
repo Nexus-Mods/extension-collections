@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import * as React from 'react';
-import { Table } from 'react-bootstrap';
-import { util } from 'vortex-api';
+import { Button } from 'react-bootstrap';
+import { FlexLayout, Icon, util } from 'vortex-api';
 import { NEXUS_DOMAIN } from '../../constants';
 
 const ONE_MB = 1024 * 1024;
@@ -22,34 +22,24 @@ export interface ICollectionBannerProps {
 
 class CollectionBanner extends React.Component<ICollectionBannerProps, {}> {
   public render(): JSX.Element {
-    const { t, totalSize } = this.props;
+    const { t } = this.props;
 
     return (
       <div className='collection-premium-banner'>
-        <div className='collection-table-container'>
-          <Table>
-            <thead>
-              <tr><th><a onClick={this.goGetPremium}>Premium</a></th><th>Free</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>{t('No limit')}</td><td>{t('1MB/s')}</td></tr>
-              <tr>
-                <td>
-                  <div>{t('Estimated download')}</div>
-                  <div className='collection-estimate'>
-                    {renderTime(totalSize / (10 * ONE_MB))} @ 10 MB/s
-                  </div>
-                </td>
-                <td>
-                  <div>{t('Estimated download')}</div>
-                  <div className='collection-estimate'>
-                    {renderTime(totalSize / ONE_MB)}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </Table>
-        </div>
+        <FlexLayout type='row'>
+          <FlexLayout.Fixed>
+            <Icon name='download-speed' />
+          </FlexLayout.Fixed>
+          <FlexLayout.Flex>
+            <span className='collection-premium-highlight'>{t('Go Premium')} - </span>
+            <span>{t('Uncapped Download Speeds + More')}</span>
+          </FlexLayout.Flex>
+          <FlexLayout.Fixed>
+            <Button onClick={this.goGetPremium}>
+              {t('Go Premium')}
+            </Button>
+          </FlexLayout.Fixed>
+        </FlexLayout>
       </div>
     );
   }

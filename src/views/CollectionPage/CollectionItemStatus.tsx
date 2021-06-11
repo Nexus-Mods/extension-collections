@@ -3,8 +3,7 @@ import { IModEx } from '../../types/IModEx';
 import i18next from 'i18next';
 import * as React from 'react';
 import { ProgressBar } from 'react-bootstrap';
-import { Option, OptionValues } from 'react-select';
-import { SelectUpDown, Spinner, types } from 'vortex-api';
+import { Spinner, types } from 'vortex-api';
 
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;
@@ -12,31 +11,15 @@ interface ICollectionItemStatusProps {
   download: types.IDownload;
   notifications: types.INotification[];
   container: Element;
-  onSetModEnabled: (modId: string, enabled: boolean) => void;
   installing: boolean;
 }
 
 class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {}> {
   public render(): JSX.Element {
-    const { t, container, installing, mod } = this.props;
+    const { t, download, installing, mod } = this.props;
 
     if (mod.state === 'installed') {
-      const options = [
-        { key: 'enabled', text: 'Enabled' },
-        { key: 'disabled', text: 'Disabled' },
-      ];
-      return (
-        <SelectUpDown
-          options={options}
-          value={mod.enabled ? 'enabled' : 'disabled'}
-          onChange={this.changeDownloaded}
-          valueKey='key'
-          labelKey='text'
-          clearable={false}
-          searchable={false}
-          container={container}
-        />
-      );
+      return mod.enabled ? t('Enabled') : t('Disabled');
     } else if (mod.state === 'installing') {
       // install (or rather: extraction) process is unfortunately only stored in the notification
       return (
@@ -69,7 +52,7 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
       );
     } else {
       if (mod.collectionRule.type === 'recommends') {
-        return <div>{t('Optional')}</div>;
+        return <div>{t('Not installed')}</div>;
       } else {
         const indicator = installing ? <Spinner/> : null;
         if (mod.state === 'downloaded') {
@@ -79,11 +62,6 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
         }
       }
     }
-  }
-
-  private changeDownloaded = (input: Option<OptionValues>) => {
-    const { mod } = this.props;
-    this.props.onSetModEnabled(mod.id, input.key === 'enabled');
   }
 }
 

@@ -4,8 +4,8 @@ import CollectionBanner from './CollectionBanner';
 
 import i18next from 'i18next';
 import * as React from 'react';
-import { Button, Table } from 'react-bootstrap';
-import { ComponentEx, FlexLayout, ProgressBar, Spinner, types, util } from 'vortex-api';
+import { Panel } from 'react-bootstrap';
+import { ComponentEx, FlexLayout, ProgressBar, Spinner, tooltip, types, util } from 'vortex-api';
 
 export interface ICollectionProgressProps {
   t: i18next.TFunction;
@@ -56,27 +56,46 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
     return (
       <FlexLayout type='row'>
         <FlexLayout.Flex>
-          <FlexLayout type='column' className='collection-progress-flex'>
-            {((activity['dependencies'] ?? []).length > 0)
-              ? this.renderActivity(t('Checking Dependencies'))
-              : this.renderBars(installing, done)}
-          </FlexLayout>
+          <Panel>
+            <FlexLayout type='row' className='collection-progress-flex'>
+                {((activity['dependencies'] ?? []).length > 0)
+                  ? this.renderActivity(t('Checking Dependencies'))
+                  : this.renderBars(installing, done)}
+              <FlexLayout.Fixed>
+                <FlexLayout type='row' className='collection-pause-cancel-flex'>
+                  {(onResume !== undefined) ? (
+                    <tooltip.IconButton
+                      className='btn-embed btn-pause-resume'
+                      onClick={onResume}
+                      tooltip={t('Resume')}
+                      icon='resume'
+                    />
+                    ) : null}
+                  {(onPause !== undefined) ? (
+                    <tooltip.IconButton
+                      className='btn-embed btn-pause-resume'
+                      onClick={onPause}
+                      tooltip={t('Pause')}
+                      icon='pause'
+                    />
+                    ) : null}
+                  <tooltip.IconButton
+                    className='btn-embed btn-cancel'
+                    onClick={onCancel}
+                    icon='stop'
+                    tooltip={t('Cancel')}
+                  >
+                    {t('Cancel')}
+                  </tooltip.IconButton>
+                </FlexLayout>
+              </FlexLayout.Fixed>
+            </FlexLayout>
+          </Panel>
         </FlexLayout.Flex>
-        <FlexLayout.Fixed>
-          <FlexLayout type='column' className='collection-pause-cancel-flex'>
-            <Button disabled={pending.length === 0 && installing.length === 0} onClick={onResume}>
-              {t('Resume')}
-            </Button>
-            <Button disabled={downloading.length === 0} onClick={onPause}>
-              {t('Pause')}
-            </Button>
-            <Button onClick={onCancel}>
-              {t('Cancel')}
-            </Button>
-          </FlexLayout>
-        </FlexLayout.Fixed>
-        <FlexLayout.Fixed>
-          <CollectionBanner t={t} totalSize={totalSize} />
+        <FlexLayout.Fixed className='collection-banner-container'>
+          <Panel>
+            <CollectionBanner t={t} totalSize={totalSize} />
+          </Panel>
         </FlexLayout.Fixed>
       </FlexLayout>
     );
@@ -84,7 +103,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
 
   private renderActivity(message: string) {
     return (
-      <div><Spinner/>{message}</div>
+      <FlexLayout.Flex><Spinner/>{message}</FlexLayout.Flex>
     );
   }
 
