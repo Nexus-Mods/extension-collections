@@ -86,7 +86,6 @@ function deduceSource(mod: types.IMod,
       assign(res, 'updatePolicy', 'prefer');
     } else {
       assign(res, 'updatePolicy', 'exact');
-      assign(res, 'version', versionMatcher);
     }
   }
 
