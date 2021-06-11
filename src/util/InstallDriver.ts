@@ -1,6 +1,7 @@
 import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import { actions, log, types, util } from 'vortex-api';
+import { INSTALLING_NOTIFICATION_ID } from '../constants';
 import { IRevisionEx } from '../types/IRevisionEx';
 import InfoCache from './InfoCache';
 import { getUnfulfilledNotificationId } from './util';
@@ -54,7 +55,7 @@ class InstallDriver {
         if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
           this.mInstallDone = true;
           this.mInstallingMod = undefined;
-          this.mApi.dismissNotification('installing-collection');
+          this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
           this.triggerUpdate();
 
           if (!recommendations) {
@@ -197,13 +198,13 @@ class InstallDriver {
     }
     if (revisionId !== undefined) {
       this.mRevisionInfo = nexusInfo?.revisionInfo
-        ?? await this.mInfoCache.getRevisionInfo(revisionId)
+        ?? await this.mInfoCache.getRevisionInfo(revisionId);
     }
 
     this.mApi.events.emit('view-collection', this.mCollection.id);
 
     this.mApi.sendNotification({
-      id: 'installing-collection',
+      id: INSTALLING_NOTIFICATION_ID + this.mCollection.id,
       type: 'activity',
       message: 'Installing Collection',
       actions: [

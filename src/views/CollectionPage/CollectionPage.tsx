@@ -352,58 +352,21 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       return prev + size;
     }, 0);
 
-    const modsFinal = Object.keys(modsEx).reduce((prev, modId) => {
-      if (modsEx[modId].state !== 'installed') {
-        prev[modId] = {
-          ...modsEx[modId],
-          progress: this.progress(modsEx[modId]),
-        };
-      } else {
-        prev[modId] = modsEx[modId];
-      }
-
-      return prev;
-    }, {});
-
-    if ((this.mLastModsFinal === undefined)
-        || !_.isEqual(this.mLastModsFinal, modsFinal)) {
-      this.mLastModsFinal = modsFinal;
+    if (collection !== undefined) {
+      const expectedNotification = INSTALLING_NOTIFICATION_ID + collection.id;
+      // during installation we display only the remote information in the header area,
+      // that's why we require driver.collectionInfo to be set
+      this.mInstalling = incomplete
+              && (driver.collectionInfo !== undefined)
+              && (driver.collection.id === collection.id)
+              && (notifications.find(noti => noti.id === expectedNotification) !== undefined);
+    } else {
+      this.mInstalling = undefined;
     }
-
-    // during installation we display only the remote information in the header area,
-    // that's why we require driver.collectionInfo to be set
-    this.mInstalling = incomplete
-            && (driver.collectionInfo !== undefined)
-            && (driver.collection.id === collection.id);
 
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed className='collection-overview-panel'>
-          {/*incomplete
-            && (driver.collectionInfo !== undefined)
-            && (driver.collection.id === collection.id)
-            ? (
-              <CollectionOverviewInstalling
-                t={t}
-                gameId={profile.gameId}
-                driver={driver}
-              />
-            ) : (
-              <CollectionOverview
-                t={t}
-                language={language}
-                gameId={profile.gameId}
-                collection={collection}
-                totalSize={totalSize}
-                onClose={this.close}
-                onVoteSuccess={onVoteSuccess}
-                onDeselectMods={this.unselectMods}
-                revision={revisionInfo}
-                votedSuccess={votedSuccess}
-                incomplete={incomplete}
-                modSelection={modSelection}
-              />
-            )*/}
             <CollectionOverview
               t={t}
               language={language}
@@ -429,7 +392,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               <Table
                 tableId='mods'
                 showDetails={false}
-                data={this.mLastModsFinal}
+                data={modsEx}
                 staticElements={this.mAttributes}
                 actions={this.mModActions}
                 columnBlacklist={['collection']}
@@ -456,16 +419,18 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     );
   }
 
-  private progress(mod: IModEx) {
-    const { downloads, notifications } = this.props;
+  private progress(props: ICollectionPageProps, mod: IModEx) {
+    const { downloads, notifications } = props;
 
     if (mod.state === 'downloading') {
       const { received, size } = downloads[mod.archiveId];
-      return received / size;
+      if (size !== undefined) {
+        return received / size;
+      }
     } else if (mod.state === 'installing') {
       const notification = notifications.find(noti => noti.id === 'install_' + mod.id);
       if (notification !== undefined) {
-        return notification.progress / 100;
+        return (notification.progress ?? 100) / 100;
       } else {
         return 1;
       }
@@ -736,7 +701,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                     || modifiedState[modId]?.['-enabled'] !== undefined)
       .forEach(invalidateMod);
 
-    // refresh for any rule that doesn't currently have an enrty
+    // refresh for any rule that doesn't currently have an entry
     const { collection } = newProps;
 
     (collection.rules || [])
@@ -771,11 +736,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     Object.keys(modifiedDownloads)
       .filter(dlId => dlId.startsWith('+'))
       .forEach(dlId => {
+        const download = newProps.downloads[dlId.slice(1)];
         const match = pendingDL.find(modId =>
-          testDownloadReference(modifiedDownloads[dlId], modsEx[modId].collectionRule.reference));
+          testDownloadReference(download, modsEx[modId].collectionRule.reference));
         if (match !== undefined) {
           result[match] = this.modFromDownload(dlId.slice(1),
-                                               modifiedDownloads[dlId],
+                                               download,
                                                modsEx[match].collectionRule);
         }
       });
@@ -824,6 +790,47 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     Object.keys(modifiedState)
       .filter(modId => modifiedState[modId]?.['+enabled'] !== undefined)
       .forEach(updateMod);
+
+    // finally, update any rule that had progress
+    Object.keys(modifiedDownloads)
+      .filter(dlId => !dlId.startsWith('-') && !dlId.startsWith('+'))
+      .forEach(dlId => {
+        let ruleId = Object.keys(result).find(modId => result[modId].archiveId === dlId);
+        if ((ruleId === undefined)
+            && (newProps.downloads[dlId].modInfo?.referenceTag !== undefined)) {
+          ruleId = Object.keys(result).find(id =>
+            (result[id].archiveId === undefined)
+            && testDownloadReference(newProps.downloads[dlId],
+                                     result[id].collectionRule.reference));
+          if (ruleId !== undefined) {
+            result[ruleId] = {
+              ...result[ruleId],
+              archiveId: dlId,
+              state: 'downloading',
+            };
+          }
+        }
+
+        if (ruleId !== undefined) {
+          result[ruleId] = {
+            ...result[ruleId],
+            progress: this.progress(newProps, result[ruleId]),
+          };
+        }
+      });
+
+    newProps.notifications.forEach(noti => {
+      if ((noti.id !== undefined) && (noti.id.startsWith('install_'))) {
+        const modId = noti.id.slice(8);
+        const ruleId = Object.keys(result).find(iter => result[iter].id === modId);
+        if (ruleId !== undefined) {
+          result[ruleId] = {
+            ...result[ruleId],
+            progress: this.progress(newProps, result[ruleId]),
+          };
+        }
+      }
+    });
 
     return result;
   }

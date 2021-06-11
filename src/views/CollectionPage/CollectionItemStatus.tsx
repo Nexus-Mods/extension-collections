@@ -51,6 +51,11 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
         </div>
       );
     } else if (mod.state === 'downloading') {
+      if (download.state === 'paused') {
+        return <div>{t('Download paused')}</div>;
+      } else if (download.state === 'failed') {
+        return <div>{t('Download failed')}</div>;
+      }
       return (
         <div className='collection-status-progress'>
           <ProgressBar

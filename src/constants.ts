@@ -8,6 +8,8 @@ export const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memb
 
 export const BUNDLED_PATH = 'bundled';
 
+export const INSTALLING_NOTIFICATION_ID = 'installing-collection-';
+
 // limits
 export const MIN_COLLECTION_NAME_LENGTH = 4;
 export const MAX_COLLECTIION_NAME_LENGTH = 36;

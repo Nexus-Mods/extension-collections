@@ -20,13 +20,18 @@ export interface ICollectionProgressProps {
 
 class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   public render(): JSX.Element {
-    const {t, activity, mods, totalSize, onCancel, onPause, onResume} = this.props;
+    const {t, activity, downloads, mods, totalSize, onCancel, onPause, onResume} = this.props;
 
-    const group = (state: string): string => {
+    const group = (state: string, download?: types.IDownload): string => {
+      if ((state === 'downloading') && (download?.state === 'paused')) {
+        // treating paused downloads as "pending" for the purpose of progress indicator
+        return 'pending';
+      }
+
       return {
         null: 'pending',
         installed: 'done',
-        downloaded: 'installing',
+        downloaded: 'pending',
         installing: 'installing',
         downloading: 'downloading',
       }[state];
@@ -39,7 +44,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
     const { pending, downloading, installing, done } =
       Object.values(mods).reduce<IModGroups>((prev, mod) => {
         if (mod.collectionRule.type === 'requires') {
-          prev[group(mod.state)].push(mod);
+          prev[group(mod.state, downloads[mod.archiveId])].push(mod);
         }
         return prev;
       }, { pending: [], downloading: [], installing: [], done: [] });
