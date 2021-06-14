@@ -493,6 +493,39 @@ export function makeCollectionId(baseId: string): string {
   return `vortex_collection_${baseId}`;
 }
 
+function deduceCollectionAttributes(collection: types.IMod,
+                                    mods: { [modId: string]: types.IMod })
+                                    : ICollectionAttributes {
+
+  const res: ICollectionAttributes = {
+    installMode: {},
+    instructions: {},
+    source: {},
+  };
+
+  collection.rules.forEach(rule => {
+    const mod = util.findModByRef(rule.reference, mods);
+    if (mod === undefined) {
+      throw new util.ProcessCanceled('included mod not found');
+    }
+
+    res.installMode[mod.id] = (rule.installerChoices !== undefined)
+      ? 'choices'
+      : (rule.fileList !== undefined)
+      ? 'clone'
+      : 'fresh';
+
+    res.instructions[mod.id] = rule.downloadHint?.instructions;
+    res.source[mod.id] = {
+      type: rule.downloadHint?.mode ?? ((rule.reference.repo?.repository === 'nexus') ? 'nexus' : 'bundle'),
+      url: rule.downloadHint?.url,
+      instructions: rule.downloadHint?.instructions,
+    };
+  });
+
+  return res;
+}
+
 /**
  * clone an existing collection
  * @returns on success, returns the new collection id. on failure, returns undefined,
@@ -508,9 +541,9 @@ export async function cloneCollection(api: types.IExtensionApi,
 
   const userInfo = state.persistent['nexus']?.userInfo;
   const mods = (state.persistent.mods[gameId] ?? {});
-  const existingCollection = mods[sourceId];
+  const existingCollection: types.IMod = mods[sourceId];
 
-  const ownCollection = existingCollection.attributes?.uploader === userInfo?.name;
+  const ownCollection: boolean = existingCollection.attributes?.uploader === userInfo?.name;
   const name = 'Copy of ' + existingCollection.attributes?.name;
 
   const customFileName = ownCollection
@@ -529,6 +562,7 @@ export async function cloneCollection(api: types.IExtensionApi,
       author: userInfo?.name ?? 'Anonymous',
       editable: true,
       collectionId: ownCollection ? existingCollection.attributes?.collectionId : undefined,
+      collection: deduceCollectionAttributes(existingCollection, mods),
     },
     installationPath: id,
     rules: existingCollection.rules,

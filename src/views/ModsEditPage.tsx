@@ -575,7 +575,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     if ((source === 'nexus')
         && (isNaN(parseInt(entry.mod.attributes?.modId, 10))
             || isNaN(parseInt(entry.mod.attributes?.fileId, 10)))) {
-      res.push(t('When using nexus as a source both the mod id and file id have to be known. '
+      res.push(t('When using Nexus as a source both the mod id and file id have to be known. '
                 + 'If you didn\'t download the mod through Vortex they will not be set. '
                 + 'To solve this you have to change the source of the mod to "Nexus", '
                 + 'click "Guess id" (which will determine the mod id) and finally '

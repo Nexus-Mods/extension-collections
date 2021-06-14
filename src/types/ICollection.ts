@@ -66,9 +66,8 @@ export interface ICollection extends Partial<ICollectionGamebryo> {
 }
 
 export interface ICollectionAttributes {
-  freshInstall?: { [modId: string]: boolean };
   instructions?: { [modId: string]: string };
-  source?: { [modId: string]: { type: SourceType } };
+  source?: { [modId: string]: { type: SourceType, url?: string, instructions?: string } };
   installMode?: { [modId: string]: string };
 }
 
