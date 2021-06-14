@@ -3,7 +3,6 @@ import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
 import { addExtension } from './util/extension';
-import { addGameSupport } from './util/gameSupport/index';
 import InstallDriver from './util/InstallDriver';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
@@ -404,14 +403,6 @@ function register(context: types.IExtensionContext,
   context.registerInstaller('collection', 5,
                             bbProm(testSupported), bbProm(makeInstall(context.api)));
 
-  context['registerGameSpecificCollectionsData'] = ((gameSupportEntry: IGameSupportEntry) => {
-    try {
-      addGameSupport(gameSupportEntry);
-    } catch (err) {
-      context.api.showErrorNotification('Failed to add game specific data to collection', err);
-    }
-  });
-
   context['registerCollectionFeature'] =
     (id: string,
      generate: (gameId: string, includedMods: string[]) => Promise<any>,
@@ -421,19 +412,6 @@ function register(context: types.IExtensionContext,
      editComponent?: React.ComponentType<IExtendedInterfaceProps>) =>  {
       addExtension({ id, generate, parse, condition, title, editComponent });
     };
-
-  context.registerAPI('addGameSpecificCollectionsData',
-    (gameSupportEntry: IGameSupportEntry, cb?: (err: Error) => void) => {
-    try {
-      addGameSupport(gameSupportEntry);
-    } catch (err) {
-      if (cb) {
-        cb(err);
-      } else {
-        context.api.showErrorNotification('Failed to add game specific data to collection', err);
-      }
-    }
-  }, { minArguments: 1 });
 }
 
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
