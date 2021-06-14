@@ -2,8 +2,7 @@ import { IModEx } from '../../types/IModEx';
 
 import i18next from 'i18next';
 import * as React from 'react';
-import { ProgressBar } from 'react-bootstrap';
-import { Spinner, types } from 'vortex-api';
+import { Icon, RadialProgress, types } from 'vortex-api';
 
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;
@@ -14,51 +13,96 @@ interface ICollectionItemStatusProps {
   installing: boolean;
 }
 
+const RadialProgressT: any = RadialProgress;
+
 class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {}> {
   public render(): JSX.Element {
     const { t, download, installing, mod } = this.props;
 
     if (mod.state === 'installed') {
-      return mod.enabled ? t('Enabled') : t('Disabled');
+      if (mod.enabled) {
+        return (
+          <div className='collection-status-enabled'>
+            <Icon name='toggle-enabled' />{t('Enabled')}
+          </div>
+        );
+      } else {
+        return (
+          <div className='collection-status-disabled'>
+            <Icon name='toggle-disabled' />{t('Disabled')}
+          </div>
+        );
+      }
     } else if (mod.state === 'installing') {
+      const progressBarData = {
+        min: 0,
+        max: 100,
+        value: mod.progress * 100,
+        class: 'collection-install-progress',
+      };
       // install (or rather: extraction) process is unfortunately only stored in the notification
       return (
         <div className='collection-status-progress'>
-          <ProgressBar
-            now={mod.progress * 100}
-            max={100}
-            bsStyle='info'
-            label={<div>&nbsp;</div>}
+          <RadialProgressT
+            className='collection-progress-radial'
+            data={[progressBarData]}
+            totalRadius={32}
           />
           <div className='progress-title'>{t('Installing...')}</div>
         </div>
       );
     } else if (mod.state === 'downloading') {
       if (download.state === 'paused') {
-        return <div>{t('Download paused')}</div>;
+        return (
+          <div className='collection-status-paused'>
+            <Icon name='pause'/>{t('Download paused')}
+          </div>
+        );
       } else if (download.state === 'failed') {
-        return <div>{t('Download failed')}</div>;
+        return (
+          <div className='collection-status-failed'>
+            <Icon name='warning' />{t('Download failed')}
+          </div>
+        );
       }
+
+      const progressBarData = {
+        min: 0,
+        max: 100,
+        value: mod.progress * 100,
+        class: 'collection-install-progress',
+      };
+
       return (
         <div className='collection-status-progress'>
-          <ProgressBar
-            now={mod.progress * 100}
-            max={100}
-            bsStyle='info'
-            label={<div>&nbsp;</div>}
+          <RadialProgressT
+            className='collection-progress-radial'
+            data={[progressBarData]}
+            totalRadius={32}
           />
           <div className='progress-title'>{t('Downloading...')}</div>
         </div>
       );
     } else {
       if (mod.collectionRule.type === 'recommends') {
-        return <div>{t('Not installed')}</div>;
+        return (
+          <div className='collection-status-notinstalled'>
+            <Icon name='install' /> {t('Not installed')}
+          </div>
+        );
       } else {
-        const indicator = installing ? <Spinner/> : null;
         if (mod.state === 'downloaded') {
-          return <div>{indicator}{t('Install pending')}</div>;
+          return (
+            <div className='collection-status-pending'>
+              <Icon name='install' />{t('Install pending')}
+            </div>
+          );
         } else {
-          return <div>{indicator}{t('Download pending')}</div>;
+          return (
+            <div className='collection-status-pending'>
+              <Icon name='download' />{t('Download pending')}
+            </div>
+          );
         }
       }
     }

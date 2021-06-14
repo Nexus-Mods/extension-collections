@@ -692,23 +692,36 @@ $collection-mod-image-height: 200px;
     max-width: 12em;
   }
 
-  .table-collection-mods.cell-collection_status {
+  .cell-collection_status {
     white-space: nowrap;
-    .icon-spinner {
+
+    .icon {
       margin-right: 0.5em;
     }
 
+    .collection-progress-radial {
+      width: 1.5em;
+      fill: currentColor;
+      margin-right: 0.5em;
+    }
+
+    .collection-status-pending,
+    .collection-status-paused {
+      color: $brand-warning;
+    }
+
+    .collection-status-notinstalled,
+    .collection-status-disabled {
+      color: $text-color-disabled;
+    }
+
+    .collection-status-enabled {
+      color: $text-color;
+    }
+
     .collection-status-progress {
-      position: relative;
-      .progress {
-        margin: 0;
-      }
-      > .progress-title {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-      }
+      display: flex;
+      color: $brand-success;
     }
   }
 }
