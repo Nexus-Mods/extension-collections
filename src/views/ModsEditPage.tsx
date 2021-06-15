@@ -5,7 +5,7 @@ import * as _ from 'lodash';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import {
-  ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, Table, TableTextFilter,
+  ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, OptionsFilter, Table, TableTextFilter,
   tooltip, types, Usage, util } from 'vortex-api';
 
 export interface IModsPageProps {
@@ -111,16 +111,17 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       },
       calc: (entry: IModEntry) => {
         if (entry.mod === undefined) {
-          return 'not-installed';
+          return ['not-installed'];
         }
         const color = util.getSafe(entry.mod.attributes, ['color'], '');
         const icon = util.getSafe(entry.mod.attributes, ['icon'], '');
         const problems = this.state.problems[entry.mod.id] || [];
 
-        return `${color} - ${icon} - ${problems.join(',')}`;
+        return [color, icon, problems.length > 0 ? 'has-problems' : 'no-problems'];
       },
       placement: 'table',
       edit: {},
+      filter: new OptionsFilter([{ value: 'has-problems', label: 'Has Problems' }], false, false),
     }, {
       id: 'required',
       name: 'Required',
@@ -572,6 +573,8 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     const installMode: string =
       collection?.attributes?.collection?.installMode?.[entry.mod.id] ?? 'fresh';
 
+    const { versionMatch } = entry.rule.reference;
+
     if ((source === 'nexus')
         && (isNaN(parseInt(entry.mod.attributes?.modId, 10))
             || isNaN(parseInt(entry.mod.attributes?.fileId, 10)))) {
@@ -582,7 +585,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                 + 'check mods for updates which should fill in the file id.'));
     }
 
-    if (entry.rule.reference.versionMatch === '*') {
+    if (versionMatch === '*') {
       if (installMode === 'clone') {
         res.push(t('"Replicate" install can only be used when installing '
                   + 'a specific version of a mod. This will definitively break '
@@ -591,6 +594,16 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         res.push(t('Installing with "Same choices options" may break if the mod gets updated, '
                  + 'you may want to switch to "Exactly this version" to be safe.'));
       }
+    }
+
+    if ((source === 'bundle') && ((versionMatch === '*') || versionMatch?.endsWith?.('+prefer'))) {
+      res.push(t('If you bundle a mod the user gets exactly the version of the mod you '
+                + 'have, the Version selection is pointless in this case.'));
+    } else if (['browse', 'direct'].includes(source) && versionMatch?.endsWith?.('+prefer')) {
+      res.push(t('The option to "prefer current version" only works with sources that '
+                + 'support mod updates (Nexus Mods). For other sources your options '
+                + 'are to use the exact same version you have locally or to accept whatever '
+                + 'version the user downloads.'));
     }
 
     if (source === 'bundle') {
@@ -603,14 +616,14 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     }
 
     if ((installMode === 'choices')
-        && (util.getSafe(entry.mod, ['attributes', 'installerChoices'], undefined) === undefined)) {
+        && (entry.mod.attributes?.installerChoices === undefined)) {
       res.push(t('The installer choices for this mod haven\'t been saved. '
                + 'This currently only works with xml-based fomods installed with '
                + 'Vortex 1.1.0 or later. '
                + 'You may have to reinstall the mod for this to work.'));
     }
 
-    if (entry.rule.reference.versionMatch === '') {
+    if (versionMatch === '') {
       res.push(t('The mod has no version number set. This isn\'t strictly necessary, we use the '
                + 'file id to identify the exact version but for the purpose of informing the '
                + 'user it would be nicer if a version was specified. '
