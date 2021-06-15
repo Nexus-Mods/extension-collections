@@ -7,6 +7,7 @@ import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTIION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
+import { LOGO_NAME } from '../../util/transformCollection';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 export interface IBaseProps {
@@ -116,7 +117,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       return null;
     }
 
-    const logoPath = path.join(stagingPath, collection.installationPath, 'logo.jpg');
+    const logoPath = path.join(stagingPath, collection.installationPath, 'assets', LOGO_NAME);
     const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);
 
     const refMods: types.IModRule[] = (collection.rules ?? [])

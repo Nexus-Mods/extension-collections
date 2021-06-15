@@ -40,7 +40,6 @@ async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void>
 async function zip(zipPath: string, sourcePath: string): Promise<void> {
   const zipper = new Zip();
   const files = await fs.readdirAsync(sourcePath);
-  console.log('zip', zipPath, files);
   await zipper.add(zipPath, files.map(fileName => path.join(sourcePath, fileName)));
 }
 
@@ -64,14 +63,16 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
   const modPath = path.join(stagingPath, mod.installationPath);
 
   try {
-    await fs.copyAsync(path.join(modPath, LOGO_NAME), path.join(outputPath, LOGO_NAME));
+    await fs.copyAsync(path.join(modPath, 'assets', LOGO_NAME),
+                       path.join(outputPath, LOGO_NAME));
   } catch (err) {
     if (err.code !== 'ENOENT') {
       throw err;
     } // don't strictly need an icon I guess
   }
   try {
-    await fs.copyAsync(path.join(modPath, 'INI Tweaks'), path.join(outputPath, 'INI Tweaks'));
+    await fs.copyAsync(path.join(modPath, 'INI Tweaks'),
+                       path.join(outputPath, 'INI Tweaks'));
   } catch (err) {
     if (err.code !== 'ENOENT') {
       throw err;
@@ -80,8 +81,8 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
 
   await fs.copyAsync(path.join(modPath, BUNDLED_PATH), path.join(outputPath, BUNDLED_PATH));
 
-  const zipPath = path.join(modPath,
-                            `collection_${util.getSafe(mod.attributes, ['version'], '1.0.0')}.7z`);
+  const zipPath = path.join(modPath, 'export',
+                            `collection_${mod.attributes?.version ?? '0'}.7z`);
   try {
     await fs.removeAsync(zipPath);
   } catch (err) {
@@ -204,7 +205,7 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
     const dialogActions = [
       {
         title: 'Open', action: () => {
-          util.opn(path.join(stagingPath, mod.installationPath)).catch(() => null);
+          util.opn(path.join(stagingPath, mod.installationPath, 'export')).catch(() => null);
         },
       },
     ];
