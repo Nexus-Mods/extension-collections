@@ -305,8 +305,14 @@ function register(context: types.IExtensionContext,
     placement: 'both',
     customRenderer: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
-      const collectionsString = (collections === undefined)
-        ? '' : collections.map(iter => util.renderModName(iter)).join(', ');
+      let collectionsString: string = '';
+
+      if ((collections !== undefined) && (collections.length > 0)) {
+        collectionsString = util.renderModName(collections[0]);
+        if (collections.length > 1) {
+          collectionsString += `, + ${collections.length - 1} more`;
+        }
+      }
 
       return React.createElement('div', {}, collectionsString);
     },
