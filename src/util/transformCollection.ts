@@ -6,6 +6,8 @@ import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
 
+import { assignDefaultInstallMode } from './installMode';
+
 import * as _ from 'lodash';
 import Zip = require('node-7z');
 import * as path from 'path';
@@ -675,6 +677,8 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
 
   if (mod === undefined) {
     await createCollection(api, profile.gameId, id, name, rules);
+    const modIds = rules.reduce((accum, iter) => accum.concat(iter.reference.id), []);
+    assignDefaultInstallMode(api, id, modIds, profile.gameId);
   } else {
     updateCollection(api, profile.gameId, mod, rules);
   }

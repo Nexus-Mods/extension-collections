@@ -4,6 +4,7 @@ import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
 import { addExtension } from './util/extension';
 import InstallDriver from './util/InstallDriver';
+import { assignDefaultInstallMode } from './util/installMode';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
@@ -250,6 +251,8 @@ function register(context: types.IExtensionContext,
           }));
         }
       });
+
+      assignDefaultInstallMode(context.api, collectionId, modIds, gameId);
     },
   }));
 

@@ -1,6 +1,8 @@
 import { MOD_TYPE } from './constants';
 import { createCollectionFromProfile } from './util/transformCollection';
 
+import { genDefaultInstallModeAction } from './util/installMode';
+
 import * as Redux from 'redux';
 import { actions, selectors, types, util } from 'vortex-api';
 
@@ -103,7 +105,9 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
       if (result.action === 'Add') {
         const collectionId = Object.keys(result.input).find(target => result.input[target]);
         const rules = mods[collectionId].rules ?? [];
-
+        const defaultInstallModeAction = genDefaultInstallModeAction(api, collectionId, filtered, gameId);
+        const initialValue = (defaultInstallModeAction !== undefined)
+          ? [defaultInstallModeAction] : [];
         util.batchDispatch(api.store, filtered.reduce((prev: Redux.Action[], modId: string) => {
           if (!alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) {
             prev.push(actions.addModRule(gameId, collectionId, {
@@ -114,7 +118,7 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
             }));
           }
           return prev;
-        }, []));
+        }, initialValue));
       }
     });
 }
