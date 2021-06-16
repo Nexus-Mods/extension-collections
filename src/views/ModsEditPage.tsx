@@ -4,6 +4,9 @@ import I18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
+
+import InstallModeRenderer from './InstallModeRenderer';
+
 import {
   ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, OptionsFilter, Table, TableTextFilter,
   tooltip, types, Usage, util } from 'vortex-api';
@@ -261,6 +264,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       id: 'install-type',
       name: 'Install',
       description: 'How the mod should be installed on the user system',
+      filter: new OptionsFilter([{ value: 'has-install-options', label: 'Has Installation Options' }], false, false),
       calc: (entry: IModEntry) => {
         const { collection } = this.props;
         const id = entry.mod?.id ?? entry.rule?.reference?.id;
@@ -269,9 +273,13 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           return INSTALL_MODES['clone'];
         }
 
+        const choices = util.getSafe(entry.mod, ['attributes', 'installerChoices'], {});
+        const hasInstallerOptions = ((choices?.['type'] === 'fomod')
+          && (choices['options']?.length > 0));
+
         const installMode =
           util.getSafe(collection, ['attributes', 'collection', 'installMode', id], 'fresh');
-        return INSTALL_MODES[installMode];
+        return [INSTALL_MODES[installMode], hasInstallerOptions ? 'has-install-options' : 'no-options'];
       },
       placement: 'table',
       help: 'If set to "Fresh Install" the mod will simply be installed fresh on the users system, '
@@ -280,25 +288,29 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           + 'This does not bundle the mod itself but the list of files to install and patches if '
           + 'necessary. This may increase the size of the collection and the time it takes to '
           + 'export it considerably.',
-      edit: {
-        inline: true,
-        actions: false,
-        choices: (entry: IModEntry) => {
-          const { collection } = this.props;
-          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+      edit: {},
+      customRenderer: (entry: IModEntry) => {
+        const { t, collection } = this.props;
+        const id = entry.mod?.id ?? entry.rule?.reference?.id;
+        const options = (collection.attributes?.collection?.source?.[id]?.type === 'bundle')
+          ? ({ clone: INSTALL_MODES['clone'] })
+          : Object.keys(INSTALL_MODES).reduce((accum, key) => ({ ...accum, [key]: INSTALL_MODES[key] }), {});
+        const choices = util.getSafe(entry.mod, ['attributes', 'installerChoices'], {});
+        const hasInstallerOptions = ((choices?.['type'] === 'fomod')
+          && (choices['options']?.length > 0));
 
-          if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
-            return [{ key: 'clone', text: INSTALL_MODES['clone'] }];
-          }
+        const installMode = util.getSafe(collection,
+          ['attributes', 'collection', 'installMode', id], 'fresh');
 
-          return Object.keys(INSTALL_MODES).map(key => ({ key, text: INSTALL_MODES[key] }));
-        },
-        onChangeValue: (entry: IModEntry, value: any) => {
-          const id = entry.mod?.id ?? entry.rule?.reference?.id;
-          if (id !== undefined) {
-            this.props.onSetCollectionAttribute(['installMode', id], value);
-          }
-        },
+        return (
+          <InstallModeRenderer
+            hasInstallerOptions={hasInstallerOptions}
+            currentInstallMode={installMode}
+            modId={id}
+            onSetInstallMode={this.changeInstallMode}
+            options={options}
+          />
+        );
       },
     }, {
       id: 'instructions',
@@ -684,6 +696,10 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     } else {
       this.props.onSetCollectionAttribute(['source', modId], { type });
     }
+  }
+
+  private changeInstallMode = (id: string, value: string) => {
+    this.props.onSetCollectionAttribute(['installMode', id], value)
   }
 
   private changeInstructions = (evt: React.MouseEvent<any>) => {
