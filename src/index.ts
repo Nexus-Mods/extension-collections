@@ -506,10 +506,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       if (!dlInfo.game.includes(profile.gameId)) {
         log('info', 'Collection downloaded for a different game than is being managed',
             { gameMode: profile.gameId, game: dlInfo.game });
+        const expectedGame = util.getGame(dlInfo.game[0]);
+        const actualGame = util.getGame(profile.gameId);
         api.sendNotification({
-          message: 'The collection you downloaded is for a different game and thus '
-                 + 'can\'t be installed right now.',
+          message: '"{{collectionName}}" - This collection is intended for {{expectedGame}} '
+                  + 'and cannot be installed to {{actualGame}}',
           type: 'info',
+          replace: {
+            collectionName: dlInfo.modInfo?.name ?? dlInfo.localPath,
+            expectedGame: expectedGame?.name ?? api.translate('an unsupported game'),
+            actualGame: actualGame.name,
+          },
         });
 
         // the collection was for a different game, can't install it now

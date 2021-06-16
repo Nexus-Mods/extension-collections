@@ -1,6 +1,6 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
-import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_BASE_URL} from '../../constants';
+import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, TOS_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
@@ -235,12 +235,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { api } = this.context;
 
     const result = await api.showDialog('question',
-      'Are you sure you want to remove the collection "{{collectionName}}"?', {
-        text: 'You are removing this collection from your machine '
-            + 'but not from the NexusMods website.\n'
-            + 'You will lose any changes you made to this collection since the last upload. '
-            + 'This operation can not be undone.\n'
-            + 'The mods themselves will not be removed.',
+      'Remove Collection (Workshop)', {
+        text: 'Deleting a collection will not remove the mods that have been added to it.\n\n'
+            + 'Any changes made to this collection since the last upload to Nexus Mods will '
+            + 'be lost.\n\n'
+            + 'Are you sure you want to remove "{{collectionName}}" from your Workshop?',
         parameters: {
           collectionName: util.renderModName(mods[modId]),
         },
@@ -274,17 +273,21 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const result = await api.showDialog(
       'question',
       message, {
-      text: 'You can delete the collection including all the mods it contains or just the '
-          + 'the collection, leaving already installed mods alone.',
+      text: 'This collection will be removed from Vortex and unlinked from any associated mods. '
+          + 'You can also choose to uninstall mods related to this collection and delete the '
+          + 'downloaded archives.\n'
+          + '\nPlease note, some mods may be required by multiple collections.\n'
+          + '\nAre you sure you want to remove "{{collectionName}}" from your collections?',
       parameters: {
         collectionName: util.renderModName(mods[modId]),
       },
       checkboxes: [
-        { id: 'delete', text: t('Remove installed mods'), value: false },
+        { id: 'delete_mods', text: t('Remove mods'), value: false },
+        { id: 'delete_archives', text: t('Delete mod archives'), value: false },
       ],
     }, [
       { label: 'Cancel' },
-      { label: 'Remove' },
+      { label: 'Remove Collection' },
     ]);
 
     // apparently one can't cancel out of the cancellation...
@@ -294,7 +297,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const state: types.IState = api.store.getState();
 
-    // either way, all running downloads are canceled
+    // either way, all running downloads are canceled. If selected, so are finished downloads
     const collection = mods[modId];
     await Promise.all(collection.rules.map(async rule => {
       const dlId = util.findDownloadByRef(rule.reference, downloads);
@@ -302,13 +305,14 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       if (dlId !== undefined) {
         const download = state.persistent.downloads.files[dlId];
         if ((download !== undefined)
-            && result.input.delete || (download.state !== 'finished')) {
+            && result.input.delete_archives || (download.state !== 'finished')) {
           await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
         }
       }
     }));
 
-    if (result.input.delete) {
+    // if selected, remove mods
+    if (result.input.delete_mods) {
       await Promise.all(collection.rules.map(async rule => {
         const mod = util.findModByRef(rule.reference, mods);
         if (mod !== undefined) {
@@ -393,13 +397,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       return;
     }
 
-    const choice = await api.showDialog('question', 'Confirm publishing', {
-      text: 'Are you sure you want to upload the collection "{{collectionName}}"? '
-          + 'Once uploaded you can hide or update a collection but it can\'t be removed. '
-          + 'Please note: By uploading you agree that you adhere to the user agreement. '
-          + 'In particular you agree that you aren\'t violating anyone\'s copyright and you '
-          + 'agree to release your Collection (the list itself, instructions, ....) to '
-          + 'the public domain.',
+    const choice = await api.showDialog('question', 'Share on Nexus Mods', {
+      bbcode: 'You are about to upload "{{collectionName}}" to Nexus Mods in a draft state. '
+          + 'You will be able to add additional metadata and media before sharing it with '
+          + 'the community.'
+          + '\n\n'
+          + 'Please ensure that your collection complies with our '
+          + `[url=${TOS_URL}]Terms of Service[/url] before publishing.`,
       parameters: {
         collectionName: util.renderModName(mods[collectionId]),
       },

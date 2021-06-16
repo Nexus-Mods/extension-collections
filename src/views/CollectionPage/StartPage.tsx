@@ -39,7 +39,7 @@ const validRE = /^[\p{L}\p{N} -]*$/u;
 
 function validateCollectionName(t: i18next.TFunction, input: string): string {
   if (input.length < 3) {
-    return t('Too short');
+    return t('The name bust be between 3-36 characters long');
   }
 
   if (input.match(validRE) === null) {
@@ -161,7 +161,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         >
           <Panel>
             <Panel.Heading>
-              <Panel.Title>{t('View and manage all the added collections.')}</Panel.Title>
+              <Panel.Title>{t('View and manage collections created by other users.')}</Panel.Title>
             </Panel.Heading>
             <Panel.Body>
               <div className='collection-list'>
@@ -192,7 +192,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           <Panel>
             <Panel.Heading>
               <Panel.Title>
-                {t('Build your own collections and share them on NexusMods.')}
+                {t('Build your own collections and share them with the Nexus Mods community.')}
               </Panel.Title>
             </Panel.Heading>
             <Panel.Body>
@@ -296,8 +296,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private fromEmpty = () => {
     const { t, onCreateCollection } = this.props;
     this.context.api.showDialog('question', 'Name', {
-      text: 'Please enter a name for your new collection',
-      input: [{ id: 'name', label: 'Name', type: 'text' }],
+      text: 'Please enter a name for your new collection.',
+      input: [{ id: 'name', label: 'Collection Name', type: 'text' }],
       condition: (content: types.IDialogContent): types.ConditionResults => {
         const validation = validateCollectionName(t, content.input[0].value || '');
         if (validation !== undefined) {

@@ -79,12 +79,12 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
           <Media.Right>
             <h5>{game.name}</h5>
             <h3>{util.renderModName(driver.collection)}</h3>
-            {t('Has been added to your collections.')}
+            {t('has been added to your collections.')}
           </Media.Right>
         </Modal.Body>
         <Modal.Footer>
-          <Button onClick={this.cancel}>{t('Install Later')}</Button>
-          <Button onClick={this.next}>{t('Start')}</Button>
+          <Button onClick={this.cancel}>{t('Later')}</Button>
+          <Button onClick={this.next}>{t('Install Now')}</Button>
         </Modal.Footer>
       </Modal>
     );
