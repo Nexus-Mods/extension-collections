@@ -264,7 +264,8 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       id: 'install-type',
       name: 'Install',
       description: 'How the mod should be installed on the user system',
-      filter: new OptionsFilter([{ value: 'has-install-options', label: 'Has Installation Options' }], false, false),
+      filter: new OptionsFilter([
+        { value: 'has-install-options', label: 'Has Installation Options' }], false, false),
       calc: (entry: IModEntry) => {
         const { collection } = this.props;
         const id = entry.mod?.id ?? entry.rule?.reference?.id;
@@ -294,7 +295,8 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         const id = entry.mod?.id ?? entry.rule?.reference?.id;
         const options = (collection.attributes?.collection?.source?.[id]?.type === 'bundle')
           ? ({ clone: INSTALL_MODES['clone'] })
-          : Object.keys(INSTALL_MODES).reduce((accum, key) => ({ ...accum, [key]: INSTALL_MODES[key] }), {});
+          : Object.keys(INSTALL_MODES).reduce((accum, key) =>
+            ({ ...accum, [key]: INSTALL_MODES[key] }), {});
         const choices = util.getSafe(entry.mod, ['attributes', 'installerChoices'], {});
         const hasInstallerOptions = ((choices?.['type'] === 'fomod')
           && (choices['options']?.length > 0));
@@ -631,7 +633,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         && (entry.mod.attributes?.installerChoices === undefined)) {
       res.push(t('The installer choices for this mod haven\'t been saved. '
                + 'This currently only works with xml-based fomods installed with '
-               + 'Vortex 1.1.0 or later. '
+               + 'Vortex 1.5.0 or later. '
                + 'You may have to reinstall the mod for this to work.'));
     }
 
@@ -699,7 +701,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private changeInstallMode = (id: string, value: string) => {
-    this.props.onSetCollectionAttribute(['installMode', id], value)
+    this.props.onSetCollectionAttribute(['installMode', id], value);
   }
 
   private changeInstructions = (evt: React.MouseEvent<any>) => {
