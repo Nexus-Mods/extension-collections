@@ -4,6 +4,7 @@ import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
 import { addExtension } from './util/extension';
 import InstallDriver from './util/InstallDriver';
+import { genDefaultInstallModeAction } from './util/installMode';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
@@ -24,14 +25,15 @@ import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 
 import * as PromiseBB from 'bluebird';
+import * as _ from 'lodash';
 import memoize from 'memoize-one';
 import * as path from 'path';
 import * as React from 'react';
+import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
-import { IGameSupportEntry } from './types/IGameSupportEntry';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -423,6 +425,29 @@ function register(context: types.IExtensionContext,
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const { store } = api;
 
+  const applyDefaultInstallMode = new util.Debouncer(() => {
+    const gameMode = selectors.activeGameId(state());
+    const mods = util.getSafe(state(), ['persistent', 'mods', gameMode], {});
+    const collectionIds = Object.keys(mods).filter(id => (mods[id]?.type === MOD_TYPE));
+    const redActions: Redux.Action[] = collectionIds.reduce((accum, id) => {
+      const collection: types.IMod = mods[id];
+      if (collection === undefined) {
+        return accum;
+      }
+      const collMods = collection.rules?.map(rule => util.findModByRef(rule.reference, mods));
+      const action = genDefaultInstallModeAction(api, id, collMods, gameMode);
+      if (action !== undefined) {
+        accum.push(action);
+      }
+      return accum;
+    }, []);
+
+    if (redActions.length > 0) {
+      util.batchDispatch(api.store, redActions);
+    }
+    return null;
+  }, 1000);
+
   driver = new InstallDriver(api);
 
   driver.onUpdate(() => {
@@ -444,12 +469,29 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     const curG = cur[gameMode] ?? {};
     const allIds =
       Array.from(new Set([].concat(Object.keys(prev[gameMode]), Object.keys(cur[gameMode]))));
-    const changed = allIds.find(modId =>
-      ((prevG[modId]?.type === MOD_TYPE) || (curG[modId]?.type === MOD_TYPE))
-      && (prevG[modId]?.attributes?.customFileName
-          !== curG[modId]?.attributes?.customFileName));
+    const collections = allIds.filter(id =>
+      (prevG[id]?.type === MOD_TYPE) || (curG[id]?.type === MOD_TYPE));
+    const changed = collections.find(modId =>
+      (prevG[modId]?.attributes?.customFileName !== curG[modId]?.attributes?.customFileName));
     if (changed !== undefined) {
       collectionChangedCB?.();
+    }
+
+    const collWithNewMods: string[] = collections.reduce((accum, id) => {
+      if (prevG[id]?.rules === curG[id]?.rules) {
+        return accum;
+      }
+      const diff = _.difference(curG[id]?.rules, prevG[id]?.rules);
+      const hasNewMods = diff.find(rule =>
+        ['requires', 'recommends'].includes(rule.type)) !== undefined;
+      if (hasNewMods) {
+        accum.push(id);
+      }
+      return accum;
+    }, []);
+
+    if (collWithNewMods.length > 0) {
+      applyDefaultInstallMode.schedule();
     }
   });
 
