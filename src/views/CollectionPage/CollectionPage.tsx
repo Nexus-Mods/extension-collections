@@ -505,9 +505,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                                          newProps: ICollectionPageProps): boolean {
     if (oldProps.notifications !== newProps.notifications) {
       const oldInstalling = oldProps.notifications
-        .filter(noti => noti.id.startsWith('install_'));
+        .filter(noti => noti.id.startsWith(INSTALLING_NOTIFICATION_ID));
       const newInstalling = newProps.notifications
-        .filter(noti => noti.id.startsWith('install_'));
+        .filter(noti => noti.id.startsWith(INSTALLING_NOTIFICATION_ID));
 
       return !_.isEqual(oldInstalling, newInstalling);
     } else {
