@@ -17,7 +17,7 @@ const RadialProgressT: any = RadialProgress;
 
 class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {}> {
   public render(): JSX.Element {
-    const { t, download, installing, mod } = this.props;
+    const { t, download, mod } = this.props;
 
     if (mod.state === 'installed') {
       if (mod.enabled) {
@@ -37,7 +37,7 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
       const progressBarData = {
         min: 0,
         max: 100,
-        value: mod.progress * 100,
+        value: (mod.progress ?? 0) * 100,
         class: 'collection-install-progress',
       };
       // install (or rather: extraction) process is unfortunately only stored in the notification
@@ -69,7 +69,7 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
       const progressBarData = {
         min: 0,
         max: 100,
-        value: mod.progress * 100,
+        value: (mod.progress ?? 0) * 100,
         class: 'collection-install-progress',
       };
 

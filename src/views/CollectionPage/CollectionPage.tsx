@@ -410,7 +410,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     if (mod.state === 'downloading') {
       const { received, size } = downloads[mod.archiveId];
-      if (size !== undefined) {
+      if (!!size) {
         return received / size;
       }
     } else if (mod.state === 'installing') {
