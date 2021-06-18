@@ -14,20 +14,18 @@ export interface IModsPageProps {
   onSetCollectionAttribute: (path: string[], value: any) => void;
 }
 
-interface IModsPageState {
-}
-
 type IProps = IModsPageProps;
 
-class ModRulesPage extends ComponentEx<IProps, IModsPageState> {
+class ModRulesPage extends ComponentEx<IProps, {}> {
   private mAugmentedRules = memoize((rules: ICollectionModRule[]) =>
     rules.map(rule => this.augmentRule(rule)));
 
-  constructor(props: IProps) {
-    super(props);
-
-    this.initState({
-    });
+  public shouldComponentUpdate(nextProps: IProps) {
+    return (this.props.t !== nextProps.t)
+      || (this.props.collection !== nextProps.collection)
+      || (this.props.mods !== nextProps.mods)
+      || (this.props.rules !== nextProps.rules)
+      || (this.props.onSetCollectionAttribute !== nextProps.onSetCollectionAttribute);
   }
 
   public render(): React.ReactNode {

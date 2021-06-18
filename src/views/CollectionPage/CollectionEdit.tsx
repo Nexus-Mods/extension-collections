@@ -12,6 +12,7 @@ import ModRules from '../ModRules';
 import ModsEditPage from '../ModsEditPage';
 
 import { IRevision } from '@nexusmods/nexus-api';
+import memoize from 'memoize-one';
 import * as React from 'react';
 import { Badge, Panel, Tab, Tabs } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
@@ -47,8 +48,6 @@ type ICollectionEditProps = ICollectionEditBaseProps & IConnectedProps & IAction
 interface ICollectionEditState {
   page: string;
   collectionInfo: ICollectionInfo;
-  collectionMods: { [modId: string]: types.IMod };
-  collectionRules: ICollectionModRule[];
   revision: IRevision;
 }
 
@@ -61,14 +60,31 @@ const emptyCollectionInfo: ICollectionInfo = {
 };
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {
+  private collectionRules = memoize(
+      (rules: types.IModRule[], mods: { [modId: string]: types.IMod }): ICollectionModRule[] => {
+    const includedMods = rules
+      .filter(rule => rule.type === 'requires')
+      .reduce((prev, rule) => {
+        const mod = util.findModByRef(rule.reference, mods);
+        if (mod !== undefined) {
+          prev[mod.id] = mod;
+        }
+        return prev;
+      }, {});
+
+    return Object.values(includedMods)
+        .reduce<ICollectionModRule[]>((prev, mod: types.IMod) => {
+          prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
+          return prev;
+        }, []);
+  });
+
   constructor(props: ICollectionEditProps) {
     super(props);
 
     this.initState({
       page: INIT_PAGE,
       collectionInfo: emptyCollectionInfo,
-      collectionMods: {},
-      collectionRules: [],
       revision: undefined,
     });
   }
@@ -154,7 +170,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   t={t}
                   collection={collection}
                   mods={mods}
-                  rules={this.state.collectionRules}
+                  rules={this.collectionRules(collection.rules, mods)}
                   onSetCollectionAttribute={this.setCollectionAttribute}
                 />
               </Panel>
@@ -193,22 +209,6 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     this.nextState.page = INIT_PAGE;
     if (props.collection !== undefined) {
       const { collection, mods } = props;
-
-      const includedMods: { [modId: string]: types.IMod } = collection.rules
-        .filter(rule => rule.type === 'requires')
-        .reduce((prev, rule) => {
-          const mod = util.findModByRef(rule.reference, mods);
-          if (mod !== undefined) {
-            prev[mod.id] = mod;
-          }
-          return prev;
-        }, {});
-      this.nextState.collectionMods = includedMods;
-      this.nextState.collectionRules = Object.values(includedMods)
-        .reduce((prev, mod: types.IMod) => {
-          prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
-          return prev;
-        }, []);
 
       if (collection.attributes?.revisionId !== undefined) {
         this.nextState.revision = await
