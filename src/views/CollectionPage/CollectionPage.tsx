@@ -347,7 +347,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       // that's why we require driver.collectionInfo to be set
       this.mInstalling = incomplete
               && (driver.collectionInfo !== undefined)
-              && (driver.collection.id === collection.id)
+              && (driver.collection?.id === collection?.id)
               && (notifications.find(noti => noti.id === expectedNotification) !== undefined);
     } else {
       this.mInstalling = undefined;
