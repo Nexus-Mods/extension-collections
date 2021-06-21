@@ -599,15 +599,15 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                 + 'check mods for updates which should fill in the file id.'));
     }
 
-    if (versionMatch === '*') {
-      if (installMode === 'clone') {
-        res.push(t('"Replicate" install can only be used when installing '
-                  + 'a specific version of a mod. This will definitively break '
-                  + 'as soon as the mod gets updated.'));
-      } else if (installMode === 'choices') {
-        res.push(t('Installing with "Same choices options" may break if the mod gets updated, '
-                 + 'you may want to switch to "Exactly this version" to be safe.'));
-      }
+    if (((versionMatch === '*') || (versionMatch?.endsWith?.('+prefer')))
+        && (installMode === 'clone')) {
+      res.push(t('"Replicate" install can only be used when installing '
+                + 'a specific version of a mod. This will definitively break '
+                + 'as soon as the mod gets updated.'));
+    }
+    if ((versionMatch === '*') && (installMode === 'choices')) {
+      res.push(t('Installing with "Same choices options" may break if the mod gets updated, '
+               + 'you may want to switch to "Exactly this version" to be safe.'));
     }
 
     if ((source === 'bundle') && ((versionMatch === '*') || versionMatch?.endsWith?.('+prefer'))) {
