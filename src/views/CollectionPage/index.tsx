@@ -219,7 +219,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       }
     });
     const { api } = this.context;
-    api.events.emit('cancel-dependency-install', modId);
+    api.emitAndAwait('cancel-dependency-install', modId);
 
     api.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
     api.sendNotification({
