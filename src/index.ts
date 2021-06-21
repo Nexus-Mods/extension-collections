@@ -12,6 +12,8 @@ import CollectionsMainPage from './views/CollectionPage';
 // import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
 
+import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
+
 import {
   addCollectionAction, addCollectionCondition,
   alreadyIncluded,
@@ -306,17 +308,9 @@ function register(context: types.IExtensionContext,
     icon: 'collection',
     placement: 'both',
     customRenderer: (mod: types.IMod) => {
-      const collections = collectionsMap()[mod.id];
-      let collectionsString: string = '';
-
-      if ((collections !== undefined) && (collections.length > 0)) {
-        collectionsString = util.renderModName(collections[0]);
-        if (collections.length > 1) {
-          collectionsString += `, + ${collections.length - 1} more`;
-        }
-      }
-
-      return React.createElement('div', {}, collectionsString);
+      const collections = collectionsMap()[mod.id] || [];
+      const collectionNames = collections.map(collection => util.renderModName(collection));
+      return React.createElement(CollectionAttributeRenderer, { collectionNames }, []);
     },
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
