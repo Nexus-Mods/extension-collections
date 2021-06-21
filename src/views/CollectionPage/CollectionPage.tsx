@@ -50,6 +50,7 @@ interface IConnectedProps {
 interface IActionProps {
   onSetModEnabled: (profileId: string, modId: string, enabled: boolean) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
+  onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) => void;
 }
 
 interface IComponentState {
@@ -256,11 +257,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         id: 'instructions',
         name: 'Instructions',
         customRenderer: (mod: IModEx) => {
-          const { collection } = this.props;
-          const instructions = collection.attributes?.collection?.instructions?.[mod.id];
+          const instructions = this.getModInstructions(mod.id);
           if (instructions === undefined) {
             return null;
           }
+
           return (
             <tooltip.IconButton
               icon='details'
@@ -271,8 +272,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           );
         },
         calc: mod => {
-          const { collection } = this.props;
-          return collection.attributes?.collection?.instructions?.[mod.id];
+          return this.getModInstructions(mod.id);
         },
         placement: 'table',
         edit: {},
@@ -492,13 +492,26 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private showInstructions = (evt: React.MouseEvent<any>) => {
     const modId = evt.currentTarget.getAttribute('data-modid');
-    const { collection, mods } = this.props;
-    const instructions = collection.attributes?.collection?.instructions?.[modId];
+    const { mods, onShowError } = this.props;
+    const instructions = this.getModInstructions(modId);
+    if (instructions === undefined) {
+      // This shouldn't be possible
+      const err = new util.ProcessCanceled('No instructions found', modId);
+      err['attachLogOnReport'] = true;
+      onShowError('Failed to display instructions', err, true);
+      return;
+    }
+
     const mod = mods[modId];
-
     const modName = util.renderModName(mod);
-
     this.context.api.ext.showOverlay?.(modId, modName, instructions);
+  }
+
+  private getModInstructions = (modId: string) => {
+    const { collection, mods } = this.props;
+    const mod = mods[modId];
+    const modRule = collection.rules?.find(rule => util.testModReference(mod, rule.reference));
+    return modRule?.['extra']?.['instructions'];
   }
 
   private installingNotificationsChanged(oldProps: ICollectionPageProps,
@@ -928,6 +941,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.setModEnabled(profileId, modId, enabled)),
     onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
       dispatch(actions.removeModRule(gameId, modId, rule)),
+    onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) =>
+      util.showError(dispatch, message, details, { allowReport }),
   };
 }
 
