@@ -917,7 +917,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
 
   let votedSuccess;
 
-  if ((collection !== undefined) && (collection.attributes.revisionNumber !== undefined)) {
+  if (collection?.attributes?.revisionNumber !== undefined) {
     const { collectionId, revisionNumber } = collection.attributes;
     const collectionInfo: ICollection = state.persistent.collections[collectionId];
     const revisionInfo: IRevisionEx =

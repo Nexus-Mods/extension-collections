@@ -220,17 +220,16 @@ $collection-mod-image-height: 200px;
   .collection-mods-page-attr-addendum {
     border-color: $text-color;
     border-radius: 4px;
-    width: 30px;
-    height: 22px;
-    background: $text-color;
+    background-color: $text-color;
     color: $table-bg-hover;
     font-weight: 600;
-    margin-left: 10px;
+    margin-left: 1em;
   }
 }
 
 ul.collection-mods-page-attrib-tooltip {
-  padding-inline-start: 12px;
+  padding-inline-start: 1em;
+  margin-bottom: 0;
 }
 
 .collection-description-popover {

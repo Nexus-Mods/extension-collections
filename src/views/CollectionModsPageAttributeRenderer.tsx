@@ -2,12 +2,13 @@ import * as React from 'react';
 import { ComponentEx, FlexLayout, tooltip } from 'vortex-api';
 
 interface IBaseProps {
+  modId: string;
   collectionNames: string[];
 }
 
 type IProps = IBaseProps;
 
-class Tooltip extends ComponentEx<IProps, {}> {
+class Tooltip extends ComponentEx<{ collectionNames: string[] }, {}> {
   public render(): JSX.Element {
     const { collectionNames } = this.props;
     return (
@@ -40,11 +41,12 @@ class CollectionModsPageAttributeRenderer extends ComponentEx<IProps, {}> {
   private noop = () => null;
 
   private renderAddendum = (): JSX.Element => {
-    const { collectionNames } = this.props;
+    const { collectionNames, modId } = this.props;
     const filtered = collectionNames.filter(name => name !== collectionNames[0]);
     const tip = <Tooltip collectionNames={filtered} />;
     return (
       <tooltip.Button
+        id={`${modId}-collection-count`}
         className='collection-mods-page-attr-addendum'
         tooltip={tip}
         onClick={this.noop}

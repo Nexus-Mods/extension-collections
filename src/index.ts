@@ -310,7 +310,8 @@ function register(context: types.IExtensionContext,
     customRenderer: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id] || [];
       const collectionNames = collections.map(collection => util.renderModName(collection));
-      return React.createElement(CollectionAttributeRenderer, { collectionNames }, []);
+      return React.createElement(CollectionAttributeRenderer,
+                                 { modId: mod.id, collectionNames }, []);
     },
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];

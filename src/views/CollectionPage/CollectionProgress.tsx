@@ -103,7 +103,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
 
   private renderActivity(message: string) {
     return (
-      <FlexLayout.Flex><Spinner/>{message}</FlexLayout.Flex>
+      <FlexLayout.Flex><Spinner/>{' '}{message}</FlexLayout.Flex>
     );
   }
 
