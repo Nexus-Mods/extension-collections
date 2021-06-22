@@ -370,8 +370,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     if (mods[modId].attributes?.editable) {
       return this.removeWorkshop(modId);
     } else {
-      return this.cancel(modId,
-        'Are you sure you want to remove the collection "{{collectionName}}"?');
+      return this.cancel(modId, 'Remove collection');
     }
   }
 

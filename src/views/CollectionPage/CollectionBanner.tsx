@@ -4,16 +4,7 @@ import { Button } from 'react-bootstrap';
 import { FlexLayout, Icon, util } from 'vortex-api';
 import { NEXUS_DOMAIN } from '../../constants';
 
-const ONE_MB = 1024 * 1024;
 const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memberships`;
-
-function renderTime(input: number): string {
-  const hours = util.pad(Math.floor(input / 3600), '0', 2);
-  const minutes = util.pad(Math.floor((input % 3600) / 60), '0', 2);
-  const seconds = util.pad(Math.floor(input % 60), '0', 2);
-
-  return `${hours}:${minutes}:${seconds}`;
-}
 
 export interface ICollectionBannerProps {
   totalSize: number;
