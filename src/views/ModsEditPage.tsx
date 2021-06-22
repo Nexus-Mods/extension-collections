@@ -293,10 +293,6 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       customRenderer: (entry: IModEntry) => {
         const { t, collection } = this.props;
         const id = entry.mod?.id ?? entry.rule?.reference?.id;
-        const options = (collection.attributes?.collection?.source?.[id]?.type === 'bundle')
-          ? ({ clone: INSTALL_MODES['clone'] })
-          : Object.keys(INSTALL_MODES).reduce((accum, key) =>
-            ({ ...accum, [key]: INSTALL_MODES[key] }), {});
         const choices = util.getSafe(entry.mod, ['attributes', 'installerChoices'], {});
         const hasInstallerOptions = ((choices?.['type'] === 'fomod')
           && (choices['options']?.length > 0));
@@ -310,7 +306,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
             currentInstallMode={installMode}
             modId={id}
             onSetInstallMode={this.changeInstallMode}
-            options={options}
+            options={INSTALL_MODES}
           />
         );
       },
