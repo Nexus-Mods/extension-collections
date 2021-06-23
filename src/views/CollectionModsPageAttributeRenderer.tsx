@@ -42,7 +42,7 @@ class CollectionModsPageAttributeRenderer extends ComponentEx<IProps, {}> {
 
   private renderAddendum = (): JSX.Element => {
     const { collectionNames, modId } = this.props;
-    const filtered = collectionNames.filter(name => name !== collectionNames[0]);
+    const filtered = collectionNames.slice(1);
     const tip = <Tooltip collectionNames={filtered} />;
     return (
       <tooltip.Button
