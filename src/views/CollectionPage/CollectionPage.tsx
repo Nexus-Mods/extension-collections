@@ -504,7 +504,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const mod = mods[modId];
     const modName = util.renderModName(mod);
-    this.context.api.ext.showOverlay?.(modId, modName, instructions);
+    this.context.api.ext.showOverlay?.(modId, modName, instructions,
+      { x: evt.pageX, y: evt.pageY });
   }
 
   private getModInstructions = (modId: string) => {
