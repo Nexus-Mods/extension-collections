@@ -985,24 +985,66 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 .collection-instructions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $gutter-width;
+
+  height: 36.6em;
+  width: 31.7em;
+
   position: absolute;
-  background-color: $brand-menu;
-  border: $border-width solid $border-color;
   z-index: 10;
+  background: $brand-bg;
+
+  border: $border-width solid $border-color;
+  box-sizing: border-box;
+
+  box-shadow: 0px 10px 10px -5px rgba(0, 0, 0, 0.12), 0px 20px 25px -5px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
 
   .collection-instructions-header {
+    display: flex;
+    flex-direction: row;
     align-items: center;
-    h4 {
-      margin: 0;
+    svg {
+      width: 1.5em;
+      height: 1.5em;
     }
-    div {
-      padding: 0 0.5em;
+    .collection-instructions-title {
+      svg {
+        width: 1em;
+        height: 1em;
+        margin-right: 5px;
+      }
+      font-weight: $headings-font-weight;
+
+      display: flex;
+      align-items: center;
+      letter-spacing: 1.25px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      flex-grow: 4;
+      margin: 0px 8px;
+    }
+
+    .cllection-instructions-close {
+      flex-shrink: 3;
     }
   }
 
+  .collection-instructions-title {
+    font-weight: $headings-font-weight;
+    flex-shrink: 3;
+  }
+
   .collection-instructions-content {
-    min-height: 20em;
-    max-height: 80vh;
+    font-size: $font-size-base * 1.5;
+    line-height: $line-height-large;
+    letter-spacing: 0.5px;
   }
 }
 
