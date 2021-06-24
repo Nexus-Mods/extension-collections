@@ -62,6 +62,8 @@ function onlyLocalRules(rule: types.IModRule) {
 }
 
 function makeOnUnfulfilledRules(api: types.IExtensionApi) {
+  const reported = new Set<string>();
+
   return (profileId: string, modId: string, rules: types.IModRule[]): PromiseBB<boolean> => {
     const state: types.IState = api.store.getState();
 
@@ -71,6 +73,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
       util.getSafe(state.persistent.mods, [profile.gameId, modId], undefined);
 
     if ((collection !== undefined)
+        && !reported.has(modId)
         && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)
         && !collection.attributes?.editable) {
 
@@ -106,6 +109,8 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
           },
         });
       }
+
+      reported.add(modId);
 
       api.sendNotification({
         id: getUnfulfilledNotificationId(collection.id),
