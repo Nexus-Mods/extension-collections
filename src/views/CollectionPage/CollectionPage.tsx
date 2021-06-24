@@ -45,6 +45,7 @@ interface IConnectedProps {
   votedSuccess: boolean;
   activity: { [id: string]: string };
   language: string;
+  overlays: { [id: string]: types.IOverlay };
 }
 
 interface IActionProps {
@@ -267,7 +268,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               icon='details'
               tooltip={instructions}
               data-modid={mod.id}
-              onClick={this.showInstructions}
+              onClick={this.toggleInstructions}
             />
           );
         },
@@ -490,9 +491,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       : null;
   }
 
-  private showInstructions = (evt: React.MouseEvent<any>) => {
+  private toggleInstructions = (evt: React.MouseEvent<any>) => {
     const modId = evt.currentTarget.getAttribute('data-modid');
-    const { mods, onShowError } = this.props;
+    const { mods, onShowError, overlays } = this.props;
     const instructions = this.getModInstructions(modId);
     if (instructions === undefined) {
       // This shouldn't be possible
@@ -504,8 +505,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const mod = mods[modId];
     const modName = util.renderModName(mod);
-    this.context.api.ext.showOverlay?.(modId, modName, instructions,
-      { x: evt.pageX, y: evt.pageY });
+    if (overlays[modId]?.text !== undefined) {
+      this.context.api.ext.dismissOverlay?.(modId);
+    } else {
+      this.context.api.ext.showOverlay?.(modId, modName, instructions,
+        { x: evt.pageX, y: evt.pageY });
+    }
   }
 
   private getModInstructions = (modId: string) => {
@@ -933,6 +938,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     votedSuccess,
     activity: state.session.base.activity,
     language: state.settings.interface.language,
+    overlays: state.session.overlays.overlays,
   };
 }
 
