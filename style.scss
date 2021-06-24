@@ -990,7 +990,6 @@ ul.collection-mods-page-attrib-tooltip {
   align-items: center;
   padding: $gutter-width;
 
-  height: 36.6em;
   width: 31.7em;
 
   position: absolute;
@@ -1045,6 +1044,8 @@ ul.collection-mods-page-attrib-tooltip {
     font-size: $font-size-base * 1.5;
     line-height: $line-height-large;
     letter-spacing: 0.5px;
+    min-height: 20em;
+    max-height: 36vh;
   }
 }
 
