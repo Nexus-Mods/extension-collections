@@ -156,7 +156,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         placement: 'table',
         isToggleable: false,
         edit: {},
-        noShrink: true,
         isSortable: true,
         sortFunc: (lhs: string[], rhs: string[]): number => {
           return STATUS_ORDER.indexOf(lhs[0]) - STATUS_ORDER.indexOf(rhs[0]);

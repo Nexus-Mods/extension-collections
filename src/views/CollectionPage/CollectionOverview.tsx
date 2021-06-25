@@ -41,7 +41,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     this.mWorkshopActions = [
       {
-        title: 'View on NexusMods',
+        title: 'View on Nexus Mods',
         action: this.openUrl,
         condition: () => (this.props.collection.attributes?.collectionId !== undefined)
                       && (this.props.revision !== undefined),

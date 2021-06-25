@@ -1148,6 +1148,12 @@ ul.collection-mods-page-attrib-tooltip {
   animation-name: circle-fill;
 }
 
+#table-mods {
+  .cell-collection {
+    white-space: nowrap;
+  }
+}
+
 @keyframes circle-fill {
   to { stroke-dasharray: 0 100; }
 }
