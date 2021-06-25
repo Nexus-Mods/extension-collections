@@ -1,4 +1,4 @@
-import { ICollection, ICollectionMod } from './types/ICollection';
+import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICollection';
 import { LOGO_NAME, modToCollection as modToCollection } from './util/transformCollection';
 import { makeProgressFunction } from './util/util';
 import { BUNDLED_PATH } from './constants';
@@ -95,8 +95,14 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
   return zipPath;
 }
 
+function filterInfoModSource(source: ICollectionSourceInfo): ICollectionSourceInfo {
+  return _.omit(source, ['instructions']);
+}
+
 function filterInfoMod(mod: ICollectionMod): ICollectionMod {
-  return _.omit(mod, ['hashes', 'choices', 'details', 'instructions']);
+  const res = _.omit(mod, ['hashes', 'choices', 'details', 'instructions']);
+  res.source = filterInfoModSource(res.source);
+  return res;
 }
 
 function filterInfo(input: ICollection): Partial<ICollection> {

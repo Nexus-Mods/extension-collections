@@ -48,7 +48,7 @@ function deduceSource(mod: types.IMod,
                       versionMatcher: string)
                       : ICollectionSourceInfo {
   const res: Partial<ICollectionSourceInfo> = (sourceInfo !== undefined)
-    ? {..._.omit(sourceInfo, ['instructions'])}
+    ? { ...sourceInfo }
     : { type: 'nexus' };
 
   if (res.type === 'nexus') {
