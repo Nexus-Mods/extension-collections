@@ -4,7 +4,7 @@ import { Button } from 'react-bootstrap';
 import { FlexLayout, Icon, util } from 'vortex-api';
 import { NEXUS_DOMAIN } from '../../constants';
 
-const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memberships`;
+const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memberships?pk_source=vortex&pk_campaign=collections`;
 
 export interface ICollectionBannerProps {
   totalSize: number;

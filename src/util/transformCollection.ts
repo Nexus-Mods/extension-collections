@@ -372,7 +372,8 @@ export function collectionModToRule(knownGames: types.IGameStored[],
       gameId: mod.domainName,
       modId: mod.source.modId.toString(),
       fileId: mod.source.fileId.toString(),
-    };
+      campaign: 'collection',
+    } as any;
   }
 
   return {
