@@ -1,5 +1,5 @@
+import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import { types } from 'vortex-api';
-import { ICollectionEx } from './ICollectionEx';
 
 const dummy: types.IState = undefined;
 
@@ -14,7 +14,16 @@ export interface IStateEx extends types.IState {
   };
   persistent: typeof dummy.persistent & {
     collections: {
-      [collectionId: string]: ICollectionEx;
+      [collectionId: string]: {
+        timestamp: number,
+        info: ICollection,
+      },
+    },
+    revisions: {
+      [revisionId: string]: {
+        timestamp: number,
+        info: IRevision,
+      },
     },
   };
 }

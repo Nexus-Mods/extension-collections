@@ -15,12 +15,30 @@ class InfoCache {
   public async getCollectionInfo(collectionId: string): Promise<ICollection> {
     const { store } = this.mApi;
     const {collections} = store.getState().persistent.collections;
-    if ((collections[collectionId] === undefined)
+    if ((collections[collectionId]?.timestamp === undefined)
         || ((Date.now() - collections[collectionId].timestamp) > CACHE_EXPIRE_MS)) {
       return this.cacheCollectionInfo(collectionId);
     }
 
-    return collections[collectionId];
+    return collections[collectionId].info;
+  }
+
+  public async getRevisionInfo(revisionId: string): Promise<IRevision> {
+    const { store } = this.mApi;
+    const {revisions} = store.getState().persistent.collections;
+    if ((revisions[revisionId]?.timestamp === undefined)
+        || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
+      return this.cacheRevisionInfo(revisionId);
+    }
+
+    const collectionInfo = await this.getCollectionInfo(revisions[revisionId].info.collection.id);
+
+    return {
+      ...revisions[revisionId].info,
+      collection: {
+        ...collectionInfo,
+      },
+    };
   }
 
   private async cacheCollectionInfo(collectionId: string): Promise<ICollection> {
@@ -28,20 +46,9 @@ class InfoCache {
     const collectionInfo = (await this.mApi.emitAndAwait(
         'get-nexus-collection', parseInt(collectionId, 10)))[0];
     if (!!collectionInfo) {
-      store.dispatch(updateCollectionInfo(collectionId, collectionInfo));
+      store.dispatch(updateCollectionInfo(collectionId, collectionInfo, Date.now()));
     }
     return Promise.resolve(collectionInfo);
-  }
-
-  public async getRevisionInfo(revisionId: string): Promise<IRevision> {
-    const { store } = this.mApi;
-    const {revisions} = store.getState().persistent.collections;
-    if ((revisions[revisionId] === undefined)
-        || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
-      return this.cacheRevisionInfo(revisionId);
-    }
-
-    return revisions[revisionId];
   }
 
   private async cacheRevisionInfo(revisionId: string): Promise<IRevision> {
@@ -53,7 +60,15 @@ class InfoCache {
     const revisionInfo = (await this.mApi.emitAndAwait(
         'get-nexus-collection-revision', revIdNum))[0];
     if (!!revisionInfo) {
-      store.dispatch(updateRevisionInfo(revisionId, revisionInfo));
+      const now = Date.now();
+      // we cache revision info and collection info separately to reduce duplication
+      // in the application state
+      store.dispatch(updateCollectionInfo(
+        revisionInfo.collection.id, revisionInfo.collection, now));
+      store.dispatch(updateRevisionInfo(revisionId, {
+        ...revisionInfo,
+        collection: { id: revisionInfo.collection.id },
+      }, now));
     }
     return Promise.resolve(revisionInfo);
   }

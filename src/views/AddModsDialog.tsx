@@ -76,7 +76,8 @@ function AddModsDialog(props: IAddModsDialogProps) {
 
   const state = store.getState();
   const gameId = selectors.activeGameId(state);
-  const collectionId: string = useSelector<any, string>(state => state.session.collections.addModsId);
+  const collectionId: string =
+    useSelector<any, string>(stateSel => stateSel.session.collections.addModsId);
 
   const collection = collectionId !== undefined
     ? state.persistent.mods[gameId]?.[collectionId]

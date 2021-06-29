@@ -7,14 +7,16 @@ import { types, util } from 'vortex-api';
 const persistentReducer: types.IReducerSpec = {
   reducers: {
     [actions.updateCollectionInfo as any]: (state, payload) => {
-      const { collectionId, collectionInfo } = payload;
+      const { collectionId, collectionInfo, timestamp } = payload;
 
-      return util.setSafe(state, ['collections', collectionId], collectionInfo);
+      return util.setSafe(state, ['collections', collectionId],
+                          { timestamp, info: collectionInfo });
     },
     [actions.updateRevisionInfo as any]: (state, payload) => {
-      const { revisionId, revisionInfo } = payload;
+      const { revisionId, revisionInfo, timestamp } = payload;
 
-      return util.setSafe(state, ['revisions', revisionId], revisionInfo);
+      return util.setSafe(state, ['revisions', revisionId],
+                          { timestamp, info: revisionInfo });
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
       const { revisionId, success } = payload;
