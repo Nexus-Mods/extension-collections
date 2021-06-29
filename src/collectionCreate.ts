@@ -16,7 +16,7 @@ export async function initFromProfile(api: types.IExtensionApi, profileId: strin
     message: name,
     actions: [
       {
-        title: 'Configure',
+        title: 'Edit',
         action: dismiss => {
           api.events.emit('edit-collection', id);
           dismiss();

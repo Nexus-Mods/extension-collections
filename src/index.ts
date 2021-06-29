@@ -165,9 +165,9 @@ function createNewCollection(api: types.IExtensionApi, profile: types.IProfile, 
     message: name,
     actions: [
       {
-        title: 'Configure',
+        title: 'Edit',
         action: dismiss => {
-          api.store.dispatch(startEditCollection(id));
+          api.events.emit('edit-collection', id);
           dismiss();
         },
       },
