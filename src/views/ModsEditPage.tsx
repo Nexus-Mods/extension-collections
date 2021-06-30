@@ -710,7 +710,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       text: 'These instructions will be shown before installing the mod. '
           + 'This will interrupt the installation process so please use it '
           + 'only if you have to',
-      input: [ { label: 'Instructions', id: 'instructions', type: 'textarea' as any, value } ],
+      input: [ { label: 'Instructions', id: 'instructions', type: 'multiline' as any, value } ],
     }, [
       { label: 'Cancel' },
       { label: 'Save' },
