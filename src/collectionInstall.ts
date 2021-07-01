@@ -74,8 +74,7 @@ export function makeInstall(api: types.IExtensionApi) {
         ...bundled.map(filePath => ({
           type: 'copy' as any,
           source: filePath,
-          destination: path.basename(filePath),
-          section: 'download',
+          destination: filePath,
         })),
         ...collection.mods.map(mod => (
           {

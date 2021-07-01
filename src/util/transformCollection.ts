@@ -91,8 +91,9 @@ function deduceSource(mod: types.IMod,
 
   if ((res.md5 === undefined)
       && (res.logicalFilename === undefined)
-      && (res.fileExpression === undefined)) {
-    assign(res, 'fileExpression', sanitizeExpression(mod.attributes?.fileName));
+      && (res.fileExpression === undefined)
+      && (mod.attributes?.fileName !== undefined)) {
+    assign(res, 'fileExpression', sanitizeExpression(mod.attributes.fileName));
   }
 
   return res as ICollectionSourceInfo;
@@ -376,7 +377,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     } as any;
   }
 
-  return {
+  const res: types.IModRule = {
     type: mod.optional ? 'recommends' : 'requires',
     reference,
     fileList: mod.hashes,
@@ -389,6 +390,12 @@ export function collectionModToRule(knownGames: types.IGameStored[],
       instructions: mod.instructions,
     },
   } as any;
+
+  if (mod.source.type === 'bundle') {
+    res.extra.localPath = path.join('bundled', mod.source.fileExpression);
+  }
+
+  return res;
 }
 
 export async function modToCollection(state: types.IState,
