@@ -267,6 +267,7 @@ function register(context: types.IExtensionContext,
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
     group: 'per-game',
+    badge: new util.ReduxProp(context.api, [], () => 'Beta'),
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
@@ -281,7 +282,8 @@ function register(context: types.IExtensionContext,
       resetCB: (cb) => resetPageCB = cb,
     }),
     onReset: () => resetPageCB?.(),
-  } as any);
+    priority: 90,
+  });
 
   context.registerModType(MOD_TYPE, 200, () => true,
     () => undefined, () => PromiseBB.resolve(false), {

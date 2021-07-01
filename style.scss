@@ -1157,3 +1157,7 @@ ul.collection-mods-page-attrib-tooltip {
 @keyframes circle-fill {
   to { stroke-dasharray: 0 100; }
 }
+
+#Collections .badge {
+  background-color: $brand-bg;
+}
