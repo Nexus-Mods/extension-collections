@@ -6,7 +6,7 @@ import { useDispatch, useSelector, useStore } from 'react-redux';
 import { Modal, selectors, Table, TableTextFilter, types, util } from 'vortex-api';
 import { startAddModsToCollection } from '../actions/session';
 import { alreadyIncluded } from '../collectionCreate';
-import { NAMESPACE } from '../constants';
+import { MOD_TYPE, NAMESPACE } from '../constants';
 
 export interface IAddModsDialogProps {
   t: types.TFunction;
@@ -74,7 +74,7 @@ function AddModsDialog(props: IAddModsDialogProps) {
 
   const [ selection, setSelection ] = useState(new Set<string>());
 
-  const state = store.getState();
+  const state: types.IState = store.getState();
   const gameId = selectors.activeGameId(state);
   const collectionId: string =
     useSelector<any, string>(stateSel => stateSel.session.collections.addModsId);
@@ -86,7 +86,8 @@ function AddModsDialog(props: IAddModsDialogProps) {
   const mods = state.persistent.mods[gameId];
   const modsWithState = React.useMemo(() => Object.keys(mods ?? {})
     .reduce((prev, modId) => {
-      if (!alreadyIncluded(collection?.rules, modId)) {
+      if (!alreadyIncluded(collection?.rules, modId)
+          && (mods[modId].type !== MOD_TYPE)) {
         prev[modId] = {
           selected: selection.has(modId),
           mod: mods[modId],
