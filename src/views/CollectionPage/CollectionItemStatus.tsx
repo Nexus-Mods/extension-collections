@@ -19,6 +19,14 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
   public render(): JSX.Element {
     const { t, download, mod } = this.props;
 
+    if (mod.collectionRule['ignored'] === true) {
+      return (
+        <div className='collection-status-ignored'>
+          <Icon name='toggle-disabled' />{t('Ignored')}
+        </div>
+      );
+    }
+
     if (mod.state === 'installed') {
       if (mod.enabled) {
         return (

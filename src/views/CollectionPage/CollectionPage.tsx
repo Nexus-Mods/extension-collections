@@ -78,6 +78,10 @@ const STATUS_ORDER: string[] =
 
 type IProps = ICollectionPageProps & IConnectedProps & IActionProps;
 
+function arr(input: string | string[]): string[] {
+  return Array.isArray(input) ? input : [input];
+}
+
 class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mAttributes: Array<types.ITableAttribute<IModEx>>;
   private mUpdateDebouncer: util.Debouncer;
@@ -117,6 +121,20 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             : true,
         hotKey: { code: 46 },
       },
+      {
+        icon: 'toggle-disabled',
+        title: 'Ignore',
+        action: this.ignoreSelected,
+        condition: instanceIds => arr(instanceIds).find(id =>
+          this.state.modsEx[id].collectionRule['ignored'] !== true) !== undefined,
+      },
+      {
+        icon: 'toggle-enabled',
+        title: 'Stop Ignoring',
+        action: this.unignoreSelected,
+        condition: instanceIds => arr(instanceIds).find(id =>
+          this.state.modsEx[id].collectionRule['ignored'] === true) !== undefined,
+      },
     ];
 
     this.mAttributes = [
@@ -142,7 +160,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           );
         },
         calc: (mod: IModEx) => {
-          if (mod.state === 'installing') {
+          if (mod.collectionRule['ignored']) {
+            return ['Ignored'];
+          } else if (mod.state === 'installing') {
             return ['Installing', mod.progress];
           } else if (mod.state === 'downloading') {
             return ['Downloading', mod.progress];
@@ -334,6 +354,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const incomplete = Object.values(modsEx)
       .find(mod => (mod.state !== 'installed')
+                && !mod.collectionRule['ignored']
                 && (mod.collectionRule.type === 'requires')) !== undefined;
 
     const totalSize = Object.values(modsEx).reduce((prev, mod) => {
@@ -571,6 +592,38 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     this.context.api.events.emit('mods-enabled', modIds, false, profile.gameId);
   }
 
+  private ignoreSelected = (modIds: string[]) => {
+    const { collection, profile } = this.props;
+    const { modsEx } = this.state;
+
+    util.batchDispatch(
+      this.context.api.store,
+      modIds.reduce((prev: Redux.Action[], modId: string) => {
+        prev.push(actions.addModRule(profile.gameId, collection.id, {
+          ...modsEx[modId].collectionRule,
+          ignored: true,
+        } as any));
+        return prev;
+      }, []),
+    );
+  }
+
+  private unignoreSelected = (modIds: string[]) => {
+    const { collection, profile } = this.props;
+    const { modsEx } = this.state;
+
+    util.batchDispatch(
+      this.context.api.store,
+      modIds.reduce((prev: Redux.Action[], modId: string) => {
+        prev.push(actions.addModRule(profile.gameId, collection.id, {
+          ...modsEx[modId].collectionRule,
+          ignored: false,
+        } as any));
+        return prev;
+      }, []),
+    );
+  }
+
   private removeSelected = (modIds: string[]) => {
     const { t, collection, profile, onRemoveRule } = this.props;
     const { modsEx } = this.state;
@@ -705,14 +758,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                     || modifiedState[modId]?.['-enabled'] !== undefined)
       .forEach(invalidateMod);
 
-    // refresh for any rule that doesn't currently have an entry
+    // refresh for any rule that doesn't currently have an entry or that was modified
     const { collection } = newProps;
 
     (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .forEach(rule => {
         const id = this.ruleId(rule);
-        if (result[id] === undefined) {
+        if ((result[id] === undefined) || (modifiedRules[id] !== undefined)) {
           result[id] = this.modFromRule(newProps, rule);
         }
       });

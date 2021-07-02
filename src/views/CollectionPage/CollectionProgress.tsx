@@ -43,7 +43,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
 
     const { pending, downloading, installing, done } =
       Object.values(mods).reduce<IModGroups>((prev, mod) => {
-        if (mod.collectionRule.type === 'requires') {
+        if ((mod.collectionRule.type === 'requires') && !mod.collectionRule['ignored']) {
           prev[group(mod.state, downloads[mod.archiveId])].push(mod);
         }
         return prev;

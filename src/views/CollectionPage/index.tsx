@@ -355,7 +355,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     return collections.reduce((prev, collection) => {
       prev[collection.id] =
         (collection.rules || [])
-          .filter(rule => rule.type === 'requires')
+          .filter(rule => (rule.type === 'requires') && !rule['ignored'])
           .map(rule => {
             const mod = util.findModByRef(rule.reference, mods);
             return mod ?? null;

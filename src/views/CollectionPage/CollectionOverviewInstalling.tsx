@@ -5,7 +5,6 @@ import { Image, Media, Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 import InstallDriver from '../../util/InstallDriver';
-import CollectionThumbnail from './CollectionThumbnail';
 
 interface ICollectionOverviewInstallingProps {
   t: i18next.TFunction;
@@ -79,11 +78,12 @@ class CollectionOverviewInstalling
             <FlexLayout type='column' className='collection-installing-image-pane'>
               <FlexLayout.Flex>
                 {(displayMod?.file?.mod?.pictureUrl !== undefined)
-                  ? <Image
+                  ? (
+                    <Image
                       className='installing-mod-image'
                       src={displayMod?.file?.mod?.pictureUrl}
                     />
-                  : null}
+                  ) : null}
               </FlexLayout.Flex>
               <FlexLayout.Fixed>
                 <tooltip.IconButton
