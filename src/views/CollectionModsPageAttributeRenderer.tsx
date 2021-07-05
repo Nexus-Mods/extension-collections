@@ -31,7 +31,7 @@ class CollectionModsPageAttributeRenderer extends ComponentEx<IProps, {}> {
       ? (
         <FlexLayout type='row' id='collection-mods-page-attribute-renderer'>
           <FlexLayout.Fixed>
-            <p>{collectionNames[0]}</p>
+            <div>{collectionNames[0]}</div>
           </FlexLayout.Fixed>
           {(count > 1) && this.renderAddendum()}
         </FlexLayout>

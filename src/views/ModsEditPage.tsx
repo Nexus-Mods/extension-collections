@@ -218,7 +218,8 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
 
         if (entry.rule.reference.versionMatch === '*') {
           return t('Latest');
-        } else if ((entry.rule.reference.versionMatch || '').endsWith('+prefer')) {
+        } else if ((entry.rule.reference.versionMatch === undefined)
+                   || (entry.rule.reference.versionMatch || '').endsWith('+prefer')) {
           return t('Prefer current ({{version}})', { replace: { version } });
         } else {
           return t('Current ({{version}})', { replace: { version } });

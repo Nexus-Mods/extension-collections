@@ -232,58 +232,6 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     const { game } = this.props;
 
     util.opn(`${NEXUS_BASE_URL}/${(util as any).nexusGameId(game)}/collections`);
-
-    /*
-    const collections: ICollection[] =
-      (await api.emitAndAwait('get-nexus-collections', (util as any).nexusGameId(game)))[0];
-    if ((collections === undefined) || (collections.length === 0)) {
-      api.sendNotification({ message: 'No collections for this game', type: 'error' });
-      return;
-    }
-    const choice = await api.showDialog('question', 'Choose collection', {
-      text: 'Pick a collection to install',
-      choices: collections.map(coll => ({
-        text: `${coll.name} (${coll.id} revision ${coll.currentRevision?.revision})`,
-        value: false,
-        id: coll.id.toString(),
-      })),
-    }, [
-      { label: 'Cancel' },
-      { label: 'Download' },
-    ]);
-
-    if (choice.action === 'Download') {
-      const collId = Object.keys(choice.input).find(id => choice.input[id]);
-      const selectedCollection = collections.find(coll => coll.id.toString() === collId);
-      try {
-        const latest = selectedCollection.currentRevision;
-
-        const modInfo = {
-          game: profile.gameId,
-          name: selectedCollection.name,
-          source: 'nexus',
-          nexus: {
-            ids: {
-              collectionId: collId.toString(),
-              revisionId: latest.id,
-              revisionNumber: latest.revision,
-            },
-          },
-        };
-        const downloadURLs: IDownloadURL[] =
-          (await api.emitAndAwait('resolve-collection-url', latest.downloadLink))[0];
-        const dlId = await util.toPromise(cb =>
-          api.events.emit('start-download', downloadURLs.map(iter => iter.URI), modInfo,
-                          (latest as any).file_name, cb, 'never', false));
-        await util.toPromise(cb =>
-          api.events.emit('start-install-download', dlId, undefined, cb));
-      } catch (err) {
-        if (!(err instanceof util.UserCanceled)) {
-          api.showErrorNotification('Failed to download collection', err);
-        }
-      }
-    }
-    */
   }
 
   private fromProfile = () => {
