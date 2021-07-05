@@ -467,7 +467,7 @@ function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
                                 existingRules: types.IModRule[],
                                 existingId: string): types.IModRule[] {
-  return Object.keys(profile.modState)
+  return Object.keys(profile.modState ?? {})
     .filter(modId => profile.modState[modId].enabled
                   && (mods[modId] !== undefined)
                   && (modId !== existingId)
