@@ -477,21 +477,24 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       collectionChangedCB?.();
     }
 
-    const collWithNewMods: string[] = collections.reduce((accum, id) => {
+    const foundRuleChanges: boolean = collections.find((id) => {
       if (prevG[id]?.rules === curG[id]?.rules) {
-        return accum;
+        return false;
       }
-      const diff = _.difference(curG[id]?.rules, prevG[id]?.rules);
-      const hasNewMods = diff.find(rule =>
-        ['requires', 'recommends'].includes(rule.type)) !== undefined;
-      if (hasNewMods) {
-        accum.push(id);
-      }
-      return accum;
-    }, []);
+      const added = _.difference(curG[id]?.rules, prevG[id]?.rules);
+      const removed = _.difference(prevG[id]?.rules, curG[id]?.rules);
+      return (removed.length > 0) || (added.find(rule =>
+          ['requires', 'recommends'].includes(rule.type)) !== undefined);
+    }) !== undefined;
 
-    if (collWithNewMods.length > 0) {
+    if (foundRuleChanges) {
       applyDefaultInstallMode.schedule();
+      if (changed === undefined) {
+        // The collectionChanged callback hasn't been called; yet
+        //  the mod entries had been changed - we need to call the CB
+        //  in order for the collection column on the mods page to rerender
+        collectionChangedCB?.();
+      }
     }
   });
 
