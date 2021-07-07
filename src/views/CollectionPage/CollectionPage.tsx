@@ -82,6 +82,19 @@ function arr(input: string | string[]): string[] {
   return Array.isArray(input) ? input : [input];
 }
 
+function matchRepo(mod: IModEx, ref: IModFile) {
+  const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
+  const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
+
+  if ((modId === undefined) || (fileId === undefined)
+      || (ref.modId === undefined) || (ref.fileId === undefined)) {
+    return false;
+  }
+
+  return modId.toString() === ref.modId.toString()
+    && fileId.toString() === ref.fileId.toString();
+}
+
 class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mAttributes: Array<types.ITableAttribute<IModEx>>;
   private mUpdateDebouncer: util.Debouncer;
@@ -238,19 +251,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           let avatar: string;
           if (this.state.revisionInfo !== undefined) {
             const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
-            const matchRepo = (ref: IModFile) => {
-              const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
-              const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
-
-              if ((modId === undefined) || (fileId === undefined)
-                  || (ref.modId === undefined) || (ref.fileId === undefined)) {
-                return false;
-              }
-
-              return modId.toString() === ref.modId.toString()
-                && fileId.toString() === ref.fileId.toString();
-            };
-            const revMod = revMods.find(iter => matchRepo(iter.file));
+            const revMod = revMods.find(iter => matchRepo(mod, iter.file));
 
             name = mod.attributes?.uploader || revMod?.file?.owner?.name;
             avatar = mod.attributes?.uploaderAvatar
@@ -495,7 +496,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       const mod = modsEx[modId];
       return {
         local: mod,
-        remote: revisionInfo?.modFiles?.find?.(file => file.fileId === mod.attributes.fileId),
+        remote: revisionInfo?.modFiles?.find?.(file => matchRepo(mod, file.file)),
       };
     });
   }

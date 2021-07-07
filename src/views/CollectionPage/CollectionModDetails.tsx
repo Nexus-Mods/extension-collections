@@ -1,7 +1,7 @@
 import { ICollectionRevisionMod } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { Panel } from 'react-bootstrap';
-import { FlexLayout, Image, types, util } from  'vortex-api';
+import { FlexLayout, Image, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN } from '../../constants';
 import { IModEx } from '../../types/IModEx';
 
@@ -85,7 +85,7 @@ function CollectionModDetails(props: ICollectionModDetails) {
         </FlexLayout.Fixed>
       </FlexLayout>
     </Panel>
-  )
+  );
 }
 
 export default CollectionModDetails;
