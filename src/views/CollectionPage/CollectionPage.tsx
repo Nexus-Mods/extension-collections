@@ -346,7 +346,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activity, className, collection, driver, downloads, language, notifications,
-            onVoteSuccess, profile, votedSuccess } = this.props;
+            onVoteSuccess, profile, userInfo, votedSuccess } = this.props;
     const { modSelection, modsEx, revisionInfo } = this.state;
 
     if (collection === undefined) {
@@ -414,6 +414,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         <FlexLayout.Fixed>
           <CollectionProgress
             t={t}
+            isPremium={userInfo.isPremium}
             mods={modsEx}
             downloads={downloads}
             totalSize={totalSize}

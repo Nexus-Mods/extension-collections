@@ -9,6 +9,7 @@ import { ComponentEx, FlexLayout, ProgressBar, Spinner, tooltip, types, util } f
 
 export interface ICollectionProgressProps {
   t: i18next.TFunction;
+  isPremium: boolean;
   mods: { [modId: string]: IModEx };
   downloads: { [dlId: string]: types.IDownload };
   totalSize: number;
@@ -20,7 +21,8 @@ export interface ICollectionProgressProps {
 
 class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   public render(): JSX.Element {
-    const {t, activity, downloads, mods, totalSize, onCancel, onPause, onResume} = this.props;
+    const  {t, activity, downloads, isPremium, mods, totalSize,
+            onCancel, onPause, onResume} = this.props;
 
     const group = (state: string, download?: types.IDownload): string => {
       if ((state === 'downloading') && (download?.state === 'paused')) {
@@ -92,11 +94,13 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
             </FlexLayout>
           </Panel>
         </FlexLayout.Flex>
+        {isPremium ? null : (
         <FlexLayout.Fixed className='collection-banner-container'>
           <Panel>
             <CollectionBanner t={t} totalSize={totalSize} />
           </Panel>
         </FlexLayout.Fixed>
+        )}
       </FlexLayout>
     );
   }
