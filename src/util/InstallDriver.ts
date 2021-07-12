@@ -59,7 +59,16 @@ class InstallDriver {
           this.triggerUpdate();
 
           if (!recommendations) {
-            api.events.emit('install-recommendations', profileId, [modId]);
+            // offer to install recommendations when all requirements have been installed
+            const state = api.getState();
+            const profile = state.persistent.profiles[profileId];
+            const mods = state.persistent.mods[profile.gameId];
+
+            const missing = this.mCollection.rules.find(rule =>
+              (rule.type === 'requires') && util.findModByRef(rule.reference, mods));
+            if (missing === undefined) {
+              api.events.emit('install-recommendations', profileId, [modId]);
+            }
           }
         }
       });
