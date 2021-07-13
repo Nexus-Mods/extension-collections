@@ -342,12 +342,6 @@ function register(context: types.IExtensionContext,
   };
   context.registerTableAttribute('mods', collectionAttribute);
 
-  context.registerAction('mods-action-icons', 50, 'collection-export', {}, 'Export Collection',
-    (modIds: string[]) => {
-      const gameMode = selectors.activeGameId(stateFunc());
-      doExportToFile(context.api, gameMode, modIds[0]);
-    }, (modIds: string[]) => isEditableCollection(stateFunc(), modIds));
-
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
     (modIds: string[]) => {
       context.api.events.emit('show-main-page', 'Collections');
