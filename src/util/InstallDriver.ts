@@ -1,4 +1,4 @@
-import { ICollection, IRevision } from '@nexusmods/nexus-api';
+import { ICollection, IModFile, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import { actions, log, types, util } from 'vortex-api';
 import { INSTALLING_NOTIFICATION_ID } from '../constants';
@@ -226,6 +226,8 @@ class InstallDriver {
       ],
     });
 
+    this.augmentRules();
+
     this.mApi.dismissNotification(getUnfulfilledNotificationId(this.mCollection.id));
     this.mApi.store.dispatch(actions.setModEnabled(this.mProfile.id, this.mCollection.id, true));
 
@@ -242,6 +244,33 @@ class InstallDriver {
       totalMods: required.length,
       missing: this.mRequiredMods.length,
     });
+  }
+
+  private matchRepo(rule: types.IModRule, ref: IModFile) {
+    const modId = rule.reference.repo?.modId;
+    const fileId = rule.reference.repo?.fileId;
+
+    if ((modId === undefined) || (fileId === undefined)
+        || (ref.modId === undefined) || (ref.fileId === undefined)) {
+      return false;
+    }
+
+    return modId.toString() === ref.modId.toString()
+      && fileId.toString() === ref.fileId.toString();
+  }
+
+  private augmentRules() {
+    util.batchDispatch(this.mApi.store, this.mCollection.rules.map(rule => {
+      if (rule.reference.repo === undefined) {
+        return undefined;
+      }
+      const revMod = this.mRevisionInfo.modFiles.find(iter => this.matchRepo(rule, iter.file));
+      if (revMod?.file !== undefined) {
+        const newRule = util.setSafe(rule, ['extra', 'fileName'], revMod.file.uri);
+        return actions.addModRule(this.mProfile.gameId, this.mCollection.id, newRule);
+      }
+    })
+    .filter(rule => rule !== undefined));
   }
 
   private begin = () => {

@@ -109,6 +109,9 @@ export function generateCollection(info: ICollectionInfo,
   };
 }
 
+/**
+ * converts the rules in a mod into mod entries for a collection, ready for export
+ */
 async function rulesToCollectionMods(collection: types.IMod,
                                      mods: { [modId: string]: types.IMod },
                                      stagingPath: string,
@@ -328,6 +331,9 @@ function extractModRules(rules: types.IModRule[],
   .filter(rule => (rule !== undefined) && ruleEnabled(rule, mods, collection));
 }
 
+/**
+ * convert a mod entry from a collection into a mod rule
+ */
 export function collectionModToRule(knownGames: types.IGameStored[],
                                     mod: ICollectionMod): types.IModRule {
   const downloadHint = ['manual', 'browse', 'direct'].includes(mod.source.type)
