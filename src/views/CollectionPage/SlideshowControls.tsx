@@ -16,9 +16,20 @@ function SlideshowControls(props: ISlideshowControlsProps) {
   const [paused, setPaused] = React.useState(false);
   const [idx, setIdx] = React.useState(0);
   const [lastChange, setLastChange] = React.useState(0);
+  const isMounted = React.useRef(false);
+
+  React.useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
 
   // the callbacks support wrap-around even though the ui does not
   const next = React.useCallback(() => {
+    if (!isMounted.current) {
+      // next may be called asynchronously and there is no good way of canceling it on unmount
+      return;
+    }
+
     let value: number;
     setIdx(oldValue => {
       value = (oldValue + 1) % numItems;

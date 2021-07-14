@@ -7,7 +7,7 @@ import { collectionModToRule } from './util/transformCollection';
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
 import * as path from 'path';
-import { actions, fs, selectors, types, util } from 'vortex-api';
+import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
 /**
  * supported test for use in registerInstaller
@@ -86,6 +86,22 @@ export function makeInstall(api: types.IExtensionApi) {
   };
 }
 
+function applyCollectionRules(api: types.IExtensionApi,
+                              gameId: string,
+                              collection: ICollection,
+                              mods: { [modId: string]: types.IMod }) {
+  util.batchDispatch(api.store, (collection.modRules ?? []).reduce((prev, rule) => {
+    const sourceMod = util.findModByRef(rule.source, mods);
+    if (sourceMod !== undefined) {
+      log('info', 'add collection rule',
+          { gameId, sourceMod: sourceMod.id, rule: JSON.stringify(rule) });
+      prev.push(actions.addModRule(gameId, sourceMod.id, rule));
+    }
+    return prev;
+  }, []));
+
+}
+
 /**
  * postprocess a collection. This is called after dependencies for the pack have been installed.
  * It may get called multiple times so it has to take care to not break if any data already
@@ -95,13 +111,8 @@ export async function postprocessCollection(api: types.IExtensionApi,
                                             profile: types.IProfile,
                                             collection: ICollection,
                                             mods: { [modId: string]: types.IMod }) {
-  util.batchDispatch(api.store, (collection.modRules ?? []).reduce((prev, rule) => {
-    const sourceMod = util.findModByRef(rule.source, mods);
-    if (sourceMod !== undefined) {
-      prev.push(actions.addModRule(profile.gameId, sourceMod.id, rule));
-    }
-    return prev;
-  }, []));
+  log('info', 'postprocess collection');
+  applyCollectionRules(api, profile.gameId, collection, mods);
 
   const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
 
@@ -109,5 +120,5 @@ export async function postprocessCollection(api: types.IExtensionApi,
     await ext.parse(profile.gameId, collection);
   }
 
-  parseGameSpecifics(api, profile.gameId, collection);
+  await parseGameSpecifics(api, profile.gameId, collection);
 }

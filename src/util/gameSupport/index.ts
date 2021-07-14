@@ -63,9 +63,12 @@ export function generateGameSpecifics(state: types.IState,
 
 export function parseGameSpecifics(api: types.IExtensionApi,
                                    gameId: string,
-                                   collection: ICollection) {
+                                   collection: ICollection)
+                                   : Promise<void> {
   if ((gameSupport[gameId] !== undefined) && (gameSupport[gameId].parser !== undefined)) {
     return gameSupport[gameId].parser(api, gameId, collection);
+  } else {
+    return Promise.resolve();
   }
 }
 

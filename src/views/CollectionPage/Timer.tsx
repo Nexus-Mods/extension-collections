@@ -28,6 +28,14 @@ function Timer(props: ITimerProps) {
   const [elapsed, setElapsed] = React.useState(null);
 
   React.useEffect(() => {
+    return () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
     // reset the animation if a new started time is set
     setActive(false);
     setElapsed(null);

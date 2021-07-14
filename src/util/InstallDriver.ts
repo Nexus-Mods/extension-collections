@@ -65,7 +65,8 @@ class InstallDriver {
             const mods = state.persistent.mods[profile.gameId];
 
             const missing = this.mCollection.rules.find(rule =>
-              (rule.type === 'requires') && util.findModByRef(rule.reference, mods));
+              (rule.type === 'requires')
+              && (util.findModByRef(rule.reference, mods) === undefined));
             if (missing === undefined) {
               api.events.emit('install-recommendations', profileId, [modId]);
             }
