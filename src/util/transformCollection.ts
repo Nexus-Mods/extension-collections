@@ -350,11 +350,13 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     ? `>=${coerced.version ?? '0.0.0'}+prefer`
     : mod.version;
 
-  if ((mod.source.updatePolicy === 'exact')
+  const { updatePolicy } = mod.source;
+
+  if ((updatePolicy === 'exact')
       || (mod.source.type === 'bundle')
       || (mod.hashes !== undefined)) {
     versionMatch = !!coerced ? coerced.version : mod.version;
-  } else if (mod.source.updatePolicy === 'latest') {
+  } else if (updatePolicy === 'latest') {
     versionMatch = '*';
   }
   const reference: types.IModReference = {
@@ -367,6 +369,10 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     fileExpression: mod.source.type === 'bundle' ? undefined : mod.source.fileExpression,
     tag: shortid(),
   };
+
+  if (['latest', 'prefer'].includes(updatePolicy)) {
+    reference['md5Hint'] = mod.source.md5;
+  }
 
   if (mod.source.type === 'nexus') {
     if (!mod.source.modId || !mod.source.fileId) {
