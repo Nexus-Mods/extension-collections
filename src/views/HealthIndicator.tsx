@@ -4,7 +4,7 @@ import { FlexLayout, Icon, tooltip } from 'vortex-api';
 
 export interface IHealthIndicatorProps {
   t: I18next.TFunction;
-  value: { rating: number, votes: number };
+  value: { average: number, total: number };
   ownSuccess: boolean;
   revisionNumber: number;
   onVoteSuccess: (success: boolean) => void;
@@ -29,7 +29,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
       </div>
       <div>
         <Icon name='health' />
-        {value.rating}%
+        {value.average}%
       </div>
       <div>
         <tooltip.IconButton

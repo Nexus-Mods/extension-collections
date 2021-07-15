@@ -163,9 +163,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                       <HealthIndicator
                         t={t}
                         revisionNumber={revision?.revision ?? 0}
-                        value={revision !== undefined
-                          ? _.pick(revision, ['rating', 'votes'])
-                          : undefined}
+                        value={revision?.rating}
                         onVoteSuccess={this.voteSuccess}
                         ownSuccess={votedSuccess}
                       />
