@@ -427,10 +427,12 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     const collectionIds = Object.keys(mods).filter(id => (mods[id]?.type === MOD_TYPE));
     const redActions: Redux.Action[] = collectionIds.reduce((accum, id) => {
       const collection: types.IMod = mods[id];
-      if (collection === undefined) {
+      if ((collection === undefined) || (collection.attributes['editable'] !== true)) {
         return accum;
       }
-      const collMods = collection.rules?.map(rule => util.findModByRef(rule.reference, mods));
+      const collMods = (collection.rules ?? [])
+        .map(rule => util.findModByRef(rule.reference, mods))
+        .filter(rule => rule !== undefined);
       const action = genDefaultInstallModeAction(api, id, collMods, gameMode);
       if (action !== undefined) {
         accum.push(action);

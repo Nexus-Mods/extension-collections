@@ -1,8 +1,6 @@
 import { MOD_TYPE } from './constants';
 import { createCollectionFromProfile } from './util/transformCollection';
 
-import { genDefaultInstallModeAction } from './util/installMode';
-
 import * as Redux from 'redux';
 import { actions, selectors, types, util } from 'vortex-api';
 
