@@ -909,7 +909,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       collectionRule: rule,
       attributes: {
         customFileName: download?.modInfo?.name,
-        fileName: download.localPath,
+        fileName: download.modInfo?.nexus?.fileInfo?.name
+              ?? util.renderModReference(rule.reference),
         fileSize: download.size ?? rule.reference.fileSize,
         name: dlId,
         version: download.modInfo?.nexus?.fileInfo?.mod_version,
@@ -950,6 +951,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           attributes: {
             fileSize: rule.reference.fileSize,
             ...(rule.extra || {}),
+            // rule.extra.fileName is an actual file name, in the mod attributes we expect
+            // it to be the name specified by the author
+            fileName: rule.extra.name,
           },
           enabled: false,
           collectionRule: rule,
