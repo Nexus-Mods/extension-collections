@@ -362,6 +362,10 @@ ul.collection-mods-page-attrib-tooltip {
       > *:not(:first-child) {
         margin-left: 1em;
       }
+
+      .icon {
+        margin-right: 0.5em;
+      }
     }
   }
 
@@ -498,12 +502,6 @@ ul.collection-mods-page-attrib-tooltip {
           margin-right: 0.5em;
         }
       }
-    }
-  }
-
-  .details {
-    .icon {
-      margin-right: 1em;
     }
   }
 }
