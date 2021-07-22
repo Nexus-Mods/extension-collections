@@ -14,6 +14,7 @@ export interface IBaseProps {
   t: I18next.TFunction;
   className?: string;
   gameId: string;
+  installing?: types.IMod;
   collection: types.IMod;
   mods?: { [modId: string]: types.IMod };
   incomplete?: boolean;
@@ -199,7 +200,8 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   private get actions() {
-    const { collection, incomplete, onEdit, onUpload, onRemove, onResume, onView } = this.props;
+    const { t, collection, incomplete, installing, onEdit, onUpload,
+            onRemove, onResume, onView } = this.props;
 
     const result: types.IActionDefinition[] = [];
 
@@ -215,6 +217,14 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         result.push({
           title: 'Resume',
           icon: 'resume',
+          condition: () => {
+            if (installing === undefined) {
+              return true;
+            }
+            return (installing.id === collection.id)
+              ? t('Already being installed') as string
+              : t('Another collection is being installed') as string;
+          },
           action: (instanceIds: string[]) => {
             if (onResume !== undefined) {
               onResume(instanceIds[0]);

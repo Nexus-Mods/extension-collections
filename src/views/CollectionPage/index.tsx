@@ -97,7 +97,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, game, mods, notifications, profile } = this.props;
+    const { t, downloads, driver, game, mods, notifications, profile } = this.props;
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     const collection = (selectedCollection !== undefined)
@@ -111,6 +111,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         <StartPage
           t={t}
           game={game}
+          installing={driver.installDone ? undefined : driver.collection}
           profile={profile}
           mods={mods}
           matchedReferences={matchedReferences ?? emptyObj}

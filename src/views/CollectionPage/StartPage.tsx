@@ -12,6 +12,7 @@ import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util }
 export interface IStartPageProps {
   t: i18next.TFunction;
   game: types.IGameStored;
+  installing: types.IMod;
   profile: types.IProfile;
   activeTab: string;
   mods: { [modId: string]: types.IMod };
@@ -136,7 +137,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activeTab, profile, matchedReferences, mods, onEdit, onUpload,
+    const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onUpload,
             onRemove, onResume, onView } = this.props;
     const { imageTime } = this.state;
 
@@ -172,6 +173,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     t={t}
                     gameId={profile.gameId}
                     imageTime={imageTime}
+                    installing={installing}
                     mods={mods}
                     incomplete={matchedReferences[mod.id]?.includes?.(null)}
                     collection={mod}
