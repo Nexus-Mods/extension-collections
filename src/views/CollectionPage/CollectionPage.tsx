@@ -113,18 +113,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     this.mModActions = [
       {
-        icon: 'checkbox-checked',
-        title: 'Enable',
-        action: this.enableSelected,
-        singleRowAction: false,
-      },
-      {
-        icon: 'checkbox-unchecked',
-        title: 'Disable',
-        action: this.disableSelected,
-        singleRowAction: false,
-      },
-      {
         icon: 'delete',
         title: 'Remove',
         action: this.removeSelected,

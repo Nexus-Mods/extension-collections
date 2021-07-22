@@ -1,4 +1,3 @@
-import { startEditCollection } from './actions/session';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
@@ -9,7 +8,6 @@ import { cloneCollection, createCollection, makeCollectionId } from './util/tran
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
 import CollectionsMainPage from './views/CollectionPage';
-// import EditDialog from './views/EditDialog';
 import InstallDialog from './views/InstallDialog';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
@@ -20,7 +18,6 @@ import {
   initFromProfile,
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
-import { doExportToFile } from './collectionExport';
 import { makeInstall, postprocessCollection, testSupported } from './collectionInstall';
 import { MOD_TYPE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
