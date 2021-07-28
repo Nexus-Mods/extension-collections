@@ -60,13 +60,15 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
         icon: 'remove',
       },
     ];
-
   }
 
   public render(): JSX.Element {
     const { t, collection, gameId, incomplete, modSelection, revision, votedSuccess } = this.props;
 
-    const { selIdx } = this.state;
+    let { selIdx } = this.state;
+    if (selIdx >= modSelection.length) {
+      selIdx = 0;
+    }
 
     const depRules = (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));

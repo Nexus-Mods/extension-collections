@@ -1,5 +1,5 @@
-import * as Promise from 'bluebird';
 import I18next from 'i18next';
+import memoizeOne from 'memoize-one';
 import * as path from 'path';
 import * as React from 'react';
 import { FormControl, FormGroup, Image as BSImage, Panel } from 'react-bootstrap';
@@ -7,7 +7,6 @@ import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTIION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
-import { LOGO_NAME } from '../../util/transformCollection';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 export interface IBaseProps {
@@ -110,6 +109,10 @@ function ModNameField(props: IModNameFieldProps) {
 }
 
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
+  private imageURLs = memoizeOne((collection: types.IMod) =>
+    [collection.attributes?.pictureUrl, path.join(__dirname, 'fallback_tile.png')]
+      .filter(iter => iter !== undefined));
+
   public render(): JSX.Element {
     const { t, collection, details, imageTime,
             incomplete, mods, onEdit, profile, stagingPath } = this.props;
@@ -118,7 +121,6 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       return null;
     }
 
-    const logoPath = path.join(stagingPath, collection.installationPath, 'assets', LOGO_NAME);
     const active = util.getSafe(profile, ['modState', collection.id, 'enabled'], false);
 
     const refMods: types.IModRule[] = (collection.rules ?? [])
@@ -145,7 +147,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         <Panel.Body className='collection-thumbnail-body'>
           <Image
             className='thumbnail-img'
-            srcs={[logoPath + `?_r=${imageTime}`, path.join(__dirname, 'fallback_tile.png')]}
+            srcs={this.imageURLs(collection)}
             circle={false}
           />
           <div className='gradient' />
