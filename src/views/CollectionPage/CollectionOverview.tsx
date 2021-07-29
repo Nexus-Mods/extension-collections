@@ -127,7 +127,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
               </FlexLayout.Fixed>
               <FlexLayout.Flex className='collection-description-container'>
                 <div className='collection-description'>
-                  {util.getSafe(collection.attributes, ['description'], t('No description'))}
+                  {collection.attributes?.shortDescription ?? t('No description')}
                 </div>
               </FlexLayout.Flex>
               <FlexLayout.Flex>
