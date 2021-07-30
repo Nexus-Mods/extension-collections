@@ -154,6 +154,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 onCancel={this.cancel}
                 onClone={this.clone}
                 onResume={this.resume}
+                onInstallOptionals={this.installOptional}
                 onVoteSuccess={this.voteSuccess}
               />
             )
@@ -441,6 +442,20 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         }
       }
     }
+  }
+
+  private installOptional = (collectionId: string, rules: types.IModRule[]) => {
+    const { api } = this.context;
+
+    api.emitAndAwait('install-from-dependencies', collectionId, rules, true)
+      .catch(err => {
+        if (err instanceof util.UserCanceled) {
+          return;
+        }
+        api.showErrorNotification('Failed to install dependencies', err, {
+          allowReport: !(err instanceof util.ProcessCanceled),
+        });
+      });
   }
 
   private resume = async (modId: string) => {

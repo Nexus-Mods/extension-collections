@@ -37,6 +37,7 @@ export interface ICollectionPageProps {
   onCancel: (collectionId: string) => void;
   onClone: (collectionId: string) => void;
   onResume: (collectionId: string) => void;
+  onInstallOptionals: (collectionId: string, rules: types.IModRule[]) => void;
   onVoteSuccess: (collectionId: string, success: boolean) => void;
 }
 
@@ -112,6 +113,17 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     });
 
     this.mModActions = [
+      {
+        icon: 'install',
+        title: 'Install',
+        action: this.installOptional,
+        condition: instanceIds => {
+          const instanceId: string = Array.isArray(instanceIds) ? instanceIds[0] : instanceIds;
+          const mod = this.state.modsEx[instanceId];
+          return (mod.collectionRule.type === 'recommends')
+              && [null, 'downloaded'].includes(mod.state);
+        },
+      },
       {
         icon: 'delete',
         title: 'Remove',
@@ -612,6 +624,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         return prev;
       }, []),
     );
+  }
+
+  private installOptional = (modIds: string[]) => {
+    const { collection } = this.props;
+    const { modsEx } = this.state;
+    const rules = modIds.map(modId => modsEx[modId].collectionRule);
+    this.props.onInstallOptionals(collection.id, rules);
   }
 
   private removeSelected = (modIds: string[]) => {
