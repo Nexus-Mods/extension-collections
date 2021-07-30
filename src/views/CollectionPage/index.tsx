@@ -14,6 +14,7 @@ import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
+import { generate as shortid } from 'shortid';
 import { actions, ComponentEx, FlexLayout, log, MainPage, selectors, tooltip,
           types, util } from 'vortex-api';
 
@@ -299,36 +300,68 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const state: types.IState = api.store.getState();
 
-    // either way, all running downloads are canceled. If selected, so are finished downloads
-    const collection = mods[modId];
-    await Promise.all(collection.rules.map(async rule => {
-      const dlId = util.findDownloadByRef(rule.reference, downloads);
-
-      if (dlId !== undefined) {
-        const download = state.persistent.downloads.files[dlId];
-        if ((download !== undefined)
-            && result.input.delete_archives || (download.state !== 'finished')) {
-          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
-        }
+    let progress = 0;
+    const notiId = shortid();
+    const modName = util.renderModName(mods[modId]);
+    const doProgress = (step: string, value: number) => {
+      if (value <= progress) {
+        return;
       }
-    }));
+      progress = value;
+      api.sendNotification({
+        id: notiId,
+        type: 'activity',
+        title: 'Removing {{name}}',
+        message: step,
+        progress,
+        replace: {
+          name: modName,
+        },
+      });
+    };
 
-    // if selected, remove mods
-    if (result.input.delete_mods) {
+    try {
+      doProgress('Removing dowloads', 0);
+
+      // either way, all running downloads are canceled. If selected, so are finished downloads
+      const collection = mods[modId];
+      let completed = 0;
       await Promise.all(collection.rules.map(async rule => {
-        const mod = util.findModByRef(rule.reference, mods);
-        if (mod !== undefined) {
-          await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, mod.id, cb));
-        }
-      }));
-    }
+        const dlId = util.findDownloadByRef(rule.reference, downloads);
 
-    { // finally remove the collection itself
-      const download = state.persistent.downloads.files[collection.archiveId];
-      if (download !== undefined) {
-        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+        if (dlId !== undefined) {
+          const download = state.persistent.downloads.files[dlId];
+          if ((download !== undefined)
+              && result.input.delete_archives || (download.state !== 'finished')) {
+            await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+          }
+        }
+        doProgress('Removing dowloads', 50 * ((completed++) / collection.rules.length));
+      }));
+
+      doProgress('Removing mods', 50);
+      completed = 0;
+      // if selected, remove mods
+      if (result.input.delete_mods) {
+        await Promise.all(collection.rules.map(async rule => {
+          const mod = util.findModByRef(rule.reference, mods);
+          if (mod !== undefined) {
+            await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, mod.id, cb));
+          }
+          doProgress('Removing mods', 50 + 50 * ((completed++) / collection.rules.length));
+        }));
       }
-      await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
+
+      { // finally remove the collection itself
+        doProgress('Removing collection', 0.99);
+        const download = state.persistent.downloads.files[collection.archiveId];
+        if (download !== undefined) {
+          await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+        }
+        await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
+      }
+    } finally {
+      api.dismissNotification(notiId);
     }
   }
 
