@@ -53,9 +53,16 @@ function makeColumns(onSelect: (modIds: string[], value: boolean) => void)
         return collator.compare(lhs, rhs);
       },
     }, {
+      id: 'variant',
+      name: 'Variant',
+      description: 'The variant',
+      calc: (mod: IModWithState) => mod.mod.attributes?.variant ?? '',
+      placement: 'table',
+      edit: {},
+    }, {
       id: 'version',
       name: 'Version',
-      description: 'The version to install',
+      description: 'The version',
       calc: (mod: IModWithState) => mod.mod.attributes?.version ?? '',
       placement: 'table',
       edit: {},

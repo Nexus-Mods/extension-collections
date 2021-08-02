@@ -89,7 +89,8 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIds: strin
 
   return api.showDialog('question', 'Add Mods to Collection', {
     text: 'Please select the collection to add the mods to',
-    message: filtered.map(modId => util.renderModName(mods[modId])).join('\n'),
+    message: filtered.map(modId =>
+      util.renderModName(mods[modId], { version: true, variant: true })).join('\n'),
     choices: collections.map((modId, idx) => ({
       id: modId,
       text: util.renderModName(mods[modId]),
