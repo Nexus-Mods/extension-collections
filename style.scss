@@ -79,6 +79,9 @@ $collection-mod-image-height: 200px;
 #collection-add-mods-container {
   display: flex;
   justify-content: center;
+  svg {
+    margin-right: 0.5em;
+  }
 }
 
 #collection-edit-tabs-pane-mod-rules > div {

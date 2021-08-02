@@ -1,7 +1,7 @@
-import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICollection';
-import { LOGO_NAME, modToCollection as modToCollection } from './util/transformCollection';
-import { makeProgressFunction } from './util/util';
 import { BUNDLED_PATH } from './constants';
+import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICollection';
+import { modToCollection as modToCollection } from './util/transformCollection';
+import { makeProgressFunction } from './util/util';
 
 import { ICreateCollectionResult } from '@nexusmods/nexus-api';
 import * as PromiseBB from 'bluebird';
@@ -62,14 +62,6 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
   const stagingPath = selectors.installPath(state);
   const modPath = path.join(stagingPath, mod.installationPath);
 
-  try {
-    await fs.copyAsync(path.join(modPath, 'assets', LOGO_NAME),
-                       path.join(outputPath, LOGO_NAME));
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      throw err;
-    } // don't strictly need an icon I guess
-  }
   try {
     await fs.copyAsync(path.join(modPath, 'INI Tweaks'),
                        path.join(outputPath, 'INI Tweaks'));
