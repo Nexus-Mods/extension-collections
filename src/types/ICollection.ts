@@ -59,9 +59,21 @@ export interface ICollectionModRule {
   reference: types.IModReference;
 }
 
+export interface ICollectionTool {
+  name: string;
+  exe: string;
+  args: string[];
+  cwd: string;
+  env: { [key: string]: any };
+  shell: boolean;
+  detach: boolean;
+  onStart: 'hide' | 'hide_recover' | 'close';
+}
+
 export interface ICollection extends Partial<ICollectionGamebryo> {
   info: ICollectionInfo;
   mods: ICollectionMod[];
+  tools: ICollectionTool[];
   modRules: ICollectionModRule[];
 }
 

@@ -22,6 +22,7 @@ import { makeInstall, postprocessCollection, testSupported } from './collectionI
 import { MOD_TYPE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
+import initTools from './tools';
 
 import * as PromiseBB from 'bluebird';
 import * as _ from 'lodash';
@@ -607,6 +608,7 @@ function init(context: types.IExtensionContext): boolean {
   register(context, (callbacks: ICallbackMap) => collectionsCB = callbacks);
 
   initIniTweaks(context);
+  initTools(context);
 
   context.once(() => {
     once(context.api, () => collectionsCB);

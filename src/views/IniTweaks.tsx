@@ -11,15 +11,15 @@ import { connect } from 'react-redux';
 import Select from 'react-select';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { actions, ComponentEx, fs, PureComponentEx, selectors,
-         Toggle, types, util, Icon } from 'vortex-api';
+import { actions, ComponentEx, fs, Icon, PureComponentEx, selectors,
+         Toggle, types, util } from 'vortex-api';
 
 // TODO: overhaul me, this is doing direct fs operations
 
 // copy&paste from src/extensions/mod_management/InstallManager.ts
 const INI_TWEAKS_PATH = 'Ini Tweaks';
 
-export interface IBaseProps extends  IExtendedInterfaceProps {
+export interface IBaseProps extends IExtendedInterfaceProps {
   settingsFiles: string[];
 }
 

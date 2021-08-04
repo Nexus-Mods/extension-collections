@@ -1,4 +1,4 @@
-import { ICollection } from './types/ICollection';
+import { ICollection, ICollectionTool } from './types/ICollection';
 
 import { findExtensions, IExtensionFeature } from './util/extension';
 import { parseGameSpecifics } from './util/gameSupport';
@@ -7,6 +7,7 @@ import { collectionModToRule } from './util/transformCollection';
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
 import * as path from 'path';
+import { generate as shortid } from 'shortid';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
 /**
@@ -99,7 +100,54 @@ function applyCollectionRules(api: types.IExtensionApi,
     }
     return prev;
   }, []));
+}
 
+interface ICollectionToolEx extends ICollectionTool {
+  id?: string;
+}
+
+async function setUpTools(api: types.IExtensionApi,
+                          gameId: string,
+                          tools: ICollectionTool[])
+                          : Promise<void> {
+  const knownTools = api.getState().settings.gameMode.discovered[gameId].tools;
+
+  // create tools right away to prevent race conditions in case this is invoked multiple times,
+  // icons are generated later, if necessary
+
+  const addTools: ICollectionToolEx[] = (tools ?? []).filter(tool =>
+    Object.values(knownTools).find(iter => iter.name === tool.name) === undefined);
+
+  const addActions = addTools.map(tool => {
+    tool.id = shortid();
+
+    return actions.addDiscoveredTool(gameId, tool.id, {
+      id: tool.id,
+      path: tool.exe,
+      name: tool.name,
+
+      requiredFiles: [],
+      executable: null,
+      parameters: tool.args,
+      environment: tool.env,
+      workingDirectory: tool.cwd,
+      shell: tool.shell,
+      detach: tool.detach,
+      onStart: tool.onStart,
+      custom: true,
+      hidden: false,
+    }, true);
+  });
+
+  util.batchDispatch(api.store, addActions);
+
+  await Promise.all(addTools.map(async tool => {
+    if (path.extname(tool.exe) === '.exe') {
+      const iconPath = util.StarterInfo.toolIconRW(gameId, tool.id);
+      await fs.ensureDirWritableAsync(path.dirname(iconPath), () => Promise.resolve());
+      await util['extractExeIcon'](tool.exe, iconPath);
+    }
+  }));
 }
 
 /**
@@ -113,6 +161,8 @@ export async function postprocessCollection(api: types.IExtensionApi,
                                             mods: { [modId: string]: types.IMod }) {
   log('info', 'postprocess collection');
   applyCollectionRules(api, profile.gameId, collection, mods);
+
+  await setUpTools(api, profile.gameId, collection.tools);
 
   const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
 

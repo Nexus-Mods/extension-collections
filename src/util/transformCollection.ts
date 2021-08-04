@@ -1,6 +1,6 @@
 import { BUNDLED_PATH, MOD_TYPE } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
-         ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
+         ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo, ICollectionTool } from '../types/ICollection';
 
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
@@ -99,10 +99,12 @@ function deduceSource(mod: types.IMod,
 
 export function generateCollection(info: ICollectionInfo,
                                    mods: ICollectionMod[],
+                                   tools: ICollectionTool[],
                                    modRules: ICollectionModRule[]): ICollection {
   return {
     info,
     mods,
+    tools,
     modRules,
   };
 }
@@ -408,6 +410,34 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   return res;
 }
 
+function convertTools(state: types.IState,
+                      gameId: string,
+                      includedTools: string[]): ICollectionTool[] {
+  const { tools } = state.settings.gameMode.discovered[gameId];
+  const discovery = selectors.discoveryByGame(state, gameId);
+
+  return util['makeUniqueByKey'](includedTools ?? [], item => item.name)
+    .filter(toolId => tools[toolId]?.custom && !tools[toolId]?.hidden)
+    .map(toolId => {
+      const tool = tools[toolId];
+
+      const exe = util.isChildPath(tool.path, discovery.path)
+        ? path.relative(discovery.path, tool.path)
+        : tool.path;
+
+      return {
+        name: tool.name,
+        exe,
+        args: tool.parameters,
+        env: tool.environment,
+        cwd: tool.workingDirectory,
+        detach: tool.detach,
+        shell: tool.shell,
+        onStart: tool.onStart,
+      };
+    });
+}
+
 export async function modToCollection(state: types.IState,
                                       gameId: string,
                                       stagingPath: string,
@@ -465,6 +495,7 @@ export async function modToCollection(state: types.IState,
     mods: await rulesToCollectionMods(collection, mods, stagingPath, game,
                                       collection.attributes?.collection ?? {},
                                       onProgress, onError),
+    tools: convertTools(state, gameId, collection.attributes?.collection?.includedTools),
     modRules,
     ...extData,
     ...gameSpecific,

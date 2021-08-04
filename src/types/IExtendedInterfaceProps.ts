@@ -6,4 +6,5 @@ export interface IExtendedInterfaceProps {
   gameId: string;
   collection: types.IMod;
   revisionInfo: IRevision;
+  onSetCollectionAttribute: (attrPath: string[], value: any) => void;
 }

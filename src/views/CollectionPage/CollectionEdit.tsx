@@ -183,6 +183,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                     gameId={profile.gameId}
                     collection={collection}
                     revisionInfo={revision}
+                    onSetCollectionAttribute={this.setCollectionAttribute}
                   />
                 </Panel>
               </Tab>
@@ -195,6 +196,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                     gameId={profile.gameId}
                     collection={collection}
                     revisionInfo={revision}
+                    onSetCollectionAttribute={this.setCollectionAttribute}
                   />
                 </Panel>
               </Tab>
