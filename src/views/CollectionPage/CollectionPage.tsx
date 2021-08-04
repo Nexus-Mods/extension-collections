@@ -960,7 +960,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             ...(rule.extra || {}),
             // rule.extra.fileName is an actual file name, in the mod attributes we expect
             // it to be the name specified by the author
-            fileName: rule.extra.name,
+            fileName: rule.extra?.name,
           },
           enabled: false,
           collectionRule: rule,

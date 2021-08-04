@@ -2,9 +2,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import { FlexLayout, Icon, util } from 'vortex-api';
-import { NEXUS_DOMAIN } from '../../constants';
-
-const NEXUS_MEMBERSHIP_URL = `https://users.${NEXUS_DOMAIN}/register/memberships?pk_source=vortex&pk_campaign=collections`;
+import { NEXUS_MEMBERSHIP_URL } from '../../constants';
 
 export interface ICollectionBannerProps {
   totalSize: number;

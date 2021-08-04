@@ -122,7 +122,8 @@ async function queryErrorsContinue(api: types.IExtensionApi,
 
 export async function doExportToAPI(api: types.IExtensionApi,
                                     gameId: string,
-                                    modId: string)
+                                    modId: string,
+                                    uploaderName: string)
                                     : Promise<number> {
   const state: types.IState = api.store.getState();
   const mod = state.persistent.mods[gameId][modId];
@@ -146,9 +147,15 @@ export async function doExportToAPI(api: types.IExtensionApi,
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writeCollectionToFile(state, info, mod, tmpPath);
+      collectionId = mod.attributes?.collectionId ?? {};
+      if ((collectionId !== undefined)
+          && (mod.attributes?.author !== uploaderName)) {
+        log('info', 'user doesn\'t match original author, creating new collection');
+        collectionId = undefined;
+      }
       const result: ICreateCollectionResult = await util.toPromise(cb =>
         api.events.emit('submit-collection', filterInfo(info), filePath,
-                        mod.attributes?.collectionId, cb));
+                        collectionId, cb));
       collectionId = result.collectionId;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', result.revisionId));

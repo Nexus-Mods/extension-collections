@@ -37,6 +37,7 @@ interface IConnectedProps {
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
   exts: IExtensionFeature[];
+  userInfo: { name: string, user_id: number };
 }
 
 interface IActionProps {
@@ -206,7 +207,31 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     this.nextState.viewMode = 'view';
   }
 
-  private edit = (modId: string) => {
+  private edit = async (modId: string) => {
+    const { mods, userInfo } = this.props;
+    const { api } = this.context;
+
+    const author = mods[modId].attributes['author'];
+
+    if ((author !== undefined) && (author !== userInfo.name)) {
+      const result = await api.showDialog('question',
+        'Edit Collection', {
+          text: 'This collection has been uploaded with a different account ({{uploadAuthor}}) '
+              + 'than you\'re using now ({{currentUser}}). '
+              + 'If you edit and upload this collection now it will be uploaded as a new '
+              + 'collection by your current user.',
+          parameters: {
+            uploadAuthor: author,
+            currentUser: userInfo.name,
+          },
+        }, [
+          { label: 'Cancel' },
+          { label: 'Continue' },
+        ]);
+      if (result.action === 'Cancel') {
+        return;
+      }
+    }
     this.nextState.selectedCollection = modId;
     this.nextState.viewMode = 'edit';
   }
@@ -410,7 +435,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   private upload = async (collectionId: string) => {
-    const { mods, profile } = this.props;
+    const { mods, profile, userInfo } = this.props;
 
     const { api } = this.context;
 
@@ -448,7 +473,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     if (choice.action === 'Upload') {
       try {
-        const nexusCollId = await doExportToAPI(api, profile.gameId, collectionId);
+        const nexusCollId = await doExportToAPI(api, profile.gameId, collectionId, userInfo.name);
         if (nexusCollId !== undefined) {
           api.sendNotification({
             type: 'success',
@@ -507,6 +532,7 @@ function mapStateToProps(state: types.IState): IConnectedProps {
     mods: state.persistent.mods[profile.gameId] || emptyObj,
     notifications: state.session.notifications.notifications,
     downloads: state.persistent.downloads.files,
+    userInfo: state.persistent['nexus']?.userInfo,
     exts: findExtensions(state, profile.gameId),
   };
 }
