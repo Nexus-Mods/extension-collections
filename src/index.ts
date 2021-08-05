@@ -512,6 +512,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
 
   api.events.on('did-install-dependencies',
     async (profileId: string, modId: string, recommendations: boolean) => {
+      log('info', 'did install dependencies', { profileId, modId });
       const profile = selectors.profileById(state(), profileId);
       const stagingPath = selectors.installPathForGame(state(), profile.gameId);
       const mods = state().persistent.mods[profile.gameId];

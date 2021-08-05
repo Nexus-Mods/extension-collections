@@ -147,7 +147,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writeCollectionToFile(state, info, mod, tmpPath);
-      collectionId = mod.attributes?.collectionId ?? {};
+      collectionId = mod.attributes?.collectionId ?? undefined;
       if ((collectionId !== undefined)
           && (mod.attributes?.author !== uploaderName)) {
         log('info', 'user doesn\'t match original author, creating new collection');
