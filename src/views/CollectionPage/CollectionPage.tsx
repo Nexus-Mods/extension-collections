@@ -416,6 +416,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             t={t}
             isPremium={userInfo.isPremium}
             mods={modsEx}
+            profile={profile}
             downloads={downloads}
             totalSize={totalSize}
             activity={activity}
@@ -882,6 +883,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             ...result[ruleId],
             progress: this.progress(newProps, result[ruleId]),
           };
+
+          const dl = newProps.downloads[result[ruleId].archiveId];
+          if (['finished', 'failed'].includes(dl.state)) {
+            result[ruleId].state = 'downloaded';
+          }
         }
       });
 

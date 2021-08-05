@@ -410,7 +410,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   private updateMatchedReferences(props: ICollectionsMainPageProps) {
-    const { mods } = props;
+    const { mods, profile } = props;
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
     return collections.reduce((prev, collection) => {
       prev[collection.id] =
@@ -418,6 +418,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           .filter(rule => (rule.type === 'requires') && !rule['ignored'])
           .map(rule => {
             const mod = util.findModByRef(rule.reference, mods);
+            if ((mod !== undefined) && !profile.modState[mod.id]?.enabled) {
+              return null;
+            }
             return mod ?? null;
           });
       return prev;

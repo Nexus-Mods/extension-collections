@@ -12,6 +12,7 @@ export interface ICollectionProgressProps {
   isPremium: boolean;
   mods: { [modId: string]: IModEx };
   downloads: { [dlId: string]: types.IDownload };
+  profile: types.IProfile;
   totalSize: number;
   activity: { [id: string]: string };
   onCancel: () => void;
@@ -21,13 +22,17 @@ export interface ICollectionProgressProps {
 
 class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   public render(): JSX.Element {
-    const  {t, activity, downloads, isPremium, mods, totalSize,
+    const  {t, activity, downloads, isPremium, mods, profile, totalSize,
             onCancel, onPause, onResume} = this.props;
 
-    const group = (state: string, download?: types.IDownload): string => {
-      if ((state === 'downloading') && (download?.state === 'paused')) {
+    const group = (mod: types.IMod, download?: types.IDownload): string => {
+      if ((mod.state === 'downloading') && (download?.state === 'paused')) {
         // treating paused downloads as "pending" for the purpose of progress indicator
         return 'pending';
+      }
+
+      if ((mod.state === 'installed') && !profile.modState[mod.id].enabled) {
+        return 'disabled';
       }
 
       return {
@@ -36,22 +41,29 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
         downloaded: 'pending',
         installing: 'installing',
         downloading: 'downloading',
-      }[state];
+      }[mod.state];
     };
 
     interface IModGroups {
-      pending: IModEx[]; downloading: IModEx[]; installing: IModEx[]; done: IModEx[];
+      pending: IModEx[];
+      downloading: IModEx[];
+      installing: IModEx[];
+      disabled: IModEx[];
+      done: IModEx[];
     }
 
-    const { pending, downloading, installing, done } =
+    const { pending, downloading, installing, disabled, done } =
       Object.values(mods).reduce<IModGroups>((prev, mod) => {
         if ((mod.collectionRule.type === 'requires') && !mod.collectionRule['ignored']) {
-          prev[group(mod.state, downloads[mod.archiveId])].push(mod);
+          prev[group(mod, downloads[mod.archiveId])].push(mod);
         }
         return prev;
-      }, { pending: [], downloading: [], installing: [], done: [] });
+      }, { pending: [], downloading: [], installing: [], disabled: [], done: [] });
 
-    if ((downloading.length === 0) && (installing.length === 0) && (pending.length === 0)) {
+    if ((downloading.length === 0)
+        && (installing.length === 0)
+        && (pending.length === 0)
+        && (disabled.length === 0)) {
       return null;
     }
 
