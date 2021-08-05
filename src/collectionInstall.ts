@@ -115,8 +115,11 @@ async function setUpTools(api: types.IExtensionApi,
   // create tools right away to prevent race conditions in case this is invoked multiple times,
   // icons are generated later, if necessary
 
-  const addTools: ICollectionToolEx[] = (tools ?? []).filter(tool =>
-    Object.values(knownTools).find(iter => iter.name === tool.name) === undefined);
+  const normalize = (input: string) => path.normalize(input.toUpperCase());
+
+  const addTools: ICollectionToolEx[] = (tools ?? []).filter(tool => Object.values(knownTools ?? {})
+      .find(iter => (normalize(iter.path) === normalize(tool.exe))
+                 || (iter.name === tool.name)) === undefined);
 
   const addActions = addTools.map(tool => {
     tool.id = shortid();
