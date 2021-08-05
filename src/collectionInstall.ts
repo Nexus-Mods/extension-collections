@@ -135,10 +135,11 @@ async function setUpTools(api: types.IExtensionApi,
       detach: tool.detach,
       onStart: tool.onStart,
       custom: true,
-      hidden: false,
+      hidden: true,
     }, true);
   });
 
+  // this has to happen before we extract icons, otherwise we might create duplicates
   util.batchDispatch(api.store, addActions);
 
   await Promise.all(addTools.map(async tool => {
@@ -148,6 +149,9 @@ async function setUpTools(api: types.IExtensionApi,
       await util['extractExeIcon'](tool.exe, iconPath);
     }
   }));
+
+  util.batchDispatch(api.store, addTools.map(tool =>
+    actions.setToolVisible(gameId, tool.id, true)));
 }
 
 /**
