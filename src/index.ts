@@ -362,7 +362,10 @@ function register(context: types.IExtensionContext,
       if (mod === undefined) {
         return false;
       }
-      return mod.type === MOD_TYPE;
+      if ((mod.rules ?? []).find(rule => rule.type === 'recommends') === undefined) {
+        return context.api.translate('No optional mods') as string;
+      }
+      return (mod.type === MOD_TYPE);
     });
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
