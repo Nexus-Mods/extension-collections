@@ -114,10 +114,10 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       },
       calc: (entry: IModEntry) => {
         if (entry.mod === undefined) {
-          return ['not-installed'];
+          return ['not-installed', 'has-problems'];
         }
-        const color = util.getSafe(entry.mod.attributes, ['color'], '');
-        const icon = util.getSafe(entry.mod.attributes, ['icon'], '');
+        const color = entry.mod.attributes?.color ?? '';
+        const icon = entry.mod.attributes?.icon ?? '';
         const problems = this.state.problems[entry.mod.id] || [];
 
         return [color, icon, problems.length > 0 ? 'has-problems' : 'no-problems'];
@@ -550,7 +550,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       .filter(rule => ['requires', 'recommends'].indexOf(rule.type) !== -1)
       .reduce((prev, rule) => {
         const mod = util.findModByRef(rule.reference, mods);
-        const id = mod?.id ?? rule.reference.id;
+        const id = mod?.id ?? rule.reference.id ?? rule.reference.idHint;
         if (id !== undefined) {
           prev[id] = { rule, mod };
         }
@@ -562,7 +562,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                         entries: { [modId: string]: IModEntry })
                         : { [modId: string]: string[] } {
     return Object.values(entries).reduce((prev, entry) => {
-      const id = entry.mod?.id ?? entry.rule.reference.id;
+      const id = entry.mod?.id ?? entry.rule.reference.id ?? entry.rule.reference.idHint;
       if (id !== undefined) {
         prev[id] = this.updateProblems(props, entry);
       }
