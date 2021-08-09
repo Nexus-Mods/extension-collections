@@ -411,11 +411,13 @@ function register(context: types.IExtensionContext,
   context['registerCollectionFeature'] =
     (id: string,
      generate: (gameId: string, includedMods: string[]) => Promise<any>,
-     parse: (gameId: string, collection: any) => Promise<void>,
+     parse: (gameId: string, collection: ICollection) => Promise<void>,
+     clone: (gameId: string, collection: ICollection,
+             from: types.IMod, to: types.IMod) => Promise<void>,
      title: (t: types.TFunction) => string,
      condition?: (state: types.IState, gameId: string) => boolean,
-     editComponent?: React.ComponentType<IExtendedInterfaceProps>) =>  {
-      addExtension({ id, generate, parse, condition, title, editComponent });
+     editComponent?: React.ComponentType<IExtendedInterfaceProps>) => {
+      addExtension({ id, generate, parse, clone, condition, title, editComponent });
     };
 }
 
@@ -523,7 +525,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
             path.join(stagingPath, mod.installationPath, 'collection.json'),
             { encoding: 'utf-8' });
           const collection: ICollection = JSON.parse(collectionData);
-          postprocessCollection(api, profile, collection, mods);
+          postprocessCollection(api, profile, mod, collection, mods);
         } catch (err) {
           log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
             + 'platform where the collection has been created.');

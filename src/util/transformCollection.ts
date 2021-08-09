@@ -99,12 +99,10 @@ function deduceSource(mod: types.IMod,
 
 export function generateCollection(info: ICollectionInfo,
                                    mods: ICollectionMod[],
-                                   tools: ICollectionTool[],
                                    modRules: ICollectionModRule[]): ICollection {
   return {
     info,
     mods,
-    tools,
     modRules,
   };
 }
@@ -410,34 +408,6 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   return res;
 }
 
-function convertTools(state: types.IState,
-                      gameId: string,
-                      includedTools: string[]): ICollectionTool[] {
-  const { tools } = state.settings.gameMode.discovered[gameId];
-  const discovery = selectors.discoveryByGame(state, gameId);
-
-  return util['makeUniqueByKey'](includedTools ?? [], item => item.name)
-    .filter(toolId => tools[toolId]?.custom && !tools[toolId]?.hidden)
-    .map(toolId => {
-      const tool = tools[toolId];
-
-      const exe = util.isChildPath(tool.path, discovery.path)
-        ? path.relative(discovery.path, tool.path)
-        : tool.path;
-
-      return {
-        name: tool.name,
-        exe,
-        args: tool.parameters,
-        env: tool.environment,
-        cwd: tool.workingDirectory,
-        detach: tool.detach,
-        shell: tool.shell,
-        onStart: tool.onStart,
-      };
-    });
-}
-
 export async function modToCollection(state: types.IState,
                                       gameId: string,
                                       stagingPath: string,
@@ -495,7 +465,6 @@ export async function modToCollection(state: types.IState,
     mods: await rulesToCollectionMods(collection, mods, stagingPath, game,
                                       collection.attributes?.collection ?? {},
                                       onProgress, onError),
-    tools: convertTools(state, gameId, collection.attributes?.collection?.includedTools),
     modRules,
     ...extData,
     ...gameSpecific,
@@ -542,7 +511,8 @@ export function makeCollectionId(baseId: string): string {
   return `vortex_collection_${baseId}`;
 }
 
-function deduceCollectionAttributes(collection: types.IMod,
+function deduceCollectionAttributes(collectionMod: types.IMod,
+                                    collection: ICollection,
                                     mods: { [modId: string]: types.IMod })
                                     : ICollectionAttributes {
 
@@ -552,7 +522,7 @@ function deduceCollectionAttributes(collection: types.IMod,
     source: {},
   };
 
-  collection.rules.forEach(rule => {
+  collectionMod.rules.forEach(rule => {
     const mod = util.findModByRef(rule.reference, mods);
     if (mod === undefined) {
       throw new util.ProcessCanceled('included mod not found');
@@ -592,6 +562,20 @@ export async function cloneCollection(api: types.IExtensionApi,
   const mods = (state.persistent.mods[gameId] ?? {});
   const existingCollection: types.IMod = mods[sourceId];
 
+  const stagingPath = selectors.installPathForGame(state, gameId);
+
+  let collection: ICollection;
+
+  try {
+    const collectionData = await fs.readFileAsync(
+      path.join(stagingPath, existingCollection.installationPath, 'collection.json'),
+      { encoding: 'utf-8' });
+    collection = JSON.parse(collectionData);
+  } catch (err) {
+    api.showErrorNotification('Failed to clone collection', err);
+    return undefined;
+  }
+
   const ownCollection: boolean = existingCollection.attributes?.uploader === userInfo?.name;
   const name = 'Copy of ' + existingCollection.attributes?.name;
 
@@ -611,7 +595,7 @@ export async function cloneCollection(api: types.IExtensionApi,
       author: userInfo?.name ?? 'Anonymous',
       editable: true,
       collectionId: ownCollection ? existingCollection.attributes?.collectionId : undefined,
-      collection: deduceCollectionAttributes(existingCollection, mods),
+      collection: deduceCollectionAttributes(existingCollection, collection, mods),
     },
     installationPath: id,
     rules: existingCollection.rules,
@@ -633,6 +617,14 @@ export async function cloneCollection(api: types.IExtensionApi,
     const files: string[] = await fs.readdirAsync(sourcePath);
     for (const file of files) {
       await fs.copyAsync(path.join(sourcePath, file), path.join(clonePath, file));
+    }
+
+    const exts: IExtensionFeature[] = findExtensions(api.getState(), gameId);
+
+    for (const ext of exts) {
+      if (ext.clone !== undefined) {
+        await ext.clone(gameId, collection, existingCollection, mod);
+      }
     }
 
     return id;

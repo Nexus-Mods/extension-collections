@@ -1,5 +1,7 @@
+import path = require('path');
 import * as React from 'react';
-import { types } from 'vortex-api';
+import { actions, fs, selectors, types } from 'vortex-api';
+import { ICollection } from './types/ICollection';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import TweakList from './views/IniTweaks';
 
@@ -41,13 +43,21 @@ function TweakListWrap(prop: IExtendedInterfaceProps): JSX.Element {
   });
 }
 
+async function enableIniTweaks(api: types.IExtensionApi, gameId: string, mod: types.IMod) {
+  const stagingPath = selectors.installPathForGame(api.getState(), gameId);
+  const tweaks: string[] =
+    await fs.readdirAsync(path.join(stagingPath, mod.installationPath, 'INI Tweaks'));
+  tweaks.forEach(fileName => {
+    api.store.dispatch(actions.setINITweakEnabled(gameId, mod.id, fileName, true));
+  });
+}
+
 function init(context: types.IExtensionContext) {
-  // the parse/generate functions don't actually have to do anything because
-  // initweaks are stored on disk as part of the collection mod and will be bundled
-  // automatically
   context.optional['registerCollectionFeature'](
     'ini-tweaks',
     () => Promise.resolve({}),
+    (gameId: string, collection: ICollection, mod: types.IMod) =>
+      enableIniTweaks(context.api, gameId, mod),
     () => Promise.resolve(),
     () => 'INI Tweaks',
     (state: types.IState, gameId: string) => isSupported(gameId),
