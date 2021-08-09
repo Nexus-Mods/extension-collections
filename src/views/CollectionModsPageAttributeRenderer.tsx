@@ -4,6 +4,7 @@ import { ComponentEx, FlexLayout, tooltip } from 'vortex-api';
 interface IBaseProps {
   modId: string;
   collectionNames: string[];
+  detailCell: boolean;
 }
 
 type IProps = IBaseProps;
@@ -25,15 +26,20 @@ class Tooltip extends ComponentEx<{ collectionNames: string[] }, {}> {
 
 class CollectionModsPageAttributeRenderer extends ComponentEx<IProps, {}> {
   public render(): JSX.Element {
-    const { collectionNames } = this.props;
+    const { collectionNames, detailCell } = this.props;
     const count = collectionNames.length;
     return (count > 0)
       ? (
         <FlexLayout type='row' id='collection-mods-page-attribute-renderer'>
           <FlexLayout.Fixed>
-            <div>{collectionNames[0]}</div>
+            {detailCell ? (
+              <ul>{collectionNames
+                .map(name => (<li key={name}>{name}</li>))}</ul>
+            ) : (
+              <div>{collectionNames[0]}</div>
+            )}
           </FlexLayout.Fixed>
-          {(count > 1) && this.renderAddendum()}
+          {((count > 1) && !detailCell) && this.renderAddendum()}
         </FlexLayout>
     ) : null;
   }

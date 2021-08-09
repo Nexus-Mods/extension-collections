@@ -73,7 +73,6 @@ export interface ICollectionTool {
 export interface ICollection extends Partial<ICollectionGamebryo> {
   info: ICollectionInfo;
   mods: ICollectionMod[];
-  tools: ICollectionTool[];
   modRules: ICollectionModRule[];
 }
 

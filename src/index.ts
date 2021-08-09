@@ -312,11 +312,11 @@ function register(context: types.IExtensionContext,
     description: 'Collection(s) this mod was installed from (if any)',
     icon: 'collection',
     placement: 'both',
-    customRenderer: (mod: types.IMod) => {
+    customRenderer: (mod: types.IMod, detailCell: boolean) => {
       const collections = collectionsMap()[mod.id] || [];
       const collectionNames = collections.map(collection => util.renderModName(collection));
       return React.createElement(CollectionAttributeRenderer,
-                                 { modId: mod.id, collectionNames }, []);
+                                 { modId: mod.id, collectionNames, detailCell }, []);
     },
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
