@@ -183,7 +183,7 @@ async function setUpTools(api: types.IExtensionApi,
 */
 
 function init(context: types.IExtensionContext) {
-  context.optional['registerCollectionFeature'](
+  context.optional.registerCollectionFeature(
     'tools',
     (gameId: string, includedMods: string[], mod: types.IMod) =>
       generateTools(context.api, gameId, mod),

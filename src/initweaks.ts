@@ -53,7 +53,7 @@ async function enableIniTweaks(api: types.IExtensionApi, gameId: string, mod: ty
 }
 
 function init(context: types.IExtensionContext) {
-  context.optional['registerCollectionFeature'](
+  context.optional.registerCollectionFeature(
     'ini-tweaks',
     () => Promise.resolve({}),
     (gameId: string, collection: ICollection, mod: types.IMod) =>
