@@ -369,13 +369,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       completed = 0;
       // if selected, remove mods
       if (result.input.delete_mods) {
-        await Promise.all(collection.rules.map(async rule => {
-          const mod = util.findModByRef(rule.reference, mods);
-          if (mod !== undefined) {
-            await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, mod.id, cb));
-          }
-          doProgress('Removing mods', 50 + 50 * ((completed++) / collection.rules.length));
-        }));
+        const removeMods: string[] = collection.rules
+          .map(rule => util.findModByRef(rule.reference, mods))
+          .filter(mod => mod !== undefined)
+          .map(mod => mod.id);
+
+        await util.toPromise(cb =>
+          api.events.emit('remove-mods', profile.gameId, removeMods, cb));
       }
 
       { // finally remove the collection itself
