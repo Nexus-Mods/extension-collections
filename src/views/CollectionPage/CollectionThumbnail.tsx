@@ -20,6 +20,7 @@ export interface IBaseProps {
   details: boolean;
   imageTime: number;
   onResume?: (modId: string) => void;
+  onPause?: (modId: string) => void;
   onEdit?: (modId: string) => void;
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
@@ -202,7 +203,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   private get actions() {
-    const { t, collection, incomplete, installing, onEdit, onUpload,
+    const { t, collection, incomplete, installing, onEdit, onPause, onUpload,
             onRemove, onResume, onView } = this.props;
 
     const result: types.IActionDefinition[] = [];
@@ -231,6 +232,19 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             if (onResume !== undefined) {
               onResume(instanceIds[0]);
             }
+            onView(instanceIds[0]);
+          },
+        });
+      }
+      if (incomplete && (onPause !== undefined)) {
+        result.push({
+          title: 'Pause',
+          icon: 'pause',
+          condition: () => {
+            return installing.id === collection.id;
+          },
+          action: (instanceIds: string[]) => {
+            onPause?.(instanceIds[0]);
             onView(instanceIds[0]);
           },
         });

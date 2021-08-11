@@ -124,6 +124,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           onUpload={this.upload}
           onCreateCollection={this.createCollection}
           onResume={this.resume}
+          onPause={this.pause}
           onSetActiveTab={this.setActiveTab}
         />
       );

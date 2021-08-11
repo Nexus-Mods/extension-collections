@@ -23,6 +23,7 @@ export interface IStartPageProps {
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
   onResume: (modId: string) => void;
+  onPause: (modId: string) => void;
   onSetActiveTab: (tabId: string) => void;
 }
 
@@ -137,7 +138,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onUpload,
+    const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause, onUpload,
             onRemove, onResume, onView } = this.props;
     const { imageTime } = this.state;
 
@@ -180,6 +181,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     onView={onView}
                     onRemove={onRemove}
                     onResume={onResume}
+                    onPause={onPause}
                     details={true}
                   />)}
               </div>
