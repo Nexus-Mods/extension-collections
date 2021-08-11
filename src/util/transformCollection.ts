@@ -445,7 +445,7 @@ export async function modToCollection(state: types.IState,
   const exts: IExtensionFeature[] = findExtensions(state, gameId);
   const extData: any = {};
   for (const ext of exts) {
-    Object.assign(extData, await ext.generate(gameId, includedMods));
+    Object.assign(extData, await ext.generate(gameId, includedMods, collection));
   }
 
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);

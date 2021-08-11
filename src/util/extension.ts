@@ -4,7 +4,7 @@ import { IExtendedInterfaceProps } from '../types/IExtendedInterfaceProps';
 
 export interface IExtensionFeature {
   id: string;
-  generate: (gameId: string, includedMods: string[]) => Promise<any>;
+  generate: (gameId: string, includedMods: string[], mod: types.IMod) => Promise<any>;
   parse: (gameId: string, collection: ICollection, mod: types.IMod) => Promise<void>;
   clone: (gameId: string, collection: ICollection,
           from: types.IMod, to: types.IMod) => Promise<void>;

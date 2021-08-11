@@ -45,11 +45,17 @@ function TweakListWrap(prop: IExtendedInterfaceProps): JSX.Element {
 
 async function enableIniTweaks(api: types.IExtensionApi, gameId: string, mod: types.IMod) {
   const stagingPath = selectors.installPathForGame(api.getState(), gameId);
-  const tweaks: string[] =
-    await fs.readdirAsync(path.join(stagingPath, mod.installationPath, 'INI Tweaks'));
-  tweaks.forEach(fileName => {
-    api.store.dispatch(actions.setINITweakEnabled(gameId, mod.id, fileName, true));
-  });
+  try {
+    const tweaks: string[] =
+      await fs.readdirAsync(path.join(stagingPath, mod.installationPath, 'INI Tweaks'));
+    tweaks.forEach(fileName => {
+      api.store.dispatch(actions.setINITweakEnabled(gameId, mod.id, fileName, true));
+    });
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      api.showErrorNotification('Failed to enable collection ini tweaks', err);
+    }
+  }
 }
 
 function init(context: types.IExtensionContext) {
