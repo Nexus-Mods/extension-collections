@@ -1,6 +1,6 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
-import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_BASE_URL, TOS_URL} from '../../constants';
+import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL, TOS_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
@@ -488,7 +488,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   const game = selectors.gameById(api.getState(), profile.gameId);
                   // tslint:disable-next-line: max-line-length
                   const domainName = (util as any).nexusGameId(game);
-                  const url = `${NEXUS_BASE_URL}/${domainName}/collections/${nexusCollId}`;
+                  const url = `${NEXUS_NEXT_URL}/${domainName}/collections/${nexusCollId}`;
                   util.opn(url).catch(() => null);
                 },
               },

@@ -4,7 +4,7 @@ import { getInterface } from '../../util/gameSupport';
 import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
 
-import { NAMESPACE, NEXUS_BASE_URL } from '../../constants';
+import { NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
@@ -235,7 +235,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
   private openUrl = () => {
     const { collection } = this.state.revision;
-    util.opn(`${NEXUS_BASE_URL}/${collection.game.domainName}/collections/${collection.id}`);
+    util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.id}`);
   }
 
   private addRule = (rule: types.IModRule) => {

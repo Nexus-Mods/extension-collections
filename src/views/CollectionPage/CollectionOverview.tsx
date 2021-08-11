@@ -1,4 +1,4 @@
-import { NEXUS_BASE_URL } from '../../constants';
+import { NEXUS_NEXT_URL } from '../../constants';
 import { IModEx } from '../../types/IModEx';
 import CollectionModDetails from './CollectionModDetails';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
@@ -196,7 +196,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   private openUrl = () => {
     const { revision } = this.props;
     const { collection } = revision;
-    util.opn(`${NEXUS_BASE_URL}/${collection.game.domainName}/collections/${collection.id}`);
+    util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.id}`);
   }
 
   private cloneCollection = () => {

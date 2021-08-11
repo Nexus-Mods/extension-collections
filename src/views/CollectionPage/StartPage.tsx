@@ -1,5 +1,5 @@
 import { initFromProfile } from '../../collectionCreate';
-import { MOD_TYPE, NEXUS_BASE_URL } from '../../constants';
+import { MOD_TYPE, NEXUS_NEXT_URL } from '../../constants';
 import { makeCollectionId } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
@@ -235,7 +235,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private openCollections = async () => {
     const { game } = this.props;
 
-    util.opn(`${NEXUS_BASE_URL}/${(util as any).nexusGameId(game)}/collections`);
+    util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`);
   }
 
   private fromProfile = () => {
