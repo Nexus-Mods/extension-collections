@@ -423,7 +423,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             onPause={this.mInstalling ? this.pause : undefined}
             onResume={this.mInstalling
               ? undefined
-              : driver.collection !== undefined
+              : (driver.collection !== undefined) && !driver.installDone
               ? null // installing something else
               : this.resume}
           />
