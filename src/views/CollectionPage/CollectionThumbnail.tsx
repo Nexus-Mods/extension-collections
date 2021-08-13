@@ -225,7 +225,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               return true;
             }
             return (installing.id === collection.id)
-              ? t('Already being installed') as string
+              ? false
               : t('Another collection is being installed') as string;
           },
           action: (instanceIds: string[]) => {
@@ -240,9 +240,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         result.push({
           title: 'Pause',
           icon: 'pause',
-          condition: () => {
-            return installing.id === collection.id;
-          },
+          condition: () => installing?.id === collection.id,
           action: (instanceIds: string[]) => {
             onPause?.(instanceIds[0]);
             onView(instanceIds[0]);

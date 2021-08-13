@@ -296,7 +296,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         }
 
         const hasInstallerOptions =
-          (entry.mod.attributes?.installerChoices?.options ?? []).length > 0;
+          (entry.mod?.attributes?.installerChoices?.options ?? []).length > 0;
 
         const installMode =
           util.getSafe(collection, ['attributes', 'collection', 'installMode', id], 'fresh');
@@ -315,7 +315,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         const id = entry.mod?.id ?? entry.rule?.reference?.id;
 
         const hasInstallerOptions =
-          (entry.mod.attributes?.installerChoices?.options ?? []).length > 0;
+          (entry.mod?.attributes?.installerChoices?.options ?? []).length > 0;
 
         const installMode = util.getSafe(collection,
           ['attributes', 'collection', 'installMode', id], 'fresh');

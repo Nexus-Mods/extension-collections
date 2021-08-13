@@ -1,6 +1,7 @@
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
+import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { addExtension } from './util/extension';
 import InstallDriver from './util/InstallDriver';
 import { genDefaultInstallModeAction } from './util/installMode';
@@ -33,7 +34,6 @@ import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
-import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -508,7 +508,14 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
     const mod = util.getSafe(state().persistent.mods, [gameId, modId], undefined);
     if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
-      driver.query(profile, mod);
+      if  (driver.collection === undefined) {
+        driver.query(profile, mod);
+      } else {
+        api.sendNotification({
+          type: 'info',
+          message: 'Collection can\'t be installed as another one is being installed already',
+        });
+      }
     }
   });
 

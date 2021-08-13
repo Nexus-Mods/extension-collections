@@ -76,6 +76,13 @@ class InstallDriver {
   }
 
   public async query(profile: types.IProfile, collection: types.IMod) {
+    if (!this.mInstallDone && (this.mCollection !== undefined)) {
+      this.mApi.sendNotification({
+        type: 'warning',
+        message: 'Already installing a collection',
+      });
+      return;
+    }
     this.mProfile = profile;
     this.mCollection = collection;
     this.mStep = 'query';
@@ -83,6 +90,15 @@ class InstallDriver {
   }
 
   public async start(profile: types.IProfile, collection: types.IMod) {
+    if (!this.mInstallDone && (this.mCollection !== undefined)) {
+      this.mApi.sendNotification({
+        type: 'warning',
+        message: 'Already installing a collection',
+        displayMS: 5000,
+      });
+      return;
+    }
+
     this.mProfile = profile;
     this.mCollection = collection;
 
@@ -216,7 +232,8 @@ class InstallDriver {
     this.mApi.sendNotification({
       id: INSTALLING_NOTIFICATION_ID + this.mCollection.id,
       type: 'activity',
-      message: 'Installing Collection',
+      title: 'Installing Collection',
+      message: util.renderModName(this.mCollection),
       actions: [
         {
           title: 'Show',

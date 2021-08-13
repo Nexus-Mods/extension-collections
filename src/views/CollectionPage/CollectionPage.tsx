@@ -364,13 +364,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     }, 0);
 
     if (collection !== undefined) {
-      const expectedNotification = INSTALLING_NOTIFICATION_ID + collection.id;
       // during installation we display only the remote information in the header area,
       // that's why we require driver.collectionInfo to be set
       this.mInstalling = incomplete
+              && !driver.installDone
               && (driver.collectionInfo !== undefined)
-              && (driver.collection?.id === collection?.id)
-              && (notifications.find(noti => noti.id === expectedNotification) !== undefined);
+              && (driver.collection?.id === collection?.id);
     } else {
       this.mInstalling = undefined;
     }
@@ -422,7 +421,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             activity={activity}
             onCancel={this.cancel}
             onPause={this.mInstalling ? this.pause : undefined}
-            onResume={this.mInstalling ? undefined : this.resume}
+            onResume={this.mInstalling
+              ? undefined
+              : driver.collection !== undefined
+              ? null // installing something else
+              : this.resume}
           />
         </FlexLayout.Fixed>
       </FlexLayout>

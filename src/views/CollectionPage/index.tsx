@@ -250,6 +250,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { api } = this.context;
     api.emitAndAwait('cancel-dependency-install', modId);
 
+    this.props.driver.cancel();
+
     api.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
     api.sendNotification({
       id: 'collection-pausing',

@@ -81,6 +81,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
                     <tooltip.IconButton
                       className='btn-embed btn-pause-resume'
                       onClick={onResume}
+                      disabled={onResume === null}
                       tooltip={t('Resume')}
                       icon='resume'
                     />
