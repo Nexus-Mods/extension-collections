@@ -375,7 +375,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           .map(mod => mod.id);
 
         await util.toPromise(cb =>
-          api.events.emit('remove-mods', profile.gameId, removeMods, cb));
+          api.events.emit('remove-mods', profile.gameId, removeMods, cb, {
+            progressCB: (idx: number, length: number, name: string) => {
+              doProgress(name, 50 + (50 * idx) / length);
+            },
+          }));
       }
 
       { // finally remove the collection itself
