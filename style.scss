@@ -17,6 +17,13 @@ $collection-mod-image-height: 200px;
   width: 200px;
 }
 
+#table-collection-mods .cell-name {
+  white-space: nowrap;
+  max-width: 40em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #table-collection-mods .cell-source {
   padding-right: 0;
 }
@@ -625,6 +632,8 @@ ul.collection-mods-page-attrib-tooltip {
     height: calc(#{$collection-mod-image-height} + #{$gutter-width} + 2 * #{$border-width});
 
    .collection-thumbnail {
+      max-width: calc(#{$collection-thumbnail-width} / 2) !important;
+      max-height: calc(#{$collection-thumbnail-height} / 2) !important;
       .thumbnail-img {
         max-width: calc(#{$collection-thumbnail-width} / 2) !important;
         max-height: calc(#{$collection-thumbnail-height} / 2) !important;
@@ -752,8 +761,13 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
-.table-collection-mods.cell-required {
-  text-align: center;
+.table-collection-mods {
+  &.cell-required {
+    text-align: center;
+  }
+  &.cell-tags {
+    text-align: center;
+  }
 }
 
 .collection-progress-flex {

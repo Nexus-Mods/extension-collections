@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { Modal, selectors, Table, TableTextFilter, types, util } from 'vortex-api';
+import { Modal, selectors, Table, TableTextFilter, types, Usage, util } from 'vortex-api';
 import { startAddModsToCollection } from '../actions/session';
 import { alreadyIncluded } from '../collectionCreate';
 import { MOD_TYPE, NAMESPACE } from '../constants';
@@ -143,6 +143,9 @@ function AddModsDialog(props: IAddModsDialogProps) {
           onChangeSelection={updateSelection}
         />
       </Modal.Body>
+      <Usage persistent infoId='add-mods-from-mods-page'>
+        {t('You can also add mods to a collection from the mods screen')}
+      </Usage>
       <Modal.Footer>
         <Button onClick={hide}>{t('Close')}</Button>
         <Button onClick={addSelection}>{t('Add Selection')}</Button>
