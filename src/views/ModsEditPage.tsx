@@ -27,9 +27,26 @@ interface IModEntry {
   mod: types.IMod;
 }
 
+type ProblemType = 'invalid-ids'
+                 | 'replicate-fuzzy-version'
+                 | 'choices-fuzzy-version'
+                 | 'bundled-fuzzy-version'
+                 | 'web-fuzzy-version'
+                 | 'bundle-copyright'
+                 | 'direct-download'
+                 | 'installer-choices-not-saved'
+                 | 'no-version-set'
+;
+
+interface IProblem {
+  type: ProblemType;
+  summary: string;
+  message: string;
+}
+
 interface IModsPageState {
   entries: { [modId: string]: IModEntry };
-  problems: { [modId: string]: string[] };
+  problems: { [modId: string]: IProblem[] };
 }
 
 type IProps = IModsPageProps;
@@ -39,7 +56,6 @@ const SOURCES = {
   direct: 'Direct download',
   browse: 'Browse a website',
   bundle: 'Bundle with collection',
-  manual: 'Manual',
 };
 
 const INSTALL_MODES = {
@@ -73,7 +89,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         return this.mCollator.compare(lhs, rhs);
       },
     }, {
-      id: 'highlight',
+      id: 'tags',
       name: 'Tag',
       description: 'Mod Highlights',
       customRenderer: (entry: IModEntry) => {
@@ -104,9 +120,13 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
               />
             ) : null}
             {hasProblem ? (
-              <tooltip.Icon
-                name='incompatible'
-                tooltip={this.state.problems[entry.mod.id].join('\n')}
+              <tooltip.IconButton
+                icon='incompatible'
+                className='btn-embed'
+                tooltip={this.state.problems[entry.mod.id]
+                  .map(problem => problem.summary).join('\n')}
+                data-modid={entry.mod.id}
+                onClick={this.showProblems}
               />
             ) : null}
           </>
@@ -275,9 +295,8 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           return INSTALL_MODES['clone'];
         }
 
-        const choices = util.getSafe(entry.mod, ['attributes', 'installerChoices'], {});
-        const hasInstallerOptions = ((choices?.['type'] === 'fomod')
-          && (choices['options']?.length > 0));
+        const hasInstallerOptions =
+          (entry.mod.attributes?.installerChoices?.options ?? []).length > 0;
 
         const installMode =
           util.getSafe(collection, ['attributes', 'collection', 'installMode', id], 'fresh');
@@ -294,9 +313,9 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       customRenderer: (entry: IModEntry) => {
         const { t, collection } = this.props;
         const id = entry.mod?.id ?? entry.rule?.reference?.id;
-        const choices = util.getSafe(entry.mod, ['attributes', 'installerChoices'], {});
-        const hasInstallerOptions = ((choices?.['type'] === 'fomod')
-          && (choices['options']?.length > 0));
+
+        const hasInstallerOptions =
+          (entry.mod.attributes?.installerChoices?.options ?? []).length > 0;
 
         const installMode = util.getSafe(collection,
           ['attributes', 'collection', 'installMode', id], 'fresh');
@@ -560,7 +579,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
 
   private checkProblems(props: IProps,
                         entries: { [modId: string]: IModEntry })
-                        : { [modId: string]: string[] } {
+                        : { [modId: string]: IProblem[] } {
     return Object.values(entries).reduce((prev, entry) => {
       const id = entry.mod?.id ?? entry.rule.reference.id ?? entry.rule.reference.idHint;
       if (id !== undefined) {
@@ -570,14 +589,14 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     }, {});
   }
 
-  private updateProblems(props: IProps, entry: IModEntry): string[] {
+  private updateProblems(props: IProps, entry: IModEntry): IProblem[] {
     const { t, collection } = props;
 
     if (entry.mod === undefined) {
       return;
     }
 
-    const res: string[] = [];
+    const res: IProblem[] = [];
 
     const source: string =
       collection.attributes?.collection?.source?.[entry.mod.id]?.type ?? 'nexus';
@@ -589,59 +608,190 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     if ((source === 'nexus')
         && (isNaN(parseInt(entry.mod.attributes?.modId, 10))
             || isNaN(parseInt(entry.mod.attributes?.fileId, 10)))) {
-      res.push(t('When using Nexus as a source both the mod id and file id have to be known. '
-                + 'If you didn\'t download the mod through Vortex they will not be set. '
-                + 'To solve this you have to change the source of the mod to "Nexus", '
-                + 'click "Guess id" (which will determine the mod id) and finally '
-                + 'check mods for updates which should fill in the file id.'));
+      res.push({
+        type: 'invalid-ids',
+        summary: t('Missing file identifiers'),
+        message: t('When using Nexus as a source both the mod id and file id have to be known. '
+                 + 'If you didn\'t download the mod through Vortex they will not be set. '
+                 + 'To solve this you have to change the source of the mod to "Nexus", '
+                 + 'click "Guess id" (which will determine the mod id) and finally '
+                 + 'check mods for updates which should fill in the file id.'),
+      });
     }
 
     if (((versionMatch === '*') || (versionMatch?.endsWith?.('+prefer')))
         && (installMode === 'clone')) {
-      res.push(t('"Replicate" install can only be used when installing '
-                + 'a specific version of a mod. This will definitively break '
-                + 'as soon as the mod gets updated.'));
+      res.push({
+        type: 'replicate-fuzzy-version',
+        summary: t('"Replicate" requires "Current" as the version'),
+        message: t('"Replicate" install can only be used when installing '
+                 + 'a specific version of a mod. This will definitively break '
+                 + 'as soon as the mod gets updated.'),
+      });
     }
     if ((versionMatch === '*') && (installMode === 'choices')) {
-      res.push(t('Installing with "Same choices options" may break if the mod gets updated, '
-               + 'you may want to switch to "Exactly this version" to be safe.'));
+      res.push({
+        type: 'choices-fuzzy-version',
+        summary: t('"Same Installer Options" should not be used with "Latest" version'),
+        message: t('Installing with "Same choices options" may break if the mod gets updated, '
+                 + 'you may want to switch to "Prefer current" to be safe.'),
+      });
     }
 
-    if ((source === 'bundle') && ((versionMatch === '*') || versionMatch?.endsWith?.('+prefer'))) {
-      res.push(t('If you bundle a mod the user gets exactly the version of the mod you '
-                + 'have, the Version selection is pointless in this case.'));
-    } else if (['browse', 'direct'].includes(source) && versionMatch?.endsWith?.('+prefer')) {
-      res.push(t('The option to "prefer current version" only works with sources that '
-                + 'support mod updates (Nexus Mods). For other sources your options '
-                + 'are to use the exact same version you have locally or to accept whatever '
-                + 'version the user downloads.'));
+    if ((source === 'bundle')
+        && ((versionMatch === '*') || versionMatch?.endsWith?.('+prefer'))) {
+      res.push({
+        type: 'bundled-fuzzy-version',
+        summary: t('Version choice has no effect on "Bundled" mod'),
+        message: t('If you bundle a mod the user gets exactly the version of the mod you '
+                 + 'have, the Version selection is pointless in this case.'),
+      });
+    } else if (['browse', 'direct'].includes(source)
+               && versionMatch?.endsWith?.('+prefer')) {
+      res.push({
+        type: 'web-fuzzy-version',
+        summary: t('Version choice has no effect on mods using generic download.'),
+        message: t('The option to "prefer current version" only works with sources that '
+                 + 'support mod updates (Nexus Mods). For other sources your options '
+                 + 'are to use the exact same version you have locally or to accept whatever '
+                 + 'version the user downloads.'),
+      });
     }
 
     if (source === 'bundle') {
-      res.push(t('Mods are copyright protected, only pack mods if you are sure you '
-               + 'have the right to do so, e.g. if it\'s dynamically generated content '
-               + 'or if it\'s your own mod.'));
+      res.push({
+        type: 'bundle-copyright',
+        summary: t('Only bundle mods you have the right to do so'),
+        message: t('Mods are copyright protected, only pack mods if you are sure you '
+                 + 'have the right to do so, e.g. if it\'s dynamically generated content '
+                 + 'or if it\'s your own mod.'),
+      });
     } else if (source === 'direct') {
-      res.push(t('Most websites don\'t allow direct downloads, Plese make sure you are '
-               + 'allowed to use direct links to the specified page.'));
+      res.push({
+        type: 'direct-download',
+        summary: t('Please verify you are allowed to do direct download on this site'),
+        message: t('Most websites don\'t allow direct downloads, Plese make sure you are '
+                 + 'allowed to use direct links to the specified page.'),
+      });
     }
 
     if ((installMode === 'choices')
-        && (entry.mod.attributes?.installerChoices === undefined)) {
-      res.push(t('The installer choices for this mod haven\'t been saved. '
-               + 'This currently only works with xml-based fomods installed with '
-               + 'Vortex 1.5.0 or later. '
-               + 'You may have to reinstall the mod for this to work.'));
+        && ((entry.mod.attributes?.installerChoices?.options ?? []).length === 0)) {
+      res.push({
+        type: 'installer-choices-not-saved',
+        summary: t('No Installer Options saved for this mod'),
+        message: t('The installer choices for this mod haven\'t been saved. '
+                 + 'This currently only works with xml-based fomods installed with '
+                 + 'Vortex 1.5.0 or later. '
+                 + 'You may have to reinstall the mod for this to work.'),
+      });
     }
 
     if (versionMatch === '') {
-      res.push(t('The mod has no version number set. This isn\'t strictly necessary, we use the '
-               + 'file id to identify the exact version but for the purpose of informing the '
-               + 'user it would be nicer if a version was specified. '
-               + '(Please don\'t forget to update the collection)'));
+      res.push({
+        type: 'no-version-set',
+        summary: t('No version set for this mod'),
+        message: t('The mod has no version number set. This isn\'t strictly necessary, we use the '
+                 + 'file id to identify the exact version but for the purpose of informing the '
+                 + 'user it would be nicer if a version was specified. '
+                 + '(Please don\'t forget to update the collection)'),
+      });
     }
 
     return res;
+  }
+
+  private async fixInvalidIds(api: types.IExtensionApi, mod: types.IMod) {
+    const modName = util.renderModName(mod);
+
+    const result = await api.showDialog('question', modName, {
+      text: 'You have to either fix the IDs for this mod or change how the collection '
+          + 'acquires this mod.',
+    }, [
+      { label: 'Change Source' },
+      { label: 'Fix IDs' },
+    ]);
+
+    if (result.action === 'Fix IDs') {
+      api.events.emit('show-main-page', 'Mods');
+      setTimeout(() => {
+        api.events.emit('mods-select-item', mod.id, true);
+        api.highlightControl(
+          `.table-detail-modSource`, 4000);
+        api.highlightControl(
+          `.table-detail-nexusModId`, 4000);
+      }, 200);
+    } else {
+      (api.highlightControl as any)(
+        `#${util.sanitizeCSSId(mod.id)} > .cell-source`, 4000, undefined, true);
+      (api.highlightControl as any)(
+        `#${util.sanitizeCSSId(mod.id)} > .cell-edit-source`, 4000, undefined, true);
+    }
+  }
+
+  private async fixMissingVersion(api: types.IExtensionApi, mod: types.IMod) {
+    api.events.emit('show-main-page', 'Mods');
+    setTimeout(() => {
+      api.events.emit('mods-select-item', mod.id, true);
+      api.highlightControl(
+        `.table-detail-versionDetail`, 4000);
+    }, 200);
+  }
+
+  private setCurrentVersion(entry: IModEntry) {
+    this.props.onRemoveRule(entry.rule);
+    const newRule = _.cloneDeep(entry.rule);
+    newRule.reference.versionMatch = entry.mod.attributes['version'];
+    this.props.onAddRule(newRule);
+  }
+
+  private setPreferVersion(entry: IModEntry) {
+    this.props.onRemoveRule(entry.rule);
+    const newRule = _.cloneDeep(entry.rule);
+    newRule.reference.versionMatch = '>=' + entry.mod.attributes['version'] + '+prefer';
+    this.props.onAddRule(newRule);
+  }
+
+  private showProblems = (evt: React.MouseEvent<any>) => {
+    const { t, mods } = this.props;
+
+    const modId = evt.currentTarget.getAttribute('data-modid');
+
+    const mod = mods[modId];
+    const problems = this.state.problems[modId];
+
+    const { api } = this.context;
+
+    const solutions: Map<ProblemType, () => void> = new Map([
+      ['invalid-ids', () => this.fixInvalidIds(api, mod)],
+      ['no-version-set', () => this.fixMissingVersion(api, mod)],
+      ['replicate-fuzzy-version', () => this.setCurrentVersion(this.state.entries[modId])],
+      ['choices-fuzzy-version', () => this.setPreferVersion(this.state.entries[modId])],
+    ]);
+
+    const modName = util.renderModName(mod);
+    api.showDialog('info', modName, {
+      bbcode: '[list]' + problems.map((prob: IProblem, idx: number) => {
+        if (solutions.has(prob.type)) {
+          return `[*]${prob.message} [url="cb://selectproblem/${idx}"]${t('Fix it')}[/url][/*]`;
+        } else {
+          return `[*]${prob.message}[/*]`;
+        }
+      }).join('') + '[/list]',
+      options: {
+        translated: true,
+        bbcodeContext: {
+          callbacks: {
+            selectproblem: (idx: number) => {
+              solutions.get(problems[idx].type)();
+              api.closeDialog('collection-problem');
+            },
+          },
+        },
+      },
+    }, [
+      { label: 'Close' },
+    ], 'collection-problem');
   }
 
   private querySource(modId: string, type: SourceType) {
