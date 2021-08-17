@@ -89,7 +89,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
       if (collectionProfile !== undefined) {
         // with local collections that we sync with a profile, we wouldn't be able to
         // installing the missing dependencies because the dependencies are referenced via
-        // their local id
+        // their local id.
         notiActions.unshift({
           title: 'Update',
           action: dismiss => {
