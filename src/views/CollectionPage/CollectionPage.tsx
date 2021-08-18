@@ -819,6 +819,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         }
       });
 
+    // this will get called for each mod that has been enabled, its state changed
+    // or an attribute changed (since attribute changes might affect how rules get resolved to
+    // actual mods)
     const updateMod = modId => {
       const realId = modId.startsWith('+') ? modId.slice(1) : modId;
       const mod = newProps.mods[realId];

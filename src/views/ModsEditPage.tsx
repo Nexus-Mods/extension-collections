@@ -611,11 +611,11 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       res.push({
         type: 'invalid-ids',
         summary: t('Missing file identifiers'),
-        message: t('When using Nexus as a source both the mod id and file id have to be known. '
-                 + 'If you didn\'t download the mod through Vortex they will not be set. '
-                 + 'To solve this you have to change the source of the mod to "Nexus", '
-                 + 'click "Guess id" (which will determine the mod id) and finally '
-                 + 'check mods for updates which should fill in the file id.'),
+        message: t('When using "Nexus Mods" as a source, both the mod id and file id have to be '
+                 + 'known. If you didn\'t download the mod through Vortex they may not be set. '
+                 + 'To solve this you have to change the source of the mod to "Nexus Mods" '
+                 + 'and use the options below "Nexus Mods IDs" to fill in the '
+                 + 'missing data (the automated options should be quite reliable).'),
       });
     }
 
