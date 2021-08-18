@@ -9,7 +9,7 @@ import { cloneCollection, createCollection, makeCollectionId } from './util/tran
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
 import CollectionsMainPage from './views/CollectionPage';
-import InstallDialog from './views/InstallDialog';
+import { InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
 
@@ -237,7 +237,12 @@ function register(context: types.IExtensionContext,
   context.registerReducer(['session', 'collections'], sessionReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
-  context.registerDialog('collection-install', InstallDialog, () => ({
+  context.registerDialog('collection-install', InstallStartDialog, () => ({
+    driver,
+  }));
+
+  context.registerDialog('collection-finish', InstallFinishDialog, () => ({
+    api: context.api,
     driver,
   }));
 

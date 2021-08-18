@@ -129,8 +129,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         title: 'Remove',
         action: this.removeSelected,
         condition: instanceId => (typeof(instanceId) === 'string')
-            ? (['downloaded', 'installed']
-                .indexOf(this.state.modsEx[instanceId].state) !== -1)
+            ? (['downloaded', 'installed'].includes(this.state.modsEx[instanceId].state))
             : true,
         hotKey: { code: 46 },
       },
@@ -208,6 +207,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         placement: 'table',
         calc: (mod: IModEx) => mod.collectionRule.type === 'requires',
         edit: {},
+        filter: new OptionsFilter([
+          { value: false, label: 'Recommended'},
+          { value: true, label: 'Required'}],
+          false, false),
       },
       {
         id: 'name',

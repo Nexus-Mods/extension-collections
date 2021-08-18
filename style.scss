@@ -225,6 +225,20 @@ $collection-mod-image-height: 200px;
   }
 }
 
+#install-finished-dialog {
+  .collection-finished-body {
+    margin-bottom: $half-gutter;
+  }
+  .collection-finished-optionals {
+    border-top: $border-width solid $border-color;
+    padding-top: $half-gutter;
+    .collection-finished-optionals-text {
+      font-size: larger;
+      font-weight: bold;
+    }
+  }
+}
+
 #collection-mods-page-attribute-renderer {
   align-items: center;
   .collection-mods-page-attr-addendum {

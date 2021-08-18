@@ -52,25 +52,12 @@ class InstallDriver {
 
     api.events.on('did-install-dependencies',
       (profileId: string, modId: string, recommendations: boolean) => {
-        if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
-          this.mInstallDone = true;
-          this.mInstallingMod = undefined;
+        if ((this.mCollection !== undefined)
+            && (modId === this.mCollection.id)
+            && !recommendations) {
+          this.mStep = 'review';
           this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
           this.triggerUpdate();
-
-          if (!recommendations) {
-            // offer to install recommendations when all requirements have been installed
-            const state = api.getState();
-            const profile = state.persistent.profiles[profileId];
-            const mods = state.persistent.mods[profile.gameId];
-
-            const missing = this.mCollection.rules.find(rule =>
-              (rule.type === 'requires')
-              && (util.findModByRef(rule.reference, mods) === undefined));
-            if (missing === undefined) {
-              api.events.emit('install-recommendations', profileId, [modId]);
-            }
-          }
         }
       });
   }
@@ -109,6 +96,10 @@ class InstallDriver {
 
   public onUpdate(cb: UpdateCB) {
     this.mUpdateHandlers.push(cb);
+  }
+
+  public get profile() {
+    return this.mProfile;
   }
 
   public get infoCache() {
@@ -307,6 +298,7 @@ class InstallDriver {
 
   private close = () => {
     this.mCollection = undefined;
+    this.mInstallDone = true;
     this.triggerUpdate();
   }
 
