@@ -1,6 +1,6 @@
 import { ICollection, IModFile, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
-import { actions, log, types, util } from 'vortex-api';
+import { actions, log, selectors, types, util } from 'vortex-api';
 import { INSTALLING_NOTIFICATION_ID } from '../constants';
 import { IRevisionEx } from '../types/IRevisionEx';
 import InfoCache from './InfoCache';
@@ -55,7 +55,17 @@ class InstallDriver {
         if ((this.mCollection !== undefined)
             && (modId === this.mCollection.id)
             && !recommendations) {
-          this.mStep = 'review';
+          const profile = selectors.profileById(api.getState(), profileId);
+          const mods = api.getState().persistent.mods[profile.gameId];
+          const incomplete = this.mCollection.rules.find(rule =>
+            (rule.type === 'requires') && (util.findModByRef(rule.reference, mods) === undefined));
+
+          if (incomplete === undefined) {
+            this.mStep = 'review';
+          } else {
+            this.mInstallDone = true;
+            this.mInstallingMod = undefined;
+          }
           this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
           this.triggerUpdate();
         }
