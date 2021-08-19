@@ -115,8 +115,8 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       .filter(iter => iter !== undefined));
 
   public render(): JSX.Element {
-    const { t, collection, details, imageTime,
-            incomplete, mods, onEdit, profile, stagingPath } = this.props;
+    const { t, collection, details,
+            incomplete, mods, onEdit, profile } = this.props;
 
     if (collection === undefined) {
       return null;
@@ -139,8 +139,14 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
 
     const classes = ['collection-thumbnail'];
 
+    const hasMenu = (this.actions.length > 0);
+
     if (this.props.className !== undefined) {
       classes.push(this.props.className);
+    }
+
+    if (hasMenu) {
+      classes.push('has-menu');
     }
 
     return (
@@ -192,7 +198,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               </div>
             </div>
           ) : null}
-          {(this.actions.length > 0) ? (
+          {hasMenu ? (
             <div className='thumbnail-hover-menu'>
               {this.renderMenu(refMods, totalSize)}
             </div>
