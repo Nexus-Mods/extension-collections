@@ -147,11 +147,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                 <FlexLayout type='row'>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Uploaded')}</div>
-                    <div>{this.renderTime(collection.attributes.uploadedTimestamp)}</div>
+                    <div>{this.renderTime(collection.attributes?.uploadedTimestamp)}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Last updated')}</div>
-                    <div>{this.renderTime(collection.attributes.updatedTimestamp)}</div>
+                    <div>{this.renderTime(collection.attributes?.updatedTimestamp)}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Mods')}</div>
