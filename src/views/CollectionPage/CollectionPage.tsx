@@ -416,7 +416,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         <FlexLayout.Fixed>
           <CollectionProgress
             t={t}
-            isPremium={userInfo.isPremium}
+            isPremium={userInfo?.isPremium}
             mods={modsEx}
             profile={profile}
             downloads={downloads}
