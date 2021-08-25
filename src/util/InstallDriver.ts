@@ -58,7 +58,9 @@ class InstallDriver {
           const profile = selectors.profileById(api.getState(), profileId);
           const mods = api.getState().persistent.mods[profile.gameId];
           const incomplete = this.mCollection.rules.find(rule =>
-            (rule.type === 'requires') && (util.findModByRef(rule.reference, mods) === undefined));
+            (rule.type === 'requires')
+         && (rule['ignored'] !== true)
+         && (util.findModByRef(rule.reference, mods) === undefined));
 
           if (incomplete === undefined) {
             this.mStep = 'review';
