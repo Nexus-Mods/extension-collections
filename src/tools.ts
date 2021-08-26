@@ -83,7 +83,7 @@ async function cloneTools(api: types.IExtensionApi,
 
   const knownTools = api.getState().settings.gameMode.discovered[gameId].tools;
 
-  const includedTools: string[] = tools.map(tool => {
+  const includedTools: string[] = (tools ?? []).map(tool => {
     const exePath = path.isAbsolute(tool.exe)
       ? tool.exe
       : path.join(discovery.path, tool.exe);
