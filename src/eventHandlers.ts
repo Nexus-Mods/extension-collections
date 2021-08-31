@@ -2,15 +2,18 @@ import { ICollection, IDownloadURL, IRevision } from '@nexusmods/nexus-api';
 import * as path from 'path';
 import { types, util } from 'vortex-api';
 
-async function collectionUpdate(api: types.IExtensionApi, gameId: string, collectionId: string) {
+async function collectionUpdate(api: types.IExtensionApi, gameId: string,
+                                collectionId: string, revisionId: string) {
   try {
-    const collection: ICollection =
-      (await api.emitAndAwait('get-nexus-collection', parseInt(collectionId, 10)))[0];
-    if (collection === undefined) {
+    const latest: IRevision =
+      (await api.emitAndAwait('get-nexus-collection-revision', parseInt(revisionId, 10)))[0];
+    if (latest === undefined) {
+      throw new Error(`Invalid revision id "${revisionId}"`);
+    }
+    const collection: ICollection = latest.collection;
+    if (+collectionId !== collection.id) {
       throw new Error(`Invalid collection id "${collectionId}"`);
     }
-    const latest: IRevision = collection.currentRevision;
-
     const modInfo = {
       game: gameId,
       source: 'nexus',
@@ -52,7 +55,7 @@ export function onCollectionUpdate(api: types.IExtensionApi): (...args: any[]) =
       return;
     }
 
-    collectionUpdate(api, gameId, collectionId.toString())
+    collectionUpdate(api, gameId, collectionId.toString(), revisionNumber.toString())
       .catch(err => {
         api.showErrorNotification('Failed to update collection', err);
       });
