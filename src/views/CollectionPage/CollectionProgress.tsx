@@ -20,7 +20,35 @@ export interface ICollectionProgressProps {
   onResume: () => void;
 }
 
-class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
+interface ICompState {
+  totalSize: number;
+}
+
+class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompState> {
+  public static getDerivedStateFromProps(props, state) {
+    return {
+      totalSize: CollectionProgress.calculateTotalSize(props),
+    };
+  }
+
+  private static calculateTotalSize(props: ICollectionProgressProps): number {
+    const { mods } = props;
+    return Object.values(mods).reduce((prev: number, mod: IModEx) => {
+      if (mod.state === null) {
+        return prev;
+      }
+      const size = util.getSafe(mod, ['attributes', 'fileSize'], 0);
+      return prev + size;
+    }, 0);
+  }
+
+  constructor(props: ICollectionProgressProps) {
+    super(props);
+    this.initState({
+      totalSize: 0,
+    });
+  }
+
   public render(): JSX.Element {
     const  {t, activity, downloads, isPremium, mods, profile, totalSize,
             onCancel, onPause, onResume} = this.props;
@@ -125,7 +153,8 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
   }
 
   private renderBars(installing: IModEx[], done: IModEx[]) {
-    const {t, downloads, mods, totalSize} = this.props;
+    const {t, downloads, mods} = this.props;
+    const { totalSize } = this.state;
 
     const curInstall = (installing.length > 0)
       ? installing.find(iter => iter.state === 'installing')
@@ -142,6 +171,8 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
       return prev + size;
     }, 0);
 
+    const relevant = Object.values(mods).filter(mod => mod.state !== null);
+
     return (
       <>
         <ProgressBar
@@ -154,7 +185,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, {}> {
         />
         <ProgressBar
           now={done.length}
-          max={Object.keys(mods).length}
+          max={relevant.length}
           showPercentage
           labelLeft={installing.length > 0 ? t('Installing') : t('Waiting to install')}
           labelRight={curInstall !== undefined ? util.renderModName(curInstall) : undefined}
