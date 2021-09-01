@@ -31,10 +31,23 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
     };
   }
 
+  private static isRelevant(mod: IModEx) {
+    if (mod.state === null) {
+      if (mod.collectionRule.type === 'recommends') {
+        return false;
+      }
+      if (mod.collectionRule['ignored']) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private static calculateTotalSize(props: ICollectionProgressProps): number {
     const { mods } = props;
     return Object.values(mods).reduce((prev: number, mod: IModEx) => {
-      if (mod.state === null) {
+      if (!CollectionProgress.isRelevant(mod)) {
         return prev;
       }
       const size = util.getSafe(mod, ['attributes', 'fileSize'], 0);
@@ -171,7 +184,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
       return prev + size;
     }, 0);
 
-    const relevant = Object.values(mods).filter(mod => mod.state !== null);
+    const relevant = Object.values(mods).filter(CollectionProgress.isRelevant);
 
     return (
       <>
