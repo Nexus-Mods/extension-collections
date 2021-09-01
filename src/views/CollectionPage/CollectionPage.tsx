@@ -894,7 +894,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           };
 
           const dl = newProps.downloads[result[ruleId].archiveId];
-          if (['finished', 'failed'].includes(dl.state)) {
+          if (['finished', 'failed'].includes(dl.state) && !pendingFinish.includes(ruleId)) {
             result[ruleId].state = 'downloaded';
           }
         }
