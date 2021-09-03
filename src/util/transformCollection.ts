@@ -583,6 +583,11 @@ export async function cloneCollection(api: types.IExtensionApi,
     ? existingCollection.attributes?.customFileName
     : t('Copy of {{name}}', { replace: { name: existingCollection.attributes?.customFileName } });
 
+  const ownCollectionAttributes = ownCollection ? ({
+    pictureUrl: existingCollection.attributes.pictureUrl,
+    uploader: userInfo.name,
+    uploaderAvatar: existingCollection.attributes.uploaderAvatar,
+  }) : {};
   const mod: types.IMod = {
     id,
     type: MOD_TYPE,
@@ -596,6 +601,7 @@ export async function cloneCollection(api: types.IExtensionApi,
       editable: true,
       collectionId: ownCollection ? existingCollection.attributes?.collectionId : undefined,
       collection: deduceCollectionAttributes(existingCollection, collection, mods),
+      ...ownCollectionAttributes,
     },
     installationPath: id,
     rules: existingCollection.rules,
