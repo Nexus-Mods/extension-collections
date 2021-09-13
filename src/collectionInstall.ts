@@ -55,12 +55,25 @@ export function makeInstall(api: types.IExtensionApi) {
 
     const knownGames = selectors.knownGames(api.getState());
 
+    // Attempt to get the download for this collection to resolve the collection's name
+    //  which may have been modified on the website and is therefore different than the value
+    //  in the json file.
+    // We reverse the downloads array as it's likely that the user just downloaded this
+    //  from the website and therefore the download entry is somewhere at the bottom.
+    // (pointless optimisation ?)
+    const state = api.getState();
+    const downloads = Object.values(state.persistent.downloads.files).reverse();
+    const collectionDownload = downloads.find(down =>
+      path.basename(destinationPath, '.installing') === path.basename(down.localPath, path.extname(down.localPath)));
+
     return Promise.resolve({
       instructions: [
         {
           type: 'attribute' as any,
           key: 'customFileName',
-          value: collection.info.name,
+          value: (collectionDownload?.modInfo?.name !== undefined)
+            ? collectionDownload.modInfo.name
+            : collection.info.name,
         },
         {
           type: 'setmodtype' as any,
