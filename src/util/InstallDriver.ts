@@ -285,7 +285,8 @@ class InstallDriver {
       if (rule.reference.repo === undefined) {
         return undefined;
       }
-      const revMod = this.mRevisionInfo.modFiles.find(iter => this.matchRepo(rule, iter.file));
+      const revMod = (this.mRevisionInfo?.modFiles ?? []).find(
+        iter => this.matchRepo(rule, iter.file));
       if (revMod?.file !== undefined) {
         const newRule = util.setSafe(rule, ['extra', 'fileName'], revMod.file.uri);
         return actions.addModRule(this.mProfile.gameId, this.mCollection.id, newRule);

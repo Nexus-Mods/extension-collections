@@ -112,7 +112,7 @@ function CreateCard(props: ICreateCardProps) {
           <div key='primary-buttons' className='hover-content'>
             <IconBar
               className='buttons'
-              group={`collection-actions`}
+              group='collection-actions'
               staticElements={actions}
               collapse={false}
               buttonType='text'
