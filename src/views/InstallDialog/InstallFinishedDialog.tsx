@@ -81,9 +81,11 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
                 { replace: { numOptionals: optionals.length }})}
             </div>
             <p>
-              {t('The curator has recommended {{count}} optional mod for this '
-              + 'collection. Follow the button below to view this mod.', {
+              {t('This collection has {{count}} optional mods which are not required to '
+                 + 'complete the installation but have been recommended by the curator. '
+                 + 'To view these mods, click the button below.', {
                 count: optionals.length,
+                ns: NAMESPACE,
               })}
             </p>
             <Button onClick={showOptionals}>{t('Show optional mods')}</Button>
