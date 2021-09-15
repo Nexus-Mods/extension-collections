@@ -159,6 +159,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
       collectionId = result.collectionId;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', result.revisionId));
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'source', 'nexus'));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'version',
         ((result['revisionNumber'] ?? 0) + 1).toString()));
     });
