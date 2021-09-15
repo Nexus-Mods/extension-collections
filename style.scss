@@ -239,7 +239,7 @@ $collection-mod-image-height: 200px;
   }
 }
 
-#collection-mods-page-attribute-renderer {
+.collection-mods-page-attribute-renderer {
   align-items: center;
   .collection-mods-page-attr-addendum {
     border-color: $text-color;
@@ -1028,20 +1028,6 @@ ul.collection-mods-page-attrib-tooltip {
 
   .table-sort-column {
     background: rgba(255, 215, 0, 0.1);
-  }
-
-  >.cell-name {
-    &::before {
-      content: '';
-      mask-image: var(--collection-icon);
-      -webkit-mask-image: var(--collection-icon);
-      background-color: white;
-      width: 1.2em;
-      height: 1.2em;
-      display: inline-block;
-      vertical-align: text-top;
-      margin-right: 0.5em;
-    }
   }
 }
 
