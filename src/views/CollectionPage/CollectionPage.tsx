@@ -1034,4 +1034,4 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(
-  CollectionPage) as React.ComponentType<ICollectionPageProps>;
+  CollectionPage) as any as React.ComponentType<ICollectionPageProps>;

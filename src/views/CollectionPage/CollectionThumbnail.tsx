@@ -335,4 +335,4 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 
 export default
   connect(mapStateToProps, mapDispatchToProps)(
-    CollectionThumbnail) as React.ComponentType<IBaseProps>;
+    CollectionThumbnail) as any as React.ComponentType<IBaseProps>;

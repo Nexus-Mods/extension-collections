@@ -219,6 +219,24 @@ function generateCollectionMap(mods: { [modId: string]: types.IMod })
   return result;
 }
 
+interface IModTable { [modId: string]: types.IMod; }
+
+function collectionListEqual(lArgs: IModTable[], rArgs: IModTable[]): boolean {
+  const lhs = lArgs[0];
+  const rhs = rArgs[0];
+
+  const keys = Object.keys(lhs);
+
+  if (!_.isEqual(keys, Object.keys(rhs))) {
+    return false;
+  }
+
+  const ruleDiff = keys.find(modId =>
+    (lhs[modId].state !== rhs[modId].state) || (lhs[modId].rules !== rhs[modId].rules));
+
+  return ruleDiff === undefined;
+}
+
 function generateCollectionOptions(mods: { [modId: string]: types.IMod })
     : Array<{ label: string, value: string }> {
   return Object.values(mods)
@@ -297,9 +315,10 @@ function register(context: types.IExtensionContext,
 
   const stateFunc: () => types.IState = () => context.api.store.getState();
 
+  const emptyArray = [];
   const emptyObj = {};
 
-  const collectionsMapFunc = memoize(generateCollectionMap);
+  const collectionsMapFunc = memoize(generateCollectionMap, collectionListEqual);
 
   const collectionsMap = () =>
     collectionsMapFunc(
@@ -318,10 +337,9 @@ function register(context: types.IExtensionContext,
     icon: 'collection',
     placement: 'both',
     customRenderer: (mod: types.IMod, detailCell: boolean) => {
-      const collections = collectionsMap()[mod.id] || [];
-      const collectionNames = collections.map(collection => util.renderModName(collection));
+      const collections = collectionsMap()[mod.id] || emptyArray;
       return React.createElement(CollectionAttributeRenderer,
-                                 { modId: mod.id, collectionNames, detailCell }, []);
+                                 { modId: mod.id, collections, detailCell }, []);
     },
     calc: (mod: types.IMod) => {
       const collections = collectionsMap()[mod.id];
