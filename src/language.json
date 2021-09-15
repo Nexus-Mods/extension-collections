@@ -1,6 +1,6 @@
 {
-  "The curator has recommended {{count}} optional mod for this collection. Follow the button below to view this mod.":
-    "The curator has recommended an optional mod for this collection. Follow the button below to view this mod.",
-  "The curator has recommended {{count}} optional mod for this collection. Follow the button below to view this mod._plural":
-    "The curator has recommended {{count}} optional mods for this collection. Follow the button below to view these mods."
+  "This collection has {{count}} optional mods which are not required to complete the installation but have been recommended by the curator. To view these mods, click the button below.":
+    "This collection has an optional mod which is not required to complete the installation but has been recommended by the curator. To view this mod, click the button below.",
+  "This collection has {{count}} optional mods which are not required to complete the installation but have been recommended by the curator. To view these mods, click the button below._plural":
+    "Gugu This collection has {{count}} optional mods which are not required to complete the installation but have been recommended by the curator. To view these mods, click the button below."
 }
