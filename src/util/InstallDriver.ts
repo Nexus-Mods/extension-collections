@@ -1,7 +1,7 @@
 import { ICollection, IModFile, IRevision } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import { actions, log, selectors, types, util } from 'vortex-api';
-import { INSTALLING_NOTIFICATION_ID } from '../constants';
+import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
 import { IRevisionEx } from '../types/IRevisionEx';
 import InfoCache from './InfoCache';
 import { getUnfulfilledNotificationId } from './util';
@@ -50,26 +50,53 @@ class InstallDriver {
       this.triggerUpdate();
     });
 
+    api.events.on('will-install-dependencies',
+      (profileId: string, modId: string, recommendations: boolean) => {
+        const state = api.getState();
+        const profile = this.profile || selectors.profileById(state, profileId);
+        if (profile?.gameId === undefined) {
+          // how?
+          return;
+        }
+        const mods = state.persistent.mods[profile.gameId];
+        if ((this.mCollection === undefined)
+            && (mods[modId]?.type === MOD_TYPE)
+            && recommendations) {
+          // When installing optional mods, it's possible for the mCollection
+          //  property to be undefined - we need to ensure that the driver is
+          //  aware that it's installing mods that are part of the collection
+          //  in order for us to apply any collection mod rules to the mods themselves
+          //  upon successful installation.
+          this.mCollection = mods[modId];
+          this.mStep = 'installing';
+        }
+      });
+
     api.events.on('did-install-dependencies',
       (profileId: string, modId: string, recommendations: boolean) => {
         if ((this.mCollection !== undefined)
-            && (modId === this.mCollection.id)
-            && !recommendations) {
-          const profile = selectors.profileById(api.getState(), profileId);
-          const mods = api.getState().persistent.mods[profile.gameId];
-          const incomplete = this.mCollection.rules.find(rule =>
-            (rule.type === 'requires')
-         && (rule['ignored'] !== true)
-         && (util.findModByRef(rule.reference, mods) === undefined));
+            && (modId === this.mCollection.id)) {
+          if (!recommendations) {
+            const profile = selectors.profileById(api.getState(), profileId);
+            const mods = api.getState().persistent.mods[profile.gameId];
+            const incomplete = this.mCollection.rules.find(rule =>
+              (rule.type === 'requires')
+          && (rule['ignored'] !== true)
+          && (util.findModByRef(rule.reference, mods) === undefined));
 
-          if (incomplete === undefined) {
-            this.mStep = 'review';
+            if (incomplete === undefined) {
+              this.mStep = 'review';
+            } else {
+              this.mInstallDone = true;
+              this.mInstallingMod = undefined;
+            }
+            this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
+            this.triggerUpdate();
           } else {
-            this.mInstallDone = true;
-            this.mInstallingMod = undefined;
+            // We finished installing optional mods for the current collection - reset everything.
+            this.mCollection = undefined;
+            this.mStep = 'query';
           }
-          this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
-          this.triggerUpdate();
         }
       });
   }
