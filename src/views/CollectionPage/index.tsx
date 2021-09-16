@@ -214,7 +214,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const author = mods[modId].attributes['author'];
 
-    if ((author !== undefined) && (author !== userInfo.name)) {
+    if ((author !== undefined) && (author !== userInfo?.name)) {
       const result = await api.showDialog('question',
         'Edit Collection', {
           text: 'This collection has been uploaded with a different account ({{uploadAuthor}}) '
@@ -223,7 +223,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
               + 'collection by your current user.',
           parameters: {
             uploadAuthor: author,
-            currentUser: userInfo.name,
+            currentUser: userInfo?.name ?? '<Logged out>',
           },
         }, [
           { label: 'Cancel' },
@@ -494,7 +494,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   const game = selectors.gameById(api.getState(), profile.gameId);
                   // tslint:disable-next-line: max-line-length
                   const domainName = (util as any).nexusGameId(game);
-                  const url = `${NEXUS_NEXT_URL}/${domainName}/collections/${nexusCollId}`;
+                  const url = util.nexusModsURL([domainName, 'collections', nexusCollId], {
+                    campaign: util.Campaign.ViewCollection,
+                    section: util.Section.Collections,
+                  });
                   util.opn(url).catch(() => null);
                 },
               },

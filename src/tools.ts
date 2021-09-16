@@ -19,7 +19,7 @@ function convertTools(state: types.IState,
   const { tools } = state.settings.gameMode.discovered[gameId];
   const discovery = selectors.discoveryByGame(state, gameId);
 
-  return util['makeUniqueByKey'](includedTools ?? [], item => item.name)
+  return util.makeUniqueByKey(includedTools ?? [], item => item)
     .filter(toolId => tools[toolId]?.custom && !tools[toolId]?.hidden)
     .map(toolId => {
       const tool = tools[toolId];

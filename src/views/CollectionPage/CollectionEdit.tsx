@@ -235,7 +235,11 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
   private openUrl = () => {
     const { collection } = this.state.revision;
-    util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.id}`);
+    util.opn(util.nexusModsURL(
+      [collection.game.domainName, 'collections', collection.id.toString()], {
+      campaign: util.Campaign.ViewCollection,
+      section: util.Section.Collections,
+    }));
   }
 
   private addRule = (rule: types.IModRule) => {

@@ -1506,7 +1506,12 @@ graceful-fs@^4.1.2:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.2.tgz#6f0952605d0140c1cfdb138ed005775b92d67b02"
   integrity sha512-IItsdsea19BoLC7ELy13q1iJFNmd7ofZH5+X/pJr90/nRoPEX0DJo1dHDbgtYWOhJhcCgMDTOw84RZ72q6lB+Q==
 
-graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.3:
+graceful-fs@^4.1.6, graceful-fs@^4.2.0:
+  version "4.2.8"
+  resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.8.tgz#e412b8d33f5e006593cbd3cee6df9f2cebbe802a"
+  integrity sha512-qkIilPUYcNhJpd33n0GBXTB1MMPp14TxEsEs0pTrsSVucApsYzW5V+Q8Qxhik6KU3evy+qkAAowTByymK0avdg==
+
+graceful-fs@^4.2.3:
   version "4.2.6"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.6.tgz#ff040b2b0853b23c3d31027523706f1885d76bee"
   integrity sha512-nTnJ528pbqxYanhpDYsi4Rd8MAeaBA67+RZ10CM1m3bTAVFEDcd5AuA4a6W5YkGZ1iNXHzZz8T6TBKLeBuNriQ==
@@ -2196,17 +2201,17 @@ miller-rabin@^4.0.0:
     bn.js "^4.0.0"
     brorand "^1.0.1"
 
-mime-db@1.48.0:
-  version "1.48.0"
-  resolved "https://registry.yarnpkg.com/mime-db/-/mime-db-1.48.0.tgz#e35b31045dd7eada3aaad537ed88a33afbef2d1d"
-  integrity sha512-FM3QwxV+TnZYQ2aRqhlKBMHxk10lTbMt3bBkMAp54ddrNeVSfcQYOOKuGuy3Ddrm38I04If834fOUSq1yzslJQ==
+mime-db@1.49.0:
+  version "1.49.0"
+  resolved "https://registry.yarnpkg.com/mime-db/-/mime-db-1.49.0.tgz#f3dfde60c99e9cf3bc9701d687778f537001cbed"
+  integrity sha512-CIc8j9URtOVApSFCQIF+VBkX1RwXp/oMMOrqdyXSBXq5RWNEsRfyj1kiRnQgmNXmHxPoFIxOroKA3zcU9P+nAA==
 
 mime-types@^2.1.12, mime-types@~2.1.19:
-  version "2.1.31"
-  resolved "https://registry.yarnpkg.com/mime-types/-/mime-types-2.1.31.tgz#a00d76b74317c61f9c2db2218b8e9f8e9c5c9e6b"
-  integrity sha512-XGZnNzm3QvgKxa8dpzyhFTHmpP3l5YNusmne07VUOXxou9CqUqYa/HBy124RqtVh/O2pECas/MOcsDgpilPOPg==
+  version "2.1.32"
+  resolved "https://registry.yarnpkg.com/mime-types/-/mime-types-2.1.32.tgz#1d00e89e7de7fe02008db61001d9e02852670fd5"
+  integrity sha512-hJGaVS4G4c9TSMYh2n6SQAGrC4RnfU+daP8G7cSCmaqNjiOoUY0VHCMS42pxnQmVF1GWwFhbHWn3RIxCqTmZ9A==
   dependencies:
-    mime-db "1.48.0"
+    mime-db "1.49.0"
 
 mimic-fn@^1.0.0:
   version "1.2.0"
@@ -3697,9 +3702,9 @@ typedarray@^0.0.6:
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
 typedoc-plugin-markdown@^3.0.11:
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/typedoc-plugin-markdown/-/typedoc-plugin-markdown-3.9.0.tgz#d9c0390b8ddeeda56fdbf01264521ef04b3c19c7"
-  integrity sha512-s445YeUe8bH7me15T+hsHZgNmAvvF7QIpX02vFgseLGtghAwmtdZYVOqPneWoKqRv/JNpPSuyZb3CeblML9jOg==
+  version "3.11.0"
+  resolved "https://registry.yarnpkg.com/typedoc-plugin-markdown/-/typedoc-plugin-markdown-3.11.0.tgz#1ae3f92cc259cb10503099eb1a7f53c05f331674"
+  integrity sha512-zewcbzOlMV9nbhLsJhKBpoRW4J32LgbfdqwYfEfzzeE+wGOaOfsM6g7QH+ZKj8n+knH4sLCtk6XMN1TI/a1UuQ==
   dependencies:
     handlebars "^4.7.7"
 
@@ -3709,9 +3714,9 @@ typescript@^3.8.3:
   integrity sha512-MYlEfn5VrLNsgudQTVJeNaQFUAI7DkhnOjdpAp4T+ku1TfQClewlbSuTVHiA+8skNBgaf02TL/kLOvig4y3G8w==
 
 uglify-js@^3.1.4:
-  version "3.13.9"
-  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.13.9.tgz#4d8d21dcd497f29cfd8e9378b9df123ad025999b"
-  integrity sha512-wZbyTQ1w6Y7fHdt8sJnHfSIuWeDgk6B5rCb4E/AM6QNNPbOMIZph21PW5dRB3h7Df0GszN+t7RuUH6sWK5bF0g==
+  version "3.14.2"
+  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.14.2.tgz#d7dd6a46ca57214f54a2d0a43cad0f35db82ac99"
+  integrity sha512-rtPMlmcO4agTUfz10CbgJ1k6UAoXM2gWb3GoMPPZB/+/Ackf8lNWk11K4rYi2D0apgoFRLtQOZhb+/iGNJq26A==
 
 uncontrollable@^5.0.0:
   version "5.1.0"
@@ -3838,8 +3843,8 @@ void-elements@^2.0.1:
   integrity sha1-wGavtYK7HLQSjWDqkjkulNXp2+w=
 
 vortex-api@Nexus-Mods/vortex-api#mod-packs:
-  version "1.4.0-modpacks.r7"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/97b4308d44ceb088796cbd5a887d9226723178ad"
+  version "1.4.0-modpacks.r8"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/808ecaf41772009fb78ece9447fb32aaf3f3ff95"
   dependencies:
     fs-extra "^9.0.1"
     gray-matter "^4.0.2"

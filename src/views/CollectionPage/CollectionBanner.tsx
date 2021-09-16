@@ -2,7 +2,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import { FlexLayout, Icon, util } from 'vortex-api';
-import { NEXUS_MEMBERSHIP_URL } from '../../constants';
+import { PREMIUM_PATH } from '../../constants';
 
 export interface ICollectionBannerProps {
   totalSize: number;
@@ -34,7 +34,9 @@ class CollectionBanner extends React.Component<ICollectionBannerProps, {}> {
   }
 
   private goGetPremium = () => {
-    util.opn(NEXUS_MEMBERSHIP_URL).catch(err => undefined);
+    util.opn(util.nexusModsURL(PREMIUM_PATH,
+      { section: util.Section.Users, campaign: util.Campaign.Collections }))
+      .catch(err => undefined);
   }
 }
 

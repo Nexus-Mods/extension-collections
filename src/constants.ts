@@ -5,8 +5,9 @@ export const AVATAR_FALLBACK = 'assets/images/noavatar.png';
 export const NEXUS_DOMAIN = process.env['NEXUS_DOMAIN'] || 'nexusmods.com';
 export const NEXUS_BASE_URL = process.env['NEXUS_BASE_URL'] || `https://www.${NEXUS_DOMAIN}.com`;
 export const NEXUS_NEXT_URL = process.env['NEXUS_NEXT_URL'] || `https://www.${NEXUS_DOMAIN}.com`;
-export const NEXUS_MEMBERSHIP_URL =
-  `https://users.${NEXUS_DOMAIN}/account/billing/premium?pk_source=vortex&pk_campaign=collections`;
+export const NEXUS_PROTOCOL = 'https:';
+
+export const PREMIUM_PATH = ['account', 'billing', 'premium'];
 
 export const TOS_URL = 'https://help.nexusmods.com/article/115-collections-terms-of-service';
 
