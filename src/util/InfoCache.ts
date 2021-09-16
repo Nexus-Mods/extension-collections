@@ -1,7 +1,11 @@
 import { updateCollectionInfo, updateRevisionInfo } from '../actions/persistent';
 
+import { ICollectionModRule } from '../types/ICollection';
+
 import { ICollection, IRevision } from '@nexusmods/nexus-api';
-import { log, types } from 'vortex-api';
+import * as path from 'path';
+import { fs, log, selectors, types, util } from 'vortex-api';
+import { MOD_TYPE } from '../constants';
 
 const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000;
 
@@ -15,9 +19,18 @@ class InfoCache {
   private mApi: types.IExtensionApi;
   private mCacheRevRequests: { [revId: string]: Promise<IRevision> } = {};
   private mCacheColRequests: { [revId: string]: Promise<ICollection> } = {};
+  private mCacheColRules: { [revId: string]: Promise<ICollectionModRule[]> } = {};
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
+  }
+
+  public async getCollectionModRules(revisionId: string) {
+    if (this.mCacheColRules[revisionId] === undefined) {
+      this.mCacheColRules[revisionId] = this.cacheCollectionModRules(revisionId);
+    }
+
+    return this.mCacheColRules[revisionId];
   }
 
   public async getCollectionInfo(collectionId: string): Promise<ICollection> {
@@ -63,6 +76,26 @@ class InfoCache {
         ...collectionInfo,
       },
     };
+  }
+
+  private async cacheCollectionModRules(revisionId: string): Promise<ICollectionModRule[]> {
+    const store = this.mApi.store;
+    const state = store.getState();
+    const gameId = selectors.activeGameId(state);
+    const mods: { [modId: string]: types.IMod } =
+      util.getSafe(state, ['persistent', 'mods', gameId], {});
+    const colMod = Object.values(mods).find(iter =>
+      (iter.type === MOD_TYPE) && (iter.attributes?.revisionId === revisionId));
+    const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
+    try {
+      const collectionData = await fs.readFileAsync(
+        path.join(stagingPath, colMod.installationPath, 'collection.json'), { encoding: 'utf-8' });
+      const collection: any = JSON.parse(collectionData);
+      return collection.modRules ?? [];
+    } catch (err) {
+      this.mApi.showErrorNotification('Failed to cache collection mod rules', err);
+      return [];
+    }
   }
 
   private async cacheCollectionInfo(collectionId: string): Promise<ICollection> {

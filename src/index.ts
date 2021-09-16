@@ -522,7 +522,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
+  api.events.on('did-install-mod', async (gameId: string, archiveId: string, modId: string) => {
     // automatically enable collections once they're installed
     const profileId = selectors.lastActiveProfileForGame(state(), gameId);
     const profile = selectors.profileById(state(), profileId);
@@ -530,7 +530,11 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       return;
     }
     const mod = util.getSafe(state().persistent.mods, [gameId, modId], undefined);
-    if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
+    if (mod === undefined) {
+      // how ?
+      return;
+    }
+    if (mod.type === MOD_TYPE) {
       if  (driver.collection === undefined) {
         driver.query(profile, mod);
       } else {
@@ -538,6 +542,24 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
           type: 'info',
           message: 'Collection can\'t be installed as another one is being installed already',
         });
+      }
+    } else {
+      const isDependency = (driver.collection?.rules ?? []).find(rule => {
+        const validType = ['requires', 'recommends'].includes(rule.type);
+        if (!validType) {
+          return false;
+        }
+        const matchedRule = util.testModReference(mod, rule.reference);
+        return matchedRule;
+      }) !== undefined;
+      if (isDependency) {
+        const modRules = await driver.infoCache.getCollectionModRules(driver.revisionId);
+        util.batchDispatch(api.store, (modRules ?? []).reduce((prev, rule) => {
+          if (util.testModReference(mod, rule.source)) {
+            prev.push(actions.addModRule(gameId, modId, rule));
+          }
+          return prev;
+        }, []));
       }
     }
   });
