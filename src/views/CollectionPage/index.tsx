@@ -530,9 +530,16 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   private resume = async (modId: string) => {
-    const { driver, mods, profile } = this.props;
+    const { driver, mods, profile, userInfo } = this.props;
 
-    driver.start(profile, mods[modId]);
+    if ((userInfo === null) || (userInfo === undefined)) {
+      const { api } = this.context;
+      api.showDialog('info', 'Not logged in', {
+        text: 'You have to be logged in with Nexus Mods to install collections.',
+      }, [ { label: 'Continue' } ]);
+    } else {
+      driver.start(profile, mods[modId]);
+    }
   }
 }
 

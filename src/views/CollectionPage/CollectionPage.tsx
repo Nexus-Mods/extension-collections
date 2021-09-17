@@ -305,9 +305,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public async componentDidMount() {
-    const { collection } = this.props;
+    const { collection, userInfo } = this.props;
 
-    if (collection.attributes.revisionId !== undefined) {
+    if ((collection.attributes.revisionId !== undefined) && (userInfo !== undefined)) {
       this.nextState.revisionInfo = await
         this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
     }
