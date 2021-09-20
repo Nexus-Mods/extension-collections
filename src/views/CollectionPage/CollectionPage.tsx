@@ -233,7 +233,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         name: 'Version',
         calc: mod => {
           let verString = (mod.state !== null)
-            ? util.getSafe(mod.attributes, ['version'], '0.0.0')
+            ? mod.attributes.version ?? mod.collectionRule.reference.versionMatch ?? '0.0.0'
             : mod.collectionRule.reference.versionMatch;
           if (verString.endsWith('+prefer')) {
             const sv = semver.minVersion(verString);
