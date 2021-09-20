@@ -248,13 +248,19 @@ class InstallDriver {
     const collectionId = this.collectionId;
     const revisionId = this.revisionId;
 
-    if (collectionId !== undefined) {
-      this.mCollectionInfo = nexusInfo?.collectionInfo
-        ?? await this.mInfoCache.getCollectionInfo(collectionId);
-    }
     if (revisionId !== undefined) {
       this.mRevisionInfo = nexusInfo?.revisionInfo
         ?? await this.mInfoCache.getRevisionInfo(revisionId);
+    }
+    if (collectionId !== undefined) {
+      this.mCollectionInfo = nexusInfo?.collectionInfo
+        ?? await this.mInfoCache.getCollectionInfo(collectionId)
+        // this last fallback is for the weird case where we have revision info cached but
+        // not collection info and fetching is not possible because it's been deleted from the
+        // site
+        // Not sure if/why this would happen on live, it did occur during testing because the
+        // stuff was getting deleted from the DB directly
+        ?? this.mRevisionInfo.collection;
     }
 
     this.mApi.events.emit('view-collection', this.mCollection.id);
