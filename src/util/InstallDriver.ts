@@ -86,6 +86,7 @@ class InstallDriver {
 
             if (incomplete === undefined) {
               this.mStep = 'review';
+              this.deployMods();
             } else {
               this.mInstallDone = true;
               this.mInstallingMod = undefined;
@@ -96,6 +97,7 @@ class InstallDriver {
             // We finished installing optional mods for the current collection - reset everything.
             this.mCollection = undefined;
             this.mStep = 'query';
+            this.deployMods();
           }
         }
       });
@@ -353,6 +355,14 @@ class InstallDriver {
       cb();
     });
   }
+
+  private deployMods = () => {
+    const state = this.mApi.getState();
+    if (state.settings.automation.deploy) {
+      // Any errors will be reported by the deployment mechanism itself.
+      this.mApi.events.emit('deploy-mods', () => undefined);
+    }
+  };
 }
 
 export default InstallDriver;
