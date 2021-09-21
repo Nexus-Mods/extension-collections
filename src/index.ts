@@ -442,6 +442,17 @@ function register(context: types.IExtensionContext,
      editComponent?: React.ComponentType<IExtendedInterfaceProps>) => {
       addExtension({ id, generate, parse, clone, condition, title, editComponent });
     };
+
+  context.registerActionCheck('ADD_NOTIFICATION', (state: any, action: Redux.Action) => {
+    const notification: types.INotification = action['payload'];
+    const ruleMatches = rule => rule.reference.idHint === notification.replace.modId;
+    if (notification.id.startsWith('multiple-plugins-')
+        && (driver?.collection !== undefined)
+        && ((driver.collection.rules ?? []).find(ruleMatches) !== undefined)) {
+      return false as any;
+    }
+    return undefined;
+  });
 }
 
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
