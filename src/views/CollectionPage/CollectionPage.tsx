@@ -371,7 +371,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       // that's why we require driver.collectionInfo to be set
       this.mInstalling = incomplete
               && !driver.installDone
-              && (driver.collectionInfo !== undefined)
               && (driver.collection?.id === collection?.id);
     } else {
       this.mInstalling = undefined;
@@ -394,7 +393,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               onVoteSuccess={onVoteSuccess}
               onDeselectMods={this.unselectMods}
               incomplete={incomplete}
-              modSelection={(this.mInstalling
+              modSelection={((this.mInstalling && (driver.collectionInfo !== undefined))
                 ? revisionInfo?.modFiles?.map?.(file => ({ local: undefined, remote: file }))
                 : modSelection) ?? []}
             />
