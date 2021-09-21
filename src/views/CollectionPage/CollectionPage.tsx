@@ -175,9 +175,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           if (mod.collectionRule['ignored']) {
             return ['Ignored'];
           } else if (mod.state === 'installing') {
-            return ['Installing', mod.progress];
+            return ['Installing', Math.floor(mod.progress * 100.0) / 100.0];
           } else if (mod.state === 'downloading') {
-            return ['Downloading', mod.progress];
+            return ['Downloading', Math.floor(mod.progress * 100.0) / 100.0];
           } else if (mod.state === null) {
             return ['Download Pending', 'Pending'];
           } else if (mod.state === 'downloaded') {
