@@ -525,7 +525,8 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
   collectionMod.rules.forEach(rule => {
     const mod = util.findModByRef(rule.reference, mods);
     if (mod === undefined) {
-      throw new util.ProcessCanceled('included mod not found');
+      // allowing mods to be missing, prior to r32 this would throw an exception
+      return;
     }
 
     res.installMode[mod.id] = (rule.installerChoices !== undefined)

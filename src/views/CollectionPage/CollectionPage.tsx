@@ -478,14 +478,17 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const { modsEx } = this.state;
 
     const incomplete = Object.values(modsEx)
-      .find(mod => (mod.state !== 'installed')) !== undefined;
+      .filter(mod => (mod.state !== 'installed'));
 
-    if (incomplete) {
-      return this.context.api.showDialog('info', 'Cloning not possible', {
-        text: 'You can only clone a collection that is fully installed, including all '
-            + 'its optional mods.',
+    if (incomplete.length > 0) {
+      return this.context.api.showDialog('info', 'Cloning incomplete', {
+        text: 'The collection you\'re trying to clone is incomplete. Vortex can '
+            + 'not include a mod in a collection that isn\'t installed so if you continue, '
+            + 'the clone will not include these missing mods..',
+        message: incomplete.map(mod => util.renderModName(mod)).join('\n'),
       }, [
-        { label: 'Close' },
+        { label: 'Cancel' },
+        { label: 'Clone anyway', action: () => { this.props.onClone(collectionId); } },
       ]);
     } else {
       this.props.onClone(collectionId);
