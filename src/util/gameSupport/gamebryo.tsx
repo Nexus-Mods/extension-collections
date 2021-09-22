@@ -1,6 +1,6 @@
 import * as path from 'path';
 import React = require('react');
-import { Button, ControlLabel, ListGroup, ListGroupItem, Table } from 'react-bootstrap';
+import { ControlLabel, ListGroup, ListGroupItem, Panel } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
 import { fs, Icon, log, selectors, Spinner, Toggle, tooltip, types, util } from 'vortex-api';
 import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
@@ -119,6 +119,12 @@ export async function parser(api: types.IExtensionApi,
                              gameId: string,
                              collection: ICollectionGamebryo) {
   const state: types.IState = api.getState();
+
+  if ((state as any).userlist === undefined) {
+    // may be that the plugin extension is disabled.
+    // if so, that may be intentional so can't report an error.
+    return;
+  }
 
   // set up groups and their rules
   util.batchDispatch(api.store, (collection.pluginRules.groups ?? []).reduce((prev, group) => {
@@ -400,7 +406,16 @@ export function Interface(props: IExtendedInterfaceProps): JSX.Element {
     } });
   }, [store]);
 
-  const grpsFlattened: IRule[] = userlist.groups.reduce((prev: IRule[], grp) => {
+  if (userlist === undefined) {
+    // early out if no userlist loaded
+    return (
+      <Panel>
+        {t('No userlist loaded, is the gamebryo-plugin-management extension disabled?')}
+      </Panel>
+    );
+  }
+
+  const grpsFlattened: IRule[] = (userlist?.groups ?? []).reduce((prev: IRule[], grp) => {
     (grp.after ?? []).forEach(aft => {
       prev.push({ name: grp.name, ref: aft, type: 'after' });
     });
