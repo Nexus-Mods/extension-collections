@@ -548,7 +548,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
 
 /**
  * clone an existing collection
- * @returns on success, returns the new collection id. on failure, returns undefined,
+ * @returns on success, returns the new collection id. On failure, returns undefined,
  *          in that case an error notification has already been reported
  */
 export async function cloneCollection(api: types.IExtensionApi,
@@ -576,6 +576,18 @@ export async function cloneCollection(api: types.IExtensionApi,
     api.showErrorNotification('Failed to clone collection', err);
     return undefined;
   }
+
+  const ruleFilter = (rule: types.IModRule) => {
+    if (rule.ignored) {
+      return false;
+    }
+
+    if (util.findModByRef(rule.reference, mods) === undefined) {
+      return false;
+    }
+
+    return true;
+  };
 
   const ownCollection: boolean = existingCollection.attributes?.uploader === userInfo?.name;
   const name = 'Copy of ' + existingCollection.attributes?.name;
@@ -605,7 +617,7 @@ export async function cloneCollection(api: types.IExtensionApi,
       ...ownCollectionAttributes,
     },
     installationPath: id,
-    rules: existingCollection.rules,
+    rules: existingCollection.rules.filter(ruleFilter),
   };
 
   try {
