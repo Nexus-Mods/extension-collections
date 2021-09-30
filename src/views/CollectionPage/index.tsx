@@ -157,7 +157,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 onCancel={this.cancel}
                 onClone={this.clone}
                 onResume={this.resume}
-                onInstallOptionals={this.installOptional}
+                onInstallManually={this.installManually}
                 onVoteSuccess={this.voteSuccess}
               />
             )
@@ -515,10 +515,24 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }
   }
 
-  private installOptional = (collectionId: string, rules: types.IModRule[]) => {
+  private installManually = (collectionId: string, rules: types.IModRule[]) => {
     const { api } = this.context;
 
-    api.emitAndAwait('install-from-dependencies', collectionId, rules, true)
+    const ruleGroups = rules.reduce((prev, rule) => {
+      prev[rule.type].push(rule);
+      return prev;
+    }, { requires: [], recommends: [] });
+
+    const eaa = (ruleList, recommended) => {
+      if (ruleList.length === 0) {
+        return Promise.resolve();
+      } else {
+        return api.emitAndAwait('install-from-dependencies', collectionId, ruleList, recommended);
+      }
+    };
+
+    eaa(ruleGroups.requires, false)
+      .then(() => eaa(ruleGroups.recommends, true))
       .catch(err => {
         if (err instanceof util.UserCanceled) {
           return;

@@ -362,7 +362,7 @@ class InstallDriver {
       // Any errors will be reported by the deployment mechanism itself.
       this.mApi.events.emit('deploy-mods', () => undefined);
     }
-  };
+  }
 }
 
 export default InstallDriver;
