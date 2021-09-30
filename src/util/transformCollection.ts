@@ -218,6 +218,7 @@ async function rulesToCollectionMods(collection: types.IMod,
         instructions: collectionInfo.instructions?.[mod.id],
         author: mod.attributes?.author,
         details: {},
+        phase: rule.extra['phase'] ?? 0,
       };
 
       if (mod.type !== '') {
@@ -398,6 +399,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
       type: mod.details.type,
       name: mod.name,
       instructions: mod.instructions,
+      phase: mod.phase ?? 0,
     },
   } as any;
 

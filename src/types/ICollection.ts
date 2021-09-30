@@ -49,6 +49,7 @@ export interface ICollectionMod {
   instructions?: string;
   author?: string;
   details?: ICollectionModDetails;
+  phase?: number;
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';
