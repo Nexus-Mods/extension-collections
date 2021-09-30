@@ -37,7 +37,7 @@ interface IConnectedProps {
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
   exts: IExtensionFeature[];
-  userInfo: { name: string, user_id: number };
+  userInfo: { name: string, userId: number };
 }
 
 interface IActionProps {
@@ -212,9 +212,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods, userInfo } = this.props;
     const { api } = this.context;
 
-    const author = mods[modId].attributes['author'];
+    const author = mods[modId].attributes['uploaderId'];
 
-    if ((author !== undefined) && (author !== userInfo?.name)) {
+    if ((author !== undefined) && (author !== userInfo?.userId)) {
       const result = await api.showDialog('question',
         'Edit Collection', {
           text: 'This collection has been uploaded with a different account ({{uploadAuthor}}) '
@@ -222,7 +222,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
               + 'If you edit and upload this collection now it will be uploaded as a new '
               + 'collection by your current user.',
           parameters: {
-            uploadAuthor: author,
+            uploadAuthor: mods[modId].attributes['uploader'],
             currentUser: userInfo?.name ?? '<Logged out>',
           },
         }, [

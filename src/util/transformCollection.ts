@@ -216,7 +216,8 @@ async function rulesToCollectionMods(collection: types.IMod,
         hashes,
         choices,
         instructions: collectionInfo.instructions?.[mod.id],
-        author: mod.attributes?.author,
+        author: mod.attributes?.uploader,
+        authorId: mod.attributes?.uploaderId,
         details: {},
         phase: rule.extra['phase'] ?? 0,
       };
@@ -455,7 +456,8 @@ export async function modToCollection(state: types.IState,
   const game = util.getGame(gameId);
 
   const collectionInfo: ICollectionInfo = {
-    author: collection.attributes?.author ?? 'Anonymous',
+    author: collection.attributes?.uploader ?? 'Anonymous',
+    authorId: collection.attributes?.uploaderId,
     authorUrl: collection.attributes?.authorURL ?? '',
     name: util.renderModName(collection),
     description: collection.attributes?.shortDescription ?? '',
@@ -561,7 +563,7 @@ export async function cloneCollection(api: types.IExtensionApi,
   const state = api.getState();
   const t = api.translate;
 
-  const userInfo = state.persistent['nexus']?.userInfo;
+  const { userInfo } = state.persistent['nexus'] ?? {};
   const mods = (state.persistent.mods[gameId] ?? {});
   const existingCollection: types.IMod = mods[sourceId];
 
@@ -591,7 +593,7 @@ export async function cloneCollection(api: types.IExtensionApi,
     return true;
   };
 
-  const ownCollection: boolean = existingCollection.attributes?.uploader === userInfo?.name;
+  const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.id;
   const name = 'Copy of ' + existingCollection.attributes?.name;
 
   const customFileName = ownCollection
@@ -613,6 +615,8 @@ export async function cloneCollection(api: types.IExtensionApi,
       version: ownCollection ? existingCollection.attributes?.version : '0',
       installTime: new Date(),
       author: userInfo?.name ?? 'Anonymous',
+      uploader: userInfo?.name ?? 'Anonymous',
+      uploaderId: userInfo?.userId,
       editable: true,
       collectionId: ownCollection ? existingCollection.attributes?.collectionId : undefined,
       collection: deduceCollectionAttributes(existingCollection, collection, mods),
@@ -671,6 +675,8 @@ export async function createCollection(api: types.IExtensionApi,
       version: '0',
       installTime: new Date(),
       author: state.persistent['nexus']?.userInfo?.name ?? 'Anonymous',
+      uploader: state.persistent['nexus']?.userInfo?.name ?? 'Anonymous',
+      uploaderId: state.persistent['nexus']?.userInfo?.user_id,
       editable: true,
       source: 'user-generated',
     },

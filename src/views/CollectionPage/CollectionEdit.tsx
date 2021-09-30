@@ -54,6 +54,7 @@ interface ICollectionEditState {
 const emptyCollectionInfo: ICollectionInfo = {
   domainName: '',
   author: '',
+  authorId: -1,
   authorUrl: '',
   name: '',
   description: '',
