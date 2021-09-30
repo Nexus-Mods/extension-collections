@@ -6,6 +6,7 @@ import { collectionModToRule } from './util/transformCollection';
 
 import { BUNDLED_PATH, MOD_TYPE } from './constants';
 
+import * as _ from 'lodash';
 import * as path from 'path';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
@@ -64,7 +65,8 @@ export function makeInstall(api: types.IExtensionApi) {
     const state = api.getState();
     const downloads = Object.values(state.persistent.downloads.files).reverse();
     const collectionDownload = downloads.find(down =>
-      path.basename(destinationPath, '.installing') === path.basename(down.localPath, path.extname(down.localPath)));
+      path.basename(destinationPath, '.installing')
+      === path.basename(down.localPath, path.extname(down.localPath)));
 
     return Promise.resolve({
       instructions: [
@@ -103,15 +105,44 @@ function applyCollectionRules(api: types.IExtensionApi,
                               gameId: string,
                               collection: ICollection,
                               mods: { [modId: string]: types.IMod }) {
-  util.batchDispatch(api.store, (collection.modRules ?? []).reduce((prev, rule) => {
+  const batch = (collection.modRules ?? []).reduce((prev, rule) => {
     const sourceMod = util.findModByRef(rule.source, mods);
     if (sourceMod !== undefined) {
-      log('info', 'add collection rule',
-          { gameId, sourceMod: sourceMod.id, rule: JSON.stringify(rule) });
-      prev.push(actions.addModRule(gameId, sourceMod.id, rule));
+      const destMod = util.findModByRef(rule.reference, mods);
+
+      let exists: boolean = false;
+      if (destMod !== undefined) {
+        // replace existing rules between these two mods
+        const exSourceRules = (sourceMod.rules ?? []).filter(iter =>
+          ['before', 'after'].includes(iter.type)
+          && util.testModReference(destMod, iter.reference));
+        exSourceRules.forEach(exSourceRule => {
+          const copy = JSON.parse(JSON.stringify(exSourceRule));
+          delete copy.reference.idHint;
+          if (!exists && _.isEqual(copy, rule)) {
+            exists = true;
+          } else {
+            prev.push(actions.removeModRule(gameId, sourceMod.id, exSourceRule));
+          }
+        });
+        const exDestRules = (destMod.rules ?? []).filter(iter =>
+          ['before', 'after'].includes(iter.type)
+          && util.testModReference(sourceMod, iter.reference));
+        exDestRules.forEach(exDestRule => {
+          prev.push(actions.removeModRule(gameId, destMod.id, exDestRule));
+        });
+      }
+
+      if (!exists) {
+        log('info', 'add collection rule',
+            { gameId, sourceMod: sourceMod.id, rule: JSON.stringify(rule) });
+        prev.push(actions.addModRule(gameId, sourceMod.id, rule));
+      }
     }
     return prev;
-  }, []));
+  }, []);
+
+  util.batchDispatch(api.store, batch);
 }
 
 /**
