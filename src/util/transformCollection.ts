@@ -219,7 +219,7 @@ async function rulesToCollectionMods(collection: types.IMod,
         author: mod.attributes?.uploader,
         authorId: mod.attributes?.uploaderId,
         details: {},
-        phase: rule.extra['phase'] ?? 0,
+        phase: rule.extra?.['phase'] ?? 0,
       };
 
       if (mod.type !== '') {
