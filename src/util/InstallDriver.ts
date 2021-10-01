@@ -4,7 +4,7 @@ import { actions, log, selectors, types, util } from 'vortex-api';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
 import { IRevisionEx } from '../types/IRevisionEx';
 import InfoCache from './InfoCache';
-import { getUnfulfilledNotificationId } from './util';
+import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
 
 export type Step = 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 
@@ -23,6 +23,7 @@ class InstallDriver {
   private mCollectionInfo: ICollection;
   private mRevisionInfo: IRevision;
   private mInfoCache: InfoCache;
+  private mTotalSize: number;
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -41,13 +42,20 @@ class InstallDriver {
     api.events.on('did-install-mod', (gameId, archiveId, modId) => {
       const state: types.IState = api.store.getState();
       const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
-      // verify the mod installed is actually one required by this pack
+      // verify the mod installed is actually one required by this collection
       const required = this.mRequiredMods.find(iter =>
         util.testModReference(mod, iter.reference));
       if ((mod !== undefined) && (required !== undefined)) {
         this.mInstalledMods.push(mod);
+        this.updateProgress();
       }
       this.triggerUpdate();
+    });
+
+    api.events.on('did-finish-download', () => {
+      // not checking whether the download is actually part of this collection because
+      // that check may be more expensive than the ui update
+      this.updateProgress();
     });
 
     api.events.on('will-install-dependencies',
@@ -129,6 +137,8 @@ class InstallDriver {
 
     this.mProfile = profile;
     this.mCollection = collection;
+
+    this.mTotalSize = calculateCollectionSize(this.getModsEx());
 
     this.startImpl();
 
@@ -236,6 +246,21 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
+  private getModsEx(): { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
+    const mods = this.mApi.getState().persistent.mods[this.mProfile.gameId];
+
+    return (this.mCollection.rules ?? []).reduce((prev, rule) => {
+      if (!['requires', 'recommends'].includes(rule.type)) {
+        return prev;
+      }
+
+      const mod = util.findModByRef(rule.reference, mods);
+      prev[modRuleId(rule)] = { ...mod, collectionRule: rule };
+
+      return prev;
+    }, {});
+  }
+
   private startImpl = async () => {
     this.mInstalledMods = [];
     this.mInstallingMod = undefined;
@@ -267,20 +292,7 @@ class InstallDriver {
 
     this.mApi.events.emit('view-collection', this.mCollection.id);
 
-    this.mApi.sendNotification({
-      id: INSTALLING_NOTIFICATION_ID + this.mCollection.id,
-      type: 'activity',
-      title: 'Installing Collection',
-      message: util.renderModName(this.mCollection),
-      actions: [
-        {
-          title: 'Show',
-          action: () => {
-            this.mApi.events.emit('view-collection', this.mCollection.id);
-          },
-        },
-      ],
-    });
+    this.updateProgress();
 
     this.augmentRules();
 
@@ -353,6 +365,53 @@ class InstallDriver {
   private triggerUpdate() {
     this.mUpdateHandlers.forEach(cb => {
       cb();
+    });
+  }
+
+  private installProgress(): number {
+    const mods = this.getModsEx();
+
+    const downloads = this.mApi.getState().persistent.downloads.files;
+
+    const downloadProgress = Object.values(mods).reduce((prev, mod) => {
+      let size = 0;
+      if ((mod.state === 'downloading') || (mod.state === null)) {
+        const download = downloads[mod.archiveId];
+        size += download?.received || 0;
+      } else {
+        size += mod.attributes?.fileSize || 0;
+      }
+      return prev + size;
+    }, 0);
+
+    const installedMods = Object.values(mods).filter(mod => mod.state === 'installed');
+    const totalMods = Object.values(mods).filter(isRelevant);
+
+    const dlPerc = downloadProgress / this.mTotalSize;
+    const instPerc = installedMods.length / totalMods.length;
+
+    return (dlPerc + instPerc) * 50.0;
+  }
+
+  private updateProgress() {
+    if (this.mCollection === undefined) {
+      return;
+    }
+
+    this.mApi.sendNotification({
+      id: INSTALLING_NOTIFICATION_ID + this.mCollection.id,
+      type: 'activity',
+      title: 'Installing Collection',
+      message: util.renderModName(this.mCollection),
+      progress: this.installProgress(),
+      actions: [
+        {
+          title: 'Show',
+          action: () => {
+            this.mApi.events.emit('view-collection', this.mCollection.id);
+          },
+        },
+      ],
     });
   }
 

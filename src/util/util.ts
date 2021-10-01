@@ -2,6 +2,7 @@ import * as PromiseBB from 'bluebird';
 import { createHash } from 'crypto';
 import { types, util } from 'vortex-api';
 import { ICollectionModRuleEx } from '../types/ICollection';
+import { IModEx } from '../types/IModEx';
 
 export function makeProgressFunction(api: types.IExtensionApi) {
   const notificationId = api.sendNotification({
@@ -82,5 +83,42 @@ export function renderReference(ref: types.IModReference,
 }
 
 export function ruleId(rule: ICollectionModRuleEx): string {
-  return md5sum(`${rule.sourceName}-${rule.type}-${rule.referenceName}`)
+  return md5sum(`${rule.sourceName}-${rule.type}-${rule.referenceName}`);
+}
+
+export function modRuleId(input: types.IModRule): string {
+  return input.type + '_' + (
+    input.reference.fileMD5
+    || input.reference.id
+    || input.reference.logicalFileName
+    || input.reference.fileExpression
+    || input.reference.description
+  );
+}
+
+export function isRelevant(mod: IModEx) {
+  if (!!mod.state) {
+    // consider any mod that's already being downloaded/installed
+    return true;
+  }
+  if (mod.collectionRule['ignored']) {
+    return false;
+  }
+  if (mod.collectionRule.type === 'recommends') {
+    return false;
+  }
+
+  return true;
+}
+
+export type IModWithRule = types.IMod & { collectionRule: types.IModRule };
+
+export function calculateCollectionSize(mods: { [id: string]: IModWithRule }): number {
+  return Object.values(mods).reduce((prev: number, mod: IModEx) => {
+    if (!isRelevant(mod)) {
+      return prev;
+    }
+    const size = mod.attributes?.fileSize ?? mod.collectionRule.reference.fileSize ?? 0;
+    return prev + size;
+  }, 0);
 }

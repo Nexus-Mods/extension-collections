@@ -5,6 +5,7 @@ import InstallDriver from '../../util/InstallDriver';
 import { IModEx } from '../../types/IModEx';
 import { IRevisionEx } from '../../types/IRevisionEx';
 import { IStateEx } from '../../types/IStateEx';
+import { modRuleId } from '../../util/util';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
@@ -564,16 +565,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     }
   }
 
-  private ruleId(input: types.IModRule): string {
-    return input.type + '_' + (
-      input.reference.fileMD5
-      || input.reference.id
-      || input.reference.logicalFileName
-      || input.reference.fileExpression
-      || input.reference.description
-    );
-  }
-
   private enableSelected = (ruleIds: string[]) => {
     const { profile, onSetModEnabled } = this.props;
     const { modsEx } = this.state;
@@ -743,7 +734,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const genRuleMap = (rules: types.IModRule[]) => {
       return (rules || []).reduce((prev, rule) => {
-        prev[this.ruleId(rule)] = rule;
+        prev[modRuleId(rule)] = rule;
         return prev;
       }, {});
     };
@@ -781,7 +772,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .forEach(rule => {
-        const id = this.ruleId(rule);
+        const id = modRuleId(rule);
         if ((result[id] === undefined) || (modifiedRules[id] !== undefined)) {
           result[id] = this.modFromRule(newProps, rule);
         }
@@ -993,7 +984,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     return (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .reduce<{ [modId: string]: IModEx }> ((prev, rule) => {
-        const id = this.ruleId(rule);
+        const id = modRuleId(rule);
         prev[id] = this.modFromRule(props, rule);
         return prev;
       }, {});

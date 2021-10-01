@@ -6,6 +6,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Panel } from 'react-bootstrap';
 import { ComponentEx, FlexLayout, ProgressBar, Spinner, tooltip, types, util } from 'vortex-api';
+import { calculateCollectionSize, isRelevant } from '../../util/util';
 
 export interface ICollectionProgressProps {
   t: i18next.TFunction;
@@ -27,32 +28,8 @@ interface ICompState {
 class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompState> {
   public static getDerivedStateFromProps(props, state) {
     return {
-      totalSize: CollectionProgress.calculateTotalSize(props),
+      totalSize: calculateCollectionSize(props.mods),
     };
-  }
-
-  private static isRelevant(mod: IModEx) {
-    if (mod.state === null) {
-      if (mod.collectionRule.type === 'recommends') {
-        return false;
-      }
-      if (mod.collectionRule['ignored']) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  private static calculateTotalSize(props: ICollectionProgressProps): number {
-    const { mods } = props;
-    return Object.values(mods).reduce((prev: number, mod: IModEx) => {
-      if (!CollectionProgress.isRelevant(mod)) {
-        return prev;
-      }
-      const size = util.getSafe(mod, ['attributes', 'fileSize'], 0);
-      return prev + size;
-    }, 0);
   }
 
   constructor(props: ICollectionProgressProps) {
@@ -184,7 +161,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
       return prev + size;
     }, 0);
 
-    const relevant = Object.values(mods).filter(CollectionProgress.isRelevant);
+    const relevant = Object.values(mods).filter(isRelevant);
 
     return (
       <>
