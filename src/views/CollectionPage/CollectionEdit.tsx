@@ -33,6 +33,7 @@ export interface ICollectionEditBaseProps {
 }
 
 interface IConnectedProps {
+  showPhaseUsage: boolean;
 }
 
 interface IActionProps {
@@ -41,6 +42,7 @@ interface IActionProps {
   onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onAddModsDialog: (collectionId: string) => void;
+  onDismissPhaseUsage: () => void;
 }
 
 type ICollectionEditProps = ICollectionEditBaseProps & IConnectedProps & IActionProps;
@@ -102,7 +104,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 
   public render(): React.ReactNode {
-    const { t, mods, collection, exts, profile } = this.props;
+    const { t, mods, collection, exts, onDismissPhaseUsage,
+            profile, showPhaseUsage } = this.props;
     const { page, revision } = this.state;
 
     if (profile === undefined) {
@@ -158,10 +161,12 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   collection={collection}
                   t={t}
                   onSetModVersion={null}
+                  showPhaseUsage={showPhaseUsage}
                   onAddRule={this.addRule}
                   onRemoveRule={this.removeRule}
                   onSetCollectionAttribute={this.setCollectionAttribute}
                   onAddModsDialog={this.addModsDialog}
+                  onDismissPhaseUsage={onDismissPhaseUsage}
                 />
               </Panel>
             </Tab>
@@ -265,8 +270,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 }
 
-function mapStateToProps(state: any, ownProps: ICollectionEditBaseProps): IConnectedProps {
+function mapStateToProps(state: types.IState, ownProps: ICollectionEditBaseProps): IConnectedProps {
   return {
+    showPhaseUsage: state.settings.interface.usage['collection-phase'] ?? true,
   };
 }
 
@@ -282,6 +288,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onAddModsDialog: (collectionId: string) =>
       dispatch(startAddModsToCollection(collectionId)),
+    onDismissPhaseUsage: () =>
+      dispatch(actions.showUsageInstruction('collection-phase', false)),
   };
 }
 

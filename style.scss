@@ -40,6 +40,18 @@ $collection-mod-image-height: 200px;
   }
 }
 
+#table-collection-mods .cell-required {
+  .toggle-container {
+    margin-top: 0;
+  }
+}
+
+#table-collection-mods .cell-phase {
+  .form-control {
+    width: 4em;
+  }
+}
+
 #collection-edit-tabs {
   height: 100%;
   overflow-y: hidden;
@@ -904,12 +916,6 @@ ul.collection-mods-page-attrib-tooltip {
   background-color: transparent;
   border: 0;
   padding: 1em;
-}
-
-.table-collection-mods.cell-required {
-  .toggle-container {
-    margin-top: 0;
-  }
 }
 
 #collection-set-instructions {

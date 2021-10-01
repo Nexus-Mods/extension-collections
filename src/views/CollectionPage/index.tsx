@@ -507,7 +507,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       } catch (err) {
         if (!(err instanceof util.UserCanceled)
             && !(err instanceof util.ProcessCanceled)) {
-          api.showErrorNotification('Failed to publish to API', err, {
+          api.showErrorNotification('Failed to upload to API', err, {
             allowReport: false,
           });
         }

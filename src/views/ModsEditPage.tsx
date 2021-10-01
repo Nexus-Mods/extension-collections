@@ -15,11 +15,13 @@ export interface IModsPageProps {
   t: I18next.TFunction;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
+  showPhaseUsage: boolean;
   onSetModVersion: (modId: string, version: 'exact' | 'newest') => void;
   onAddRule: (rule: types.IModRule) => void;
   onRemoveRule: (rule: types.IModRule) => void;
   onSetCollectionAttribute: (path: string[], value: any) => void;
   onAddModsDialog: (modId: string) => void;
+  onDismissPhaseUsage: () => void;
 }
 
 interface IModEntry {
@@ -374,6 +376,18 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       placement: 'table',
       edit: {},
     },
+    {
+      id: 'phase',
+      name: 'Phase',
+      placement: 'table',
+      isToggleable: true,
+      isSortable: true,
+      groupName: (phase: any) => this.props.t('Phase {{phase}}', {
+        replace: { phase: (phase || 0).toString() } }),
+      isGroupable: true,
+      calc: mod => mod.rule.extra?.['phase'] ?? 0,
+      edit: {},
+    },
   ];
 
   private mActions: ITableRowAction[] = [
@@ -453,12 +467,49 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       singleRowAction: true,
       multiRowAction: true,
       action: (instanceIds: string[]) => {
-        instanceIds.forEach(id => {
-          this.props.onRemoveRule(this.state.entries[id].rule);
-          delete this.nextState.entries[id];
-        });
+        this.context.api.showDialog('question', 'Confirm removal', {
+          text: 'Really remove these mods from this collection? (They are not removed from Vortex)',
+          message: instanceIds.map(id => util.renderModName(this.state.entries[id].mod)).join('\n'),
+        }, [
+          { label: 'Cancel' },
+          { label: 'Remove', action: () => {
+            instanceIds.forEach(id => {
+              this.props.onRemoveRule(this.state.entries[id].rule);
+              delete this.nextState.entries[id];
+            });
+          } },
+        ]);
       },
     },
+    {
+      icon: 'sort-none',
+      title: 'Assign order',
+      subMenus: (instanceIds: string | string[]) => {
+        const { t } = this.props;
+        const ids = Array.isArray(instanceIds)
+          ? instanceIds
+          : [instanceIds];
+        const maxPhase = Object.values(this.state.entries).reduce((prev, entry) =>
+          Math.max(prev, entry.rule.extra?.['phase'] ?? 0)
+        , 0);
+        return (new Array(maxPhase + 1)).fill(0).map((ignore, idx) => {
+          const item: ITableRowAction = {
+            title: t('Phase {{num}}', { replace: { num: idx } }),
+            action: () => {
+              ids.forEach(id => { this.setPhase(this.state.entries[id], idx); });
+            },
+          };
+          return item;
+        })
+          .concat({
+            title: t('Create & Add to Phase {{num}}', { replace: { num: maxPhase + 1 } }),
+            action: () => {
+              ids.forEach(id => { this.setPhase(this.state.entries[id], maxPhase + 1); });
+            },
+          });
+      },
+      singleRowAction: true,
+    } as any,
   ];
 
   constructor(props: IProps) {
@@ -750,6 +801,41 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     const newRule = _.cloneDeep(entry.rule);
     newRule.reference.versionMatch = '>=' + entry.mod.attributes['version'] + '+prefer';
     this.props.onAddRule(newRule);
+  }
+
+  private setPhase = (mod: IModEntry, phase: number) => {
+    const { onAddRule, onDismissPhaseUsage, showPhaseUsage } = this.props;
+
+    const impl = async () => {
+      const newRule = _.cloneDeep(mod.rule);
+      // onRemoveRule(mod.rule);
+      util.setdefault(newRule, 'extra', {})['phase'] = phase;
+      onAddRule(newRule);
+
+      if (showPhaseUsage) {
+        const result = await this.context.api.showDialog('info', 'Installation Phase', {
+          text: 'When Vortex installs your collection on a user\'s system, it will '
+              + 'process the phases one by one, ensuring all mods from one phase is done and '
+              + 'deployed before downloading and installing the next.\n'
+              + 'If you have mods that get installed by a scripted installer, which '
+              + 'may install different things depending on which files exist on disk, '
+              + 'this lets you ensure things are installed in the required order.\n'
+              + 'However: Because Vortex has to go through deployment for each phase, '
+              + 'please don\'t overuse this feature or it may slow down the installation '
+              + 'of your collection.',
+          checkboxes: [
+            { id: 'dismiss', text: 'Don\'t show this in the future', value: false },
+          ],
+        }, [
+          { label: 'Understood' },
+        ]);
+        if (result.input['dismiss']) {
+          onDismissPhaseUsage();
+        }
+      }
+    };
+
+    impl();
   }
 
   private showProblems = (evt: React.MouseEvent<any>) => {
