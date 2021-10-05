@@ -3,7 +3,6 @@ import { ICollectionGamebryo } from '../util/gameSupport/gamebryo';
 
 export interface ICollectionInfo {
   author: string;
-  authorId: number;
   authorUrl: string;
   name: string;
   description: string;
@@ -49,7 +48,6 @@ export interface ICollectionMod {
   choices?: any;
   instructions?: string;
   author?: string;
-  authorId?: number;
   details?: ICollectionModDetails;
   phase?: number;
 }

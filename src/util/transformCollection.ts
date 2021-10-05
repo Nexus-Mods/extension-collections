@@ -217,7 +217,6 @@ async function rulesToCollectionMods(collection: types.IMod,
         choices,
         instructions: collectionInfo.instructions?.[mod.id],
         author: mod.attributes?.uploader,
-        authorId: mod.attributes?.uploaderId,
         details: {},
         phase: rule.extra?.['phase'] ?? 0,
       };
@@ -457,7 +456,6 @@ export async function modToCollection(state: types.IState,
 
   const collectionInfo: ICollectionInfo = {
     author: collection.attributes?.uploader ?? 'Anonymous',
-    authorId: collection.attributes?.uploaderId,
     authorUrl: collection.attributes?.authorURL ?? '',
     name: util.renderModName(collection),
     description: collection.attributes?.shortDescription ?? '',
@@ -593,7 +591,7 @@ export async function cloneCollection(api: types.IExtensionApi,
     return true;
   };
 
-  const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.id;
+  const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.userId;
   const name = 'Copy of ' + existingCollection.attributes?.name;
 
   const customFileName = ownCollection
@@ -619,6 +617,7 @@ export async function cloneCollection(api: types.IExtensionApi,
       uploaderId: userInfo?.userId,
       editable: true,
       collectionId: ownCollection ? existingCollection.attributes?.collectionId : undefined,
+      revisionId: ownCollection ? existingCollection.attributes?.revisionId : undefined,
       collection: deduceCollectionAttributes(existingCollection, collection, mods),
       ...ownCollectionAttributes,
     },

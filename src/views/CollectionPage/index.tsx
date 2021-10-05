@@ -392,6 +392,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         }
         await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
       }
+    } catch (err) {
+      if (!(err instanceof util.UserCanceled) && !(err instanceof util.ProcessCanceled)) {
+        api.showErrorNotification('Failed to remove Mods', err);
+      }
     } finally {
       api.dismissNotification(notiId);
     }

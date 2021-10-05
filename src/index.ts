@@ -373,7 +373,7 @@ function register(context: types.IExtensionContext,
           collectionsCB.editCollection(modIds[0]);
         }
       }, 100);
-    }, (modIds: string[]) => isEditableCollection(context.api.store.getState(), modIds));
+    }, (modIds: string[]) => isEditableCollection(context.api.getState(), modIds));
 
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
