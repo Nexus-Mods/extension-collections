@@ -22,6 +22,7 @@ export interface IModsPageProps {
   onSetCollectionAttribute: (path: string[], value: any) => void;
   onAddModsDialog: (modId: string) => void;
   onDismissPhaseUsage: () => void;
+  onShowPhaseColumn: () => void;
 }
 
 interface IModEntry {
@@ -382,6 +383,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       placement: 'table',
       isToggleable: true,
       isSortable: true,
+      isDefaultVisible: false,
       groupName: (phase: any) => this.props.t('Phase {{phase}}', {
         replace: { phase: (phase || 0).toString() } }),
       isGroupable: true,
@@ -804,13 +806,17 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
   }
 
   private setPhase = (mod: IModEntry, phase: number) => {
-    const { onAddRule, onDismissPhaseUsage, showPhaseUsage } = this.props;
+    const { onAddRule, onDismissPhaseUsage, onShowPhaseColumn, showPhaseUsage } = this.props;
 
     const impl = async () => {
       const newRule = _.cloneDeep(mod.rule);
       // onRemoveRule(mod.rule);
       util.setdefault(newRule, 'extra', {})['phase'] = phase;
       onAddRule(newRule);
+
+      if (phase !== 0) {
+        onShowPhaseColumn();
+      }
 
       if (showPhaseUsage) {
         const result = await this.context.api.showDialog('info', 'Installation Phase', {

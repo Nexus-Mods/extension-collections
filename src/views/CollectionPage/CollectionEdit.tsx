@@ -33,6 +33,7 @@ export interface ICollectionEditBaseProps {
 }
 
 interface IConnectedProps {
+  phaseColumnVisible: boolean;
   showPhaseUsage: boolean;
 }
 
@@ -43,6 +44,7 @@ interface IActionProps {
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onAddModsDialog: (collectionId: string) => void;
   onDismissPhaseUsage: () => void;
+  onShowPhaseColumn: () => void;
 }
 
 type ICollectionEditProps = ICollectionEditBaseProps & IConnectedProps & IActionProps;
@@ -56,7 +58,6 @@ interface ICollectionEditState {
 const emptyCollectionInfo: ICollectionInfo = {
   domainName: '',
   author: '',
-  authorId: -1,
   authorUrl: '',
   name: '',
   description: '',
@@ -167,6 +168,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   onSetCollectionAttribute={this.setCollectionAttribute}
                   onAddModsDialog={this.addModsDialog}
                   onDismissPhaseUsage={onDismissPhaseUsage}
+                  onShowPhaseColumn={this.showPhaseColumn}
                 />
               </Panel>
             </Tab>
@@ -268,10 +270,17 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   private addModsDialog = (collectionId: string) => {
     this.props.onAddModsDialog(collectionId);
   }
+
+  private showPhaseColumn = () => {
+    if (this.props.phaseColumnVisible === undefined) {
+      this.props.onShowPhaseColumn();
+    }
+  }
 }
 
 function mapStateToProps(state: types.IState, ownProps: ICollectionEditBaseProps): IConnectedProps {
   return {
+    phaseColumnVisible: state.settings.tables['collection-mods'].attributes.phase?.enabled,
     showPhaseUsage: state.settings.interface.usage['collection-phase'] ?? true,
   };
 }
@@ -290,6 +299,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(startAddModsToCollection(collectionId)),
     onDismissPhaseUsage: () =>
       dispatch(actions.showUsageInstruction('collection-phase', false)),
+    onShowPhaseColumn: () =>
+      dispatch(actions.setAttributeVisible('collection-mods', 'phase', true)),
   };
 }
 
