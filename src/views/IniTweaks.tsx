@@ -1,7 +1,6 @@
-import { NAMESPACE } from '../constants';
+import { INI_TWEAKS_PATH, NAMESPACE, OPTIONAL_TWEAK_PREFIX } from '../constants';
 import { IExtendedInterfaceProps } from '../types/IExtendedInterfaceProps';
 
-import * as Promise from 'bluebird';
 import I18next from 'i18next';
 import * as path from 'path';
 import * as React from 'react';
@@ -14,13 +13,13 @@ import { ThunkDispatch } from 'redux-thunk';
 import { actions, ComponentEx, fs, Icon, PureComponentEx, selectors,
          Toggle, types, util } from 'vortex-api';
 
-// TODO: overhaul me, this is doing direct fs operations
-
-// copy&paste from src/extensions/mod_management/InstallManager.ts
-const INI_TWEAKS_PATH = 'Ini Tweaks';
+import { IINITweak, TweakArray } from '../types/IINITweak';
 
 export interface IBaseProps extends IExtendedInterfaceProps {
   settingsFiles: string[];
+  refreshTweaks: (modPath: string) => Promise<TweakArray>;
+  addIniTweak: (modPath: string, settingsFiles: string[]) => Promise<void>;
+  setTweakRequired: (modPath: string, tweak: IINITweak) => Promise<void>;
 }
 
 interface IConnectedProps {
@@ -34,7 +33,7 @@ interface IActionProps {
 type IProps = IBaseProps & IConnectedProps & IActionProps;
 
 interface IComponentState {
-  tweaks: string[];
+  tweaks: TweakArray;
 }
 
 interface ITweakProps {
@@ -42,25 +41,14 @@ interface ITweakProps {
   tweaksPath: string;
   fileName: string;
   enabled: boolean;
+  required: boolean;
   onToggle: (fileName: string, enabled: boolean) => void;
-}
-
-function validateFilenameInput(content: types.IDialogContent): types.IConditionResult[] {
-  const input = content.input[0].value || '';
-  if ((input.length < 2) || !(util as any).isFilenameValid(input)) {
-    return [{
-      actions: ['Confirm'],
-      errorText: 'Has to be a valid file name',
-      id: content.input[0].id,
-    }];
-  } else {
-    return [];
-  }
+  onSetRequirement: (tweak: IINITweak) => void;
 }
 
 class Tweak extends PureComponentEx<ITweakProps, {}> {
   public render(): JSX.Element {
-    const { t, enabled, fileName } = this.props;
+    const { t, enabled, fileName, required } = this.props;
     const match = fileName.match(/(.*)\[(.*)\]\.ini/);
 
     if (!match || (match.length < 2)) {
@@ -70,7 +58,6 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
     const options = [
       { label: t('Required'), value: 'required' },
       { label: t('Recommended'), value: 'recommended' },
-      { label: t('Optional'), value: 'optional' },
     ];
 
     return (
@@ -80,7 +67,8 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
         <td className='cell-requirement'>
           <Select
             options={options}
-            value='Optional'
+            value={required ? 'required' : 'recommended'}
+            onChange={this.setRequirement}
           />
         </td>
         <td className='cell-edit'><a onClick={this.edit}><Icon name='edit' /></a></td>
@@ -89,20 +77,29 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
   }
 
   private edit = () => {
-    const { tweaksPath, fileName } = this.props;
-    util.opn(path.join(tweaksPath, fileName)).catch(() => null);
+    const { tweaksPath, fileName, required } = this.props;
+    (required)
+      ? util.opn(path.join(tweaksPath, fileName)).catch(() => null)
+      : util.opn(path.join(tweaksPath, `${OPTIONAL_TWEAK_PREFIX}${fileName}`)).catch(() => null);
   }
 
   private toggle = (enabled: boolean) => {
     const { fileName, onToggle } = this.props;
     onToggle(fileName, enabled);
   }
+
+  private setRequirement = (value: { value: string, label: string }) => {
+    const { fileName, onSetRequirement } = this.props;
+    const required = value !== null
+      ? value.value === 'required'
+      : true;
+    onSetRequirement({ fileName, required });
+  }
 }
 
 class TweakList extends ComponentEx<IProps, IComponentState> {
   constructor(props: IProps) {
     super(props);
-
     this.initState({
       tweaks: [],
     });
@@ -153,44 +150,25 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
   }
 
   private addIniTweak = () => {
-    const { gameId, collection, modsPath, settingsFiles } = this.props;
-    this.context.api.showDialog('question', 'Name', {
-      text: 'Please enter a name for the ini tweak',
-      input: [
-        { id: 'name', type: 'text' },
-      ],
-      choices: settingsFiles.map((fileName, idx) => ({
-        text: fileName,
-        value: idx === 0,
-        id: fileName,
-      })),
-      condition: validateFilenameInput,
-    }, [
-      { label: 'Cancel' },
-      { label: 'Confirm' },
-    ]).then(res => {
-      if (res.action === 'Confirm') {
-        const tweaksPath = path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH);
-        let selectedIni = Object.keys(res.input)
-          .find(key => (path.extname(key) === '.ini') && res.input[key] === true);
-        if (selectedIni === undefined) {
-          // shouldn't be possible since it's radiobuttons and one is preset so
-          // one should always be selected.
-          return Promise.reject(new Error('No ini file selected'));
-        }
-        selectedIni = path.basename(selectedIni, path.extname(selectedIni));
-        const fileName = `${res.input['name']} [${selectedIni}].ini`;
-        return fs.ensureDirWritableAsync(tweaksPath, () => Promise.resolve())
-          .then(() => fs.writeFileAsync(path.join(tweaksPath, fileName), ''))
-          .then(() => this.refreshTweaks());
-      } else {
-        return Promise.resolve();
-      }
-    });
+    const { collection, modsPath, addIniTweak, settingsFiles } = this.props;
+    if (collection?.installationPath && modsPath) {
+      const modPath = path.join(modsPath, collection.installationPath);
+      addIniTweak(modPath, settingsFiles)
+        .then(() => this.refreshTweaks());
+    }
   }
 
-  private renderTweak = (fileName: string): JSX.Element => {
+  private refreshTweaks = () => {
+    const { collection, modsPath, refreshTweaks } = this.props;
+    if (collection?.installationPath && modsPath) {
+      const modPath = path.join(modsPath, collection.installationPath);
+      refreshTweaks(modPath).then((newTweaks) => this.nextState.tweaks = newTweaks);
+    }
+  }
+
+  private renderTweak = (tweak: IINITweak): JSX.Element => {
     const { t, collection, modsPath } = this.props;
+    const { fileName, required } = tweak;
     const isEnabled = util.getSafe(collection, ['enabledINITweaks'], []).indexOf(fileName) !== -1;
     return (
       <Tweak
@@ -198,20 +176,19 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
         key={`tweak-${fileName}`}
         tweaksPath={path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH)}
         fileName={fileName}
+        required={required}
         enabled={isEnabled}
         onToggle={this.toggle}
+        onSetRequirement={this.setRequirement}
       />);
   }
 
-  private refreshTweaks = () => {
-    const { collection, modsPath } = this.props;
-
-    if ((collection !== undefined) && (collection.installationPath !== undefined)) {
-      fs.readdirAsync(path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH))
-        .then((files: string[]) => {
-          this.nextState.tweaks = files;
-        })
-        .catch(() => undefined);
+  private setRequirement = (tweak: IINITweak) => {
+    const { collection, modsPath, setTweakRequired } = this.props;
+    if (collection?.installationPath && modsPath) {
+      const modPath = path.join(modsPath, collection.installationPath);
+      setTweakRequired(modPath, tweak)
+        .then(() => this.refreshTweaks());
     }
   }
 

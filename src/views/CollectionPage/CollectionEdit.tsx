@@ -280,7 +280,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
 function mapStateToProps(state: types.IState, ownProps: ICollectionEditBaseProps): IConnectedProps {
   return {
-    phaseColumnVisible: state.settings.tables['collection-mods'].attributes.phase?.enabled,
+    phaseColumnVisible: state.settings.tables['collection-mods']?.attributes.phase?.enabled,
     showPhaseUsage: state.settings.interface.usage['collection-phase'] ?? true,
   };
 }
