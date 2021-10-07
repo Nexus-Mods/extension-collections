@@ -904,6 +904,13 @@ ul.collection-mods-page-attrib-tooltip {
       }
     }
   }
+
+  .my-collections-page-link {
+    color: $link-color;
+    &:hover {
+      color: $link-color;
+    }
+  }
 }
 
 .collection-view-container {

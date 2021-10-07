@@ -196,7 +196,14 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           <Panel>
             <Panel.Heading>
               <Panel.Title>
-                {t('Build your own collections and share them with the Nexus Mods community.')}
+                {t('Build your own collections and share them with the Nexus Mods community. You can view all your uploaded collections ')}
+                <a
+                  onClick={this.openMyCollectionsPage}
+                  className='my-collections-page-link'
+                  title={t('Open My Collections Page')}
+                >
+                  {t('here.')}
+                </a>
               </Panel.Title>
             </Panel.Heading>
             <Panel.Body>
@@ -236,6 +243,10 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     const { game } = this.props;
 
     util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`);
+  }
+
+  private openMyCollectionsPage = async () => {
+    util.opn(`${NEXUS_NEXT_URL}/my-collections`);
   }
 
   private fromProfile = () => {
