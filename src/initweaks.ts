@@ -75,14 +75,34 @@ async function getTweaks(dirPath: string): Promise<string[]> {
 }
 
 async function refreshTweaks(modPath: string): Promise<TweakArray> {
-  const tweaks = await getTweaks(path.join(modPath, INI_TWEAKS_PATH));
-  return tweaks.map(twk => {
+  const tweakPath = path.join(modPath, INI_TWEAKS_PATH);
+  const tweaks = await getTweaks(tweakPath);
+  return tweaks.reduce(async (accumP, twk) => {
+    const accum = await accumP;
     const required = !twk.startsWith(OPTIONAL_TWEAK_PREFIX);
     const fileName = twk.startsWith(OPTIONAL_TWEAK_PREFIX)
       ? twk.replace(OPTIONAL_TWEAK_PREFIX, '')
       : twk;
-    return { fileName, required };
-  });
+
+    const existingIdx = accum.findIndex(ext => ext.fileName === fileName);
+    if (existingIdx !== -1) {
+      const reqFile: fs.Stats = await fs.statAsync(path.join(tweakPath, twk));
+      const optFile: fs.Stats = await fs.statAsync(path.join(tweakPath, `${OPTIONAL_TWEAK_PREFIX}${twk}`));
+      const redundant = (reqFile.mtimeMs > optFile.mtimeMs)
+        ? path.join(tweakPath, `${OPTIONAL_TWEAK_PREFIX}${twk}`)
+        : path.join(tweakPath, twk);
+      try {
+        await fs.removeAsync(redundant);
+        const updatedReq = (reqFile.mtimeMs > optFile.mtimeMs) ? true : false;
+        accum[existingIdx].required = updatedReq;
+      } catch (err) {
+        log('error', 'failed to remove redundant entry', err);
+      }
+    } else {
+      accum.push({ required, fileName });
+    }
+    return accum;
+  }, Promise.resolve([]));
 }
 
 async function addIniTweak(api: types.IExtensionApi,
