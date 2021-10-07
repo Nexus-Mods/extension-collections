@@ -6,7 +6,7 @@ import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { IINITweak, TweakArray } from './types/IINITweak';
 import TweakList from './views/IniTweaks';
 
-import { INI_TWEAKS_PATH, OPTIONAL_TWEAK_PREFIX } from './constants';
+import { INI_TWEAKS_PATH, MOD_TYPE, OPTIONAL_TWEAK_PREFIX } from './constants';
 
 const gameSupport = {
     skyrim: {
@@ -172,8 +172,12 @@ async function enableIniTweaks(api: types.IExtensionApi, gameId: string, mod: ty
     const optional = tweaks.filter(tweak => !tweak.required);
     const batched = required.map(req =>
       actions.setINITweakEnabled(gameId, mod.id, req.fileName, true));
-    util.batchDispatch(api.store, batched);
-    await enableOptionalIniTweaks(api, gameId, mod, optional);
+    if (batched.length > 0) {
+      util.batchDispatch(api.store, batched);
+    }
+    if (optional.length > 0) {
+      await enableOptionalIniTweaks(api, gameId, mod, optional);
+    }
   } catch (err) {
     if (err.code !== 'ENOENT') {
       api.showErrorNotification('Failed to enable collection ini tweaks', err);
@@ -188,7 +192,7 @@ async function enableOptionalIniTweaks(api: types.IExtensionApi,
   return api.showDialog('question', 'Recommended/Optional INI Tweaks', {
     text: 'The collection curator has highlighted several INI tweaks as recommended, '
         + 'but optional. Although your game will probably benefit from these tweaks, it '
-        + 'is your choice whether you want to apply these.',
+        + 'is your choice whether you want to apply them.',
     checkboxes: optionalTweaks.map((tweak, idx) => ({
       id: tweak.fileName,
       text: tweak.fileName,
@@ -199,7 +203,7 @@ async function enableOptionalIniTweaks(api: types.IExtensionApi,
     { label: 'Confirm' },
   ]).then((result: types.IDialogResult) => {
     if (result.action === 'Confirm') {
-      const choices = Object.keys(result.input).filter(id => choices[id]);
+      const choices = Object.keys(result.input).filter(id => result.input[id]);
       const batched = choices.map(choice =>
         actions.setINITweakEnabled(gameId, mod.id, choice, true));
       util.batchDispatch(api.store, batched);
@@ -220,6 +224,30 @@ function init(context: types.IExtensionContext) {
     () => 'INI Tweaks',
     (state: types.IState, gameId: string) => isSupported(gameId),
     (prop: IExtendedInterfaceProps) => TweakListWrap(context.api, prop));
+
+  // Useful for debugging - currently we would have to check if the ini tweaks
+  //  folder exists before showing the below action which would be an async operation
+  //  and therefore not currently supported. Alternatively we could decide to have this
+  //  enabled at all times ? (even if we don't know whether the collection has any ini tweaks)
+  // context.registerAction('mods-action-icons', 999, 'resume', {}, 'Apply INI Tweaks', instanceIds => {
+  //   const state = context.api.getState();
+  //   const modId = instanceIds[0];
+  //   const gameId = selectors.activeGameId(state);
+  //   const mod: types.IMod = state.persistent.mods[gameId]?.[modId];
+  //   if (mod.type === MOD_TYPE) {
+  //     const profile = selectors.activeProfile(state);
+  //     if (util.getSafe(profile, ['modState', mod.id, 'enabled'], false)) {
+  //       enableIniTweaks(context.api, gameId, mod);
+  //     }
+  //   }
+  // }, instanceIds => {
+  //   const modId = instanceIds[0];
+  //   const state = context.api.store.getState();
+  //   const gameId = selectors.activeGameId(state);
+  //   const mod: types.IMod = state.persistent.mods[gameId]?.[modId];
+  //   const profile = selectors.activeProfile(state);
+  //   return mod?.type === MOD_TYPE && (util.getSafe(profile, ['modState', modId, 'enabled'], false));
+  // });
 }
 
 export default init;
