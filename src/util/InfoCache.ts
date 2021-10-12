@@ -35,7 +35,7 @@ class InfoCache {
 
   public async getCollectionInfo(collectionId: string): Promise<ICollection> {
     const { store } = this.mApi;
-    const {collections} = store.getState().persistent.collections;
+    const collections = store.getState().persistent.collections.collections ?? {};
     if ((collections[collectionId]?.timestamp === undefined)
         || ((Date.now() - collections[collectionId].timestamp) > CACHE_EXPIRE_MS)) {
 
@@ -50,7 +50,7 @@ class InfoCache {
 
   public async getRevisionInfo(revisionId: string): Promise<IRevision> {
     const { store } = this.mApi;
-    const {revisions} = store.getState().persistent.collections;
+    const revisions = store.getState().persistent.collections.revisions ?? {};
     if ((revisions[revisionId]?.timestamp === undefined)
         || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
       log('info', 'revision info cache outdated', {

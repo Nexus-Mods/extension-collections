@@ -722,6 +722,11 @@ ul.collection-mods-page-attrib-tooltip {
     width: auto;
     height: auto;
   }
+
+  .collection-open-mod-in-browser {
+    @extend .btn-embed;
+    margin-left: 0.5em;
+  }
 }
 
 #collection-page {

@@ -398,6 +398,10 @@ class InstallDriver {
       return;
     }
 
+    if (this.mTotalSize === undefined) {
+      this.mTotalSize = calculateCollectionSize(this.getModsEx());
+    }
+
     this.mApi.sendNotification({
       id: INSTALLING_NOTIFICATION_ID + this.mCollection.id,
       type: 'activity',

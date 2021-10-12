@@ -1,8 +1,8 @@
 import { ICollectionRevisionMod } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { Panel } from 'react-bootstrap';
-import { FlexLayout, Image, types, util } from 'vortex-api';
-import { AUTHOR_UNKNOWN } from '../../constants';
+import { FlexLayout, Image, tooltip, types, util } from 'vortex-api';
+import { AUTHOR_UNKNOWN, NEXUS_BASE_URL } from '../../constants';
 import { IModEx } from '../../types/IModEx';
 
 export interface ICollectionModDetails {
@@ -17,6 +17,8 @@ function CollectionModDetails(props: ICollectionModDetails) {
   const uploaderName = local?.attributes?.uploader
                     ?? remote?.file?.owner?.name
                     ?? AUTHOR_UNKNOWN;
+  const uploaderId = local?.attributes?.uploaderId
+                  ?? remote?.file?.owner?.memberId;
   const uploaderAvatar = remote?.file?.owner?.avatar
                       ?? 'assets/images/noavatar.png';
   const authorName = local?.attributes?.author
@@ -34,15 +36,36 @@ function CollectionModDetails(props: ICollectionModDetails) {
   const image = local?.attributes?.pictureUrl
              ?? remote?.file?.mod?.pictureUrl;
 
+  const domainName = util.nexusGameId(local?.attributes?.gameId)
+                  ?? remote?.file?.game?.domainName;
+  const modId = local?.attributes?.modId
+             ?? remote?.file?.modId;
+
+  const visitUploader = React.useCallback(() => {
+    util.opn(`${NEXUS_BASE_URL}/users/${uploaderId}`);
+  }, [uploaderId]);
+
+  const visitPage = React.useCallback(() => {
+    util.opn(`${NEXUS_BASE_URL}/${domainName}/mods/${modId}`);
+  }, [uploaderId]);
+
   return (
     <Panel className='installing-mod-overview'>
       <FlexLayout type='row'>
         <FlexLayout.Flex fill>
           <FlexLayout type='column'>
             <FlexLayout.Fixed>
-              <div className='installing-mod-title'>
-                {modTitle}
-              </div>
+              <FlexLayout type='row'>
+                <div className='installing-mod-title'>
+                  {modTitle}
+                </div>
+                <tooltip.IconButton
+                  className='collection-open-mod-in-browser'
+                  icon='open-in-browser'
+                  tooltip={t('Open Mod in Webbrowser')}
+                  onClick={visitPage}
+                />
+              </FlexLayout>
             </FlexLayout.Fixed>
             <FlexLayout.Fixed>
               <FlexLayout type='row'>
@@ -54,7 +77,9 @@ function CollectionModDetails(props: ICollectionModDetails) {
                     />
                     <div>
                       <div className='title'>{t('Uploaded by')}</div>
-                      <div>{uploaderName}</div>
+                      <div>{(uploaderName !== AUTHOR_UNKNOWN)
+                        ? <a onClick={visitUploader}>{uploaderName}</a>
+                        : uploaderName}</div>
                     </div>
                   </FlexLayout>
                 </FlexLayout.Fixed>
