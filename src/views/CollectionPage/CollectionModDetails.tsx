@@ -95,7 +95,7 @@ function CollectionModDetails(props: ICollectionModDetails) {
             </FlexLayout.Fixed>
             <FlexLayout.Flex>
               <div className='collection-description'>
-                {description}
+                {util.bbcodePreProcess(description)}
               </div>
             </FlexLayout.Flex>
           </FlexLayout>
