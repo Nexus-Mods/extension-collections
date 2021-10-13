@@ -7,7 +7,6 @@ import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
-import Zip = require('node-7z');
 import * as path from 'path';
 import * as Redux from 'redux';
 import * as semver from 'semver';
@@ -69,7 +68,10 @@ function deduceSource(mod: types.IMod,
     }
   };
 
-  assign(res, 'md5', mod.attributes?.fileMD5);
+  // since we store bundled mods uncompressed the md5 hash won't be the same
+  if (sourceInfo?.type !== 'bundle') {
+    assign(res, 'md5', mod.attributes?.fileMD5);
+  }
   assign(res, 'fileSize', mod.attributes?.fileSize);
   assign(res, 'logicalFilename', mod.attributes?.logicalFileName);
   if (sourceInfo?.updatePolicy !== undefined) {
@@ -122,7 +124,6 @@ async function rulesToCollectionMods(collection: types.IMod,
 
   let finished = 0;
 
-  const zipper = new Zip();
   const collectionPath = path.join(stagingPath, collection.installationPath);
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
   await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
@@ -182,7 +183,7 @@ async function rulesToCollectionMods(collection: types.IMod,
         const tlFiles = await fs.readdirAsync(modPath);
         const generatedName: string =
           `Bundled - ${(util as any).sanitizeFilename(util.renderModName(mod, { version: true }))}`;
-        const destPath = path.join(collectionPath, BUNDLED_PATH, generatedName) + '.7z';
+        const destPath = path.join(collectionPath, BUNDLED_PATH, generatedName);
         try {
           await fs.removeAsync(destPath);
         } catch (err) {
@@ -190,11 +191,13 @@ async function rulesToCollectionMods(collection: types.IMod,
             throw err;
           }
         }
-        await zipper.add(destPath, tlFiles.map(name => path.join(modPath, name)));
+        await Promise.all(tlFiles.map(async name => {
+          await fs.copyAsync(path.join(modPath, name), path.join(destPath, name));
+        }));
+
         // update the source reference to match the actual bundled file
-        source.fileExpression = generatedName + '.7z';
+        source.fileExpression = generatedName;
         source.fileSize = (await fs.statAsync(destPath)).size;
-        source.md5 = await util.fileMD5(destPath);
       }
 
       onProgress(Math.floor((finished / total) * 100), modName);
@@ -229,7 +232,7 @@ async function rulesToCollectionMods(collection: types.IMod,
       --total;
 
       onError('failed to pack "{{modName}}": {{error}}', {
-        modName, error: err.message,
+        modName, error: err.message, stack: err.stack,
       });
 
       return undefined;
@@ -364,8 +367,8 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     gameId: (util as any).convertGameIdReverse(knownGames, mod.domainName),
     fileSize: mod.source.fileSize,
     versionMatch,
-    logicalFileName: mod.source.type === 'bundle' ? undefined : mod.source.logicalFilename,
-    fileExpression: mod.source.type === 'bundle' ? undefined : mod.source.fileExpression,
+    logicalFileName: mod.source.logicalFilename,
+    fileExpression: mod.source.fileExpression,
     tag: shortid(),
   };
 
