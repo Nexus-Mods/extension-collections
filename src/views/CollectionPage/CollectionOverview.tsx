@@ -137,6 +137,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                       t={t}
                       local={modSelection[selIdx]?.local}
                       remote={modSelection[selIdx]?.remote}
+                      gameId={gameId}
                     />
                   ) : (
                     null

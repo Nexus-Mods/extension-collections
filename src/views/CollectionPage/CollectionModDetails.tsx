@@ -9,10 +9,11 @@ export interface ICollectionModDetails {
   t: types.TFunction;
   local?: IModEx;
   remote?: ICollectionRevisionMod;
+  gameId: string;
 }
 
 function CollectionModDetails(props: ICollectionModDetails) {
-  const { t, local, remote } = props;
+  const { t, gameId, local, remote } = props;
 
   const uploaderName = local?.attributes?.uploader
                     ?? remote?.file?.owner?.name
@@ -36,8 +37,8 @@ function CollectionModDetails(props: ICollectionModDetails) {
   const image = local?.attributes?.pictureUrl
              ?? remote?.file?.mod?.pictureUrl;
 
-  const domainName = util.nexusGameId(local?.attributes?.gameId)
-                  ?? remote?.file?.game?.domainName;
+  const domainName = remote?.file?.game?.domainName
+                  ?? util.nexusGameId(util.getGame(local?.attributes?.gameId ?? gameId));
   const modId = local?.attributes?.modId
              ?? remote?.file?.modId;
 
@@ -59,12 +60,14 @@ function CollectionModDetails(props: ICollectionModDetails) {
                 <div className='installing-mod-title'>
                   {modTitle}
                 </div>
-                <tooltip.IconButton
-                  className='collection-open-mod-in-browser'
-                  icon='open-in-browser'
-                  tooltip={t('Open Mod in Webbrowser')}
-                  onClick={visitPage}
-                />
+                {(modId !== undefined) ? (
+                  <tooltip.IconButton
+                    className='collection-open-mod-in-browser'
+                    icon='open-in-browser'
+                    tooltip={t('Open Mod in Webbrowser')}
+                    onClick={visitPage}
+                  />
+                ) : null}
               </FlexLayout>
             </FlexLayout.Fixed>
             <FlexLayout.Fixed>

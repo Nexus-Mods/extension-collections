@@ -160,10 +160,10 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           <div className='gradient' />
           <div className='author'>
             <BSImage
-              src={collection.attributes.uploaderAvatar ?? 'assets/images/noavatar.png'}
+              src={collection.attributes?.uploaderAvatar ?? 'assets/images/noavatar.png'}
               circle
             />
-            {collection.attributes.uploader ?? `${t(AUTHOR_UNKNOWN)}`}
+            {collection.attributes?.uploader ?? `${t(AUTHOR_UNKNOWN)}`}
           </div>
           {details ? (
             <CollectionReleaseStatus
