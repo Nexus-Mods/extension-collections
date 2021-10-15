@@ -178,12 +178,14 @@ function genAttributeExtractor(api: types.IExtensionApi) {
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
     const collectionId = modInfo.download?.modInfo?.nexus?.ids?.collectionId;
     const revisionId = modInfo.download?.modInfo?.nexus?.ids?.revisionId;
+    const collectionSlug = modInfo.download?.modInfo?.nexus?.ids?.collectionSlug;
     const revisionNumber = modInfo.download?.modInfo?.nexus?.ids?.revisionNumber;
     const referenceTag = modInfo.download?.modInfo?.referenceTag;
 
     const result: { [key: string]: any } = {
       collectionId,
       revisionId,
+      collectionSlug,
       revisionNumber,
       referenceTag,
     };

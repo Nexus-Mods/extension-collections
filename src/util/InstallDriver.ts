@@ -185,6 +185,22 @@ class InstallDriver {
     return nexusInfo?.ids?.collectionId || modInfo?.ids?.collectionId;
   }
 
+  public get collectionSlug(): string {
+    const state: types.IState = this.mApi.store.getState();
+    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const nexusInfo = modInfo?.nexus;
+
+    return nexusInfo?.ids?.collectionSlug || modInfo?.ids?.collectionSlug;
+  }
+
+  public get revisionNumber(): number {
+    const state: types.IState = this.mApi.store.getState();
+    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const nexusInfo = modInfo?.nexus;
+
+    return nexusInfo?.ids?.revisionNumber || modInfo?.ids?.revisionNumber;
+  }
+
   public get revisionId(): string {
     const state: types.IState = this.mApi.store.getState();
     const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
@@ -272,16 +288,16 @@ class InstallDriver {
     const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
     const nexusInfo = modInfo?.nexus;
 
-    const collectionId = this.collectionId;
+    const slug = this.collectionSlug;
     const revisionId = this.revisionId;
 
     if (revisionId !== undefined) {
       this.mRevisionInfo = nexusInfo?.revisionInfo
         ?? await this.mInfoCache.getRevisionInfo(revisionId);
     }
-    if (collectionId !== undefined) {
+    if (slug !== undefined) {
       this.mCollectionInfo = nexusInfo?.collectionInfo
-        ?? await this.mInfoCache.getCollectionInfo(collectionId)
+        ?? await this.mInfoCache.getCollectionInfo(this.collectionId, slug)
         // this last fallback is for the weird case where we have revision info cached but
         // not collection info and fetching is not possible because it's been deleted from the
         // site

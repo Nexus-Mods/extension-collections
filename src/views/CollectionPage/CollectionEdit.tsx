@@ -221,8 +221,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       const { collection, mods } = props;
 
       if (collection.attributes?.revisionId !== undefined) {
-        this.nextState.revision = await
-          this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
+        this.nextState.revision = await this.props.driver.infoCache.getRevisionInfo(
+            collection.attributes.revisionId);
       }
     }
   }

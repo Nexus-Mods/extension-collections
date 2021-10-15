@@ -307,9 +307,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   public async componentDidMount() {
     const { collection, userInfo } = this.props;
 
-    if ((collection.attributes.revisionId !== undefined) && (userInfo !== undefined)) {
-      this.nextState.revisionInfo = await
-        this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
+    const { attributes } = collection ?? {};
+    if ((attributes.revisionId !== undefined) && (userInfo !== undefined)) {
+      const { infoCache } = this.props.driver;
+      this.nextState.revisionInfo = await infoCache.getRevisionInfo(attributes.revisionId);
     }
 
     const modsEx = this.initModsEx(this.props);
@@ -324,9 +325,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || this.installingNotificationsChanged(this.props, newProps)) {
       this.nextState.modsEx = this.updateModsEx(this.props, newProps);
       const { collection } = this.props;
-      if (collection.attributes.revisionId !== undefined) {
+      const { attributes } = collection;
+      if (attributes.revisionNumber !== undefined) {
         this.nextState.revisionInfo = await
-          this.props.driver.infoCache.getRevisionInfo(collection.attributes.revisionId);
+          this.props.driver.infoCache.getRevisionInfo(attributes.revisionId);
       }
     }
   }

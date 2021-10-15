@@ -7,7 +7,9 @@ import * as path from 'path';
 import { fs, log, selectors, types, util } from 'vortex-api';
 import { MOD_TYPE } from '../constants';
 
-const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000;
+// TODO: temporarily reducing expire time around switch to slugs identifying collections,
+// used to be once per day
+const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
 
 /**
  * manages caching of collection and revision info
@@ -33,19 +35,19 @@ class InfoCache {
     return this.mCacheColRules[revisionId];
   }
 
-  public async getCollectionInfo(collectionId: string): Promise<ICollection> {
+  public async getCollectionInfo(id: string, slug: string): Promise<ICollection> {
     const { store } = this.mApi;
     const collections = store.getState().persistent.collections.collections ?? {};
-    if ((collections[collectionId]?.timestamp === undefined)
-        || ((Date.now() - collections[collectionId].timestamp) > CACHE_EXPIRE_MS)) {
+    if ((collections[slug]?.timestamp === undefined)
+        || ((Date.now() - collections[slug].timestamp) > CACHE_EXPIRE_MS)) {
 
-      if (this.mCacheColRequests[collectionId] === undefined) {
-        this.mCacheColRequests[collectionId] = this.cacheCollectionInfo(collectionId);
+      if (this.mCacheColRequests[slug] === undefined) {
+        this.mCacheColRequests[slug] = this.cacheCollectionInfo(id, slug);
       }
-      return this.mCacheColRequests[collectionId];
+      return this.mCacheColRequests[slug];
     }
 
-    return collections[collectionId].info;
+    return collections[slug].info;
   }
 
   public async getRevisionInfo(revisionId: string): Promise<IRevision> {
@@ -68,7 +70,9 @@ class InfoCache {
       return Promise.resolve(undefined);
     }
 
-    const collectionInfo = await this.getCollectionInfo(revisions[revisionId].info.collection.id);
+    const collectionInfo = await this.getCollectionInfo(
+      revisions[revisionId].info.collection.id,
+      revisions[revisionId].info.collection.slug);
 
     return {
       ...revisions[revisionId].info,
@@ -98,10 +102,11 @@ class InfoCache {
     }
   }
 
-  private async cacheCollectionInfo(collectionId: string): Promise<ICollection> {
+  private async cacheCollectionInfo(collectionId: string,
+                                    collectionSlug: string): Promise<ICollection> {
     const { store } = this.mApi;
     const collectionInfo = (await this.mApi.emitAndAwait(
-        'get-nexus-collection', parseInt(collectionId, 10)))[0];
+        'get-nexus-collection', parseInt(collectionId, 10), collectionSlug))[0];
     if (!!collectionInfo) {
       store.dispatch(updateCollectionInfo(collectionId, collectionInfo, Date.now()));
     }
@@ -129,7 +134,10 @@ class InfoCache {
         revisionInfo.collection.id, revisionInfo.collection, now));
       store.dispatch(updateRevisionInfo(revisionId, {
         ...revisionInfo,
-        collection: { id: revisionInfo.collection.id },
+        collection: {
+          id: revisionInfo.collection.id,
+          slug: revisionInfo.collection.slug,
+        },
       }, now));
     } else {
       store.dispatch(updateRevisionInfo(revisionId, null, now));
