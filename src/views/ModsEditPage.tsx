@@ -820,15 +820,14 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
 
       if (showPhaseUsage) {
         const result = await this.context.api.showDialog('info', 'Installation Phase', {
-          text: 'When Vortex installs your collection on a user\'s system, it will '
-              + 'process the phases one by one, ensuring all mods from one phase is done and '
-              + 'deployed before downloading and installing the next.\n'
-              + 'If you have mods that get installed by a scripted installer, which '
-              + 'may install different things depending on which files exist on disk, '
-              + 'this lets you ensure things are installed in the required order.\n'
-              + 'However: Because Vortex has to go through deployment for each phase, '
-              + 'please don\'t overuse this feature or it may slow down the installation '
-              + 'of your collection.',
+          text: 'When installing your collection Vortex will process installation phases '
+              + 'one by one and ensure all mods from a given phase are both '
+              + 'installed and deployed before continuing to the next phase. '
+              + 'That way, mods that require other mods being present can be set to '
+              + 'install after their requirements by being put in different phases.\n'
+              + 'Please note that Vortex will need to deploy after each phase which will '
+              + 'slow down the installation process. '
+              + 'It is advised to only utilise this feature when necessary.',
           checkboxes: [
             { id: 'dismiss', text: 'Don\'t show this in the future', value: false },
           ],
