@@ -197,7 +197,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   private openUrl = () => {
     const { revision } = this.props;
     const { collection } = revision;
-    util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.id}`);
+    util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.slug}`);
   }
 
   private cloneCollection = () => {
