@@ -448,6 +448,12 @@ function register(context: types.IExtensionContext,
   context.registerActionCheck('ADD_NOTIFICATION', (state: any, action: Redux.Action) => {
     const notification: types.INotification = action['payload'];
     const ruleMatches = rule => rule.reference.idHint === notification.replace.modId;
+    if (notification.id.startsWith('multiple-plugins-')) {
+      console.log('multiple plugins',
+        driver?.collection,
+        (driver?.collection?.rules ?? []).find(ruleMatches),
+      );
+    }
     if (notification.id.startsWith('multiple-plugins-')
         && (driver?.collection !== undefined)
         && ((driver.collection.rules ?? []).find(ruleMatches) !== undefined)) {
@@ -505,7 +511,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     const prevG = prev[gameMode] ?? {};
     const curG = cur[gameMode] ?? {};
     const allIds =
-      Array.from(new Set([].concat(Object.keys(prev[gameMode]), Object.keys(cur[gameMode]))));
+      Array.from(new Set([].concat(Object.keys(prevG), Object.keys(curG))));
     const collections = allIds.filter(id =>
       (prevG[id]?.type === MOD_TYPE) || (curG[id]?.type === MOD_TYPE));
     const changed = collections.find(modId =>

@@ -51,7 +51,6 @@ interface IConnectedProps {
 }
 
 interface IActionProps {
-  onSetModEnabled: (profileId: string, modId: string, enabled: boolean) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) => void;
 }
@@ -308,7 +307,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const { collection, userInfo } = this.props;
 
     const { attributes } = collection ?? {};
-    if ((attributes.revisionId !== undefined) && (userInfo !== undefined)) {
+    if ((attributes?.revisionId !== undefined) && (userInfo !== undefined)) {
       const { infoCache } = this.props.driver;
       this.nextState.revisionInfo = await infoCache.getRevisionInfo(attributes.revisionId);
     }
@@ -513,11 +512,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     });
   }
 
-  private setModEnabled = (modId: string, enabled: boolean) => {
-    const { profile } = this.props;
-    this.props.onSetModEnabled(profile.id, modId, enabled);
-  }
-
   private setTableContainerRef = (ref: any) => {
     this.mTableContainerRef = (ref !== null)
       ? ReactDOM.findDOMNode(ref) as Element
@@ -565,34 +559,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     } else {
       return false;
     }
-  }
-
-  private enableSelected = (ruleIds: string[]) => {
-    const { profile, onSetModEnabled } = this.props;
-    const { modsEx } = this.state;
-
-    const modIds = ruleIds.map(iter => modsEx[iter]?.id).filter(iter => iter !== undefined);
-
-    modIds.forEach((modId: string) => {
-      if (!util.getSafe(profile.modState, [modId, 'enabled'], false)) {
-        onSetModEnabled(profile.id, modId, true);
-      }
-    });
-    this.context.api.events.emit('mods-enabled', modIds, true, profile.gameId);
-  }
-
-  private disableSelected = (ruleIds: string[]) => {
-    const { profile, onSetModEnabled } = this.props;
-    const { modsEx } = this.state;
-
-    const modIds = ruleIds.map(iter => modsEx[iter]?.id).filter(iter => iter !== undefined);
-
-    modIds.forEach((modId: string) => {
-      if (util.getSafe(profile.modState, [modId, 'enabled'], false)) {
-        onSetModEnabled(profile.id, modId, false);
-      }
-    });
-    this.context.api.events.emit('mods-enabled', modIds, false, profile.gameId);
   }
 
   private ignoreSelected = (modIds: string[]) => {
@@ -1020,8 +986,6 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
 
 function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
   return {
-    onSetModEnabled: (profileId: string, modId: string, enabled: boolean) =>
-      dispatch(actions.setModEnabled(profileId, modId, enabled)),
     onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) =>
