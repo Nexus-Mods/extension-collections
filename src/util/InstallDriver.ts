@@ -75,6 +75,7 @@ class InstallDriver {
           //  aware that it's installing mods that are part of the collection
           //  in order for us to apply any collection mod rules to the mods themselves
           //  upon successful installation.
+          console.trace('installing collection', modId);
           this.mCollection = mods[modId];
           this.mStep = 'installing';
         }
@@ -103,6 +104,7 @@ class InstallDriver {
             this.triggerUpdate();
           } else {
             // We finished installing optional mods for the current collection - reset everything.
+            console.trace('done installing collection', modId);
             this.mCollection = undefined;
             this.mStep = 'query';
             this.deployMods();
@@ -120,6 +122,7 @@ class InstallDriver {
       return;
     }
     this.mProfile = profile;
+    console.trace('query installing collection', collection.id);
     this.mCollection = collection;
     this.mStep = 'query';
     this.triggerUpdate();
@@ -135,6 +138,7 @@ class InstallDriver {
       return;
     }
 
+    console.trace('start installing collection', collection.id);
     this.mProfile = profile;
     this.mCollection = collection;
 
@@ -295,16 +299,15 @@ class InstallDriver {
       this.mRevisionInfo = nexusInfo?.revisionInfo
         ?? await this.mInfoCache.getRevisionInfo(revisionId);
     }
-    if (slug !== undefined) {
-      this.mCollectionInfo = nexusInfo?.collectionInfo
-        ?? await this.mInfoCache.getCollectionInfo(this.collectionId, slug)
-        // this last fallback is for the weird case where we have revision info cached but
-        // not collection info and fetching is not possible because it's been deleted from the
-        // site
-        // Not sure if/why this would happen on live, it did occur during testing because the
-        // stuff was getting deleted from the DB directly
-        ?? this.mRevisionInfo.collection;
-    }
+
+    this.mCollectionInfo = nexusInfo?.collectionInfo
+      ?? await this.mInfoCache.getCollectionInfo(this.collectionId, slug)
+      // this last fallback is for the weird case where we have revision info cached but
+      // not collection info and fetching is not possible because it's been deleted from the
+      // site
+      // Not sure if/why this would happen on live, it did occur during testing because the
+      // stuff was getting deleted from the DB directly
+      ?? this.mRevisionInfo.collection;
 
     this.mApi.events.emit('view-collection', this.mCollection.id);
 

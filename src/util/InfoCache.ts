@@ -37,6 +37,9 @@ class InfoCache {
 
   public async getCollectionInfo(id: string, slug: string): Promise<ICollection> {
     const { store } = this.mApi;
+    if (slug === undefined) {
+      return;
+    }
     const collections = store.getState().persistent.collections.collections ?? {};
     if ((collections[slug]?.timestamp === undefined)
         || ((Date.now() - collections[slug].timestamp) > CACHE_EXPIRE_MS)) {
