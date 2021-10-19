@@ -43,7 +43,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
       {
         title: 'View on Nexus Mods',
         action: this.openUrl,
-        condition: () => (this.props.collection.attributes?.collectionId !== undefined)
+        condition: () => (this.props.collection.attributes?.collectionSlug !== undefined)
                       && (this.props.revision !== undefined),
         icon: 'open-in-browser',
       },
