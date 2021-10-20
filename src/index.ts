@@ -25,6 +25,7 @@ import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 import initTools from './tools';
 
+import * as nexusApi from '@nexusmods/nexus-api';
 import * as PromiseBB from 'bluebird';
 import * as _ from 'lodash';
 import memoize from 'memoize-one';
@@ -246,6 +247,36 @@ function generateCollectionOptions(mods: { [modId: string]: types.IMod })
     .map(mod => ({ label: util.renderModName(mod), value: mod.id }));
 }
 
+async function updateMeta(api: types.IExtensionApi) {
+  const state = api.getState();
+  const gameId = selectors.activeGameId(state);
+  const mods = state.persistent.mods[gameId];
+  const collections = Object.keys(mods)
+    .filter(modId => mods[modId].type === MOD_TYPE);
+
+  for (const modId of collections) {
+    const { revisionId } = mods[modId].attributes ?? {};
+    if (revisionId !== undefined) {
+      const infos: nexusApi.IRevision[] =
+        await api.emitAndAwait('get-nexus-collection-revision', revisionId);
+      if (infos.length > 0) {
+        const info = infos[0];
+        api.store.dispatch(actions.setModAttributes(gameId, modId, {
+          collectionSlug: info.collection.slug,
+          author: info.collection.user?.name,
+          uploader: info.collection.user?.name,
+          uploaderAvatar: info.collection.user?.avatar,
+          uploaderId: info.collection.user?.memberId,
+          pictureUrl: info.collection.tileImage?.url,
+          description: info.collection.description,
+          shortDescription: info.collection.summary,
+          rating: info.rating,
+        }));
+      }
+    }
+  }
+}
+
 interface ICallbackMap { [cbName: string]: (...args: any[]) => void; }
 
 let collectionChangedCB: () => void;
@@ -302,6 +333,7 @@ function register(context: types.IExtensionContext,
         cloneInstalledCollection(context.api, collectionId),
       onCreateCollection: (profile: types.IProfile, name: string) =>
         createNewCollection(context.api, profile, name),
+      onUpdateMeta: () => updateMeta(context.api),
       resetCB: (cb) => resetPageCB = cb,
     }),
     onReset: () => resetPageCB?.(),

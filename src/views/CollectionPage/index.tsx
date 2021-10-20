@@ -26,6 +26,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
+  onUpdateMeta: () => void;
 
   resetCB: (cb: () => void) => void;
 }
@@ -110,23 +111,35 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     if (collection === undefined) {
       content = (
-        <StartPage
-          t={t}
-          game={game}
-          installing={driver.installDone ? undefined : driver.collection}
-          profile={profile}
-          mods={mods}
-          matchedReferences={matchedReferences ?? emptyObj}
-          activeTab={activeTab}
-          onView={this.view}
-          onEdit={this.edit}
-          onRemove={this.remove}
-          onUpload={this.upload}
-          onCreateCollection={this.createCollection}
-          onResume={this.resume}
-          onPause={this.pause}
-          onSetActiveTab={this.setActiveTab}
-        />
+        <>
+          <tooltip.IconButton
+            className='collections-refresh-meta'
+            icon='refresh'
+            tooltip={t('Download the latest meta information about the collections on '
+                       + 'your computer. This will reset local changes to names of '
+                       + 'collections in your workshop.')}
+            onClick={this.props.onUpdateMeta}
+          >
+            {t('Refresh')}
+          </tooltip.IconButton>
+          <StartPage
+            t={t}
+            game={game}
+            installing={driver.installDone ? undefined : driver.collection}
+            profile={profile}
+            mods={mods}
+            matchedReferences={matchedReferences ?? emptyObj}
+            activeTab={activeTab}
+            onView={this.view}
+            onEdit={this.edit}
+            onRemove={this.remove}
+            onUpload={this.upload}
+            onCreateCollection={this.createCollection}
+            onResume={this.resume}
+            onPause={this.pause}
+            onSetActiveTab={this.setActiveTab}
+          />
+        </>
       );
     } else {
       content = (
