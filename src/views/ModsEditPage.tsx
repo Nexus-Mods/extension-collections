@@ -236,16 +236,16 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         const version = entry.mod?.attributes?.['version'] ?? t('N/A');
 
         if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
-          return t('Current ({{version}})', { replace: { version } });
+          return t('Exact only ({{version}})', { replace: { version } });
         }
 
         if (entry.rule.reference.versionMatch === '*') {
           return t('Latest');
         } else if ((entry.rule.reference.versionMatch === undefined)
                    || (entry.rule.reference.versionMatch || '').endsWith('+prefer')) {
-          return t('Prefer current ({{version}})', { replace: { version } });
+          return t('Prefer exact ({{version}})', { replace: { version } });
         } else {
-          return t('Current ({{version}})', { replace: { version } });
+          return t('Exact only ({{version}})', { replace: { version } });
         }
       },
       placement: 'table',
@@ -259,13 +259,13 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
 
           if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
             return [
-              { key: 'exact', text: t('Current ({{version}})', { replace: { version } }) },
+              { key: 'exact', text: t('Exact only ({{version}})', { replace: { version } }) },
             ];
           }
 
           return [
-            { key: 'exact', text: t('Current ({{version}})', { replace: { version } }) },
-            { key: 'prefer', text: t('Prefer current ({{version}})', { replace: { version } }) },
+            { key: 'exact', text: t('Exact only ({{version}})', { replace: { version } }) },
+            { key: 'prefer', text: t('Prefer exact ({{version}})', { replace: { version } }) },
             { key: 'newest', text: t('Latest') },
           ];
         },
@@ -676,7 +676,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         && (installMode === 'clone')) {
       res.push({
         type: 'replicate-fuzzy-version',
-        summary: t('"Replicate" requires "Current" as the version'),
+        summary: t('"Replicate" requires "Exact only" as the version'),
         message: t('"Replicate" install can only be used when installing '
                  + 'a specific version of a mod. This will definitively break '
                  + 'as soon as the mod gets updated.'),
@@ -687,7 +687,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         type: 'choices-fuzzy-version',
         summary: t('"Same Installer Options" should not be used with "Latest" version'),
         message: t('Installing with "Same choices options" may break if the mod gets updated, '
-                 + 'you may want to switch to "Prefer current" to be safe.'),
+                 + 'you may want to switch to "Prefer exact" to be safe.'),
       });
     }
 
@@ -704,7 +704,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       res.push({
         type: 'web-fuzzy-version',
         summary: t('Version choice has no effect on mods using generic download.'),
-        message: t('The option to "prefer current version" only works with sources that '
+        message: t('The option to "prefer exact version" only works with sources that '
                  + 'support mod updates (Nexus Mods). For other sources your options '
                  + 'are to use the exact same version you have locally or to accept whatever '
                  + 'version the user downloads.'),
