@@ -254,27 +254,50 @@ async function updateMeta(api: types.IExtensionApi) {
   const collections = Object.keys(mods)
     .filter(modId => mods[modId].type === MOD_TYPE);
 
-  for (const modId of collections) {
+  const notiId = shortid();
+
+  const progress = (name: string, idx: number) => {
+    api.sendNotification({
+      id: notiId,
+      type: 'activity',
+      title: 'Updating Collection Information',
+      message: name,
+      progress: (idx * 100) / collections.length,
+    });
+  };
+
+  // tslint:disable-next-line:prefer-for-of
+  for (let i = 0; i < collections.length; ++i) {
+    const modId = collections[i];
     const { revisionId } = mods[modId].attributes ?? {};
-    if (revisionId !== undefined) {
-      const infos: nexusApi.IRevision[] =
-        await api.emitAndAwait('get-nexus-collection-revision', revisionId);
-      if (infos.length > 0) {
-        const info = infos[0];
-        api.store.dispatch(actions.setModAttributes(gameId, modId, {
-          collectionSlug: info.collection.slug,
-          author: info.collection.user?.name,
-          uploader: info.collection.user?.name,
-          uploaderAvatar: info.collection.user?.avatar,
-          uploaderId: info.collection.user?.memberId,
-          pictureUrl: info.collection.tileImage?.url,
-          description: info.collection.description,
-          shortDescription: info.collection.summary,
-          rating: info.rating,
-        }));
+    try {
+      if (revisionId !== undefined) {
+        progress(util.renderModName(mods[modId]), i);
+
+        const infos: nexusApi.IRevision[] =
+          await api.emitAndAwait('get-nexus-collection-revision', revisionId);
+        if (infos.length > 0) {
+          const info = infos[0];
+          api.store.dispatch(actions.setModAttributes(gameId, modId, {
+            customFileName: info.collection.name,
+            collectionSlug: info.collection.slug,
+            author: info.collection.user?.name,
+            uploader: info.collection.user?.name,
+            uploaderAvatar: info.collection.user?.avatar,
+            uploaderId: info.collection.user?.memberId,
+            pictureUrl: info.collection.tileImage?.url,
+            description: info.collection.description,
+            shortDescription: info.collection.summary,
+            rating: info.rating,
+          }));
+        }
       }
+    } catch (err) {
+      api.showErrorNotification('Failed to check collection for update', err);
     }
   }
+
+  api.dismissNotification(notiId);
 }
 
 interface ICallbackMap { [cbName: string]: (...args: any[]) => void; }
