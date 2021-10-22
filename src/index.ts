@@ -249,8 +249,8 @@ function generateCollectionOptions(mods: { [modId: string]: types.IMod })
 
 async function updateMeta(api: types.IExtensionApi) {
   const state = api.getState();
-  const gameId = selectors.activeGameId(state);
-  const mods = state.persistent.mods[gameId];
+  const gameMode = selectors.activeGameId(state);
+  const mods = state.persistent.mods[gameMode] ?? {};
   const collections = Object.keys(mods)
     .filter(modId => mods[modId].type === MOD_TYPE);
 
@@ -278,7 +278,7 @@ async function updateMeta(api: types.IExtensionApi) {
           await api.emitAndAwait('get-nexus-collection-revision', revisionId);
         if (infos.length > 0) {
           const info = infos[0];
-          api.store.dispatch(actions.setModAttributes(gameId, modId, {
+          api.store.dispatch(actions.setModAttributes(gameMode, modId, {
             customFileName: info.collection.name,
             collectionSlug: info.collection.slug,
             author: info.collection.user?.name,
@@ -676,6 +676,9 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const dlInfo: types.IDownload =
         util.getSafe(state().persistent.downloads.files, [dlId], undefined);
       const profile = selectors.activeProfile(state());
+      if (profile === undefined) {
+        return;
+      }
       if (!dlInfo.game.includes(profile.gameId)) {
         log('info', 'Collection downloaded for a different game than is being managed',
             { gameMode: profile.gameId, game: dlInfo.game });
