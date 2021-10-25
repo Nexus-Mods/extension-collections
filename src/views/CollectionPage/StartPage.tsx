@@ -241,7 +241,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
   private openCollections = async () => {
     const { game } = this.props;
-
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Discover more')
     util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`);
   }
 
