@@ -502,13 +502,7 @@ function register(context: types.IExtensionContext,
 
   context.registerActionCheck('ADD_NOTIFICATION', (state: any, action: Redux.Action) => {
     const notification: types.INotification = action['payload'];
-    const ruleMatches = rule => rule.reference.idHint === notification.replace.modId;
-    if (notification.id.startsWith('multiple-plugins-')) {
-      console.log('multiple plugins',
-        driver?.collection,
-        (driver?.collection?.rules ?? []).find(ruleMatches),
-      );
-    }
+    const ruleMatches = rule => rule.reference.tag === notification.replace.tag;
     if (notification.id.startsWith('multiple-plugins-')
         && (driver?.collection !== undefined)
         && ((driver.collection.rules ?? []).find(ruleMatches) !== undefined)) {
