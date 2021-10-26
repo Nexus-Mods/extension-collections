@@ -89,12 +89,14 @@ function CreateCard(props: ICreateCardProps) {
       title: 'From Profile',
       icon: 'profile',
       action: (instanceIds: string[]) => {
+        this.context.api.events.emit('analytics-track-click-event', 'Collections', 'From profile')
         props.onCreateFromProfile();
       },
     }, {
       title: 'Empty',
       icon: 'show',
       action: (instanceIds: string[]) => {
+        this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Empty')
         props.onCreateEmpty();
       },
     },
