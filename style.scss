@@ -731,6 +731,12 @@ ul.collection-mods-page-attrib-tooltip {
 
 #collection-page {
   overflow-y: auto;
+
+  .collections-refresh-meta {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
 }
 
 .collection-page-detail-bar > .layout-container {

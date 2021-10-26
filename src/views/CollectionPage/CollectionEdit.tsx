@@ -218,11 +218,11 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   private async updateState(props: ICollectionEditProps) {
     this.nextState.page = INIT_PAGE;
     if (props.collection !== undefined) {
-      const { collection, mods } = props;
+      const { collection } = props;
 
       if (collection.attributes?.revisionId !== undefined) {
-        this.nextState.revision = await this.props.driver.infoCache.getRevisionInfo(
-            collection.attributes.revisionId);
+        this.nextState.revision = (await this.props.driver.infoCache.getRevisionInfo(
+            collection.attributes.revisionId)) ?? undefined;
       }
     }
   }
@@ -242,9 +242,15 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 
   private openUrl = () => {
+    const collectionSlug =
+      this.state.revision?.collection?.slug
+      ?? this.props.collection.attributes?.collectionSlug;
+    if (collectionSlug === undefined) {
+      return;
+    }
     const { collection } = this.state.revision;
     util.opn(util.nexusModsURL(
-      [collection.game.domainName, 'collections', collection.id.toString()], {
+      [collection.game.domainName, 'collections', collection.slug], {
       campaign: util.Campaign.ViewCollection,
       section: util.Section.Collections,
     }));

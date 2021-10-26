@@ -1,5 +1,5 @@
 import { initFromProfile } from '../../collectionCreate';
-import { MOD_TYPE, NEXUS_NEXT_URL } from '../../constants';
+import { MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
 import { makeCollectionId } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
@@ -7,6 +7,7 @@ import CollectionThumbnail from './CollectionThumbnail';
 import i18next from 'i18next';
 import * as React from 'react';
 import { Panel, Tab, Tabs } from 'react-bootstrap';
+import { Trans } from 'react-i18next';
 import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util } from 'vortex-api';
 
 export interface IStartPageProps {
@@ -198,14 +199,18 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           <Panel>
             <Panel.Heading>
               <Panel.Title>
-                {t('Build your own collections and share them with the Nexus Mods community. You can view all your uploaded collections ')}
-                <a
-                  onClick={this.openMyCollectionsPage}
-                  className='my-collections-page-link'
-                  title={t('Open My Collections Page')}
-                >
-                  {t('here.')}
-                </a>
+                <Trans ns={NAMESPACE} i18nKey='collection-own-page'>
+                  Build your own collections and share them with the Nexus Mods community.
+                  You can view all your uploaded collections
+                  &nbsp;
+                  <a
+                    onClick={this.openMyCollectionsPage}
+                    className='my-collections-page-link'
+                    title={t('Open My Collections Page')}
+                  >
+                  here.
+                  </a>
+                </Trans>
               </Panel.Title>
             </Panel.Heading>
             <Panel.Body>

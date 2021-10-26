@@ -108,8 +108,12 @@ class InfoCache {
   private async cacheCollectionInfo(collectionId: string,
                                     collectionSlug: string): Promise<ICollection> {
     const { store } = this.mApi;
+    let collectionNum = parseInt(collectionId, 10);
+    if (isNaN(collectionNum)) {
+      collectionNum = undefined;
+    }
     const collectionInfo = (await this.mApi.emitAndAwait(
-        'get-nexus-collection', parseInt(collectionId, 10), collectionSlug))[0];
+        'get-nexus-collection', collectionNum, collectionSlug))[0];
     if (!!collectionInfo) {
       store.dispatch(updateCollectionInfo(collectionId, collectionInfo, Date.now()));
     }

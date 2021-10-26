@@ -25,6 +25,7 @@ import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 import initTools from './tools';
 
+import * as nexusApi from '@nexusmods/nexus-api';
 import * as PromiseBB from 'bluebird';
 import * as _ from 'lodash';
 import memoize from 'memoize-one';
@@ -246,6 +247,59 @@ function generateCollectionOptions(mods: { [modId: string]: types.IMod })
     .map(mod => ({ label: util.renderModName(mod), value: mod.id }));
 }
 
+async function updateMeta(api: types.IExtensionApi) {
+  const state = api.getState();
+  const gameMode = selectors.activeGameId(state);
+  const mods = state.persistent.mods[gameMode] ?? {};
+  const collections = Object.keys(mods)
+    .filter(modId => mods[modId].type === MOD_TYPE);
+
+  const notiId = shortid();
+
+  const progress = (name: string, idx: number) => {
+    api.sendNotification({
+      id: notiId,
+      type: 'activity',
+      title: 'Updating Collection Information',
+      message: name,
+      progress: (idx * 100) / collections.length,
+    });
+  };
+
+  // tslint:disable-next-line:prefer-for-of
+  for (let i = 0; i < collections.length; ++i) {
+    const modId = collections[i];
+    const { revisionId } = mods[modId].attributes ?? {};
+    try {
+      if (revisionId !== undefined) {
+        progress(util.renderModName(mods[modId]), i);
+
+        const infos: nexusApi.IRevision[] =
+          await api.emitAndAwait('get-nexus-collection-revision', revisionId);
+        if (infos.length > 0) {
+          const info = infos[0];
+          api.store.dispatch(actions.setModAttributes(gameMode, modId, {
+            customFileName: info.collection.name,
+            collectionSlug: info.collection.slug,
+            author: info.collection.user?.name,
+            uploader: info.collection.user?.name,
+            uploaderAvatar: info.collection.user?.avatar,
+            uploaderId: info.collection.user?.memberId,
+            pictureUrl: info.collection.tileImage?.url,
+            description: info.collection.description,
+            shortDescription: info.collection.summary,
+            rating: info.rating,
+          }));
+        }
+      }
+    } catch (err) {
+      api.showErrorNotification('Failed to check collection for update', err);
+    }
+  }
+
+  api.dismissNotification(notiId);
+}
+
 interface ICallbackMap { [cbName: string]: (...args: any[]) => void; }
 
 let collectionChangedCB: () => void;
@@ -302,6 +356,7 @@ function register(context: types.IExtensionContext,
         cloneInstalledCollection(context.api, collectionId),
       onCreateCollection: (profile: types.IProfile, name: string) =>
         createNewCollection(context.api, profile, name),
+      onUpdateMeta: () => updateMeta(context.api),
       resetCB: (cb) => resetPageCB = cb,
     }),
     onReset: () => resetPageCB?.(),
@@ -621,6 +676,9 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const dlInfo: types.IDownload =
         util.getSafe(state().persistent.downloads.files, [dlId], undefined);
       const profile = selectors.activeProfile(state());
+      if (profile === undefined) {
+        return;
+      }
       if (!dlInfo.game.includes(profile.gameId)) {
         log('info', 'Collection downloaded for a different game than is being managed',
             { gameMode: profile.gameId, game: dlInfo.game });
