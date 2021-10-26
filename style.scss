@@ -734,7 +734,7 @@ ul.collection-mods-page-attrib-tooltip {
 
   .collections-refresh-meta {
     position: absolute;
-    top: 0;
+    top: 62px;
     right: 0;
   }
 }
@@ -1145,4 +1145,33 @@ ul.collection-mods-page-attrib-tooltip {
 
 #Collections .badge {
   background-color: $brand-bg;
+}
+
+.feedback-bar {
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 auto;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: $brand-info;
+  color: black;
+  font-weight: bold;
+  font-size: larger;
+  
+  &__text {
+    margin-left: 8px
+  }
+
+  &__buttons {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    & > button {
+      background: white;
+      color: black;
+      border-color: white;
+      margin-left: 8px;
+    }
+  }
 }
