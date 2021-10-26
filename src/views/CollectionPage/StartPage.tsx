@@ -244,6 +244,9 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
   private setActiveTab = (tabId: any) => {
     this.props.onSetActiveTab(tabId);
+    this.context.api.events.emit(
+      'analytics-track-navigation', `collections/${tabId}`,
+    );
   }
 
   private openCollections = async () => {
