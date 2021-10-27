@@ -124,7 +124,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
                                     gameId: string,
                                     modId: string,
                                     uploaderName: string)
-                                    : Promise<number> {
+                                    : Promise<string> {
   const state: types.IState = api.store.getState();
   const mod = state.persistent.mods[gameId][modId];
 
@@ -139,6 +139,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
   let info: ICollection;
 
   let collectionId: number;
+  let collectionSlug: string;
 
   try {
     info = await generateCollectionInfo(state, gameId, mod, progress, onError);
@@ -156,12 +157,18 @@ export async function doExportToAPI(api: types.IExtensionApi,
       const result: ICreateCollectionResult = await util.toPromise(cb =>
         api.events.emit('submit-collection', filterInfo(info), filePath,
                         collectionId, cb));
-      collectionId = result.collectionId;
+      collectionId = result.collection.id;
+      collectionSlug = result.collection.slug;
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionId', collectionId));
-      api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', result.revisionId));
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'collectionSlug',
+                                                 result.collection.slug));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'source', 'nexus'));
+      const revisionId = result.revision?.id ?? result['revisionId'];
+      const revisionNumber = result.revision?.revision ?? result['revisionNumber'];
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', revisionId));
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionNumber', revisionNumber));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'version',
-        ((result['revisionNumber'] ?? 0) + 1).toString()));
+        ((revisionNumber ?? 0) + 1).toString()));
     });
     progressEnd();
   } catch (err) {
@@ -187,7 +194,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
     }
   }
 
-  return collectionId;
+  return collectionSlug;
 }
 
 export async function doExportToFile(api: types.IExtensionApi, gameId: string, modId: string) {

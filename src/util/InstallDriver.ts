@@ -75,7 +75,6 @@ class InstallDriver {
           //  aware that it's installing mods that are part of the collection
           //  in order for us to apply any collection mod rules to the mods themselves
           //  upon successful installation.
-          console.trace('installing collection', modId);
           this.mCollection = mods[modId];
           this.mStep = 'installing';
         }
@@ -104,7 +103,6 @@ class InstallDriver {
             this.triggerUpdate();
           } else {
             // We finished installing optional mods for the current collection - reset everything.
-            console.trace('done installing collection', modId);
             this.mCollection = undefined;
             this.mStep = 'query';
             this.deployMods();
@@ -122,7 +120,6 @@ class InstallDriver {
       return;
     }
     this.mProfile = profile;
-    console.trace('query installing collection', collection.id);
     this.mCollection = collection;
     this.mStep = 'query';
     this.triggerUpdate();
@@ -138,7 +135,6 @@ class InstallDriver {
       return;
     }
 
-    console.trace('start installing collection', collection.id);
     this.mProfile = profile;
     this.mCollection = collection;
 
@@ -297,7 +293,7 @@ class InstallDriver {
 
     if (revisionId !== undefined) {
       this.mRevisionInfo = nexusInfo?.revisionInfo
-        ?? await this.mInfoCache.getRevisionInfo(revisionId);
+        ?? await this.mInfoCache.getRevisionInfo(revisionId, slug, this.revisionNumber);
     }
 
     this.mCollectionInfo = nexusInfo?.collectionInfo
@@ -307,7 +303,7 @@ class InstallDriver {
       // site
       // Not sure if/why this would happen on live, it did occur during testing because the
       // stuff was getting deleted from the DB directly
-      ?? this.mRevisionInfo.collection;
+      ?? this.mRevisionInfo?.collection;
 
     this.mApi.events.emit('view-collection', this.mCollection.id);
 

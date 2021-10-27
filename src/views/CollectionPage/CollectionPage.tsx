@@ -307,9 +307,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const { collection, userInfo } = this.props;
 
     const { attributes } = collection ?? {};
-    if ((attributes?.revisionId !== undefined) && (userInfo !== undefined)) {
+    const { revisionId, collectionSlug, revisionNumber } = attributes ?? {};
+    if (((revisionId !== undefined) || (collectionSlug !== undefined))
+        && (userInfo !== undefined)) {
       const { infoCache } = this.props.driver;
-      this.nextState.revisionInfo = await infoCache.getRevisionInfo(attributes.revisionId);
+      this.nextState.revisionInfo =
+        await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
     }
 
     const modsEx = this.initModsEx(this.props);
@@ -325,9 +328,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       this.nextState.modsEx = this.updateModsEx(this.props, newProps);
       const { collection } = this.props;
       const { attributes } = collection;
-      if (attributes.revisionNumber !== undefined) {
+      const { revisionId, collectionSlug, revisionNumber } = attributes ?? {};
+      if ((revisionId !== undefined) || (collectionSlug !== undefined)) {
         this.nextState.revisionInfo = await
-          this.props.driver.infoCache.getRevisionInfo(attributes.revisionId);
+          this.props.driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
       }
     }
   }

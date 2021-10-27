@@ -269,18 +269,22 @@ async function updateMeta(api: types.IExtensionApi) {
   // tslint:disable-next-line:prefer-for-of
   for (let i = 0; i < collections.length; ++i) {
     const modId = collections[i];
-    const { revisionId } = mods[modId].attributes ?? {};
+    const { revisionId, collectionSlug, revisionNumber } = mods[modId].attributes ?? {};
     try {
-      if (revisionId !== undefined) {
+      if ((revisionId !== undefined) || (collectionSlug !== undefined)) {
         progress(util.renderModName(mods[modId]), i);
 
         const infos: nexusApi.IRevision[] =
-          await api.emitAndAwait('get-nexus-collection-revision', revisionId);
+          // TODO: backwards compatibility during alpha testing, not necessary beyond that
+          ((collectionSlug !== undefined) && (revisionNumber !== undefined))
+          ? await api.emitAndAwait('get-nexus-collection-revision', collectionSlug, revisionNumber)
+          : await api.emitAndAwait('get-nexus-revision', revisionId);
         if (infos.length > 0) {
           const info = infos[0];
           api.store.dispatch(actions.setModAttributes(gameMode, modId, {
             customFileName: info.collection.name,
             collectionSlug: info.collection.slug,
+            revisionNumber: info.revision,
             author: info.collection.user?.name,
             uploader: info.collection.user?.name,
             uploaderAvatar: info.collection.user?.avatar,
