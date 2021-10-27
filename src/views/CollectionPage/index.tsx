@@ -201,7 +201,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
   private onUpdateMeta() {
     this.props.onUpdateMeta()
-    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Refresh')
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Refresh');
   }
 
   private setActiveTab = (tabId: string) => {
