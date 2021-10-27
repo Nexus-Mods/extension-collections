@@ -442,7 +442,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           .filter(rule => (rule.type === 'requires') && !rule['ignored'])
           .map(rule => {
             const mod = util.findModByRef(rule.reference, mods);
-            if ((mod !== undefined) && !profile.modState[mod.id]?.enabled) {
+            if ((mod !== undefined) && !profile.modState?.[mod.id]?.enabled) {
               return null;
             }
             return mod ?? null;
@@ -500,8 +500,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     if (choice.action === 'Upload') {
       try {
-        const nexusCollId = await doExportToAPI(api, profile.gameId, collectionId, userInfo.name);
-        if (nexusCollId !== undefined) {
+        const slug = await doExportToAPI(api, profile.gameId, collectionId, userInfo.name);
+        if (slug !== undefined) {
           api.sendNotification({
             type: 'success',
             message: 'Collection submitted',
@@ -511,7 +511,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   const game = selectors.gameById(api.getState(), profile.gameId);
                   // tslint:disable-next-line: max-line-length
                   const domainName = (util as any).nexusGameId(game);
-                  const url = util.nexusModsURL([domainName, 'collections', nexusCollId], {
+                  const url = util.nexusModsURL([domainName, 'collections', slug], {
                     campaign: util.Campaign.ViewCollection,
                     section: util.Section.Collections,
                   });

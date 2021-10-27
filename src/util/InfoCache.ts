@@ -53,7 +53,9 @@ class InfoCache {
     return collections[slug].info;
   }
 
-  public async getRevisionInfo(revisionId: string): Promise<IRevision> {
+  public async getRevisionInfo(revisionId: string,
+                               collectionSlug: string, revisionNumber: number)
+                               : Promise<IRevision> {
     const { store } = this.mApi;
     const revisions = store.getState().persistent.collections.revisions ?? {};
     if ((revisions[revisionId]?.timestamp === undefined)
@@ -64,7 +66,8 @@ class InfoCache {
       });
 
       if (this.mCacheRevRequests[revisionId] === undefined) {
-        this.mCacheRevRequests[revisionId] = this.cacheRevisionInfo(revisionId);
+        this.mCacheRevRequests[revisionId] =
+          this.cacheRevisionInfo(revisionId, collectionSlug, revisionNumber);
       }
       return this.mCacheRevRequests[revisionId];
     }
@@ -108,12 +111,12 @@ class InfoCache {
   private async cacheCollectionInfo(collectionId: string,
                                     collectionSlug: string): Promise<ICollection> {
     const { store } = this.mApi;
-    let collectionNum = parseInt(collectionId, 10);
-    if (isNaN(collectionNum)) {
-      collectionNum = undefined;
+    let collectionIdNum = parseInt(collectionId, 10);
+    if (isNaN(collectionIdNum)) {
+      collectionIdNum = undefined;
     }
     const collectionInfo = (await this.mApi.emitAndAwait(
-        'get-nexus-collection', collectionNum, collectionSlug))[0];
+        'get-nexus-collection', collectionIdNum, collectionSlug))[0];
     if (!!collectionInfo) {
       store.dispatch(updateCollectionInfo(collectionId, collectionInfo, Date.now()));
     }
@@ -124,14 +127,18 @@ class InfoCache {
       });
   }
 
-  private async cacheRevisionInfo(revisionId: string): Promise<IRevision> {
+  private async cacheRevisionInfo(revisionId: string,
+                                  collectionSlug: string, revisionNumber: number)
+                                  : Promise<IRevision> {
     const { store } = this.mApi;
     const revIdNum = parseInt(revisionId, 10);
     if (Number.isNaN(revIdNum)) {
       return Promise.reject(new Error('invalid revision id: ' + revisionId));
     }
-    const revisionInfo = (await this.mApi.emitAndAwait(
-        'get-nexus-collection-revision', revIdNum))[0];
+    const revisionInfo = collectionSlug !== undefined
+      ? (await this.mApi.emitAndAwait('get-nexus-collection-revision',
+                                      collectionSlug, revisionNumber))[0]
+      : (await this.mApi.emitAndAwait('get-nexus-revision', revIdNum))[0];
     const now = Date.now();
 
     if (!!revisionInfo) {
