@@ -251,6 +251,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       return;
     }
     const { collection } = this.state.revision;
+
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Workshop Collection');
     util.opn(util.nexusModsURL(
       [collection.game.domainName, 'collections', collection.slug], {
       campaign: util.Campaign.ViewCollection,

@@ -118,7 +118,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             tooltip={t('Download the latest meta information about the collections on '
                        + 'your computer. This will reset local changes to names of '
                        + 'collections in your workshop.')}
-            onClick={this.props.onUpdateMeta}
+            onClick={this.onUpdateMeta}
           >
             {t('Refresh')}
           </tooltip.IconButton>
@@ -197,6 +197,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         </MainPage.Body>
       </MainPage>
     );
+  }
+
+  private onUpdateMeta() {
+    this.props.onUpdateMeta()
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Refresh')
   }
 
   private setActiveTab = (tabId: string) => {
@@ -455,16 +460,19 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods } = this.props;
 
     if (mods[modId].attributes?.editable) {
+      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
       return this.removeWorkshop(modId);
     } else {
+      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
       return this.cancel(modId, 'Remove collection');
     }
   }
 
   private upload = async (collectionId: string) => {
     const { mods, profile, userInfo } = this.props;
-
     const { api } = this.context;
+
+    api.events.emit('analytics-track-click-event', 'Collections', 'Upload collection');
 
     const missing = mods[collectionId].rules.filter(rule =>
       ['requires', 'recommends'].includes(rule.type)
