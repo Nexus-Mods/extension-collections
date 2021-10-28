@@ -90,12 +90,14 @@ function CreateCard(props: ICreateCardProps) {
       title: 'From Profile',
       icon: 'profile',
       action: (instanceIds: string[]) => {
+        this.context.api.events.emit('analytics-track-click-event', 'Collections', 'From profile');
         props.onCreateFromProfile();
       },
     }, {
       title: 'Empty',
       icon: 'show',
       action: (instanceIds: string[]) => {
+        this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Empty');
         props.onCreateEmpty();
       },
     },
@@ -242,15 +244,19 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
   private setActiveTab = (tabId: any) => {
     this.props.onSetActiveTab(tabId);
+    this.context.api.events.emit(
+      'analytics-track-navigation', `collections/${tabId}`,
+    );
   }
 
   private openCollections = async () => {
     const { game } = this.props;
-
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Discover more');
     util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`);
   }
 
   private openMyCollectionsPage = async () => {
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Open My Collections');
     util.opn(`${NEXUS_NEXT_URL}/my-collections`);
   }
 

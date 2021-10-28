@@ -197,6 +197,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   private openUrl = () => {
     const { revision } = this.props;
     const { collection } = revision;
+    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Added Collection');
     util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.slug}`);
   }
 
@@ -204,6 +205,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     const { onClone, collection } = this.props;
     if ((onClone !== undefined) && (collection !== undefined)) {
       onClone(collection.id);
+      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Clone');
     }
   }
 
