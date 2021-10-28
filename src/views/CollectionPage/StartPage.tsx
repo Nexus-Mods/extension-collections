@@ -278,15 +278,23 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     );
   }
 
-  private openCollections = async () => {
+  private openCollections = () => {
     const { game } = this.props;
     this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Discover more');
-    util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`);
+    util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`).catch(() => null);
   }
 
-  private openMyCollectionsPage = async () => {
+  private openMyCollectionsPage = () => {
     this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Open My Collections');
-    util.opn(`${NEXUS_NEXT_URL}/my-collections`);
+    util.opn(`${NEXUS_NEXT_URL}/my-collections`).catch(() => null);
+  }
+
+  private openFeedback = () => {
+    util.opn(FEEDBACK_URL).catch(() => null);
+  }
+
+  private openBugReport = () => {
+    util.opn(BUG_REPORT_URL).catch(() => null);
   }
 
   private fromProfile = () => {
