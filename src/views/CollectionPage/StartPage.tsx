@@ -10,6 +10,9 @@ import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
 import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util, tooltip } from 'vortex-api';
 
+const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSc3csy4ycVBECvHQDgri37Gqq1gOuTQ7LcpiIaOkGHpDsW4kA/viewform?usp=sf_link';
+const BUG_REPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdmDBdGjTQVRa7wRouN4yP6zMvqsxTT86R-DwmQXZq7SWGCSg/viewform?usp=sf_link';
+
 export interface IStartPageProps {
   t: i18next.TFunction;
   game: types.IGameStored;
@@ -163,14 +166,23 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           <Icon name='details' />
           <span className='feedback-bar__text'>
             {/* #60a5fb */}
-            Collections are in an early testing stage, you may find some features are incomplete. Please share your feedback or report bugs you find.
+            {t('Collections are in an early testing stage, you may find some features are '
+               + 'incomplete. Please share your feedback or report bugs you find.')}
           </span>
           <div className='feedback-bar__buttons'>
-            <tooltip.IconButton icon="feedback" tooltip=''>
-              {t('Feedback')}  
+            <tooltip.IconButton
+              icon='feedback'
+              tooltip='Opens the feedback page in your default browser'
+              onClick={this.openFeedback}
+            >
+              {t('Feedback')}
             </tooltip.IconButton>
-            <tooltip.IconButton icon="bug" tooltip=''>
-              {t('Bugs')}  
+            <tooltip.IconButton
+              icon='bug'
+              tooltip={t('Open bug report page in your default browser')}
+              onClick={this.openBugReport}
+            >
+              {t('Bugs')}
             </tooltip.IconButton>
           </div>
         </div>
