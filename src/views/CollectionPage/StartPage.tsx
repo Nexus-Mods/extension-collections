@@ -8,7 +8,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
-import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util } from 'vortex-api';
+import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util, tooltip } from 'vortex-api';
 
 export interface IStartPageProps {
   t: i18next.TFunction;
@@ -142,11 +142,11 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause, onUpload,
-            onRemove, onResume, onView } = this.props;
+      onRemove, onResume, onView } = this.props;
     const { imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
-    const {foreign, own} = collections.reduce((prev, mod) => {
+    const { foreign, own } = collections.reduce((prev, mod) => {
       if (util.getSafe(mod.attributes, ['editable'], false)) {
         prev.own.push(mod);
       } else {
@@ -158,87 +158,104 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     const id = makeCollectionId(profile.id);
 
     return (
-      <Tabs id='collection-start-page' activeKey={activeTab} onSelect={this.setActiveTab}>
-        <Tab
-          tabClassName='collection-tab'
-          eventKey='active-collections'
-          title={<><Icon name='add'/>{t('Added Collections')}</>}
-        >
-          <Panel>
-            <Panel.Heading>
-              <Panel.Title>{t('View and manage collections created by other users.')}</Panel.Title>
-            </Panel.Heading>
-            <Panel.Body>
-              <div className='collection-list'>
-                <AddCard t={t} onClick={this.openCollections} />
-                {foreign.map(mod =>
-                  <CollectionThumbnail
-                    key={mod.id}
+      <>
+        <div className='feedback-bar'>
+          <Icon name='details' />
+          <span className='feedback-bar__text'>
+            {/* #60a5fb */}
+            Collections are in an early testing stage, you may find some features are incomplete. Please share your feedback or report bugs you find.
+          </span>
+          <div className='feedback-bar__buttons'>
+            <tooltip.IconButton icon="feedback" tooltip=''>
+              {t('Feedback')}  
+            </tooltip.IconButton>
+            <tooltip.IconButton icon="bug" tooltip=''>
+              {t('Bugs')}  
+            </tooltip.IconButton>
+          </div>
+        </div>
+        <Tabs id='collection-start-page' activeKey={activeTab} onSelect={this.setActiveTab}>
+          <Tab
+            tabClassName='collection-tab'
+            eventKey='active-collections'
+            title={<><Icon name='add' />{t('Added Collections')}</>}
+          >
+            <Panel>
+              <Panel.Heading>
+                <Panel.Title>{t('View and manage collections created by other users.')}</Panel.Title>
+              </Panel.Heading>
+              <Panel.Body>
+                <div className='collection-list'>
+                  <AddCard t={t} onClick={this.openCollections} />
+                  {foreign.map(mod =>
+                    <CollectionThumbnail
+                      key={mod.id}
+                      t={t}
+                      gameId={profile.gameId}
+                      imageTime={imageTime}
+                      installing={installing}
+                      mods={mods}
+                      incomplete={matchedReferences[mod.id]?.includes?.(null)}
+                      collection={mod}
+                      onView={onView}
+                      onRemove={onRemove}
+                      onResume={onResume}
+                      onPause={onPause}
+                      details={true}
+                    />)}
+                </div>
+              </Panel.Body>
+            </Panel>
+          </Tab>
+          <Tab
+            tabClassName='collection-tab'
+            eventKey='collection-workshop'
+            title={<><Icon name='highlight-tool' />{t('Workshop')}</>}
+          >
+            <Panel>
+              <Panel.Heading>
+                <Panel.Title>
+                  <Trans ns={NAMESPACE} i18nKey='collection-own-page'>
+                    Build your own collections and share them with the Nexus Mods community.
+                    You can view all your uploaded collections
+                    &nbsp;
+                    <a
+                      onClick={this.openMyCollectionsPage}
+                      className='my-collections-page-link'
+                      title={t('Open My Collections Page')}
+                    >
+                      here.
+                    </a>
+                  </Trans>
+                </Panel.Title>
+              </Panel.Heading>
+              <Panel.Body>
+                <div className='collection-list'>
+                  <CreateCard
                     t={t}
-                    gameId={profile.gameId}
-                    imageTime={imageTime}
-                    installing={installing}
-                    mods={mods}
-                    incomplete={matchedReferences[mod.id]?.includes?.(null)}
-                    collection={mod}
-                    onView={onView}
-                    onRemove={onRemove}
-                    onResume={onResume}
-                    onPause={onPause}
-                    details={true}
-                  />)}
-              </div>
-            </Panel.Body>
-          </Panel>
-        </Tab>
-        <Tab
-          tabClassName='collection-tab'
-          eventKey='collection-workshop'
-          title={<><Icon name='highlight-tool' />{t('Workshop')}</>}
-        >
-          <Panel>
-            <Panel.Heading>
-              <Panel.Title>
-                <Trans ns={NAMESPACE} i18nKey='collection-own-page'>
-                  Build your own collections and share them with the Nexus Mods community.
-                  You can view all your uploaded collections
-                  &nbsp;
-                  <a
-                    onClick={this.openMyCollectionsPage}
-                    className='my-collections-page-link'
-                    title={t('Open My Collections Page')}
-                  >
-                  here.
-                  </a>
-                </Trans>
-              </Panel.Title>
-            </Panel.Heading>
-            <Panel.Body>
-              <div className='collection-list'>
-                <CreateCard
-                  t={t}
-                  onCreateFromProfile={this.fromProfile}
-                  onCreateEmpty={this.fromEmpty}
-                />
-                {own.map(mod =>
-                  <CollectionThumbnail
-                    key={mod.id}
-                    t={t}
-                    gameId={profile.gameId}
-                    collection={mod}
-                    imageTime={imageTime}
-                    mods={mods}
-                    incomplete={matchedReferences[mod.id]?.includes?.(null)}
-                    onEdit={onEdit}
-                    onRemove={onRemove}
-                    onUpload={onUpload}
-                    details={true}
-                  />)}
-              </div>
-            </Panel.Body>
-          </Panel>
-        </Tab>
-      </Tabs>
+                    onCreateFromProfile={this.fromProfile}
+                    onCreateEmpty={this.fromEmpty}
+                  />
+                  {own.map(mod =>
+                    <CollectionThumbnail
+                      key={mod.id}
+                      t={t}
+                      gameId={profile.gameId}
+                      collection={mod}
+                      imageTime={imageTime}
+                      mods={mods}
+                      incomplete={matchedReferences[mod.id]?.includes?.(null)}
+                      onEdit={onEdit}
+                      onRemove={onRemove}
+                      onUpload={onUpload}
+                      details={true}
+                    />)}
+                </div>
+              </Panel.Body>
+            </Panel>
+          </Tab>
+        </Tabs>
+      </>
     );
   }
 
