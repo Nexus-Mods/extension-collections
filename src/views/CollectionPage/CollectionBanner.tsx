@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
-import { FlexLayout, Icon, util } from 'vortex-api';
+import { ComponentEx, FlexLayout, Icon, util } from 'vortex-api';
 import { PREMIUM_PATH } from '../../constants';
 
 export interface ICollectionBannerProps {
@@ -9,7 +9,7 @@ export interface ICollectionBannerProps {
   t: i18next.TFunction;
 }
 
-class CollectionBanner extends React.Component<ICollectionBannerProps, {}> {
+class CollectionBanner extends ComponentEx<ICollectionBannerProps, {}> {
   public render(): JSX.Element {
     const { t } = this.props;
 

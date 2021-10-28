@@ -199,8 +199,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     );
   }
 
-  private onUpdateMeta() {
-    this.props.onUpdateMeta()
+  private onUpdateMeta = () => {
+    this.props.onUpdateMeta();
     this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Refresh');
   }
 

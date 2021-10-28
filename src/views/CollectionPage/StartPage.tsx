@@ -8,7 +8,7 @@ import i18next from 'i18next';
 import * as React from 'react';
 import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
-import { ComponentEx, EmptyPlaceholder, Icon, IconBar, PortalMenu, types, util, tooltip } from 'vortex-api';
+import { ComponentEx, EmptyPlaceholder, Icon, IconBar, tooltip, types, util } from 'vortex-api';
 
 const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSc3csy4ycVBECvHQDgri37Gqq1gOuTQ7LcpiIaOkGHpDsW4kA/viewform?usp=sf_link';
 const BUG_REPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdmDBdGjTQVRa7wRouN4yP6zMvqsxTT86R-DwmQXZq7SWGCSg/viewform?usp=sf_link';
@@ -81,10 +81,11 @@ interface ICreateCardProps {
   t: types.TFunction;
   onCreateFromProfile: () => void;
   onCreateEmpty: () => void;
+  onTrackClick: (namespace: string, eventName: string) => void;
 }
 
 function CreateCard(props: ICreateCardProps) {
-  const { t } = props;
+  const { t, onTrackClick } = props;
 
   const classes = ['collection-add-btn'];
 
@@ -93,14 +94,14 @@ function CreateCard(props: ICreateCardProps) {
       title: 'From Profile',
       icon: 'profile',
       action: (instanceIds: string[]) => {
-        this.context.api.events.emit('analytics-track-click-event', 'Collections', 'From profile');
+        onTrackClick('Collections', 'From profile');
         props.onCreateFromProfile();
       },
     }, {
       title: 'Empty',
       icon: 'show',
       action: (instanceIds: string[]) => {
-        this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Empty');
+        onTrackClick('Collections', 'Empty');
         props.onCreateEmpty();
       },
     },
@@ -144,8 +145,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause, onUpload,
-      onRemove, onResume, onView } = this.props;
+    const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause,
+      onRemove, onResume, onUpload, onView } = this.props;
     const { imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
@@ -190,7 +191,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           <Tab
             tabClassName='collection-tab'
             eventKey='active-collections'
-            title={<><Icon name='add' />{t('Added Collections')}</>}
+            title={<><Icon name='add'/>{t('Added Collections')}</>}
           >
             <Panel>
               <Panel.Heading>
@@ -229,9 +230,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                 <Panel.Title>
                   <Trans ns={NAMESPACE} i18nKey='collection-own-page'>
                     Build your own collections and share them with the Nexus Mods community.
-                    You can view all your uploaded collections
-                    &nbsp;
-                    <a
+                    You can view all your uploaded collections&nbsp;<a
                       onClick={this.openMyCollectionsPage}
                       className='my-collections-page-link'
                       title={t('Open My Collections Page')}
@@ -247,6 +246,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     t={t}
                     onCreateFromProfile={this.fromProfile}
                     onCreateEmpty={this.fromEmpty}
+                    onTrackClick={this.trackEvent}
                   />
                   {own.map(mod =>
                     <CollectionThumbnail
@@ -287,6 +287,10 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   private openMyCollectionsPage = () => {
     this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Open My Collections');
     util.opn(`${NEXUS_NEXT_URL}/my-collections`).catch(() => null);
+  }
+
+  private trackEvent = (namespace: string, eventName: string) => {
+    this.context.api.events.emit('analytics-track-click-event', namespace, eventName);
   }
 
   private openFeedback = () => {
