@@ -229,7 +229,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     }
   }
 
-  private setCurrentPage = (page: string) => {
+  private setCurrentPage = (page: any) => {
     this.context.api.events.emit('analytics-track-navigation', `collections/workshop/collection/${page}`);
     this.nextState.page = page;
   }
