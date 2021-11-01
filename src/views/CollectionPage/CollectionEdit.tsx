@@ -197,7 +197,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               </Tab>
             ))}
             {!!Interface ? (
-              <Tab key='gamespecific' eventKey='gamespecific' title={game.name}>
+              <Tab key='gamespecific' eventKey={game.name} title={game.name}>
                 <Panel>
                   <Interface
                     t={t}
@@ -229,8 +229,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     }
   }
 
-  private setCurrentPage = (page: any) => {
-    this.context.api.events.emit('analytics-track-navigation', `collections/workshop/collection/${page.title}`);
+  private setCurrentPage = (page: string) => {
+    this.context.api.events.emit('analytics-track-navigation', `collections/workshop/collection/${page}`);
     this.nextState.page = page;
   }
 
