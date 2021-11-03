@@ -12,6 +12,7 @@ export async function initFromProfile(api: types.IExtensionApi, profileId: strin
     id: 'collection-created',
     title: updated ? 'Collection updated' : 'Collection created',
     message: name,
+    displayMS: util.calcDuration(name.length + 20),
     actions: [
       {
         title: 'Edit',
