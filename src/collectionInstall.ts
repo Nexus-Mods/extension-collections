@@ -65,8 +65,9 @@ export function makeInstall(api: types.IExtensionApi) {
     const state = api.getState();
     const downloads = Object.values(state.persistent.downloads.files).reverse();
     const collectionDownload = downloads.find(down =>
-      path.basename(destinationPath, '.installing')
-      === path.basename(down.localPath, path.extname(down.localPath)));
+      (down.localPath !== undefined)
+      && (path.basename(destinationPath, '.installing')
+        === path.basename(down.localPath, path.extname(down.localPath))));
 
     return Promise.resolve({
       instructions: [
