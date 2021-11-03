@@ -702,7 +702,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       = util.objDiff(oldProps.mods, newProps.mods);
 
     const modifiedState: { [modId: string]: { enabled: boolean } }
-      = util.objDiff(oldProps.profile.modState, newProps.profile.modState);
+      = util.objDiff(oldProps.profile.modState ?? {}, newProps.profile.modState ?? {});
 
     const genRuleMap = (rules: types.IModRule[]) => {
       return (rules || []).reduce((prev, rule) => {
