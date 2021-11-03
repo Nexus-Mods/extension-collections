@@ -283,9 +283,12 @@ class InstallDriver {
     this.mInstallDone = false;
     this.mStep = 'start';
 
+    const collection = this.mCollection;
+    const profile = this.mProfile;
+
     const state: types.IState = this.mApi.store.getState();
-    const mods = state.persistent.mods[this.mProfile.gameId];
-    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const mods = state.persistent.mods[profile.gameId];
+    const modInfo = state.persistent.downloads.files[collection.archiveId]?.modInfo;
     const nexusInfo = modInfo?.nexus;
 
     const slug = this.collectionSlug;
@@ -305,16 +308,16 @@ class InstallDriver {
       // stuff was getting deleted from the DB directly
       ?? this.mRevisionInfo?.collection;
 
-    this.mApi.events.emit('view-collection', this.mCollection.id);
+    this.mApi.events.emit('view-collection', collection?.id);
 
     this.updateProgress();
 
     this.augmentRules();
 
-    this.mApi.dismissNotification(getUnfulfilledNotificationId(this.mCollection.id));
-    this.mApi.store.dispatch(actions.setModEnabled(this.mProfile.id, this.mCollection.id, true));
+    this.mApi.dismissNotification(getUnfulfilledNotificationId(collection?.id));
+    this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection?.id, true));
 
-    const required = this.mCollection.rules
+    const required = (collection?.rules ?? [])
       .filter(rule => rule.type === 'requires');
     this.mRequiredMods = required
       .filter(rule => util.findModByRef(rule.reference, mods) === undefined);
@@ -409,7 +412,8 @@ class InstallDriver {
   }
 
   private updateProgress() {
-    if (this.mCollection === undefined) {
+    const collection = this.mCollection;
+    if (collection === undefined) {
       return;
     }
 
@@ -418,16 +422,16 @@ class InstallDriver {
     }
 
     this.mApi.sendNotification({
-      id: INSTALLING_NOTIFICATION_ID + this.mCollection.id,
+      id: INSTALLING_NOTIFICATION_ID + collection.id,
       type: 'activity',
       title: 'Installing Collection',
-      message: util.renderModName(this.mCollection),
+      message: util.renderModName(collection),
       progress: this.installProgress(),
       actions: [
         {
           title: 'Show',
           action: () => {
-            this.mApi.events.emit('view-collection', this.mCollection.id);
+            this.mApi.events.emit('view-collection', collection.id);
           },
         },
       ],
