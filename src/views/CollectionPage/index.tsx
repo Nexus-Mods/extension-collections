@@ -378,7 +378,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         if (dlId !== undefined) {
           const download = state.persistent.downloads.files[dlId];
           if ((download !== undefined)
-              && result.input.delete_archives || (download.state !== 'finished')) {
+              && (result.input.delete_archives || (download.state !== 'finished'))) {
             await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
           }
         }
