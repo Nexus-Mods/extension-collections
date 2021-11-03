@@ -36,9 +36,11 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   }, [driver]);
 
   const showOptionals = React.useCallback(() => {
-    api.events.emit('view-collection', driver.collection.id);
-    api.store.dispatch(actions.setAttributeFilter('collection-mods', 'required', false));
-    driver.continue();
+    if (driver.collection !== undefined) {
+      api.events.emit('view-collection', driver.collection.id);
+      api.store.dispatch(actions.setAttributeFilter('collection-mods', 'required', false));
+      driver.continue();
+    }
   }, [driver]);
 
   const collection = driver.collection;
