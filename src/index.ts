@@ -274,27 +274,22 @@ async function updateMeta(api: types.IExtensionApi) {
       if ((revisionId !== undefined) || (collectionSlug !== undefined)) {
         progress(util.renderModName(mods[modId]), i);
 
-        const infos: nexusApi.IRevision[] =
-          // TODO: backwards compatibility during alpha testing, not necessary beyond that
-          ((collectionSlug !== undefined) && (revisionNumber !== undefined))
-          ? await api.emitAndAwait('get-nexus-collection-revision', collectionSlug, revisionNumber)
-          : await api.emitAndAwait('get-nexus-revision', revisionId);
-        if (infos.length > 0) {
-          const info = infos[0];
-          api.store.dispatch(actions.setModAttributes(gameMode, modId, {
-            customFileName: info.collection.name,
-            collectionSlug: info.collection.slug,
-            revisionNumber: info.revision,
-            author: info.collection.user?.name,
-            uploader: info.collection.user?.name,
-            uploaderAvatar: info.collection.user?.avatar,
-            uploaderId: info.collection.user?.memberId,
-            pictureUrl: info.collection.tileImage?.url,
-            description: info.collection.description,
-            shortDescription: info.collection.summary,
-            rating: info.rating,
-          }));
-        }
+        const info: nexusApi.IRevision = await driver.infoCache.getRevisionInfo(
+          revisionId, collectionSlug, revisionNumber, true);
+        api.store.dispatch(actions.setModAttributes(gameMode, modId, {
+          customFileName: info.collection.name,
+          collectionSlug: info.collection.slug,
+          revisionNumber: info.revision,
+          author: info.collection.user?.name,
+          uploader: info.collection.user?.name,
+          uploaderAvatar: info.collection.user?.avatar,
+          uploaderId: info.collection.user?.memberId,
+          pictureUrl: info.collection.tileImage?.url,
+          description: info.collection.description,
+          shortDescription: info.collection.summary,
+          metadata: info['metadata'],
+          rating: info.rating,
+        }));
       }
     } catch (err) {
       api.showErrorNotification('Failed to check collection for update', err);

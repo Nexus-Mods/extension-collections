@@ -1,6 +1,6 @@
 import * as actions from '../actions/persistent';
 
-import { ICollection } from '@nexusmods/nexus-api';
+import { RatingOptions } from '@nexusmods/nexus-api';
 import * as _ from 'lodash';
 import { types, util } from 'vortex-api';
 
@@ -19,24 +19,31 @@ const persistentReducer: types.IReducerSpec = {
                           { timestamp, info: revisionInfo });
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
-      const { revisionId, success } = payload;
+      const { revisionId, vote } = payload;
 
-      const revPath = ['revisions', revisionId];
+      const revPath = ['revisions', revisionId, 'info'];
 
-      // we update the success_rate inside the revision info as well, so it gets updated
-      // immediately, not just after it got fetched the next time.
-      const successRate = JSON.parse(JSON.stringify(
-        util.getSafe(state, [...revPath, 'info', 'success_rate'], { positive: 0, negative: 0 })));
-      const oldSuccess = util.getSafe(state, [...revPath, 'success'], undefined);
-      if (oldSuccess !== undefined) {
-        // this isn't the first time we send a rating so subtract our previous rating
-        --successRate[oldSuccess ? 'positive' : 'negative'];
+      const oldOwnRating =
+        util.getSafe<RatingOptions>(state, [...revPath, 'metadata', 'ratingValue'], 'abstained');
+      const rating = util.getSafe(state, [...revPath, 'rating'],
+        { average: 0.0, total: 0 });
+      let numSuccess = (rating.average / 100) * rating.total;
+      if (oldOwnRating === 'positive') {
+        --numSuccess;
       }
-      ++successRate[success ? 'positive' : 'negative'];
+      let total = rating.total;
+      if (oldOwnRating === 'abstained') {
+        ++total;
+      }
+      if (vote === 'positive') {
+        ++numSuccess;
+      }
 
-      state = util.setSafe(state, [...revPath, 'info', 'success_rate'], successRate);
-
-      return util.setSafe(state, [...revPath, 'success'], success);
+      state = util.setSafe(state, [...revPath, 'metadata', 'ratingValue'], vote);
+      return util.setSafe(state, [...revPath, 'rating'], {
+        average: Math.floor((numSuccess * 100) / total),
+        total,
+      });
     },
   },
   defaults: {

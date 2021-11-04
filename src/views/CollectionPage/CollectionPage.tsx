@@ -11,7 +11,7 @@ import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
 import CollectionProgress from './CollectionProgress';
 
-import { ICollection, ICollectionRevisionMod, IModFile, IRevision } from '@nexusmods/nexus-api';
+import { ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
@@ -44,7 +44,7 @@ export interface ICollectionPageProps {
 
 interface IConnectedProps {
   userInfo: any;
-  votedSuccess: boolean;
+  votedSuccess: RatingOptions;
   activity: { [id: string]: string };
   language: string;
   overlays: { [id: string]: types.IOverlay };
@@ -969,14 +969,10 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
 
   let votedSuccess;
 
-  if (collection?.attributes?.revisionNumber !== undefined) {
-    const { collectionId, revisionNumber } = collection.attributes;
-    const collectionInfo: ICollection = state.persistent.collections[collectionId]?.info;
-    const revisionInfo: IRevisionEx =
-      collectionInfo?.revisions?.find(rev => rev.revision === revisionNumber);
-    votedSuccess = revisionInfo !== undefined
-       ? revisionInfo.success
-       : false;
+  if (collection?.attributes?.revisionId !== undefined) {
+    const revisionInfo: IRevision =
+      state.persistent.collections.revisions?.[collection.attributes.revisionId]?.info;
+    votedSuccess = revisionInfo?.metadata?.ratingValue ?? 'abstained';
   }
 
   return {

@@ -7,7 +7,7 @@ import SlideshowControls from './SlideshowControls';
 
 import HealthIndicator from '../HealthIndicator';
 
-import { ICollectionRevisionMod, IRevision } from '@nexusmods/nexus-api';
+import { ICollectionRevisionMod, IRevision, RatingOptions } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -21,7 +21,7 @@ interface ICollectionOverviewProps {
   collection: types.IMod;
   totalSize: number;
   revision: IRevision;
-  votedSuccess: boolean;
+  votedSuccess: RatingOptions;
   incomplete: boolean;
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
   onDeselectMods?: () => void;

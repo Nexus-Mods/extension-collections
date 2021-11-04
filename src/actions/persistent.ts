@@ -10,4 +10,4 @@ export const updateRevisionInfo = createAction('UPDATE_REVISION_INFO',
     ({ revisionId, revisionInfo, timestamp }));
 
 export const updateSuccessRate = createAction('UPDATE_COLLECTION_HEALTH_RATE',
-  (revisionId: string, success: boolean) => ({ revisionId, success }));
+  (revisionId: string, vote: 'positive' | 'negative') => ({ revisionId, vote }));

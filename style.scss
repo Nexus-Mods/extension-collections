@@ -1011,6 +1011,10 @@ ul.collection-mods-page-attrib-tooltip {
 .collection-health-indicator {
   .icon-button {
     @extend .btn-embed;
+
+    &.voted {
+      color: $brand-primary;
+    }
   }
 
   margin-top: auto;
@@ -1123,24 +1127,12 @@ ul.collection-mods-page-attrib-tooltip {
   // border: 3px solid transparent;
   stroke: $brand-primary;
 
-  .timer-background {
-    stroke: $text-color-disabled;
-    opacity: 0.5;
-  }
-}
-
-.timer-circle {
-  animation-name: circle-fill;
 }
 
 #table-mods {
   .cell-collection {
     white-space: nowrap;
   }
-}
-
-@keyframes circle-fill {
-  to { stroke-dasharray: 0 100; }
 }
 
 #Collections .badge {

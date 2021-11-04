@@ -431,10 +431,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       return;
     }
 
-    const voted = (api.emitAndAwait('rate-nexus-collection-revision',
-                                    parseInt(revisionId, 10), success ? 10 : -10))[0];
+    const vote = success ? 'positive' : 'negative';
+    const voted = (await api.emitAndAwait('rate-nexus-collection-revision',
+      parseInt(revisionId, 10), vote))[0];
     if (voted) {
-      api.store.dispatch(updateSuccessRate(revisionId, success));
+      api.store.dispatch(updateSuccessRate(revisionId, vote));
     }
   }
 

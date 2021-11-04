@@ -1,3 +1,4 @@
+import { RatingOptions } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
 import { FlexLayout, Icon, tooltip } from 'vortex-api';
@@ -5,7 +6,7 @@ import { FlexLayout, Icon, tooltip } from 'vortex-api';
 export interface IHealthIndicatorProps {
   t: I18next.TFunction;
   value: { average: number, total: number };
-  ownSuccess: boolean;
+  ownSuccess: RatingOptions;
   revisionNumber: number;
   onVoteSuccess: (success: boolean) => void;
 }
@@ -33,16 +34,16 @@ function HealthIndicator(props: IHealthIndicatorProps) {
       </div>
       <div>
         <tooltip.IconButton
-          className={ownSuccess === true ? 'voted' : undefined}
-          icon='endorse-yes'
+          className={ownSuccess === 'positive' ? 'voted' : undefined}
+          icon='vote-up'
           tooltip={t('Collection worked (mostly)')}
           data-success={true}
           onClick={voteSuccess}
         />
         &nbsp;
         <tooltip.IconButton
-          className={ownSuccess === false ? 'voted' : undefined}
-          icon='endorse-no'
+          className={ownSuccess === 'negative' ? 'voted' : undefined}
+          icon='vote-down'
           tooltip={t('Collection didn\'t work (in a significant way)')}
           data-success={false}
           onClick={voteSuccess}
