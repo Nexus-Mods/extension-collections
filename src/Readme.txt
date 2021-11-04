@@ -1,6 +1,7 @@
-Make sure to add the .icon-outline class to your outline svg icons when using them in your web project:
+SVG symbols combine the simplicity of icon fonts (copy and paste snippets to show the icons) with the power of inline SVG (edit colors, stroke values, etc.). 
 
-<svg class="icon icon-outline"><use href="#icon-name" xlink:href="#icon-name"/></svg>
+How to use SVG symbols:
+https://blog.nucleoapp.com/the-guide-to-integrating-and-styling-icon-systems-svg-sprites-svg-symbols-and-icon-fonts-da7c424dac1b#91b1
 
-If you have organized icons in a Nucleo project, you can copy the svg code directly from the project page. You can read more about that on our Documentation page:
+If you have organized your icons in a Nucleo project, you can copy the SVG code directly from the Nucleo app. More info:
 https://nucleoapp.com/docs/organizing-icons#why-projects

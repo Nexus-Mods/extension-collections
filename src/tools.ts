@@ -58,6 +58,9 @@ function normalizePath(input: string) {
 function isSameTool(discovery: types.IDiscoveryResult,
                     lhs: types.IDiscoveredTool,
                     rhs: ICollectionTool) {
+  if (lhs === undefined) {
+    return false;
+  }
   return (normalizePath(lhs.path) === normalizePath(path.resolve(discovery.path, rhs.exe)))
       || (lhs.name === rhs.name);
 }
@@ -77,8 +80,6 @@ async function cloneTools(api: types.IExtensionApi,
                           from: types.IMod,
                           to: types.IMod)
                           : Promise<void> {
-  const normalize = (input: string) => path.normalize(input.toUpperCase());
-
   const discovery = selectors.discoveryByGame(api.getState(), gameId);
 
   const knownTools = api.getState().settings.gameMode.discovered[gameId].tools;
@@ -90,7 +91,7 @@ async function cloneTools(api: types.IExtensionApi,
 
     return Object.keys(knownTools)
       .find(iter => (knownTools[iter].custom && !knownTools[iter].hidden)
-                && (normalize(knownTools[iter].path) === normalize(exePath)
+                && (normalizePath(knownTools[iter].path) === normalizePath(exePath)
                  || knownTools[iter].name === tool.name));
   })
   .filter(iter => iter !== undefined);

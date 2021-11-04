@@ -35,13 +35,17 @@ class InfoCache {
     return this.mCacheColRules[revisionId];
   }
 
-  public async getCollectionInfo(id: string, slug: string): Promise<ICollection> {
+  public async getCollectionInfo(id: string,
+                                 slug: string,
+                                 forceFetch?: boolean)
+                                 : Promise<ICollection> {
     const { store } = this.mApi;
     if (slug === undefined) {
       return;
     }
     const collections = store.getState().persistent.collections.collections ?? {};
-    if ((collections[slug]?.timestamp === undefined)
+    if (forceFetch
+        || (collections[slug]?.timestamp === undefined)
         || ((Date.now() - collections[slug].timestamp) > CACHE_EXPIRE_MS)) {
 
       if (this.mCacheColRequests[slug] === undefined) {
@@ -54,11 +58,13 @@ class InfoCache {
   }
 
   public async getRevisionInfo(revisionId: string,
-                               collectionSlug: string, revisionNumber: number)
+                               collectionSlug: string, revisionNumber: number,
+                               forceFetch?: boolean)
                                : Promise<IRevision> {
     const { store } = this.mApi;
     const revisions = store.getState().persistent.collections.revisions ?? {};
-    if ((revisions[revisionId]?.timestamp === undefined)
+    if (forceFetch
+        || (revisions[revisionId]?.timestamp === undefined)
         || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
       log('info', 'revision info cache outdated', {
         timestamp: revisions[revisionId]?.timestamp,
@@ -96,6 +102,9 @@ class InfoCache {
       util.getSafe(state, ['persistent', 'mods', gameId], {});
     const colMod = Object.values(mods).find(iter =>
       (iter.type === MOD_TYPE) && (iter.attributes?.revisionId === revisionId));
+    if (colMod === undefined) {
+      return [];
+    }
     const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
     try {
       const collectionData = await fs.readFileAsync(
