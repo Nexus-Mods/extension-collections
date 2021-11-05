@@ -263,6 +263,10 @@ class InstallDriver {
   }
 
   private getModsEx(): { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
+    if (this.mProfile === undefined) {
+      return {};
+    }
+
     const mods = this.mApi.getState().persistent.mods[this.mProfile.gameId];
 
     return (this.mCollection.rules ?? []).reduce((prev, rule) => {
