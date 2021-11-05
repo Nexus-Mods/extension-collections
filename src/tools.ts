@@ -58,7 +58,7 @@ function normalizePath(input: string) {
 function isSameTool(discovery: types.IDiscoveryResult,
                     lhs: types.IDiscoveredTool,
                     rhs: ICollectionTool) {
-  if (lhs === undefined) {
+  if (lhs?.path === undefined) {
     return false;
   }
   return (normalizePath(lhs.path) === normalizePath(path.resolve(discovery.path, rhs.exe)))
