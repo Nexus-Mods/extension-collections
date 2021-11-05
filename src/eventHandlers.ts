@@ -1,25 +1,31 @@
 import { ICollection, IDownloadURL, IRevision } from '@nexusmods/nexus-api';
-import * as path from 'path';
 import { types, util } from 'vortex-api';
 
 async function collectionUpdate(api: types.IExtensionApi, gameId: string,
-                                collectionId: string, revisionId: string) {
+                                collectionSlug: string, revisionNumber: string) {
   try {
     const latest: IRevision =
-      (await api.emitAndAwait('get-nexus-collection-revision', parseInt(revisionId, 10)))[0];
+      (await api.emitAndAwait('get-nexus-collection-revision',
+                              collectionSlug, parseInt(revisionNumber, 10)))[0];
     if (latest === undefined) {
-      throw new Error(`Invalid revision id "${revisionId}"`);
+      throw new Error(`Invalid revision "${collectionSlug}:${revisionNumber}"`);
     }
     const collection: ICollection = latest.collection;
-    if (+collectionId !== collection.id) {
-      throw new Error(`Invalid collection id "${collectionId}"`);
+    if (collectionSlug !== collection.slug) {
+      throw new Error(`Invalid collection "${collectionSlug}"`);
     }
     const modInfo = {
       game: gameId,
       source: 'nexus',
       name: collection?.name,
       nexus: {
-        ids: { gameId, collectionId, revisionId: latest.id, revisionNumber: latest.revision },
+        ids: {
+          gameId,
+          collectionId: collection.id,
+          collectionSlug,
+          revisionId: latest.id,
+          revisionNumber: latest.revision,
+        },
         revisionInfo: latest,
       },
     };
@@ -50,12 +56,12 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 }
 
 export function onCollectionUpdate(api: types.IExtensionApi): (...args: any[]) => void {
-  return (gameId: string, collectionId, revisionNumber, source: string) => {
+  return (gameId: string, collectionSlug, revisionNumber: number | string, source: string) => {
     if (source !== 'nexus') {
       return;
     }
 
-    collectionUpdate(api, gameId, collectionId.toString(), revisionNumber.toString())
+    collectionUpdate(api, gameId, collectionSlug, revisionNumber.toString())
       .catch(err => {
         api.showErrorNotification('Failed to update collection', err);
       });
