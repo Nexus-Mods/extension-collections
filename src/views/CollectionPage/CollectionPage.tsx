@@ -919,7 +919,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     if (mod !== undefined) {
       return {
         ...mods[mod.id],
-        ...profile.modState[mod.id],
+        ...profile.modState?.[mod.id],
         collectionRule: rule,
       };
     } else {
