@@ -47,7 +47,7 @@ class InstallDriver {
         util.testModReference(mod, iter.reference));
       if ((mod !== undefined) && (required !== undefined)) {
         this.mInstalledMods.push(mod);
-        this.updateProgress();
+        this.updateProgress(this.mProfile, this.mCollection);
       }
       this.triggerUpdate();
     });
@@ -55,7 +55,7 @@ class InstallDriver {
     api.events.on('did-finish-download', () => {
       // not checking whether the download is actually part of this collection because
       // that check may be more expensive than the ui update
-      this.updateProgress();
+      this.updateProgress(this.mProfile, this.mCollection);
     });
 
     api.events.on('will-install-dependencies',
@@ -138,7 +138,7 @@ class InstallDriver {
     this.mProfile = profile;
     this.mCollection = collection;
 
-    this.mTotalSize = calculateCollectionSize(this.getModsEx());
+    this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
 
     this.startImpl();
 
@@ -262,14 +262,18 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
-  private getModsEx(): { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
-    if (this.mProfile === undefined) {
+  private getModsEx(profile: types.IProfile, collection: types.IMod)
+      : { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
+    if (profile === undefined) {
+      profile = this.mProfile;
+    }
+    if (profile === undefined) {
       return {};
     }
 
-    const mods = this.mApi.getState().persistent.mods[this.mProfile.gameId];
+    const mods = this.mApi.getState().persistent.mods[profile.gameId];
 
-    return (this.mCollection.rules ?? []).reduce((prev, rule) => {
+    return (collection.rules ?? []).reduce((prev, rule) => {
       if (!['requires', 'recommends'].includes(rule.type)) {
         return prev;
       }
@@ -314,9 +318,9 @@ class InstallDriver {
 
     this.mApi.events.emit('view-collection', collection?.id);
 
-    this.updateProgress();
+    this.updateProgress(profile, collection);
 
-    this.augmentRules();
+    this.augmentRules(profile, collection);
 
     this.mApi.dismissNotification(getUnfulfilledNotificationId(collection?.id));
     this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection?.id, true));
@@ -349,8 +353,8 @@ class InstallDriver {
       && fileId.toString() === ref.fileId.toString();
   }
 
-  private augmentRules() {
-    util.batchDispatch(this.mApi.store, this.mCollection.rules.map(rule => {
+  private augmentRules(profile: types.IProfile, collection: types.IMod) {
+    util.batchDispatch(this.mApi.store, collection.rules.map(rule => {
       if (rule.reference.repo === undefined) {
         return undefined;
       }
@@ -358,7 +362,7 @@ class InstallDriver {
         iter => this.matchRepo(rule, iter.file));
       if (revMod?.file !== undefined) {
         const newRule = util.setSafe(rule, ['extra', 'fileName'], revMod.file.uri);
-        return actions.addModRule(this.mProfile.gameId, this.mCollection.id, newRule);
+        return actions.addModRule(profile.gameId, collection.id, newRule);
       }
     })
     .filter(rule => rule !== undefined));
@@ -390,8 +394,8 @@ class InstallDriver {
     });
   }
 
-  private installProgress(): number {
-    const mods = this.getModsEx();
+  private installProgress(profile: types.IProfile, collection: types.IMod): number {
+    const mods = this.getModsEx(profile, collection);
 
     const downloads = this.mApi.getState().persistent.downloads.files;
 
@@ -415,14 +419,13 @@ class InstallDriver {
     return (dlPerc + instPerc) * 50.0;
   }
 
-  private updateProgress() {
-    const collection = this.mCollection;
+  private updateProgress(profile: types.IProfile, collection: types.IMod) {
     if (collection === undefined) {
       return;
     }
 
     if (this.mTotalSize === undefined) {
-      this.mTotalSize = calculateCollectionSize(this.getModsEx());
+      this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
     }
 
     this.mApi.sendNotification({
@@ -430,7 +433,7 @@ class InstallDriver {
       type: 'activity',
       title: 'Installing Collection',
       message: util.renderModName(collection),
-      progress: this.installProgress(),
+      progress: this.installProgress(profile, collection),
       actions: [
         {
           title: 'Show',
