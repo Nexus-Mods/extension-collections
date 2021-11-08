@@ -229,8 +229,14 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     }
   }
 
+  private trackTabChange = (page) => {
+    const game = util.getGame(this.props.profile.gameId);
+    const pageTracking = page === 'gamespecific' ? game.name : page;
+    this.context.api.events.emit('analytics-track-navigation', `collections/workshop/collection/${pageTracking}`);
+  }
+
   private setCurrentPage = (page: any) => {
-    this.context.api.events.emit('analytics-track-navigation', `collections/workshop/collection/${page.title}`);
+    this.trackTabChange(page);
     this.nextState.page = page;
   }
 
