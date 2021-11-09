@@ -48,6 +48,7 @@ interface IConnectedProps {
   activity: { [id: string]: string };
   language: string;
   overlays: { [id: string]: types.IOverlay };
+  revisionInfo: IRevision;
 }
 
 interface IActionProps {
@@ -57,7 +58,6 @@ interface IActionProps {
 
 interface IComponentState {
   modsEx: { [modId: string]: IModEx };
-  revisionInfo: IRevision;
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
 }
 
@@ -108,7 +108,6 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     super(props);
     this.initState({
       modsEx: {},
-      revisionInfo: undefined,
       modSelection: [],
     });
 
@@ -251,8 +250,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
           let name: string;
           let avatar: string;
-          if (this.state.revisionInfo !== undefined) {
-            const revMods: ICollectionRevisionMod[] = this.state.revisionInfo?.modFiles || [];
+          if (this.props.revisionInfo !== undefined) {
+            const revMods: ICollectionRevisionMod[] = this.props.revisionInfo?.modFiles || [];
             const revMod = revMods.find(iter => matchRepo(mod, iter.file));
 
             name = mod.attributes?.uploader || revMod?.file?.owner?.name;
@@ -311,8 +310,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     if (((revisionId !== undefined) || (collectionSlug !== undefined))
         && (userInfo !== undefined)) {
       const { infoCache } = this.props.driver;
-      this.nextState.revisionInfo =
-        await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+      await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
     }
 
     const modsEx = this.initModsEx(this.props);
@@ -330,7 +328,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       const { attributes } = collection;
       const { revisionId, collectionSlug, revisionNumber } = attributes ?? {};
       if ((revisionId !== undefined) || (collectionSlug !== undefined)) {
-        this.nextState.revisionInfo = await
+        await
           this.props.driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
       }
     }
@@ -344,7 +342,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || (this.props.collection !== newProps.collection)
         || this.installingNotificationsChanged(this.props, newProps)
         || (this.props.activity.mods !== newProps.activity.mods)
-        || (this.state.revisionInfo !== newState.revisionInfo)
+        || (this.props.revisionInfo !== newProps.revisionInfo)
         || (this.state.modSelection !== newState.modSelection)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
@@ -354,8 +352,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activity, className, collection, driver, downloads, language, notifications,
-            onVoteSuccess, profile, userInfo, votedSuccess } = this.props;
-    const { modSelection, modsEx, revisionInfo } = this.state;
+            onVoteSuccess, profile, revisionInfo, userInfo, votedSuccess } = this.props;
+    const { modSelection, modsEx } = this.state;
 
     if (collection === undefined) {
       return null;
@@ -505,7 +503,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private changeModSelection = (modIds: string[]) => {
-    const { modsEx, revisionInfo } = this.state;
+    const { revisionInfo } = this.props;
+    const { modsEx } = this.state;
 
     this.nextState.modSelection = modIds.map(modId => {
       const mod = modsEx[modId];
@@ -969,8 +968,10 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
 
   let votedSuccess;
 
+  let revisionInfo: IRevision;
+
   if (collection?.attributes?.revisionId !== undefined) {
-    const revisionInfo: IRevision =
+    revisionInfo =
       state.persistent.collections.revisions?.[collection.attributes.revisionId]?.info;
     votedSuccess = revisionInfo?.metadata?.ratingValue ?? 'abstained';
   }
@@ -981,6 +982,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     activity: state.session.base.activity,
     language: state.settings.interface.language,
     overlays: state.session.overlays.overlays,
+    revisionInfo,
   };
 }
 

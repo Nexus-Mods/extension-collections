@@ -24,15 +24,15 @@ const persistentReducer: types.IReducerSpec = {
       const revPath = ['revisions', revisionId, 'info'];
 
       const oldOwnRating =
-        util.getSafe<RatingOptions>(state, [...revPath, 'metadata', 'ratingValue'], 'abstained');
+        util.getSafe<RatingOptions>(state, [...revPath, 'metadata', 'ratingValue'], null);
       const rating = util.getSafe(state, [...revPath, 'rating'],
         { average: 0.0, total: 0 });
       let numSuccess = (rating.average / 100) * rating.total;
       if (oldOwnRating === 'positive') {
-        --numSuccess;
+        numSuccess = Math.max(0, numSuccess - 1);
       }
       let total = rating.total;
-      if (oldOwnRating === 'abstained') {
+      if ([null, 'abstained'].includes(oldOwnRating)) {
         ++total;
       }
       if (vote === 'positive') {
