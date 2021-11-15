@@ -7,6 +7,7 @@ import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
+import { ILookupResult } from 'modmeta-db';
 import * as path from 'path';
 import * as Redux from 'redux';
 import * as semver from 'semver';
@@ -42,7 +43,8 @@ function toInt(input: string | number | undefined | null) {
 
 function deduceSource(mod: types.IMod,
                       sourceInfo: ICollectionSourceInfo,
-                      versionMatcher: string)
+                      versionMatcher: string,
+                      metaInfo: ILookupResult)
                       : ICollectionSourceInfo {
   const res: Partial<ICollectionSourceInfo> = (sourceInfo !== undefined)
     ? { ...sourceInfo }
@@ -73,7 +75,10 @@ function deduceSource(mod: types.IMod,
     assign(res, 'md5', mod.attributes?.fileMD5);
   }
   assign(res, 'fileSize', mod.attributes?.fileSize);
-  assign(res, 'logicalFilename', mod.attributes?.logicalFileName);
+  // prefering the logical name from the meta db because on imported files, the file may
+  // have been renamed before installation
+  assign(res, 'logicalFilename',
+    metaInfo?.value?.logicalFileName ?? mod.attributes?.logicalFileName);
   if (sourceInfo?.updatePolicy !== undefined) {
     assign(res, 'updatePolicy', sourceInfo.updatePolicy);
   } else if (sourceInfo?.type === 'bundle') {
@@ -112,7 +117,8 @@ export function generateCollection(info: ICollectionInfo,
 /**
  * converts the rules in a mod into mod entries for a collection, ready for export
  */
-async function rulesToCollectionMods(collection: types.IMod,
+async function rulesToCollectionMods(api: types.IExtensionApi,
+                                     collection: types.IMod,
                                      mods: { [modId: string]: types.IMod },
                                      stagingPath: string,
                                      game: types.IGame,
@@ -128,6 +134,10 @@ async function rulesToCollectionMods(collection: types.IMod,
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
   await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
 
+  const state = api.getState();
+  const downloads = state.persistent.downloads.files;
+  const downloadPath = selectors.downloadPathForGame(state, game.id);
+
   const result: ICollectionMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
@@ -140,13 +150,24 @@ async function rulesToCollectionMods(collection: types.IMod,
       return undefined;
     }
 
+    const fileName = downloads[mod.archiveId]?.localPath;
+
+    const meta = await api.lookupModMeta({
+      fileName,
+      filePath: fileName !== undefined ? path.join(downloadPath, fileName) : undefined,
+      fileMD5: mod.attributes?.fileMD5,
+      fileSize: mod.attributes?.fileSize,
+      gameId: game.id,
+    });
+
     const modName = util.renderModName(mod, { version: false });
     try {
       // This call is relatively likely to fail to do it before the hash calculation to
       // save the user time in case it does fail
       const source = deduceSource(mod,
                                   collectionInfo.source?.[mod.id],
-                                  rule.reference.versionMatch);
+                                  rule.reference.versionMatch,
+                                  meta);
 
       let hashes: any;
       let choices: any;
@@ -413,7 +434,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   return res;
 }
 
-export async function modToCollection(state: types.IState,
+export async function modToCollection(api: types.IExtensionApi,
                                       gameId: string,
                                       stagingPath: string,
                                       collection: types.IMod,
@@ -421,6 +442,8 @@ export async function modToCollection(state: types.IState,
                                       onProgress: (percent?: number, text?: string) => void,
                                       onError: (message: string, replace: any) => void)
                                       : Promise<ICollection> {
+  const state = api.getState();
+
   if (selectors.activeGameId(state) !== gameId) {
     // this would be a bug
     return Promise.reject(new Error('Can only export collection for the active profile'));
@@ -467,7 +490,7 @@ export async function modToCollection(state: types.IState,
 
   const res: ICollection = {
     info: collectionInfo,
-    mods: await rulesToCollectionMods(collection, mods, stagingPath, game,
+    mods: await rulesToCollectionMods(api, collection, mods, stagingPath, game,
                                       collection.attributes?.collection ?? {},
                                       onProgress, onError),
     modRules,

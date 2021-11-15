@@ -43,13 +43,15 @@ async function zip(zipPath: string, sourcePath: string): Promise<void> {
   await zipper.add(zipPath, files.map(fileName => path.join(sourcePath, fileName)));
 }
 
-async function generateCollectionInfo(state: types.IState, gameId: string, collection: types.IMod,
+async function generateCollectionInfo(api: types.IExtensionApi, gameId: string,
+                                      collection: types.IMod,
                                       progress: (percent: number, text: string) => void,
                                       error: (message: string, replace: any) => void)
                                       : Promise<ICollection> {
+  const state = api.getState();
   const mods = state.persistent.mods[gameId];
   const stagingPath = selectors.installPath(state);
-  return modToCollection(state, gameId, stagingPath, collection, mods, progress, error);
+  return modToCollection(api, gameId, stagingPath, collection, mods, progress, error);
 }
 
 async function writeCollectionToFile(state: types.IState, info: ICollection,
@@ -142,7 +144,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
   let collectionSlug: string;
 
   try {
-    info = await generateCollectionInfo(state, gameId, mod, progress, onError);
+    info = await generateCollectionInfo(api, gameId, mod, progress, onError);
     if (errors.length > 0) {
       await queryErrorsContinue(api, errors);
     }
@@ -213,7 +215,7 @@ export async function doExportToFile(api: types.IExtensionApi, gameId: string, m
     const stagingPath = selectors.installPathForGame(state, gameId);
     const modPath = path.join(stagingPath, mod.installationPath);
     const outputPath = path.join(modPath, 'build');
-    const info = await generateCollectionInfo(state, gameId, mod, progress, onError);
+    const info = await generateCollectionInfo(api, gameId, mod, progress, onError);
     const zipPath = await writeCollectionToFile(state, info, mod, outputPath);
     const dialogActions = [
       {
