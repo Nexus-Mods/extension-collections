@@ -1,5 +1,8 @@
 import { initFromProfile } from '../../collectionCreate';
-import { MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
+import {
+  MAX_COLLECTION_NAME_LENGTH,
+  MIN_COLLECTION_NAME_LENGTH,
+  MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
 import { makeCollectionId } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
@@ -44,8 +47,13 @@ const nop = () => null;
 const validRE = /^[\p{L}\p{N} -]*$/u;
 
 function validateCollectionName(t: i18next.TFunction, input: string): string {
-  if (input.length < 3) {
-    return t('The name bust be between 3-36 characters long');
+  if ((input.length < MIN_COLLECTION_NAME_LENGTH) || (input.length > MAX_COLLECTION_NAME_LENGTH)) {
+    return t('The name bust be between {{min}}-{{max}} characters long', {
+      replace: {
+        min: MIN_COLLECTION_NAME_LENGTH,
+        max: MAX_COLLECTION_NAME_LENGTH,
+      },
+    });
   }
 
   if (input.match(validRE) === null) {
@@ -146,7 +154,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause,
-      onRemove, onResume, onUpload, onView } = this.props;
+            onRemove, onResume, onUpload, onView } = this.props;
     const { imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
@@ -195,7 +203,9 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
           >
             <Panel>
               <Panel.Heading>
-                <Panel.Title>{t('View and manage collections created by other users.')}</Panel.Title>
+                <Panel.Title>
+                  {t('View and manage collections created by other users.')}
+                </Panel.Title>
               </Panel.Heading>
               <Panel.Body>
                 <div className='collection-list'>
@@ -285,7 +295,8 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 
   private openMyCollectionsPage = () => {
-    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Open My Collections');
+    this.context.api.events.emit('analytics-track-click-event',
+                                 'Collections', 'Open My Collections');
     util.opn(`${NEXUS_NEXT_URL}/my-collections`).catch(() => null);
   }
 

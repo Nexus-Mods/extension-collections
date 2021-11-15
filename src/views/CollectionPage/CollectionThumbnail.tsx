@@ -6,7 +6,7 @@ import { FormControl, FormGroup, Image as BSImage, Panel } from 'react-bootstrap
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
-import { AUTHOR_UNKNOWN, MAX_COLLECTIION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
+import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 
 export interface IBaseProps {
@@ -51,12 +51,12 @@ function ModNameField(props: IModNameFieldProps) {
   const [tempName, setTempName] = React.useState(name);
 
   const changeInput = React.useCallback((evt: React.FormEvent<any>) => {
-    setTempName(evt.currentTarget.value.slice(0, MAX_COLLECTIION_NAME_LENGTH));
+    setTempName(evt.currentTarget.value.slice(0, MAX_COLLECTION_NAME_LENGTH));
   }, [setTempName]);
 
   const validationState = React.useCallback(() => {
     if ((tempName.length < MIN_COLLECTION_NAME_LENGTH)
-        || (tempName.length > MAX_COLLECTIION_NAME_LENGTH)) {
+        || (tempName.length > MAX_COLLECTION_NAME_LENGTH)) {
       return 'error';
     } else {
       return 'success';

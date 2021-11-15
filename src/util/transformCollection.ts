@@ -1,4 +1,4 @@
-import { BUNDLED_PATH, MOD_TYPE } from '../constants';
+import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MOD_TYPE } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
          ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo, ICollectionTool } from '../types/ICollection';
 
@@ -618,7 +618,10 @@ export async function cloneCollection(api: types.IExtensionApi,
   };
 
   const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.userId;
-  const name = 'Copy of ' + existingCollection.attributes?.name;
+  let name = 'Copy of ' + existingCollection.attributes?.name;
+  if (name.length > MAX_COLLECTION_NAME_LENGTH) {
+    name = name.slice(0, MAX_COLLECTION_NAME_LENGTH) + '...';
+  }
 
   const customFileName = ownCollection
     ? existingCollection.attributes?.customFileName
@@ -758,7 +761,10 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const profile = state.persistent.profiles[profileId];
 
   const id = makeCollectionId(profileId);
-  const name = `Collection: ${profile.name}`;
+  let name = `Collection: ${profile.name}`;
+  if (name.length > MAX_COLLECTION_NAME_LENGTH) {
+    name = name.slice(0, MAX_COLLECTION_NAME_LENGTH - 3) + '...';
+  }
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],
