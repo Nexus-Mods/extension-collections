@@ -2,8 +2,8 @@ import { AUTHOR_UNKNOWN, AVATAR_FALLBACK, INSTALLING_NOTIFICATION_ID } from '../
 import { testDownloadReference } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
 
+import { ICollection } from '../../types/ICollection';
 import { IModEx } from '../../types/IModEx';
-import { IRevisionEx } from '../../types/IRevisionEx';
 import { IStateEx } from '../../types/IStateEx';
 import { modRuleId } from '../../util/util';
 
@@ -15,6 +15,7 @@ import { ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nex
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
+import memoizeOne from 'memoize-one';
 import * as React from 'react';
 import { Image, Panel } from 'react-bootstrap';
 import ReactDOM = require('react-dom');
@@ -48,6 +49,7 @@ interface IConnectedProps {
   activity: { [id: string]: string };
   language: string;
   overlays: { [id: string]: types.IOverlay };
+  collectionInfo: ICollection;
   revisionInfo: IRevision;
 }
 
@@ -103,6 +105,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private mTableContainerRef: Element;
   private mLastModsFinal: { [ruleId: string]: IModEx };
   private mInstalling: boolean = false;
+
+  private revisionMerged = memoizeOne((collection: ICollection, revision: IRevision) => ({
+    ...revision,
+    collection,
+  } as any as IRevision));
 
   constructor(props: IProps) {
     super(props);
@@ -352,7 +359,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activity, className, collection, driver, downloads, language, notifications,
+    const { t, activity, className, collection, collectionInfo, driver, downloads, language,
             onVoteSuccess, profile, revisionInfo, userInfo, votedSuccess } = this.props;
     const { modSelection, modsEx } = this.state;
 
@@ -389,7 +396,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               gameId={profile.gameId}
               collection={collection}
               totalSize={totalSize}
-              revision={revisionInfo}
+              revision={this.revisionMerged(collectionInfo, revisionInfo)}
               votedSuccess={votedSuccess}
               onClose={this.close}
               onClone={this.clone}
@@ -970,10 +977,13 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
   let votedSuccess;
 
   let revisionInfo: IRevision;
+  let collectionInfo: ICollection;
 
   if (collection?.attributes?.revisionId !== undefined) {
     revisionInfo =
       state.persistent.collections.revisions?.[collection.attributes.revisionId]?.info;
+    collectionInfo =
+      state.persistent.collections.collections?.[revisionInfo.collection.id].info;
     votedSuccess = revisionInfo?.metadata?.ratingValue ?? 'abstained';
   }
 
@@ -983,6 +993,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     activity: state.session.base.activity,
     language: state.settings.interface.language,
     overlays: state.session.overlays.overlays,
+    collectionInfo,
     revisionInfo,
   };
 }
