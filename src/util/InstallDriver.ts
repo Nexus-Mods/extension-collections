@@ -24,6 +24,7 @@ class InstallDriver {
   private mRevisionInfo: IRevision;
   private mInfoCache: InfoCache;
   private mTotalSize: number;
+  private mOnStop: () => void;
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -103,8 +104,7 @@ class InstallDriver {
             this.triggerUpdate();
           } else {
             // We finished installing optional mods for the current collection - reset everything.
-            this.mCollection = undefined;
-            this.mStep = 'query';
+            this.onStop();
             this.deployMods();
           }
         }
@@ -140,7 +140,7 @@ class InstallDriver {
 
     this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
 
-    this.startImpl();
+    this.startInstall();
 
     this.triggerUpdate();
   }
@@ -222,10 +222,7 @@ class InstallDriver {
   }
 
   public cancel() {
-    this.mCollection = undefined;
-    this.mProfile = undefined;
-    this.mInstalledMods = [];
-    this.mStep = 'query';
+    this.onStop();
 
     this.triggerUpdate();
   }
@@ -233,7 +230,7 @@ class InstallDriver {
   public continue() {
     if (this.canContinue()) {
       const steps = {
-        query: this.startImpl,
+        query: this.startInstall,
         start: this.begin,
         disclaimer: this.closeDisclaimers,
         installing: this.finishInstalling,
@@ -262,6 +259,14 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
+  private onStop() {
+    this.mCollection = undefined;
+    this.mProfile = undefined;
+    this.mInstalledMods = [];
+    this.mStep = 'query';
+    this.mOnStop?.();
+  }
+
   private getModsEx(profile: types.IProfile, collection: types.IMod)
       : { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
     if (profile === undefined) {
@@ -283,6 +288,17 @@ class InstallDriver {
 
       return prev;
     }, {});
+  }
+
+  private startInstall = async () => {
+    this.mApi.ext.withSuppressedTests?.(['plugins-changed'], () =>
+      new Promise((resolve, reject) => {
+        this.mOnStop = () => {
+          resolve();
+          this.mOnStop = undefined;
+        };
+      }));
+    return this.startImpl();
   }
 
   private startImpl = async () => {
@@ -369,6 +385,10 @@ class InstallDriver {
   }
 
   private begin = () => {
+    if ((this.mCollection === undefined) || (this.mProfile.id === undefined)) {
+      return;
+    }
+
     this.mApi.events.emit('install-dependencies', this.mProfile.id, [this.mCollection.id], true);
     // skipping disclaimer for now
     this.mStep = 'installing';
