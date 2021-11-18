@@ -982,8 +982,10 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
   if (collection?.attributes?.revisionId !== undefined) {
     revisionInfo =
       state.persistent.collections.revisions?.[collection.attributes.revisionId]?.info;
-    collectionInfo =
-      state.persistent.collections.collections?.[revisionInfo.collection.id].info;
+    if (revisionInfo?.collection !== undefined) {
+      collectionInfo =
+        state.persistent.collections.collections?.[revisionInfo.collection.id].info;
+    }
     votedSuccess = revisionInfo?.metadata?.ratingValue ?? 'abstained';
   }
 
