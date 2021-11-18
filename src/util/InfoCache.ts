@@ -144,7 +144,7 @@ class InfoCache {
     if (Number.isNaN(revIdNum)) {
       return Promise.reject(new Error('invalid revision id: ' + revisionId));
     }
-    const revisionInfo = collectionSlug !== undefined
+    const revisionInfo = ((collectionSlug !== undefined) && (revisionNumber !== undefined))
       ? (await this.mApi.emitAndAwait('get-nexus-collection-revision',
                                       collectionSlug, revisionNumber))[0]
       : (await this.mApi.emitAndAwait('get-nexus-revision', revIdNum))[0];
