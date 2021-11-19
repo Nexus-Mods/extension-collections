@@ -274,8 +274,8 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
             return;
           }
 
-          this.props.onRemoveRule(entry.rule);
           const newRule = _.cloneDeep(entry.rule);
+          this.props.onRemoveRule(entry.rule);
           newRule.reference.versionMatch = (value === 'exact')
             ? entry.mod.attributes['version']
             : (value === 'prefer')
@@ -458,6 +458,49 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
             const selected = Object.keys(result.input).find(iter => result.input[iter]);
             instanceIds.forEach(modId => {
               onSetCollectionAttribute(['installMode', modId], selected);
+            });
+          }
+        });
+      },
+    },
+    {
+      title: 'Set Version',
+      icon: 'auto-update',
+      singleRowAction: false,
+      multiRowAction: true,
+      action: (instanceIds: string[]) => {
+        this.context.api.showDialog('question', 'Version Match', {
+          text: 'Please choose how Vortex should choose the version of the mod to be installed. '
+              + '"Exact" means that the user should install the same version as you have '
+              + 'installed right now. "Latest" means it should get the newest version at '
+              + 'the time of installation.',
+          choices: [
+            { id: 'prefer', text: 'Prefer exact', value: true },
+            { id: 'latest', text: 'Latest', value: false },
+            { id: 'exact', text: 'Exact only', value: false },
+          ],
+        }, [
+          { label: 'Cancel' },
+          { label: 'Apply' },
+        ]).then(result => {
+          if (result.action === 'Apply') {
+            const { onAddRule, onRemoveRule } = this.props;
+            const { entries } = this.state;
+
+            const selected = Object.keys(result.input).find(iter => result.input[iter]);
+            instanceIds.forEach(modId => {
+              const entry = entries[modId];
+              if (entry.mod !== undefined) {
+                const newRule = _.cloneDeep(entry.rule);
+                newRule.reference.versionMatch = (selected === 'exact')
+                  ? entry.mod.attributes['version']
+                  : (selected === 'prefer')
+                    ? '>=' + entry.mod.attributes['version'] + '+prefer'
+                    : '*';
+
+                onRemoveRule(entry.rule);
+                onAddRule(newRule);
+              }
             });
           }
         });
