@@ -471,7 +471,9 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       action: (instanceIds: string[]) => {
         this.context.api.showDialog('question', 'Confirm removal', {
           text: 'Really remove these mods from this collection? (They are not removed from Vortex)',
-          message: instanceIds.map(id => util.renderModName(this.state.entries[id].mod)).join('\n'),
+          message: instanceIds.map(id => this.state.entries[id].mod !== undefined
+            ? util.renderModName(this.state.entries[id].mod)
+            : util.renderModReference(this.state.entries[id].rule.reference)).join('\n'),
         }, [
           { label: 'Cancel' },
           { label: 'Remove', action: () => {
