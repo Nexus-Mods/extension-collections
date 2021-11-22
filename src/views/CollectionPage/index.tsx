@@ -255,7 +255,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     this.nextState.viewMode = 'edit';
   }
 
-  private pause = (modId: string) => {
+  private pause = async (modId: string, silent?: boolean) => {
     const { downloads, mods } = this.props;
 
     const collection = mods[modId];
@@ -266,17 +266,19 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       }
     });
     const { api } = this.context;
-    api.emitAndAwait('cancel-dependency-install', modId);
+    await api.emitAndAwait('cancel-dependency-install', modId);
 
     this.props.driver.cancel();
 
     api.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
-    api.sendNotification({
-      id: 'collection-pausing',
-      type: 'success',
-      title: 'Collection pausing',
-      message: 'Already queued mod installations will still finish',
-    });
+    if (silent !== true) {
+      api.sendNotification({
+        id: 'collection-pausing',
+        type: 'success',
+        title: 'Collection pausing',
+        message: 'Already queued mod installations will still finish',
+      });
+    }
   }
 
   private async removeWorkshop(modId: string) {
@@ -343,6 +345,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     if (result.action === 'Cancel') {
       return;
     }
+
+    await this.pause(modId, true);
 
     const state: types.IState = api.store.getState();
 

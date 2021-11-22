@@ -112,7 +112,9 @@ class InfoCache {
       const collection: any = JSON.parse(collectionData);
       return collection.modRules ?? [];
     } catch (err) {
-      this.mApi.showErrorNotification('Failed to cache collection mod rules', err);
+      if (err.code !== 'ENOENT') {
+        this.mApi.showErrorNotification('Failed to cache collection mod rules', err);
+      }
       return [];
     }
   }
