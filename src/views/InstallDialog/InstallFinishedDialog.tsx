@@ -38,6 +38,7 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   const showOptionals = React.useCallback(() => {
     if (driver.collection !== undefined) {
       api.events.emit('view-collection', driver.collection.id);
+      api.store.dispatch(actions.setAttributeFilter('collection-mods', undefined, undefined));
       api.store.dispatch(actions.setAttributeFilter('collection-mods', 'required', false));
       driver.continue();
     }
