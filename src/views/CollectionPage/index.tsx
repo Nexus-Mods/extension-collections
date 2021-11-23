@@ -415,8 +415,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
       }
     } catch (err) {
-      if (!(err instanceof util.UserCanceled) && !(err instanceof util.ProcessCanceled)) {
-        api.showErrorNotification('Failed to remove Mods', err);
+      if (!(err instanceof util.UserCanceled)) {
+        // possible reason for ProcessCanceled is that (un-)deployment may
+        // not be possible atm, we definitively should report that
+        api.showErrorNotification('Failed to remove Mods', err, {
+          allowReport: !(err instanceof util.ProcessCanceled),
+        });
       }
     } finally {
       api.dismissNotification(notiId);
