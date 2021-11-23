@@ -49,7 +49,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
         return 'pending';
       }
 
-      if ((mod.state === 'installed') && !profile.modState[mod.id]?.enabled) {
+      if ((mod.state === 'installed') && !profile.modState?.[mod.id]?.enabled) {
         return 'disabled';
       }
 
