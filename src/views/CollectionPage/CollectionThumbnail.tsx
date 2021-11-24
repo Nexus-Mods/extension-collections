@@ -169,6 +169,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             <CollectionReleaseStatus
               t={t}
               active={active}
+              enabled={profile.modState?.[collection.id]?.enabled ?? false}
               collection={collection}
               incomplete={incomplete}
             />

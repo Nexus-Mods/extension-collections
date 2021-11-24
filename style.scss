@@ -1023,7 +1023,7 @@ ul.collection-mods-page-attrib-tooltip {
   border: $border-width solid $border-color;
   padding: 0.5em;
 
-  :first-child svg {
+  .icon-revision, .icon-health {
     margin-right: 0.5em;
   }
 

@@ -54,6 +54,8 @@ interface IConnectedProps {
 }
 
 interface IActionProps {
+  onSetModEnabled: (profileId: string, modId: string, enable: boolean) => void;
+  onSetAttributeFilter: (tableId: string, filterId: string, filterValue: any) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) => void;
 }
@@ -393,11 +395,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             <CollectionOverview
               t={t}
               language={language}
-              gameId={profile.gameId}
+              profile={profile}
               collection={collection}
               totalSize={totalSize}
               revision={this.revisionMerged(collectionInfo, revisionInfo)}
               votedSuccess={votedSuccess}
+              onSetEnabled={this.setEnabled}
+              onShowMods={this.showMods}
               onClose={this.close}
               onClone={this.clone}
               onRemove={this.remove}
@@ -475,6 +479,25 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   private resume = () => {
     this.props.onResume(this.props.collection.id);
+  }
+
+  private setEnabled = (enable: boolean) => {
+    const { collection, onSetModEnabled, profile } = this.props;
+    onSetModEnabled(profile.id, collection.id, enable);
+    this.context.api.events.emit('mods-enabled', [ collection.id ], enable, profile.gameId);
+  }
+
+  private showMods = () => {
+    const { collection } = this.props;
+    const { api } = this.context;
+
+    const batch = [];
+    batch.push(actions.setAttributeFilter('mods', 'dependencies',
+      ['depends', collection.id, util.renderModName(collection)]));
+    batch.push(actions.setAttributeSort('mods', 'dependencies', 'asc'));
+    util.batchDispatch(api.store, batch);
+
+    api.events.emit('show-main-page', 'Mods');
   }
 
   private close = () => {
@@ -1002,6 +1025,10 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
 
 function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
   return {
+    onSetModEnabled: (profileId: string, modId: string, enable: boolean) =>
+      dispatch(actions.setModEnabled(profileId, modId, enable)),
+    onSetAttributeFilter: (tableId: string, filterId: string, filterValue: any) =>
+      dispatch(actions.setAttributeFilter(tableId, filterId, filterValue)),
     onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) =>

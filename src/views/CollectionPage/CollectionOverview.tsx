@@ -17,13 +17,15 @@ import { ActionDropdown, ComponentEx, FlexLayout, tooltip, types, util } from 'v
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
   language: string;
-  gameId: string;
+  profile: types.IProfile;
   collection: types.IMod;
   totalSize: number;
   revision: IRevision;
   votedSuccess: RatingOptions;
   incomplete: boolean;
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
+  onSetEnabled: (enable: boolean) => void;
+  onShowMods: () => void;
   onDeselectMods?: () => void;
   onClose?: () => void;
   onClone?: (collectionId: string) => void;
@@ -41,11 +43,34 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     this.mWorkshopActions = [
       {
+        title: 'Enable',
+        action: this.enable,
+        condition: () => {
+          const { collection, incomplete, profile } = this.props;
+          return !incomplete && (profile.modState?.[collection.id]?.enabled !== true);
+        },
+        icon: 'toggle-enabled',
+      },
+      {
         title: 'View on Nexus Mods',
         action: this.openUrl,
         condition: () => (this.props.collection.attributes?.collectionSlug !== undefined)
                       && (this.props.revision !== undefined),
         icon: 'open-in-browser',
+      },
+      {
+        title: 'Disable',
+        action: this.disable,
+        condition: () => {
+          const { collection, incomplete, profile } = this.props;
+          return !incomplete && (profile.modState?.[collection.id]?.enabled === true);
+        },
+        icon: 'toggle-disabled',
+      },
+      {
+        title: 'Show in Mods',
+        action: this.props.onShowMods,
+        icon: 'inspect',
       },
       {
         title: 'Clone (Workshop)',
@@ -63,7 +88,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   }
 
   public render(): JSX.Element {
-    const { t, collection, gameId, incomplete, modSelection, revision, votedSuccess } = this.props;
+    const { t, collection, incomplete, modSelection, profile, revision, votedSuccess } = this.props;
 
     let { selIdx } = this.state;
     if (selIdx >= modSelection.length) {
@@ -88,7 +113,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
               t={t}
               imageTime={Date.now()}
               collection={collection}
-              gameId={gameId}
+              gameId={profile.gameId}
               details={false}
             />
           </Media.Left>
@@ -102,6 +127,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                   <CollectionReleaseStatus
                     t={t}
                     active={true}
+                    enabled={profile.modState?.[collection.id]?.enabled ?? false}
                     collection={collection}
                     incomplete={incomplete}
                   />
@@ -137,7 +163,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                       t={t}
                       local={modSelection[selIdx]?.local}
                       remote={modSelection[selIdx]?.remote}
-                      gameId={gameId}
+                      gameId={profile.gameId}
                     />
                   ) : (
                     null
@@ -192,6 +218,14 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     this.nextState.selIdx = (this.props.modSelection.length === 0)
       ? 0
       : idx % this.props.modSelection.length;
+  }
+
+  private enable = () => {
+    this.props.onSetEnabled(true);
+  }
+
+  private disable = () => {
+    this.props.onSetEnabled(false);
   }
 
   private openUrl = () => {
