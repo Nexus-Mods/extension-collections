@@ -482,9 +482,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private setEnabled = (enable: boolean) => {
-    const { collection, onSetModEnabled, profile } = this.props;
-    onSetModEnabled(profile.id, collection.id, enable);
-    this.context.api.events.emit('mods-enabled', [ collection.id ], enable, profile.gameId);
+    const { collection, profile } = this.props;
+    actions.setModsEnabled(this.context.api, profile.id, [collection.id], enable);
   }
 
   private showMods = () => {
