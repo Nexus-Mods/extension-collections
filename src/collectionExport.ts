@@ -3,7 +3,7 @@ import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICol
 import { modToCollection as modToCollection } from './util/transformCollection';
 import { makeProgressFunction } from './util/util';
 
-import { ICreateCollectionResult } from '@nexusmods/nexus-api';
+import { ICreateCollectionResult, IGraphErrorDetail } from '@nexusmods/nexus-api';
 import * as PromiseBB from 'bluebird';
 import * as _ from 'lodash';
 import Zip = require('node-7z');
@@ -122,6 +122,59 @@ async function queryErrorsContinue(api: types.IExtensionApi,
   }
 }
 
+function renderGraphLocateError(api: types.IExtensionApi, gameId: string, modId: string,
+                                det: IGraphErrorDetail): string {
+  const t = api.translate;
+  const state = api.getState();
+  const mods = state.persistent.mods[gameId];
+  switch (det.attribute) {
+    case 'modId': {
+      const missingMod = Object.values(mods).find(iter =>
+        iter.attributes?.modId?.toString?.() === det.value.toString());
+      if (missingMod !== undefined) {
+        return t('Mod not found on nexusmods.com: {{modName}} (modId: {{modId}}), '
+                 + 'it may have been removed.', { replace: {
+          modName: util.renderModName(missingMod),
+          modId: det.value,
+        } });
+      } else {
+        return t('Mod with id {{modId}} not found', { replace: { modId: det.value } });
+      }
+    }
+    case 'fileId': {
+      const missingMod = Object.values(mods).find(iter =>
+        iter.attributes?.fileId?.toString?.() === det.value.toString());
+      if (missingMod !== undefined) {
+        return t('Mod not found on nexusmods.com: {{modName}} '
+                 + '(modId: {{modId}}, fileId: {{fileId}}), '
+                 + 'it may have been removed.', { replace: {
+          modName: util.renderModName(missingMod, { version: true }),
+          modId: missingMod.attributes?.modId ?? 'Unknown',
+          fileId: missingMod.attributes?.fileId,
+        } });
+      } else {
+        return t('Mod with file id {{fileId}} not found', { replace: { fileId: det.value } });
+      }
+    }
+    default: {
+      return det.message;
+    }
+  }
+}
+
+function renderGraphErrorFallback(det: IGraphErrorDetail): string {
+  return det.message;
+}
+
+function renderGraphErrorDetail(api: types.IExtensionApi, gameId: string, modId: string,
+                                det: IGraphErrorDetail): string {
+  if ((det.type === 'LOCATE_ERROR') && (det.value !== undefined)) {
+    return renderGraphLocateError(api, gameId, modId, det);
+  } else {
+    return renderGraphErrorFallback(det);
+  }
+}
+
 export async function doExportToAPI(api: types.IExtensionApi,
                                     gameId: string,
                                     modId: string,
@@ -189,6 +242,23 @@ export async function doExportToAPI(api: types.IExtensionApi,
         type: 'error',
         title: 'The server rejected this collection',
         message: err.message || '<No reason given>',
+      });
+      throw new util.ProcessCanceled('collection rejected');
+    } else if (err.constructor.name === 'GraphError') {
+      const details: IGraphErrorDetail[] = err['details'];
+      api.sendNotification({
+        type: 'error',
+        message: 'The server rejected this collection',
+        actions: [
+          { title: 'More', action: () => {
+            api.showDialog('error', 'The server rejected this collection', {
+              text: details.map(detail =>
+                renderGraphErrorDetail(api, gameId, modId, detail)).join('\n'),
+            }, [
+              { label: 'Close' },
+            ]);
+          } },
+        ],
       });
       throw new util.ProcessCanceled('collection rejected');
     } else {
