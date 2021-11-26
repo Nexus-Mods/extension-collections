@@ -627,27 +627,6 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.events.on('did-install-dependencies',
-    async (profileId: string, modId: string, recommendations: boolean) => {
-      log('info', 'did install dependencies', { profileId, modId });
-      const profile = selectors.profileById(state(), profileId);
-      const stagingPath = selectors.installPathForGame(state(), profile.gameId);
-      const mods = state().persistent.mods[profile.gameId];
-      const mod = mods[modId];
-      if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
-        try {
-          const collectionData = await fs.readFileAsync(
-            path.join(stagingPath, mod.installationPath, 'collection.json'),
-            { encoding: 'utf-8' });
-          const collection: ICollection = JSON.parse(collectionData);
-          postprocessCollection(api, profile, mod, collection, mods);
-        } catch (err) {
-          log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
-            + 'platform where the collection has been created.');
-        }
-      }
-    });
-
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
   api.events.on('collection-update', onCollectionUpdate(api));
 

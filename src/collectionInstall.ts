@@ -159,6 +159,12 @@ export async function postprocessCollection(api: types.IExtensionApi,
   log('info', 'postprocess collection');
   applyCollectionRules(api, profile.gameId, collection, mods);
 
+  try {
+    await util.toPromise(cb => api.events.emit('deploy-mods', cb));
+  } catch (err) {
+    log('warn', 'Failed to deploy during collection post processing');
+  }
+
   const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
 
   for (const ext of exts) {

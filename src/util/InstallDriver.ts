@@ -1,7 +1,10 @@
-import { ICollection, IModFile, IRevision } from '@nexusmods/nexus-api';
+import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
-import { actions, log, selectors, types, util } from 'vortex-api';
+import * as path from 'path';
+import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
+import { ICollection } from '../types/ICollection';
 import { IRevisionEx } from '../types/IRevisionEx';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
@@ -20,8 +23,8 @@ class InstallDriver {
   private mRequiredMods: types.IModRule[] = [];
   private mInstallingMod: string;
   private mInstallDone: boolean = false;
-  private mCollectionInfo: ICollection;
-  private mRevisionInfo: IRevision;
+  private mCollectionInfo: nexusApi.ICollection;
+  private mRevisionInfo: nexusApi.IRevision;
   private mInfoCache: InfoCache;
   private mTotalSize: number;
   private mOnStop: () => void;
@@ -83,31 +86,7 @@ class InstallDriver {
 
     api.events.on('did-install-dependencies',
       (profileId: string, modId: string, recommendations: boolean) => {
-        if ((this.mCollection !== undefined)
-            && (modId === this.mCollection.id)) {
-          if (!recommendations) {
-            const profile = selectors.profileById(api.getState(), profileId);
-            const mods = api.getState().persistent.mods[profile.gameId];
-            const incomplete = this.mCollection.rules.find(rule =>
-              (rule.type === 'requires')
-          && (rule['ignored'] !== true)
-          && (util.findModByRef(rule.reference, mods) === undefined));
-
-            if (incomplete === undefined) {
-              this.mStep = 'review';
-              this.deployMods();
-            } else {
-              this.mInstallDone = true;
-              this.mInstallingMod = undefined;
-            }
-            this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
-            this.triggerUpdate();
-          } else {
-            // We finished installing optional mods for the current collection - reset everything.
-            this.onStop();
-            this.deployMods();
-          }
-        }
+        this.onDidInstallDependencies(profileId, modId, recommendations);
       });
   }
 
@@ -209,7 +188,7 @@ class InstallDriver {
     return nexusInfo?.ids?.revisionId || modInfo?.ids?.revisionId;
   }
 
-  public get collectionInfo(): ICollection {
+  public get collectionInfo(): nexusApi.ICollection {
     return this.mCollectionInfo;
   }
 
@@ -257,6 +236,52 @@ class InstallDriver {
 
   public canHide() {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
+  }
+
+  private async onDidInstallDependencies(profileId: string,
+                                         modId: string,
+                                         recommendations: boolean) {
+    log('info', 'did install dependencies', { profileId, modId });
+
+    const profile = selectors.profileById(this.mApi.getState(), profileId);
+    const mods = this.mApi.getState().persistent.mods[profile.gameId];
+
+    if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
+      if (!recommendations) {
+        const filter = rule =>
+          (rule.type === 'requires')
+          && (rule['ignored'] !== true)
+          && (util.findModByRef(rule.reference, mods) === undefined);
+
+        const incomplete = this.mCollection.rules.find(filter);
+        if (incomplete === undefined) {
+          this.mStep = 'review';
+        } else {
+          this.mInstallDone = true;
+          this.mInstallingMod = undefined;
+        }
+        this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
+        this.triggerUpdate();
+      } else {
+        // We finished installing optional mods for the current collection - reset everything.
+        this.onStop();
+      }
+    }
+
+    const stagingPath = selectors.installPathForGame(this.mApi.getState(), profile.gameId);
+    const mod = mods[modId];
+    if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
+      try {
+        const collectionData = await fs.readFileAsync(
+          path.join(stagingPath, mod.installationPath, 'collection.json'),
+          { encoding: 'utf-8' });
+        const collectionInfo: ICollection = JSON.parse(collectionData);
+        await postprocessCollection(this.mApi, profile, mod, collectionInfo, mods);
+      } catch (err) {
+        log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
+          + 'platform where the collection has been created.');
+      }
+    }
   }
 
   private onStop() {
@@ -356,7 +381,7 @@ class InstallDriver {
     });
   }
 
-  private matchRepo(rule: types.IModRule, ref: IModFile) {
+  private matchRepo(rule: types.IModRule, ref: nexusApi.IModFile) {
     const modId = rule.reference.repo?.modId;
     const fileId = rule.reference.repo?.fileId;
 
@@ -463,14 +488,6 @@ class InstallDriver {
         },
       ],
     });
-  }
-
-  private deployMods = () => {
-    const state = this.mApi.getState();
-    if (state.settings.automation.deploy) {
-      // Any errors will be reported by the deployment mechanism itself.
-      this.mApi.events.emit('deploy-mods', () => undefined);
-    }
   }
 }
 
