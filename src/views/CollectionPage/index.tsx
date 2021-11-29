@@ -301,7 +301,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     );
 
     if (result.action === 'Remove') {
-      await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
+      await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb, {
+        incomplete: true,
+      }));
     }
   }
 
@@ -412,7 +414,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         if (download !== undefined) {
           await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
         }
-        await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb));
+        await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb, {
+          incomplete: true,
+        }));
       }
     } catch (err) {
       if (!(err instanceof util.UserCanceled)) {
@@ -526,8 +530,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
               {
                 title: 'Open in Browser', action: () => {
                   const game = selectors.gameById(api.getState(), profile.gameId);
-                  // tslint:disable-next-line: max-line-length
-                  const domainName = (util as any).nexusGameId(game);
+                  const domainName = util.nexusGameId(game);
                   const url = util.nexusModsURL([domainName, 'collections', slug], {
                     campaign: util.Campaign.ViewCollection,
                     section: util.Section.Collections,
