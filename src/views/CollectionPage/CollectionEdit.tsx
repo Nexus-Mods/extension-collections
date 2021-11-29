@@ -259,12 +259,14 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     }
     const { collection } = this.state.revision;
 
-    this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Workshop Collection');
-    util.opn(util.nexusModsURL(
-      [collection.game.domainName, 'collections', collection.slug], {
-      campaign: util.Campaign.ViewCollection,
-      section: util.Section.Collections,
-    }));
+    if (collection !== undefined) {
+      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Workshop Collection');
+      util.opn(util.nexusModsURL(
+        [collection.game.domainName, 'collections', collection.slug], {
+        campaign: util.Campaign.ViewCollection,
+        section: util.Section.Collections,
+      }));
+    }
   }
 
   private addRule = (rule: types.IModRule) => {
