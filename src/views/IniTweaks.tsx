@@ -10,7 +10,7 @@ import { connect } from 'react-redux';
 import Select from 'react-select';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { ActionDropdown, actions, ComponentEx, Icon, PureComponentEx, selectors,
+import { ActionDropdown, actions, ComponentEx, FlexLayout, Icon, PureComponentEx, selectors,
          types, Usage, util } from 'vortex-api';
 
 import { IINITweak, TweakArray } from '../types/IINITweak';
@@ -51,11 +51,13 @@ interface ITweakProps {
 class Tweak extends PureComponentEx<ITweakProps, {}> {
   private mStatusActions: types.IActionDefinition[] = [
     {
+      icon: 'toggle-enabled',
       title: 'Enabled',
       action: () => this.disable(),
       condition: () => this.props.enabled,
     },
     {
+      icon: 'toggle-disabled',
       title: 'Disabled',
       action: () => this.enable(),
       condition: () => !this.props.enabled,
@@ -163,7 +165,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
     }
 
     return (
-      <div className='ini-tweaks-container'>
+      <FlexLayout type='column' className='ini-tweaks-container'>
         <ControlLabel>
           <p>
             {t('This screen lets you set up tweaks for the game ini file that will be applied '
@@ -174,22 +176,26 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
               + 'multiple tweaks to give users granular control.')}
           </p>
         </ControlLabel>
-        <Table id='collection-initweaks-table'>
-          <thead>
-            <tr>
-              <th className='header-status'>{t('Status')}</th>
-              <th className='header-filename'>{t('Ini file')}</th>
-              <th className='header-requirement'>{t('Requirement')}</th>
-              <th className='header-edit'>{t('Edit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tweaks.map(this.renderTweak)}
-          </tbody>
-        </Table>
-        <Button onClick={this.addIniTweak}>
-          {t('Add')}
-        </Button>
+        <FlexLayout.Flex>
+          <div id='collection-initweaks-table-panel'>
+            <Table id='collection-initweaks-table'>
+              <thead>
+                <tr>
+                  <th className='header-status'>{t('Status')}</th>
+                  <th className='header-filename'>{t('Ini file')}</th>
+                  <th className='header-requirement'>{t('Requirement')}</th>
+                  <th className='header-edit'>{t('Edit')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tweaks.map(this.renderTweak)}
+              </tbody>
+            </Table>
+            <Button onClick={this.addIniTweak}>
+              {t('Add')}
+            </Button>
+          </div>
+        </FlexLayout.Flex>
         <Usage infoId='ini-tweaks'>
           <p>
             {t('To assist in the testing of INI configuration application - any enabled INI modification '
@@ -201,7 +207,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
              + 'If needed, INI tweak can be removed by clicking the arrow next to the button and selecting "Remove"')}
           </p>
         </Usage>
-      </div>
+      </FlexLayout>
     );
   }
 

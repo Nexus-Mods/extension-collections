@@ -81,7 +81,7 @@ function Tools(props: IToolsProps) {
     .filter(tool => tool.custom && !tool.hidden);
 
   return (
-    <div>
+    <div className='collection-scrollable'>
       <ControlLabel>
         <p>
           {t('This screen lets you include tools you manually configured to be run from Vortex.')}

@@ -942,8 +942,26 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
+#collection-initweaks-table-panel {
+  height: 100%;
+  overflow-y: auto;
+  width: fit-content;
+
+  > .btn {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 #collection-initweaks-table {
+  .header-requirement {
+    min-width: 15em;
+  }
   .cell-status {
+    .dropdown {
+      display: flex;
+    }
     .toggle-container {
       margin-top: 0;
     }
