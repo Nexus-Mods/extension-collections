@@ -56,7 +56,8 @@ function deduceSource(mod: types.IMod,
     }
     const modId = (mod.type === MOD_TYPE) ? mod.attributes?.collectionId : mod.attributes?.modId;
     const fileId = (mod.type === MOD_TYPE) ? mod.attributes?.revisionId : mod.attributes?.fileId;
-    if ((modId === undefined) || (fileId === undefined)) {
+    // don't accept undefined, 0 or ''
+    if (!modId || !fileId) {
       throw new Error(`"${mod.id}" is missing mod id or file id`);
     }
 
