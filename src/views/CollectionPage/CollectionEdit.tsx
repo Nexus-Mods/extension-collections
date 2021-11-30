@@ -117,6 +117,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     const extInterfaces = exts.filter(ext => ext.editComponent !== undefined);
 
+    const uploadDisabled = this.testUploadPossible();
+
     const Interface = getInterface(profile.gameId);
 
     return (
@@ -133,8 +135,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
             </tooltip.IconButton>
             <tooltip.IconButton
               icon='collection-export'
-              tooltip={t('Upload to Nexus Mods')}
+              tooltip={uploadDisabled ?? t('Upload to Nexus Mods')}
               onClick={this.upload}
+              disabled={uploadDisabled !== undefined}
             >
               {t('Upload')}
             </tooltip.IconButton>
@@ -142,7 +145,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               icon='open-ext'
               tooltip={t('Open site')}
               onClick={this.openUrl}
-              disabled={revision === undefined}
+              disabled={(revision === undefined)}
             >
               {t('View Site')}
             </tooltip.IconButton>
@@ -213,6 +216,17 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
         </FlexLayout.Flex>
       </FlexLayout>
     );
+  }
+
+  private testUploadPossible(): string {
+    const { t, collection } = this.props;
+    const refMods: types.IModRule[] = (collection.rules ?? [])
+      .filter(rule => ['requires', 'recommends'].includes(rule.type));
+    if (refMods.length === 0) {
+      return (t('Can\'t upload an empty collection')) as string;
+    } else {
+      return undefined;
+    }
   }
 
   private async updateState(props: ICollectionEditProps) {
