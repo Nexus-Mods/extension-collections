@@ -9,7 +9,7 @@ export const NEXUS_PROTOCOL = 'https:';
 
 export const PREMIUM_PATH = ['account', 'billing', 'premium'];
 
-export const TOS_URL = 'https://help.nexusmods.com/article/115-collections-terms-of-service';
+export const TOS_URL = 'https://help.nexusmods.com/article/115-guidelines-for-collections';
 
 export const BUNDLED_PATH = 'bundled';
 
