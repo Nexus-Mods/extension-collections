@@ -410,7 +410,7 @@ class InstallDriver {
   }
 
   private begin = () => {
-    if ((this.mCollection === undefined) || (this.mProfile.id === undefined)) {
+    if ((this.mCollection === undefined) || (this.mProfile?.id === undefined)) {
       return;
     }
 
