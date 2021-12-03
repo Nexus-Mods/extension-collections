@@ -168,7 +168,7 @@ function renderGraphErrorFallback(det: IGraphErrorDetail): string {
 
 function renderGraphErrorDetail(api: types.IExtensionApi, gameId: string, modId: string,
                                 det: IGraphErrorDetail): string {
-  if ((det.type === 'LOCATE_ERROR') && (det.value !== undefined)) {
+  if ((det.type === 'LOCATE_ERROR') && !!det.value) {
     return renderGraphLocateError(api, gameId, modId, det);
   } else {
     return renderGraphErrorFallback(det);
