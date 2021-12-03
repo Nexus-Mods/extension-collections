@@ -588,7 +588,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       api.showDialog('info', 'Not logged in', {
         text: 'You have to be logged in with Nexus Mods to install collections.',
       }, [ { label: 'Continue' } ]);
-    } else {
+    } else if (mods[modId] !== undefined) {
       driver.start(profile, mods[modId]);
     }
   }
