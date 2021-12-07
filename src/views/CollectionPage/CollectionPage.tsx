@@ -79,7 +79,9 @@ const getCollator = (() => {
 })();
 
 const STATUS_ORDER: string[] =
-  ['Download Pending', 'Downloading', 'Install Pending', 'Installing', 'Disabled', 'Enabled'];
+  [ 'Installing', 'Downloading',
+    'Install Pending', 'Download Pending',
+    'Enabled', 'Disabled', 'Recommended', 'Ignored'];
 
 type IProps = ICollectionPageProps & IConnectedProps & IActionProps;
 
@@ -186,9 +188,17 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           } else if (mod.state === 'downloading') {
             return ['Downloading', Math.floor(mod.progress * 100.0) / 100.0];
           } else if (mod.state === null) {
-            return ['Download Pending', 'Pending'];
+            if (mod.collectionRule.type === 'recommends') {
+              return ['Recommended'];
+            } else {
+              return ['Download Pending', 'Pending'];
+            }
           } else if (mod.state === 'downloaded') {
-            return ['Install Pending', 'Pending'];
+            if (mod.collectionRule.type === 'recommends') {
+              return ['Recommended'];
+            } else {
+              return ['Install Pending', 'Pending'];
+            }
           }
           return [mod.enabled === true ? 'Enabled' : 'Disabled'];
         },
@@ -224,9 +234,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         id: 'name',
         name: 'Name',
         calc: mod => (mod.state !== null)
-          ? (util.renderModReference as any)(mod.collectionRule.reference, mod, { version: false })
-          : (util.renderModReference as any)(mod.collectionRule.reference,
-                                             undefined, { version: false }),
+          ? util.renderModReference(mod.collectionRule.reference, mod, { version: false })
+          : util.renderModReference(mod.collectionRule.reference,
+                                    undefined, { version: false }),
         placement: 'table',
         edit: {},
         isToggleable: false,
