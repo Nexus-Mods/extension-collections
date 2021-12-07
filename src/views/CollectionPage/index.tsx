@@ -259,7 +259,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { downloads, mods } = this.props;
 
     const collection = mods[modId];
-    collection.rules.forEach(rule => {
+
+    (collection?.rules ?? []).forEach(rule => {
       const dlId = util.findDownloadByRef(rule.reference, downloads);
       if (dlId !== undefined) {
         this.context.api.events.emit('pause-download', dlId);

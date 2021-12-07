@@ -66,11 +66,14 @@ export function alreadyIncluded(rules, modId): boolean {
   return rules?.find?.(rule => rule.reference.id === modId) !== undefined;
 }
 
-export function addCollectionAction(api: types.IExtensionApi, instanceIds: string[]) {
+export function addCollectionAction(api: types.IExtensionApi, instanceIdsIn: string[]) {
   const state = api.getState();
   const gameId = selectors.activeGameId(state);
 
   const mods = state.persistent.mods[gameId];
+
+  // Not sure why this would happen but maybe if the table uses a cache
+  const instanceIds = instanceIdsIn.filter(modId => mods[modId] !== undefined);
 
   const filtered = instanceIds.filter(modId => (mods[modId].type !== MOD_TYPE));
 
