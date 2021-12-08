@@ -511,7 +511,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           + 'the community.'
           + '\n\n'
           + 'Please ensure that your collection complies with our '
-          + `[url=${TOS_URL}]Terms of Service[/url] before publishing.`,
+          + `[url=${TOS_URL}]Collections Guidelines[/url] before publishing.`,
       parameters: {
         collectionName: util.renderModName(mods[collectionId]),
       },
