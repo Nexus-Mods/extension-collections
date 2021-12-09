@@ -354,7 +354,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         }
 
         const instructions = collection.attributes?.collection?.instructions?.[entry.mod.id];
-        return (instructions ?? '').length > 0 ? (
+        return (instructions !== undefined) ? (
           <tooltip.IconButton
             icon='edit'
             tooltip={t('Edit Instructions')}

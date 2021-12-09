@@ -564,7 +564,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
       ? 'clone'
       : 'fresh';
 
-    res.instructions[mod.id] = rule.downloadHint?.instructions;
+    res.instructions[mod.id] = rule.extra?.instructions;
     res.source[mod.id] = {
       type: rule.downloadHint?.mode ?? ((rule.reference.repo?.repository === 'nexus') ? 'nexus' : 'bundle'),
       url: rule.downloadHint?.url,
