@@ -78,7 +78,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     return Object.values(includedMods)
         .reduce<ICollectionModRule[]>((prev, mod: types.IMod) => {
-          prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(mod, rule)));
+          const source = util.makeModReference(mod);
+          prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(source, rule)));
           return prev;
         }, []);
   });

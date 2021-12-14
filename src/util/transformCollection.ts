@@ -153,10 +153,16 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
 
     const fileName = downloads[mod.archiveId]?.localPath;
 
+    // we can't store the md5 hash for a bundled file because they are recompressed
+    // during collection install and then the hash won't match
+    const refMD5: string = (collectionInfo.source?.[mod.id]?.type === 'bundle')
+      ? undefined
+      : mod.attributes?.fileMD5;
+
     const meta = await api.lookupModMeta({
       fileName,
       filePath: fileName !== undefined ? path.join(downloadPath, fileName) : undefined,
-      fileMD5: mod.attributes?.fileMD5,
+      fileMD5: refMD5,
       fileSize: mod.attributes?.fileSize,
       gameId: game.id,
     });
@@ -264,12 +270,11 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
   return result.filter(mod => (mod !== undefined) && (Object.keys(mod.source).length > 0));
 }
 
-export function makeBiDirRule(mod: types.IMod, rule: types.IModRule): ICollectionModRule {
+export function makeBiDirRule(source: types.IModReference,
+                              rule: types.IModRule): ICollectionModRule {
   if (rule === undefined) {
     return undefined;
   }
-
-  const source: types.IModReference = (util as any).makeModReference(mod);
 
   return {
     type: rule.type,
@@ -314,7 +319,7 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 
   return {
     type: rule.type,
-    fileList: (rule as any).fileList,
+    fileList: rule.fileList,
     comment: rule.comment,
     reference: newRef,
   } as any;
@@ -333,11 +338,14 @@ function ruleEnabled(rule: ICollectionModRule,
   return collection.attributes?.collection?.rule?.[id] ?? true;
 }
 
-function extractModRules(rules: types.IModRule[],
+function extractModRules(collectionRules: types.IModRule[],
                          collection: types.IMod,
                          mods: { [modId: string]: types.IMod },
+                         collectionAttributes: ICollectionAttributes,
                          onError: (message: string, replace: any) => void): ICollectionModRule[] {
-  return rules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
+  // for each mod referenced by the collection, gather the (enabled) rules and transform
+  // them such that they can be applied on the users system
+  return collectionRules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
     const mod = (rule.reference.id !== undefined)
       ? mods[rule.reference.id]
       : util.findModByRef(rule.reference, mods);
@@ -348,8 +356,23 @@ function extractModRules(rules: types.IModRule[],
       return prev;
     }
 
-    return [].concat(prev, (mod.rules || []).map((input: types.IModRule): ICollectionModRule =>
-      makeBiDirRule(mod, makeTransferrable(mods, collection, input))));
+    const source: types.IModReference = util.makeModReference(mod);
+
+    if (collectionAttributes.source?.[mod.id]?.type === 'bundle') {
+      source.fileMD5 = undefined;
+    }
+
+    return [].concat(prev, (mod.rules || []).map((input: types.IModRule): ICollectionModRule => {
+      const target: types.IModRule = JSON.parse(JSON.stringify(input));
+
+      const targetRef = util.findModByRef(target.reference, mods);
+      const targetId = targetRef?.id ?? target.reference.idHint;
+      if (collectionAttributes.source?.[targetId]?.type === 'bundle') {
+        target.reference.fileMD5 = undefined;
+      }
+
+      return makeBiDirRule(source, makeTransferrable(mods, collection, target));
+    }));
   }, [])
   // throw out rules that couldn't be converted
   .filter(rule => (rule !== undefined) && ruleEnabled(rule, mods, collection));
@@ -383,9 +406,16 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   } else if (updatePolicy === 'latest') {
     versionMatch = '*';
   }
+
+  // we can't use the md5 hash for a bundled file because they are recompressed
+  // during collection install and then the hash won't match
+  const refMD5: string = mod.source.type === 'bundle'
+    ? undefined
+    : mod.source.md5;
+
   const reference: types.IModReference = {
     description: mod.name,
-    fileMD5: mod.source.md5,
+    fileMD5: refMD5,
     gameId: (util as any).convertGameIdReverse(knownGames, mod.domainName),
     fileSize: mod.source.fileSize,
     versionMatch,
@@ -450,8 +480,6 @@ export async function modToCollection(api: types.IExtensionApi,
     return Promise.reject(new Error('Can only export collection for the active profile'));
   }
 
-  const modRules = extractModRules(collection.rules, collection, mods, onError);
-
   const includedMods = (collection.rules as types.IModRule[])
     .map(rule => {
       if (rule.reference.id !== undefined) {
@@ -488,6 +516,10 @@ export async function modToCollection(api: types.IExtensionApi,
     description: collection.attributes?.shortDescription ?? '',
     domainName: (util as any).nexusGameId(game),
   };
+
+  const modRules = extractModRules(collection.rules, collection, mods,
+                                   collection.attributes?.collection,
+                                   onError);
 
   const res: ICollection = {
     info: collectionInfo,
