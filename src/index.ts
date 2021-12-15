@@ -405,8 +405,11 @@ function register(context: types.IExtensionContext,
     edit: {},
     filter: new OptionsFilter((() => {
       const mods = stateFunc().persistent.mods[selectors.activeGameId(stateFunc())] ?? {};
-      return collectionOptions(mods);
-    }) as any,
+      return [
+        { label: `<${context.api.translate('None')}>`, value: OptionsFilter.EMPTY },
+        ...collectionOptions(mods),
+      ];
+    }),
       false, false),
     isGroupable: true,
     groupName: (modId: string) =>
