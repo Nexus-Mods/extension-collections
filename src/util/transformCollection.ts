@@ -314,7 +314,8 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
   if (mod !== undefined) {
     const mpRule = collection.rules.find(iter => util.testModReference(mod, iter.reference));
     if ((mpRule !== undefined) && (
-      (mpRule.reference.versionMatch === '*')
+      (mpRule.reference.versionMatch === undefined)
+      || (mpRule.reference.versionMatch === '*')
       || (mpRule.reference.versionMatch.startsWith('>=')))) {
       newRef.versionMatch = '*';
     }
@@ -365,7 +366,8 @@ function extractModRules(collectionRules: types.IModRule[],
     // the rules referencing it apply to newer versions
     const mpRule = collection.rules.find(iter => util.testModReference(mod, iter.reference));
     if ((mpRule !== undefined) && (
-        (mpRule.reference.versionMatch === '*')
+        (mpRule.reference.versionMatch === undefined)
+        || (mpRule.reference.versionMatch === '*')
         || (mpRule.reference.versionMatch.startsWith('>=')))) {
       source.versionMatch = '*';
     }
