@@ -286,35 +286,38 @@ export function makeBiDirRule(source: types.IModReference,
 function makeTransferrable(mods: { [modId: string]: types.IMod },
                            collection: types.IMod,
                            rule: types.IModRule): types.IModRule {
-  if ((rule.reference.fileMD5 !== undefined)
-      || (rule.reference.logicalFileName !== undefined)
-      || (rule.reference.fileExpression !== undefined)) {
-    // ok unmodified
-    return rule;
-  }
-  if (rule.reference.id === undefined) {
-    // rule unusable
-    log('warn', 'invalid rule couldn\'t be included in the collection', JSON.stringify(rule));
-    return undefined;
-  }
-
-  // a rule that doesn't contain any of the above markers will likely not be able to match
-  // anything on a different system
-
+  let newRef: types.IModReference = { ...rule.reference };
   const mod = util.findModByRef(rule.reference, mods);
 
-  if (mod === undefined) {
-    log('warn', 'mod enabled in collection isn\'t installed', JSON.stringify(rule));
-    return undefined;
-  }
+  if ((rule.reference.fileMD5 === undefined)
+      && (rule.reference.logicalFileName === undefined)
+      && (rule.reference.fileExpression === undefined)) {
+    // a rule that doesn't contain any of the above markers will likely not be able to match
+    // anything on a different system
 
-  const newRef: types.IModReference = util.makeModReference(mod);
+    if (rule.reference.id === undefined) {
+      // rule unusable
+      log('warn', 'invalid rule couldn\'t be included in the collection', JSON.stringify(rule));
+      return undefined;
+    }
+
+    if (mod === undefined) {
+      log('warn', 'mod enabled in collection isn\'t installed', JSON.stringify(rule));
+      return undefined;
+    }
+
+    newRef = util.makeModReference(mod);
+  }
 
   // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
   // the rules referencing it apply to newer versions
-  const mpRule = collection.rules.find(iter => util.testModReference(mod, iter.reference));
-  if ((mpRule !== undefined) && (mpRule.reference.versionMatch === '*')) {
-    newRef.versionMatch = '*';
+  if (mod !== undefined) {
+    const mpRule = collection.rules.find(iter => util.testModReference(mod, iter.reference));
+    if ((mpRule !== undefined) && (
+      (mpRule.reference.versionMatch === '*')
+      || (mpRule.reference.versionMatch.startsWith('>=')))) {
+      newRef.versionMatch = '*';
+    }
   }
 
   return {
@@ -357,6 +360,15 @@ function extractModRules(collectionRules: types.IModRule[],
     }
 
     const source: types.IModReference = util.makeModReference(mod);
+
+    // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
+    // the rules referencing it apply to newer versions
+    const mpRule = collection.rules.find(iter => util.testModReference(mod, iter.reference));
+    if ((mpRule !== undefined) && (
+        (mpRule.reference.versionMatch === '*')
+        || (mpRule.reference.versionMatch.startsWith('>=')))) {
+      source.versionMatch = '*';
+    }
 
     if (collectionAttributes.source?.[mod.id]?.type === 'bundle') {
       source.fileMD5 = undefined;
