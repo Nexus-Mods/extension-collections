@@ -522,13 +522,19 @@ export async function modToCollection(api: types.IExtensionApi,
   const gameSpecific = await generateGameSpecifics(state, gameId, stagingPath, includedMods, mods);
 
   const game = util.getGame(gameId);
+  const discovery = selectors.discoveryByGame(state, gameId);
+
+  const gameVersions = (game !== undefined)
+    ? [await game.getInstalledVersion(discovery)]
+    : [];
 
   const collectionInfo: ICollectionInfo = {
     author: collection.attributes?.uploader ?? 'Anonymous',
     authorUrl: collection.attributes?.authorURL ?? '',
     name: util.renderModName(collection),
     description: collection.attributes?.shortDescription ?? '',
-    domainName: (util as any).nexusGameId(game),
+    domainName: util.nexusGameId(game),
+    gameVersions,
   };
 
   const modRules = extractModRules(collection.rules, collection, mods,

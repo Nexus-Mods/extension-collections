@@ -61,6 +61,7 @@ const emptyCollectionInfo: ICollectionInfo = {
   authorUrl: '',
   name: '',
   description: '',
+  gameVersions: [],
 };
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {
