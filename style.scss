@@ -392,10 +392,7 @@ ul.collection-mods-page-attrib-tooltip {
 
     .name {
       @extend .h3;
-
-      .btn {
-        @extend .btn-embed;
-      }
+      width: 8em;
     }
 
     .details {
@@ -516,12 +513,14 @@ ul.collection-mods-page-attrib-tooltip {
 
   .collection-name {
     display: flex;
+    justify-content: space-between;
     .form-control {
       font-family: $font-family-base;
       font-size: medium;
     }
 
     .btn {
+      @extend .btn-embed;
       margin-left: 0.5em;
       font-size: medium;
     }

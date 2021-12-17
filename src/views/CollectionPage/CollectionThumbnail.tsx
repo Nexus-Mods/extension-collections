@@ -101,7 +101,7 @@ function ModNameField(props: IModNameFieldProps) {
         </>
       ) : (
         <>
-          <div>{tempName}</div>
+          <div className='name'>{tempName}</div>
           <tooltip.IconButton icon='edit' tooltip={t('Change name')} onClick={startEdit} />
         </>
       )}
@@ -180,7 +180,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                 {util.renderModName(collection, { version: false })}
               </div>
               {onEdit !== undefined ? (
-                <div className='name hover'>
+                <div className='hover'>
                   <ModNameField
                     t={t}
                     name={util.renderModName(collection, { version: false })}
