@@ -162,16 +162,16 @@ function renderGraphLocateError(api: types.IExtensionApi, gameId: string, modId:
   }
 }
 
-function renderGraphErrorFallback(det: IGraphErrorDetail): string {
-  return det.message;
+function renderGraphErrorFallback(message: string, det: IGraphErrorDetail): string {
+  return det.message || message;
 }
 
 function renderGraphErrorDetail(api: types.IExtensionApi, gameId: string, modId: string,
-                                det: IGraphErrorDetail): string {
+                                message: string, det: IGraphErrorDetail): string {
   if ((det.type === 'LOCATE_ERROR') && !!det.value) {
     return renderGraphLocateError(api, gameId, modId, det);
   } else {
-    return renderGraphErrorFallback(det);
+    return renderGraphErrorFallback(message, det);
   }
 }
 
@@ -245,6 +245,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
       });
       throw new util.ProcessCanceled('collection rejected');
     } else if (err.constructor.name === 'GraphError') {
+      const message: string = err.message;
       const details: IGraphErrorDetail[] = err['details'];
       api.sendNotification({
         type: 'error',
@@ -253,7 +254,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
           { title: 'More', action: () => {
             api.showDialog('error', 'The server rejected this collection', {
               text: details.map(detail =>
-                renderGraphErrorDetail(api, gameId, modId, detail)).join('\n'),
+                renderGraphErrorDetail(api, gameId, modId, message, detail)).join('\n'),
             }, [
               { label: 'Close' },
             ]);
