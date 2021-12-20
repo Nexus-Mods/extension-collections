@@ -6,6 +6,7 @@ import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
 import { ICollection } from '../types/ICollection';
 import { IRevisionEx } from '../types/IRevisionEx';
+import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
 
@@ -272,10 +273,8 @@ class InstallDriver {
     const mod = mods[modId];
     if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
       try {
-        const collectionData = await fs.readFileAsync(
-          path.join(stagingPath, mod.installationPath, 'collection.json'),
-          { encoding: 'utf-8' });
-        const collectionInfo: ICollection = JSON.parse(collectionData);
+        const collectionInfo: ICollection =
+          await readCollection(path.join(stagingPath, mod.installationPath, 'collection.json'));
         await postprocessCollection(this.mApi, profile, mod, collectionInfo, mods);
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '

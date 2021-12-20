@@ -423,9 +423,13 @@ export function collectionModToRule(knownGames: types.IGameStored[],
 
   // we can't use the md5 hash for a bundled file because they are recompressed
   // during collection install and then the hash won't match
-  const refMD5: string = mod.source.type === 'bundle'
+  const refMD5: string = (mod.source.type === 'bundle')
     ? undefined
     : mod.source.md5;
+
+  const fileExpression = (updatePolicy === 'exact') || (mod.source.logicalFilename === undefined)
+    ? mod.source.fileExpression
+    : undefined;
 
   const reference: types.IModReference = {
     description: mod.name,
@@ -434,7 +438,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     fileSize: mod.source.fileSize,
     versionMatch,
     logicalFileName: mod.source.logicalFilename,
-    fileExpression: mod.source.fileExpression,
+    fileExpression,
     tag: shortid(),
   };
 

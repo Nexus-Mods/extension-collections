@@ -1,11 +1,11 @@
 import { updateCollectionInfo, updateRevisionInfo } from '../actions/persistent';
-
+import { MOD_TYPE } from '../constants';
 import { ICollectionModRule } from '../types/ICollection';
+import { readCollection } from './importCollection';
 
 import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as path from 'path';
 import { fs, log, selectors, types, util } from 'vortex-api';
-import { MOD_TYPE } from '../constants';
 
 // TODO: temporarily reducing expire time around switch to slugs identifying collections,
 // used to be once per day
@@ -107,10 +107,9 @@ class InfoCache {
     }
     const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
     try {
-      const collectionData = await fs.readFileAsync(
-        path.join(stagingPath, colMod.installationPath, 'collection.json'), { encoding: 'utf-8' });
-      const collection: any = JSON.parse(collectionData);
-      return collection.modRules ?? [];
+      const collection = await readCollection(
+        path.join(stagingPath, colMod.installationPath, 'collection.json'));
+      return collection.modRules;
     } catch (err) {
       if (err.code !== 'ENOENT') {
         this.mApi.showErrorNotification('Failed to cache collection mod rules', err);
