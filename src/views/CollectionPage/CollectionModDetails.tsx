@@ -1,7 +1,7 @@
 import { ICollectionRevisionMod } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { Panel } from 'react-bootstrap';
-import { FlexLayout, Image, tooltip, types, util } from 'vortex-api';
+import { FlexLayout, Image, tooltip, types, util, ZoomableImage } from 'vortex-api';
 import { AUTHOR_UNKNOWN, NEXUS_BASE_URL } from '../../constants';
 import { IModEx } from '../../types/IModEx';
 
@@ -105,9 +105,9 @@ function CollectionModDetails(props: ICollectionModDetails) {
         </FlexLayout.Flex>
         <FlexLayout.Fixed className='collection-mod-detail-imagecontainer'>
           {(image)
-            ? <Image
+            ? <ZoomableImage
               className='installing-mod-image'
-              srcs={[image]}
+              url={image}
             />
             : null}
         </FlexLayout.Fixed>
