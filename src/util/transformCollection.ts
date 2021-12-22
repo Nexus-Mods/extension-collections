@@ -44,7 +44,8 @@ function toInt(input: string | number | undefined | null) {
 function deduceSource(mod: types.IMod,
                       sourceInfo: ICollectionSourceInfo,
                       versionMatcher: string,
-                      metaInfo: ILookupResult)
+                      metaInfo: ILookupResult,
+                      tag: string)
                       : ICollectionSourceInfo {
   const res: Partial<ICollectionSourceInfo> = (sourceInfo !== undefined)
     ? { ...sourceInfo }
@@ -102,6 +103,10 @@ function deduceSource(mod: types.IMod,
     assign(res, 'fileExpression', sanitizeExpression(mod.attributes.fileName));
   }
 
+  if (sourceInfo?.type === 'bundle') {
+    assign(res, 'tag', tag);
+  }
+
   return res as ICollectionSourceInfo;
 }
 
@@ -124,6 +129,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
                                      stagingPath: string,
                                      game: types.IGame,
                                      collectionInfo: ICollectionAttributes,
+                                     bundleTags: { [modId: string]: string },
                                      onProgress: (percent: number, text: string) => void,
                                      onError: (message: string, replace: any) => void)
                                      : Promise<ICollectionMod[]> {
@@ -174,7 +180,8 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
       const source = deduceSource(mod,
                                   collectionInfo.source?.[mod.id],
                                   rule.reference.versionMatch,
-                                  meta);
+                                  meta,
+                                  bundleTags[mod.id]);
 
       let hashes: any;
       let choices: any;
@@ -210,7 +217,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
       if (collectionInfo.source?.[mod.id]?.type === 'bundle') {
         const tlFiles = await fs.readdirAsync(modPath);
         const generatedName: string =
-          `Bundled - ${(util as any).sanitizeFilename(util.renderModName(mod, { version: true }))}`;
+          `Bundled - ${util.sanitizeFilename(util.renderModName(mod, { version: true }))}`;
         const destPath = path.join(collectionPath, BUNDLED_PATH, generatedName);
         try {
           await fs.removeAsync(destPath);
@@ -346,6 +353,7 @@ function extractModRules(collectionRules: types.IModRule[],
                          collection: types.IMod,
                          mods: { [modId: string]: types.IMod },
                          collectionAttributes: ICollectionAttributes,
+                         bundleTags: { [modId: string]: string },
                          onError: (message: string, replace: any) => void): ICollectionModRule[] {
   // for each mod referenced by the collection, gather the (enabled) rules and transform
   // them such that they can be applied on the users system
@@ -374,6 +382,7 @@ function extractModRules(collectionRules: types.IModRule[],
 
     if (collectionAttributes.source?.[mod.id]?.type === 'bundle') {
       source.fileMD5 = undefined;
+      source.tag = bundleTags[mod.id];
     }
 
     return [].concat(prev, (mod.rules || []).map((input: types.IModRule): ICollectionModRule => {
@@ -381,11 +390,16 @@ function extractModRules(collectionRules: types.IModRule[],
 
       const targetRef = util.findModByRef(target.reference, mods);
       const targetId = targetRef?.id ?? target.reference.idHint;
+      const targetRule = makeTransferrable(mods, collection, target);
+
       if (collectionAttributes.source?.[targetId]?.type === 'bundle') {
         target.reference.fileMD5 = undefined;
+        if (targetRule !== undefined) {
+          targetRule.reference.tag = bundleTags[targetId];
+        }
       }
 
-      return makeBiDirRule(source, makeTransferrable(mods, collection, target));
+      return makeBiDirRule(source, targetRule);
     }));
   }, [])
   // throw out rules that couldn't be converted
@@ -439,7 +453,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     versionMatch,
     logicalFileName: mod.source.logicalFilename,
     fileExpression,
-    tag: shortid(),
+    tag: mod.source.tag ?? shortid(),
   };
 
   if (['latest', 'prefer'].includes(updatePolicy)) {
@@ -500,15 +514,14 @@ export async function modToCollection(api: types.IExtensionApi,
 
   const includedMods = (collection.rules as types.IModRule[])
     .map(rule => {
-      if (rule.reference.id !== undefined) {
-        return rule.reference.id;
-      } else {
+      let id = rule.reference.id;
+      if (id === undefined) {
         const mod = util.findModByRef(rule.reference, mods);
         if (mod !== undefined) {
-          return mod.id;
+          id = mod.id;
         }
-        return undefined;
       }
+      return id;
     })
     .filter(id => id !== undefined);
 
@@ -541,15 +554,30 @@ export async function modToCollection(api: types.IExtensionApi,
     gameVersions,
   };
 
+  const collectionAttributes = collection.attributes?.collection ?? {};
+
+  // we assign an id to each mod but we store them as tags in the collection only for bundled
+  // mods atm because those are otherwise a bit unreliable to match rules to.
+  // This might be counter-intuitive but the entire system for matching mods across systems
+  // depends on mod meta information provided by the server or md5 hashes, both are not available
+  // for bundled mods (server meta info for obvious reasons, md5 hashes because bundled mods have
+  // to be unpacked so the nexus mods backend can virus scan the content)
+
+  // The reason we're not using the tags for everything is that there is a chance
+  // (miniscule but not 0) that different curators get the same ids generated by shortid.
+  // we could be using uuid but then the tags would have a different format and it'd be a mess
+  const bundleTags: { [modId: string]: string } = includedMods.reduce((prev, modId) => {
+    prev[modId] = shortid();
+    return prev;
+  }, {});
+
   const modRules = extractModRules(collection.rules, collection, mods,
-                                   collection.attributes?.collection,
-                                   onError);
+                                   collectionAttributes, bundleTags, onError);
 
   const res: ICollection = {
     info: collectionInfo,
     mods: await rulesToCollectionMods(api, collection, mods, stagingPath, game,
-                                      collection.attributes?.collection ?? {},
-                                      onProgress, onError),
+                                      collectionAttributes, bundleTags, onProgress, onError),
     modRules,
     ...extData,
     ...gameSpecific,

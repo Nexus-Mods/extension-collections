@@ -31,6 +31,7 @@ export interface ICollectionSourceInfo {
   fileSize?: number;
   logicalFilename?: string;
   fileExpression?: string;
+  tag?: string;
 }
 
 export interface ICollectionModDetails {

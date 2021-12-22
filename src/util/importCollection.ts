@@ -29,11 +29,11 @@ function postProcessRule(rule: ICollectionModRule): ICollectionModRule {
   // fileExpression supports matching multiple versions, it's simply that we have no automated
   // way of generating glob patterns that ignore the version and date field in the file names
   if (isFuzzyVersion(result.reference.versionMatch)
-    && !!result.reference.logicalFileName) {
+      && !!result.reference.logicalFileName) {
     delete result.reference.fileExpression;
   }
   if (isFuzzyVersion(result.source.versionMatch)
-    && !!result.source.logicalFileName) {
+      && !!result.source.logicalFileName) {
     delete result.source.fileExpression;
   }
   return result;
