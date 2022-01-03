@@ -1184,3 +1184,17 @@ ul.collection-mods-page-attrib-tooltip {
     }
   }
 }
+
+.collections-new-revision {
+  border: $border-width solid $brand-primary;
+  background: $gray-darker;
+  color: $brand-primary;
+  padding: 0 0.5em;
+  width: fit-content;
+  border-radius: 4px;
+  text-transform: uppercase;
+
+  .icon {
+    margin-right: 0.5em;
+  }
+}

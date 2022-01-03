@@ -8,6 +8,7 @@ import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
+import NewRevisionMarker from './NewRevisionMarker';
 
 export interface IBaseProps {
   t: I18next.TFunction;
@@ -177,6 +178,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           ) : null}
           {details ? (
             <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
+              <NewRevisionMarker t={t} collection={collection} />
               <div className='name no-hover'>
                 {util.renderModName(collection, { version: false })}
               </div>
