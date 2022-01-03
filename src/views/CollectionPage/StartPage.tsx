@@ -26,6 +26,7 @@ export interface IStartPageProps {
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
   onEdit: (modId: string) => void;
+  onUpdate: (modId: string) => void;
   onUpload: (modId: string) => void;
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
@@ -154,7 +155,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause,
-            onRemove, onResume, onUpload, onView } = this.props;
+            onRemove, onResume, onUpdate, onUpload, onView } = this.props;
     const { imageTime } = this.state;
 
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
@@ -224,6 +225,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                       onRemove={onRemove}
                       onResume={onResume}
                       onPause={onPause}
+                      onUpdate={onUpdate}
                       details={true}
                     />)}
                 </div>

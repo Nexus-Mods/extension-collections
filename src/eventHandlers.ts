@@ -2,7 +2,8 @@ import { ICollection, IDownloadURL, IRevision } from '@nexusmods/nexus-api';
 import { types, util } from 'vortex-api';
 
 async function collectionUpdate(api: types.IExtensionApi, gameId: string,
-                                collectionSlug: string, revisionNumber: string) {
+                                collectionSlug: string, revisionNumber: string,
+                                oldModId: string) {
   try {
     const latest: IRevision =
       (await api.emitAndAwait('get-nexus-collection-revision',
@@ -46,8 +47,17 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
         throw err;
       }
     }
+
+    api.events.emit('analytics-track-click-event', 'Collections', 'Update Collection');
+
     await util.toPromise(cb =>
       api.events.emit('start-install-download', dlId, undefined, cb));
+
+    // disable old revision
+
+    await util.toPromise(cb => api.events.emit('remove-mod', gameId, oldModId, cb, {
+      incomplete: true,
+    }));
   } catch (err) {
     if (!(err instanceof util.UserCanceled)) {
       api.showErrorNotification('Failed to download collection', err);
@@ -56,12 +66,13 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 }
 
 export function onCollectionUpdate(api: types.IExtensionApi): (...args: any[]) => void {
-  return (gameId: string, collectionSlug, revisionNumber: number | string, source: string) => {
+  return (gameId: string, collectionSlug: string,
+          revisionNumber: number | string, source: string, oldModId: string) => {
     if (source !== 'nexus') {
       return;
     }
 
-    collectionUpdate(api, gameId, collectionSlug, revisionNumber.toString())
+    collectionUpdate(api, gameId, collectionSlug, revisionNumber.toString(), oldModId)
       .catch(err => {
         api.showErrorNotification('Failed to update collection', err);
       });

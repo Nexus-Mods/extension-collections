@@ -133,6 +133,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             onView={this.view}
             onEdit={this.edit}
             onRemove={this.remove}
+            onUpdate={this.update}
             onUpload={this.upload}
             onCreateCollection={this.createCollection}
             onResume={this.resume}
@@ -480,6 +481,20 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
       return this.cancel(modId, 'Remove collection');
     }
+  }
+
+  private update = async (collectionId: string) => {
+    const { mods } = this.props;
+    const { api } = this.context;
+    const state = api.getState();
+    const gameMode = selectors.activeGameId(state);
+    const mod = mods[collectionId];
+
+    const downloadGame = util.getSafe(mod.attributes, ['downloadGame'], gameMode);
+    const newestFileId = util.getSafe(mod.attributes, ['newestFileId'], undefined);
+    this.context.api.events.emit('collection-update',
+      downloadGame, mod.attributes?.collectionSlug, newestFileId,
+      mod.attributes?.source, collectionId);
   }
 
   private upload = async (collectionId: string) => {

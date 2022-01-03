@@ -25,6 +25,7 @@ export interface IBaseProps {
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
   onUpload?: (modId: string) => void;
+  onUpdate?: (moidId: string) => void;
 }
 
 interface IConnectedProps {
@@ -211,10 +212,25 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
 
   private get actions() {
     const { t, collection, incomplete, installing, onEdit, onPause, onUpload,
-            onRemove, onResume, onView } = this.props;
+            onRemove, onResume, onUpdate, onView } = this.props;
 
     const result: types.IActionDefinition[] = [];
 
+    if (onUpdate) {
+      result.push({
+        title: 'Update',
+        icon: 'auto-update',
+        group: 'optional',
+        condition: () => {
+          const { attributes } = this.props.collection;
+          return (attributes['newestVersion'] !== undefined)
+              && (attributes['newestVersion'] !== attributes['version']);
+        },
+        action: (instanceIds: string[]) => {
+          onUpdate(instanceIds[0]);
+        },
+      } as any);
+    }
     if (onView) {
       result.push({
         title: 'View',
@@ -298,7 +314,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         <IconBar
           id={`collection-thumbnail-${collection.id}`}
           className='buttons'
-          group={`collection-actions`}
+          group='collection-actions'
           instanceId={collection.id}
           staticElements={this.actions}
           collapse={false}
