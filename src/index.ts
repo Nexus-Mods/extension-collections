@@ -700,6 +700,33 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }, 100);
   });
 
+  api.onStateChange(['persistent', 'collections', 'collections'], (prev, cur) => {
+    // tslint:disable-next-line:no-shadowed-variable
+    const state = api.getState();
+    const changedIds = Object.keys(cur).filter(id => cur[id].info !== prev[id]?.info);
+
+    const knownGames = selectors.knownGames(state);
+
+    const { mods } = state.persistent;
+
+    changedIds.forEach(collId => {
+      const coll: nexusApi.ICollection = cur[collId].info;
+      const gameId = util.convertGameIdReverse(knownGames, coll.game.domainName);
+      const collModId = Object.keys(mods[gameId])
+        .find(modId => mods[gameId][modId].attributes['collectionId'] === coll.id);
+      if (collModId !== undefined) {
+        const newestVersion = coll.revisions
+          .filter(rev => rev.revisionStatus === 'published')
+          .sort((lhs, rhs) => rhs.revision - lhs.revision);
+
+        if (newestVersion.length > 0) {
+          api.store.dispatch(actions.setModAttribute(gameId, collModId,
+            'newestVersion', newestVersion[0].revision.toString()));
+        }
+      }
+    });
+  });
+
   util.installIconSet('collections', path.join(__dirname, 'icons.svg'))
     .catch(err => api.showErrorNotification('failed to install icon set', err));
 

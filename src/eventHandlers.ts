@@ -53,7 +53,7 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
     await util.toPromise(cb =>
       api.events.emit('start-install-download', dlId, undefined, cb));
 
-    // disable old revision
+    // remove old revision
 
     await util.toPromise(cb => api.events.emit('remove-mod', gameId, oldModId, cb, {
       incomplete: true,

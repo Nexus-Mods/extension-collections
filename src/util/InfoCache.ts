@@ -138,7 +138,8 @@ class InfoCache {
   }
 
   private async cacheRevisionInfo(revisionId: string,
-                                  collectionSlug: string, revisionNumber: number)
+                                  collectionSlug: string,
+                                  revisionNumber: number)
                                   : Promise<IRevision> {
     const { store } = this.mApi;
     const revIdNum = parseInt(revisionId, 10);
