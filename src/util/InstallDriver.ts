@@ -326,6 +326,10 @@ class InstallDriver {
   }
 
   private startImpl = async () => {
+    if (this.mCollection === undefined) {
+      return;
+    }
+
     this.mInstalledMods = [];
     this.mInstallingMod = undefined;
     this.mInstallDone = false;
