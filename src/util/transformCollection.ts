@@ -448,7 +448,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   const reference: types.IModReference = {
     description: mod.name,
     fileMD5: refMD5,
-    gameId: (util as any).convertGameIdReverse(knownGames, mod.domainName),
+    gameId: util.convertGameIdReverse(knownGames, mod.domainName),
     fileSize: mod.source.fileSize,
     versionMatch,
     logicalFileName: mod.source.logicalFilename,

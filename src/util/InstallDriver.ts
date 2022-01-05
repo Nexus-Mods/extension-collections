@@ -207,7 +207,7 @@ class InstallDriver {
     this.triggerUpdate();
   }
 
-  public continue() {
+  public async continue() {
     if (this.canContinue()) {
       const steps = {
         query: this.startInstall,
@@ -216,8 +216,9 @@ class InstallDriver {
         installing: this.finishInstalling,
         review: this.close,
       };
-      steps[this.mStep]();
-      this.triggerUpdate();
+      if (await steps[this.mStep]() === false) {
+        this.triggerUpdate();
+      }
     }
   }
 
@@ -327,7 +328,7 @@ class InstallDriver {
 
   private startImpl = async () => {
     if (this.mCollection === undefined) {
-      return;
+      return false;
     }
 
     this.mInstalledMods = [];
@@ -349,6 +350,32 @@ class InstallDriver {
     if (revisionId !== undefined) {
       this.mRevisionInfo = nexusInfo?.revisionInfo
         ?? await this.mInfoCache.getRevisionInfo(revisionId, slug, this.revisionNumber);
+    }
+
+    const gameId = collection.attributes?.downloadGame ?? profile.gameId;
+    const game = util.getGame(gameId);
+    const discovery = selectors.discoveryByGame(state, gameId);
+    const gameVersion = await game.getInstalledVersion(discovery);
+    const gvMatch = gv => gv.reference === gameVersion;
+    if ((this.mRevisionInfo.gameVersions.length !== 0)
+        && (this.mRevisionInfo.gameVersions.find(gvMatch) === undefined)) {
+      const choice = await this.mApi.showDialog('question', 'Different version', {
+        text: 'The collection was created with a different version of the game '
+            + 'than you have installed ("{{actual}}" vs "{{intended}}").\n'
+            + 'Whether this is a problem depends on the game but you may want to '
+            + 'check if the collection is compatible before continuing.',
+        parameters: {
+          actual: gameVersion,
+          intended: this.mRevisionInfo.gameVersions.map(gv => gv.reference).join(' or '),
+        },
+      }, [
+        { label: 'Cancel' },
+        { label: 'Continue' },
+      ]);
+      if (choice.action === 'Cancel') {
+        this.mInstallDone = true;
+        return false;
+      }
     }
 
     this.mCollectionInfo = nexusInfo?.collectionInfo
