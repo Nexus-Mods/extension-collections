@@ -90,7 +90,7 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
 }
 
 function filterInfoModSource(source: ICollectionSourceInfo): ICollectionSourceInfo {
-  return _.omit(source, ['instructions', 'fileSize']);
+  return _.omit(source, ['instructions', 'fileSize', 'tag']);
 }
 
 function filterInfoMod(mod: ICollectionMod): ICollectionMod {
