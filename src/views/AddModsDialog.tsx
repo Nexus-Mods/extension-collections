@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { Modal, selectors, Table, TableTextFilter, types, Usage, util } from 'vortex-api';
+import { EmptyPlaceholder, Modal, selectors, Table, TableTextFilter, types, Usage, util } from 'vortex-api';
 import { startAddModsToCollection } from '../actions/session';
 import { alreadyIncluded } from '../collectionCreate';
 import { MOD_TYPE, NAMESPACE } from '../constants';
@@ -132,16 +132,26 @@ function AddModsDialog(props: IAddModsDialogProps) {
         <Modal.Title>{util.renderModName(collection)}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {t('Select (click, shift-click, ...) the mods you want to add to your collection below:')}
-        <TableX
-          tableId='collection-add-mods'
-          data={modsWithState}
-          staticElements={columns}
-          actions={[]}
-          showDetails={false}
-          hasActions={false}
-          onChangeSelection={updateSelection}
-        />
+        {(Object.keys(modsWithState).length > 0)
+          ? (<>
+            {t('Select (click, shift-click, ...) installed mods you want to add to your collection below:')}
+            <TableX
+              tableId='collection-add-mods'
+              data={modsWithState}
+              staticElements={columns}
+              actions={[]}
+              showDetails={false}
+              hasActions={false}
+              onChangeSelection={updateSelection}
+            />
+          </>
+          ) : (
+            <EmptyPlaceholder
+              icon='folder-download'
+              fill={true}
+              text={t('You don\'t have any installed mods')}
+            />
+          )}
       </Modal.Body>
       <Usage persistent infoId='add-mods-from-mods-page'>
         {t('You can also add mods to a collection from the mods screen: '
