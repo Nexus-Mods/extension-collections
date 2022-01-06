@@ -491,7 +491,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const mod = mods[collectionId];
 
     const downloadGame = util.getSafe(mod.attributes, ['downloadGame'], gameMode);
-    const newestFileId = util.getSafe(mod.attributes, ['newestFileId'], undefined);
+    const newestFileId = util.getSafe(mod.attributes, ['newestVersion'], undefined);
     this.context.api.events.emit('collection-update',
       downloadGame, mod.attributes?.collectionSlug, newestFileId,
       mod.attributes?.source, collectionId);
