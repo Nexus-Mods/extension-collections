@@ -46,6 +46,16 @@ const gameSupport = {
         parser: gamebryo.parser,
         interface: gamebryo.Interface,
     },
+    enderal: {
+      generator: gamebryo.generate,
+      parser: gamebryo.parser,
+      interface: gamebryo.Interface,
+    },
+    enderalspecialedition: {
+      generator: gamebryo.generate,
+      parser: gamebryo.parser,
+      interface: gamebryo.Interface,
+    },
 };
 
 export function generateGameSpecifics(state: types.IState,

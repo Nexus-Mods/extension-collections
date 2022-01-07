@@ -33,6 +33,12 @@ const gameSupport = {
     oblivion: {
         gameSettingsFiles: ['Oblivion.ini'],
     },
+    enderal: {
+        gameSettingsFiles: ['Enderal.ini', 'EnderalPrefs.ini'],
+    },
+    enderalspecialedition: {
+        gameSettingsFiles: ['Enderal.ini', 'EnderalPrefs.ini'],
+    },
 };
 
 function isSupported(gameId: string) {
