@@ -154,8 +154,14 @@ function AddModsDialog(props: IAddModsDialogProps) {
           )}
       </Modal.Body>
       <Usage persistent infoId='add-mods-from-mods-page'>
-        {t('You can also add mods to a collection from the mods screen: '
-          + 'Right-click > Add to Collection')}
+        <p>
+          {t('You can also add mods to a collection from the mods screen: '
+           + 'Right-click > Add to Collection')}
+        </p>
+        <p>
+          {t('Mods need to be in an installed state in order to add them to a collection. '
+           + 'If the mod you want to add is not in this list, make sure it\'s installed.')}
+        </p>
       </Usage>
       <Modal.Footer>
         <Button onClick={hide}>{t('Close')}</Button>
