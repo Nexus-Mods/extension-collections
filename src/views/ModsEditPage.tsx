@@ -936,22 +936,14 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       ['attributes', 'collection', 'source', modId], { type });
     const input: types.IInput[] = [];
 
-    /*
-    if ((type === 'bundle')
-        && (mods[modId].attributes?.source !== undefined)) {
-      return this.context.api.showDialog('error', 'Can\'t bundle foreign content', {
-        text: 'This mod has been downloaded from a website so we assume '
-            + 'it was created by someone else.\n'
-            + 'Redistributing this could therefore '
-            + 'be copyright infringement and is therefore not allowed. '
-            + 'You can only bundle mods that you created yourself, locally.\n'
-            + 'Please respect mod authors and understand that they have rights, even '
-            + 'if that is sometimes inconvenient.'
-      }, [
-        { label: 'Understood' },
-      ]);
+    let text: string;
+
+    if (type === 'bundle') {
+      text = 'The mod will be bundled with the collection.\n'
+           + 'Please only do this for mods you created yourself. '
+           + 'If it\'s someone elses work, this is effectively redistributing the mod '
+           + 'and authors don\'t usually permit that.';
     }
-    */
 
     if (['direct', 'browse'].includes(type)) {
       input.push({ id: 'url', type: 'url', label: 'URL', value: src.url });
@@ -964,11 +956,22 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       });
     }
 
-    if (input.length > 0) {
+    if ((input.length > 0) || (text !== undefined)) {
       // query details for direct/browse/manual
       this.context.api.showDialog('question',
         'Please provide information the user needs to find the mod', {
+        text,
         input,
+        checkboxes: [
+          {
+            id: 'adult',
+            bbcode: 'Mod contains adult content. '
+                  + '([url=https://help.nexusmods.com/article/19-adult-content-guidelines]'
+                  + 'Adult Content Guidelines'
+                  + '[/url])',
+            value: src.adultContent ?? false,
+          },
+        ],
       }, [
         { label: 'Save' },
       ]).then((result => {
@@ -976,6 +979,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           type,
           url: result.input.url,
           instructions: result.input.instructions,
+          adultContent: result.input.adult === true,
         });
       }));
     } else {

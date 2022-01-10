@@ -26,6 +26,7 @@ export interface ICollectionSourceInfo {
   // determines which file to get if there is an update compared to what's in the mod pack
   // Not supported with every source type
   updatePolicy?: UpdatePolicy;
+  adultContent?: boolean;
 
   md5?: string;
   fileSize?: number;

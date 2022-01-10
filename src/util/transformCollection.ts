@@ -51,6 +51,12 @@ function deduceSource(mod: types.IMod,
     ? { ...sourceInfo }
     : { type: 'nexus' };
 
+  const assign = (obj: any, key: string, value: any) => {
+    if (obj[key] === undefined) {
+      obj[key] = value;
+    }
+  };
+
   if (res.type === 'nexus') {
     if (mod.attributes?.source !== 'nexus') {
       throw new Error(`"${util.renderModName(mod)}" doesn't have Nexus as its source`);
@@ -64,13 +70,9 @@ function deduceSource(mod: types.IMod,
 
     res.modId = toInt(modId);
     res.fileId = toInt(fileId);
+  } else {
+    assign(res, 'adultContent', sourceInfo?.adultContent);
   }
-
-  const assign = (obj: any, key: string, value: any) => {
-    if (obj[key] === undefined) {
-      obj[key] = value;
-    }
-  };
 
   // since we store bundled mods uncompressed the md5 hash won't be the same
   if (sourceInfo?.type !== 'bundle') {
