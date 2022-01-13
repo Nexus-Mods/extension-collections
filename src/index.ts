@@ -714,7 +714,9 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const gameId = util.convertGameIdReverse(knownGames, coll.game.domainName);
       const collModId = Object.keys(mods[gameId])
         .find(modId => mods[gameId][modId].attributes['collectionId'] === coll.id);
-      if (collModId !== undefined) {
+      // don't set a "newestVersion" on own collections because we don't allow an update on those
+      // anyway
+      if ((collModId !== undefined) && !mods[gameId][collModId].attributes.editable) {
         const newestVersion = coll.revisions
           .filter(rev => rev.revisionStatus === 'published')
           .sort((lhs, rhs) => rhs.revision - lhs.revision);

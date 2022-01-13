@@ -10,7 +10,8 @@ function NewRevisionMarker(props: INewRevisionMarkerProps) {
   const { t, collection } = props;
 
   if ((collection.attributes['newestVersion'] === undefined)
-      || (collection.attributes['newestVersion'] === collection.attributes['version'])) {
+      || (parseInt(collection.attributes['newestVersion'], 10)
+          <= parseInt(collection.attributes['version'], 10))) {
     return null;
   }
 
