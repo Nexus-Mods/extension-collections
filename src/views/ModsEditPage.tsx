@@ -939,10 +939,19 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     let text: string;
 
     if (type === 'bundle') {
-      text = 'The mod will be bundled with the collection.\n'
-           + 'Please only do this for mods you created yourself. '
-           + 'If it\'s someone elses work, this is effectively redistributing the mod '
-           + 'and authors don\'t usually permit that.';
+      text = 'These files will be bundled with the collection. '
+           + 'This means they will be distributed alongside the collection and '
+           + 'released into the public domain. '
+           + 'Bundled content should not be used to distribute mods or mod files. '
+           + 'It is intended to allow curators to include configuration files or '
+           + 'outputs from automated tools for the convenience of users. '
+           + 'Any content that would qualify as a "mod" should be uploaded to a '
+           + 'Nexus Mods mod page and included in the collection, rather than being bundled. '
+           + 'You should only include content that you have permission to share freely. '
+           + 'Failure to respect the permissions/license of mod authors may result in '
+           + 'moderation against your account.';
+    } else {
+      text = 'Please provide information the user needs to find the mod';
     }
 
     if (['direct', 'browse'].includes(type)) {
@@ -959,7 +968,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     if ((input.length > 0) || (text !== undefined)) {
       // query details for direct/browse/manual
       this.context.api.showDialog('question',
-        'Please provide information the user needs to find the mod', {
+        'Provide mod metadata', {
         text,
         input,
         checkboxes: [
