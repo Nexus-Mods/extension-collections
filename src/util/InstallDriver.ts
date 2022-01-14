@@ -352,10 +352,10 @@ class InstallDriver {
         ?? await this.mInfoCache.getRevisionInfo(revisionId, slug, this.revisionNumber);
     }
 
-    const gameId = collection.attributes?.downloadGame ?? profile.gameId;
-    const game = util.getGame(gameId);
-    const discovery = selectors.discoveryByGame(state, gameId);
-    const gameVersion = await game.getInstalledVersion(discovery);
+    const gameMode = profile.gameId;
+    const currentgame = util.getGame(gameMode);
+    const discovery = selectors.discoveryByGame(state, gameMode);
+    const gameVersion = await currentgame.getInstalledVersion(discovery);
     const gvMatch = gv => gv.reference === gameVersion;
     const revGameVersions = this.mRevisionInfo.gameVersions ?? [];
     if ((revGameVersions.length ?? 0 !== 0)
