@@ -941,12 +941,12 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     if (type === 'bundle') {
       text = 'These files will be bundled with the collection. '
            + 'This means they will be distributed alongside the collection and '
-           + 'released into the public domain. '
+           + 'released into the public domain.\n\n'
            + 'Bundled content should not be used to distribute mods or mod files. '
            + 'It is intended to allow curators to include configuration files or '
            + 'outputs from automated tools for the convenience of users. '
            + 'Any content that would qualify as a "mod" should be uploaded to a '
-           + 'Nexus Mods mod page and included in the collection, rather than being bundled. '
+           + 'Nexus Mods mod page and included in the collection, rather than being bundled.\n\n'
            + 'You should only include content that you have permission to share freely. '
            + 'Failure to respect the permissions/license of mod authors may result in '
            + 'moderation against your account.';

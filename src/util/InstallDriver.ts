@@ -357,8 +357,9 @@ class InstallDriver {
     const discovery = selectors.discoveryByGame(state, gameId);
     const gameVersion = await game.getInstalledVersion(discovery);
     const gvMatch = gv => gv.reference === gameVersion;
-    if ((this.mRevisionInfo.gameVersions.length !== 0)
-        && (this.mRevisionInfo.gameVersions.find(gvMatch) === undefined)) {
+    const revGameVersions = this.mRevisionInfo.gameVersions ?? [];
+    if ((revGameVersions.length ?? 0 !== 0)
+        && (revGameVersions.find(gvMatch) === undefined)) {
       const choice = await this.mApi.showDialog('question', 'Different version', {
         text: 'The collection was created with a different version of the game '
             + 'than you have installed ("{{actual}}" vs "{{intended}}").\n'
@@ -366,7 +367,7 @@ class InstallDriver {
             + 'check if the collection is compatible before continuing.',
         parameters: {
           actual: gameVersion,
-          intended: this.mRevisionInfo.gameVersions.map(gv => gv.reference).join(' or '),
+          intended: revGameVersions.map(gv => gv.reference).join(' or '),
         },
       }, [
         { label: 'Cancel' },
