@@ -950,7 +950,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
            + 'You should only include content that you have permission to share freely. '
            + 'Failure to respect the permissions/license of mod authors may result in '
            + 'moderation against your account.';
-    } else {
+    } else if (['direct', 'browse', 'manual'].includes(type)) {
       text = 'Please provide information the user needs to find the mod';
     }
 
