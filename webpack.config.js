@@ -1,3 +1,3 @@
 const webpack = require('vortex-api/bin/webpack').default;
 
-module.exports = webpack('modpacks', __dirname, 4);
+module.exports = webpack('modpacks', __dirname, 5);
