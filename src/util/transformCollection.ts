@@ -1,6 +1,6 @@
 import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MOD_TYPE } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
-         ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo, ICollectionTool } from '../types/ICollection';
+         ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
@@ -16,8 +16,14 @@ import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
 
+function nop() {
+  // nop
+}
+
 const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
-  fileMD5(fileName, (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result));
+  fileMD5(fileName,
+          (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result),
+          nop);
 });
 
 function sanitizeExpression(fileName: string): string {
