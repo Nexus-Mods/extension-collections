@@ -746,7 +746,7 @@ function init(context: types.IExtensionContext): boolean {
   initTools(context);
 
   context.once(() => {
-    once(context.api, () => collectionsCB);
+    once(context.api, () => collectionsCB ?? {});
   });
   return true;
 }
