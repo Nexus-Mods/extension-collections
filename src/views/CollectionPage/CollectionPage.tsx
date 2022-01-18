@@ -90,6 +90,10 @@ function arr(input: string | string[]): string[] {
 }
 
 function matchRepo(mod: IModEx, ref: IModFile) {
+  if (ref === null) {
+    return false;
+  }
+
   const modId = mod.attributes?.modId || mod.collectionRule?.reference?.repo?.modId;
   const fileId = mod.attributes?.fileId || mod.collectionRule?.reference?.repo?.fileId;
 
