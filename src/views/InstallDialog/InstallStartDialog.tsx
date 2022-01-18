@@ -31,6 +31,7 @@ interface IActionProps {
   onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) => void;
   onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
+  onSetProfilesVisible: () => void;
 }
 
 type IProps = IInstallDialogProps & IConnectedProps & IActionProps;
@@ -141,7 +142,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   private next = () => {
-    const { allProfiles, driver, onAddProfile, profile } = this.props;
+    const { allProfiles, driver, onAddProfile, onSetProfilesVisible, profile } = this.props;
     const { selectedProfile } = this.state;
     let profileId = this.state.selectedProfile;
 
@@ -156,6 +157,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
         lastActivated: 0,
       };
       onAddProfile(newProfile);
+      onSetProfilesVisible();
       driver.profile = newProfile;
     } else if (selectedProfile !== profile.id) {
       driver.profile = allProfiles[selectedProfile];
@@ -202,6 +204,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onAddProfile: (profile: types.IProfile) =>
       dispatch(actions.setProfile(profile)),
+    onSetProfilesVisible: () =>
+      dispatch(actions.setProfilesVisible(true)),
   };
 }
 
