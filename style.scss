@@ -1198,3 +1198,15 @@ ul.collection-mods-page-attrib-tooltip {
     margin-right: 0.5em;
   }
 }
+
+.gutter-above {
+  margin-top: $gutter-width;
+}
+
+#collections-profile-select {
+  gap: 0.5em;
+
+  .layout-flex {
+    overflow: visible;
+  }
+}

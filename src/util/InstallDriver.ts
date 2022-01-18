@@ -133,6 +133,10 @@ class InstallDriver {
     return this.mProfile;
   }
 
+  public set profile(val: types.IProfile) {
+    this.mProfile = val;
+  }
+
   public get infoCache() {
     return this.mInfoCache;
   }
@@ -389,14 +393,14 @@ class InstallDriver {
       // stuff was getting deleted from the DB directly
       ?? this.mRevisionInfo?.collection;
 
-    this.mApi.events.emit('view-collection', collection?.id);
+    this.mApi.events.emit('view-collection', collection.id);
 
     this.updateProgress(profile, collection);
 
     this.augmentRules(profile, collection);
 
-    this.mApi.dismissNotification(getUnfulfilledNotificationId(collection?.id));
-    this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection?.id, true));
+    this.mApi.dismissNotification(getUnfulfilledNotificationId(collection.id));
+    this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
 
     const required = (collection?.rules ?? [])
       .filter(rule => rule.type === 'requires');

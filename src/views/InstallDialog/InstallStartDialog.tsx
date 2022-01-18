@@ -7,8 +7,10 @@ import * as React from 'react';
 import { Button, Media } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
+import Select from 'react-select';
 import * as Redux from 'redux';
-import { actions, ComponentEx, fs, Modal, selectors, Steps, types, util } from 'vortex-api';
+import { generate as shortid} from 'shortid';
+import { actions, ComponentEx, FlexLayout, Modal, More, selectors, types, util } from 'vortex-api';
 
 interface IInstallDialogProps {
   onHide: () => void;
@@ -18,16 +20,23 @@ interface IInstallDialogProps {
 
 interface IConnectedProps {
   profile: types.IProfile;
+  allProfiles: { [profileId: string]: types.IProfile };
   mods: { [modId: string]: types.IMod };
   isPremium: boolean;
 }
 
 interface IActionProps {
+  onAddProfile: (profile: types.IProfile) => void;
+  onSetModAttribute: (gameId: string, modId: string, key: string, value: any) => void;
+  onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) => void;
+  onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
+  onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
 }
 
 type IProps = IInstallDialogProps & IConnectedProps & IActionProps;
 
 interface IInstallDialogState {
+  selectedProfile: string;
 }
 
 function nop() {
@@ -42,6 +51,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     super(props);
 
     this.initState({
+      selectedProfile: props.profile?.id,
     });
 
     if (props.driver !== undefined) {
@@ -53,16 +63,32 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     if ((this.props.driver !== undefined) && (this.props.driver !== prevProps.driver))  {
       this.props.driver.onUpdate(() => this.forceUpdate());
     }
+    if ((prevProps.profile !== undefined)
+        && (this.props.profile !== undefined)
+        && (prevProps.profile.id !== this.props.profile.id)) {
+      this.nextState.selectedProfile = this.props.profile.id;
+    }
   }
 
   public render(): React.ReactNode {
-    const { t, driver, profile } = this.props;
+    const { t, driver,  allProfiles, profile } = this.props;
+    const { selectedProfile } = this.state;
 
     if ((driver === undefined) || (profile === undefined)) {
       return null;
     }
 
     const game = util.getGame(profile.gameId);
+
+    const profileOptions = Object.keys(allProfiles)
+      .filter(profId => allProfiles[profId].gameId === profile.gameId)
+      .map(profId => ({
+        value: profId,
+        label: profId === profile.id
+          ? t('{{name}} (Current)', { replace: { name: profile.name } })
+          : allProfiles[profId].name,
+      }))
+      .concat({ value: '__new', label: t('Create new profile') });
 
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
@@ -79,7 +105,23 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
           <Media.Right>
             <h5>{game.name}</h5>
             <h3>{util.renderModName(driver.collection)}</h3>
-            {t('has been added to your collections.')}
+            <p>{t('has been added to your collections.')}</p>
+            <p className='gutter-above'>{t('Install this collection to profile') + ':'}</p>
+            <FlexLayout type='row' id='collections-profile-select'>
+              <FlexLayout.Flex>
+                <Select
+                  options={profileOptions}
+                  value={selectedProfile}
+                  onChange={this.changeProfile}
+                  clearable={false}
+                />
+              </FlexLayout.Flex>
+              <FlexLayout.Fixed>
+                <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
+                  {util.getText('profile' as any, 'profiles', t)}
+                </More>
+              </FlexLayout.Fixed>
+            </FlexLayout>
           </Media.Right>
         </Modal.Body>
         <Modal.Footer>
@@ -90,12 +132,34 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     );
   }
 
+  private changeProfile = (value: { value: string, label: string }) => {
+    this.nextState.selectedProfile = value.value;
+  }
+
   private cancel = () => {
     this.props.driver.cancel();
   }
 
   private next = () => {
-    const { driver } = this.props;
+    const { allProfiles, driver, onAddProfile, profile } = this.props;
+    const { selectedProfile } = this.state;
+    let profileId = this.state.selectedProfile;
+
+    if (this.state.selectedProfile === '__new') {
+      profileId = shortid();
+      const name = util.renderModName(driver.collection);
+      const newProfile = {
+        id: profileId,
+        gameId: profile.gameId,
+        name,
+        modState: {},
+        lastActivated: 0,
+      };
+      onAddProfile(newProfile);
+      driver.profile = newProfile;
+    } else if (selectedProfile !== profile.id) {
+      driver.profile = allProfiles[selectedProfile];
+    }
     driver.continue();
   }
 }
@@ -112,12 +176,14 @@ function mapStateToProps(state: types.IState): IConnectedProps {
   if (editCollectionId !== undefined) {
     return {
       profile,
+      allProfiles: state.persistent.profiles,
       mods: state.persistent.mods[gameMode],
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
     };
   } else {
     return {
       profile,
+      allProfiles: state.persistent.profiles,
       mods: emptyObject,
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
     };
@@ -134,6 +200,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.addModRule(gameId, modId, rule)),
     onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
       dispatch(actions.removeModRule(gameId, modId, rule)),
+    onAddProfile: (profile: types.IProfile) =>
+      dispatch(actions.setProfile(profile)),
   };
 }
 

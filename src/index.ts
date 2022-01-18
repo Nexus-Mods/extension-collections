@@ -671,7 +671,9 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       } else {
         // once this is complete it will automatically trigger did-install-mod
         // which will then start the ui for the installation process
-        await util.toPromise<string>(cb => api.events.emit('start-install-download', dlId, {}, cb));
+        await util.toPromise<string>(cb => api.events.emit('start-install-download', dlId, {
+          allowAutoEnable: false,
+        }, cb));
       }
     } catch (err) {
       if (!(err instanceof util.UserCanceled)) {
