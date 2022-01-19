@@ -120,7 +120,7 @@ class InstallDriver {
 
     this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
 
-    this.startInstall();
+    await this.startInstall();
 
     this.triggerUpdate();
   }
