@@ -547,7 +547,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.setStylesheet('modpacks', path.join(__dirname, 'style.scss'));
+  api.setStylesheet('collections', path.join(__dirname, 'style.scss'));
 
   const state: () => types.IState = () => store.getState();
 

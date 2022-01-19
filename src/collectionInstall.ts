@@ -35,17 +35,6 @@ export function makeInstall(api: types.IExtensionApi) {
 
     const collection: ICollection = JSON.parse(collectionData);
 
-    /*
-    if (!isIModPack(modpack)) {
-      const errorText = isIModPack.errors.length > 10
-        ? ajv.errorsText(isIModPack.errors.slice(0, 10)) + '...'
-        : ajv.errorsText(isIModPack.errors);
-
-      log('warn', 'invalid mod pack', { errorText });
-      return Promise.reject(new Error('invalid modpack (see log for details)'));
-    }
-    */
-
     const filesToCopy = files
       .filter(filePath => !filePath.endsWith(path.sep)
         && (filePath.split(path.sep)[0] !== BUNDLED_PATH));
