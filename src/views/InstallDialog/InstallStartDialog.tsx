@@ -103,7 +103,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
               imageTime={42}
             />
           </Media.Left>
-          <Media.Right>
+          <Media.Right style={{ width: '100%' }}>
             <h5>{game.name}</h5>
             <h3>{util.renderModName(driver.collection)}</h3>
             <p>{t('has been added to your collections.')}</p>
