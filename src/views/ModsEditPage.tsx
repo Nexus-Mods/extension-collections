@@ -569,7 +569,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     });
   }
 
-  public componentWillMount() {
+  public UNSAFE_componentWillMount() {
     const entries = this.generateEntries(this.props);
     this.nextState.entries = entries;
     this.nextState.problems = this.checkProblems(this.props, entries);

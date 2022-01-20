@@ -385,7 +385,7 @@ class InstallDriver {
     }
 
     this.mCollectionInfo = nexusInfo?.collectionInfo
-      ?? await this.mInfoCache.getCollectionInfo(this.collectionId, slug)
+      ?? await this.mInfoCache.getCollectionInfo(slug)
       // this last fallback is for the weird case where we have revision info cached but
       // not collection info and fetching is not possible because it's been deleted from the
       // site

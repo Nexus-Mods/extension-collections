@@ -35,10 +35,7 @@ class InfoCache {
     return this.mCacheColRules[revisionId];
   }
 
-  public async getCollectionInfo(id: string,
-                                 slug: string,
-                                 forceFetch?: boolean)
-                                 : Promise<ICollection> {
+  public async getCollectionInfo(slug: string, forceFetch?: boolean): Promise<ICollection> {
     const { store } = this.mApi;
     if (slug === undefined) {
       return;
@@ -49,7 +46,7 @@ class InfoCache {
         || ((Date.now() - collections[slug].timestamp) > CACHE_EXPIRE_MS)) {
 
       if (this.mCacheColRequests[slug] === undefined) {
-        this.mCacheColRequests[slug] = this.cacheCollectionInfo(id, slug);
+        this.mCacheColRequests[slug] = this.cacheCollectionInfo(slug);
       }
       return this.mCacheColRequests[slug];
     }
@@ -82,9 +79,7 @@ class InfoCache {
       return Promise.resolve(undefined);
     }
 
-    const collectionInfo = await this.getCollectionInfo(
-      revisions[revisionId].info.collection.id,
-      revisions[revisionId].info.collection.slug);
+    const collectionInfo = await this.getCollectionInfo(revisions[revisionId].info.collection.slug);
 
     return {
       ...revisions[revisionId].info,
@@ -118,21 +113,18 @@ class InfoCache {
     }
   }
 
-  private async cacheCollectionInfo(collectionId: string,
-                                    collectionSlug: string): Promise<ICollection> {
+  private async cacheCollectionInfo(collectionSlug: string): Promise<ICollection> {
     const { store } = this.mApi;
-    let collectionIdNum = parseInt(collectionId, 10);
-    if (isNaN(collectionIdNum)) {
-      collectionIdNum = undefined;
-    }
-    const collectionInfo = (await this.mApi.emitAndAwait(
-        'get-nexus-collection', collectionIdNum, collectionSlug))[0];
+
+    const collectionInfo: ICollection = (await this.mApi.emitAndAwait(
+        'get-nexus-collection', collectionSlug))[0];
     if (!!collectionInfo) {
-      store.dispatch(updateCollectionInfo(collectionId, collectionInfo, Date.now()));
+      store.dispatch(updateCollectionInfo(
+        collectionInfo.id.toString(), collectionInfo, Date.now()));
     }
     return Promise.resolve(collectionInfo)
       .then((result: ICollection) => {
-        delete this.mCacheColRequests[collectionId];
+        delete this.mCacheColRequests[collectionInfo.id.toString()];
         return result;
       });
   }
@@ -142,21 +134,20 @@ class InfoCache {
                                   revisionNumber: number)
                                   : Promise<IRevision> {
     const { store } = this.mApi;
-    const revIdNum = parseInt(revisionId, 10);
-    if (Number.isNaN(revIdNum)) {
-      return Promise.reject(new Error('invalid revision id: ' + revisionId));
+
+    if ((collectionSlug === undefined) || (revisionNumber === undefined)) {
+      return Promise.reject(new Error('missing collection/revision id'));
     }
-    const revisionInfo = ((collectionSlug !== undefined) && (revisionNumber !== undefined))
-      ? (await this.mApi.emitAndAwait('get-nexus-collection-revision',
-                                      collectionSlug, revisionNumber))[0]
-      : (await this.mApi.emitAndAwait('get-nexus-revision', revIdNum))[0];
+
+    const revisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision',
+        collectionSlug, revisionNumber))[0];
     const now = Date.now();
 
     if (!!revisionInfo) {
       // we cache revision info and collection info separately to reduce duplication
       // in the application state
       store.dispatch(updateCollectionInfo(
-        revisionInfo.collection.id, revisionInfo.collection, now));
+        revisionInfo.collection.id.toString(), revisionInfo.collection, now));
       store.dispatch(updateRevisionInfo(revisionId, {
         ...revisionInfo,
         collection: {
