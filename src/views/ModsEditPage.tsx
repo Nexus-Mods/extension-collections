@@ -67,330 +67,47 @@ const INSTALL_MODES = {
   clone: 'Replicate',
 };
 
+const getCollator = (() => {
+  let lang: string;
+  let collator: Intl.Collator;
+  return (locale: string) => {
+    if ((collator === undefined) || (locale !== lang)) {
+      lang = locale;
+      collator = new Intl.Collator(locale, { sensitivity: 'base' });
+    }
+    return collator;
+  };
+})();
+
+function undefSort(lhs: any, rhs: any) {
+  return (lhs !== undefined)
+    ? 1 : (rhs !== undefined)
+            ? -1 : 0;
+}
+
+function modNameSort(lhs: types.IMod, rhs: types.IMod,
+                     collator: Intl.Collator, sortDir: string): number {
+  const lhsName = util.renderModName(lhs);
+  const rhsName = util.renderModName(rhs);
+  return ((lhsName === undefined) || (rhsName === undefined))
+    ? undefSort(lhsName, rhsName)
+    : collator.compare(lhsName, rhsName) * (sortDir !== 'desc' ? 1 : -1);
+}
+
+function sortCategories(lhs: types.IMod, rhs: types.IMod,
+                        collator: Intl.Collator, state: any, sortDir: string): number {
+  const lhsCat = util.resolveCategoryName(lhs.attributes?.category, state);
+  const rhsCat = util.resolveCategoryName(rhs.attributes?.category, state);
+  return (lhsCat === rhsCat)
+    ? modNameSort(lhs, rhs, collator, sortDir)
+    : collator.compare(lhsCat, rhsCat);
+}
+
 class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
   private mLang: string;
   private mCollator: Intl.Collator;
 
-  private mColumns: Array<types.ITableAttribute<IModEntry>> = [
-    {
-      id: 'name',
-      name: 'Mod Name',
-      description: 'Mod Name',
-      calc: (entry: IModEntry) => (entry.mod !== undefined)
-        ? util.renderModName(entry.mod)
-        : util.renderModReference(entry.rule.reference),
-      placement: 'table',
-      edit: {},
-      isDefaultSort: true,
-      isSortable: true,
-      filter: new TableTextFilter(true),
-      sortFunc: (lhs: string, rhs: string, locale: string): number => {
-        if ((this.mCollator === undefined) || (locale !== this.mLang)) {
-          this.mLang = locale;
-          this.mCollator = new Intl.Collator(locale, { sensitivity: 'base' });
-        }
-        return this.mCollator.compare(lhs, rhs);
-      },
-    }, {
-      id: 'tags',
-      name: 'Tag',
-      description: 'Mod Highlights',
-      customRenderer: (entry: IModEntry) => {
-        if (entry.mod === undefined) {
-          return (
-            <tooltip.Icon
-              name='feedback-error'
-              tooltip={this.props.t('This mod isn\'t installed.')}
-            />
-          );
-        }
-
-        const color = util.getSafe(entry.mod.attributes, ['color'], '');
-        const icon = util.getSafe(entry.mod.attributes, ['icon'], '');
-        const hasProblem = (this.state.problems[entry.mod.id] !== undefined)
-                        && (this.state.problems[entry.mod.id].length > 0);
-        const hasHighlight = color || icon;
-
-        if (!color && !icon  && !hasProblem) {
-          return null;
-        }
-        return (
-          <>
-            {hasHighlight ? (
-              <Icon
-                className={'highlight-base ' + (color !== '' ? color : 'highlight-default')}
-                name={icon !== '' ? icon : 'highlight'}
-              />
-            ) : null}
-            {hasProblem ? (
-              <tooltip.IconButton
-                icon='incompatible'
-                className='btn-embed'
-                tooltip={this.state.problems[entry.mod.id]
-                  .map(problem => problem.summary).join('\n')}
-                data-modid={entry.mod.id}
-                onClick={this.showProblems}
-              />
-            ) : null}
-          </>
-        );
-      },
-      calc: (entry: IModEntry) => {
-        if (entry.mod === undefined) {
-          return ['not-installed', 'has-problems'];
-        }
-        const color = entry.mod.attributes?.color ?? '';
-        const icon = entry.mod.attributes?.icon ?? '';
-        const problems = this.state.problems[entry.mod.id] || [];
-
-        return [color, icon, problems.length > 0 ? 'has-problems' : 'no-problems'];
-      },
-      placement: 'table',
-      edit: {},
-      filter: new OptionsFilter([{ value: 'has-problems', label: 'Has Problems' }], false, false),
-    }, {
-      id: 'required',
-      name: 'Required',
-      description: 'Whether the entire collection will fail if this mod is missing',
-      calc: (mod: IModEntry) => {
-        return mod.rule.type === 'requires'
-          ? true
-          : false;
-      },
-      placement: 'table',
-      edit: {
-        inline: true,
-        actions: false,
-        choices: () => [
-          { key: 'required', bool: true } as any,
-          { key: 'optional', bool: false } as any,
-        ],
-        onChangeValue: (source: IModEntry, value: any) => {
-          this.props.onRemoveRule(source.rule);
-          const newRule = _.cloneDeep(source.rule);
-          newRule.type = value ? 'requires' : 'recommends';
-          this.props.onAddRule(newRule);
-        },
-      },
-    }, {
-      id: 'source',
-      name: 'Source',
-      description: 'How the user acquires the mod',
-      calc: (entry: IModEntry) => {
-        const id = entry.mod?.id ?? entry.rule?.reference?.id;
-        const { collection } = this.props;
-        const type = util.getSafe(collection,
-                                  ['attributes', 'collection', 'source', id, 'type'],
-                                  'nexus');
-        return SOURCES[type];
-      },
-      placement: 'table',
-      edit: {
-        inline: true,
-        actions: false,
-        choices: () => Object.keys(SOURCES).map(key => ({ key, text: SOURCES[key] })),
-        onChangeValue: (entry: IModEntry, value: any) => {
-          const id = entry.mod?.id ?? entry.rule?.reference?.id;
-          if (id !== undefined) {
-            this.querySource(id, value);
-          }
-        },
-      },
-    }, {
-      id: 'edit-source',
-      placement: 'table',
-      edit: {},
-      calc: (entry: IModEntry) => {
-        const { collection } = this.props;
-        const id = entry.mod?.id ?? entry.rule?.reference?.id;
-
-        const type = util.getSafe(collection,
-                                  ['attributes', 'collection', 'source', id, 'type'],
-                                  'nexus');
-        return SOURCES[type];
-      },
-      customRenderer: (entry: IModEntry) => {
-        const { t, collection } = this.props;
-        const id = entry.mod?.id ?? entry.rule?.reference?.id;
-        const type = util.getSafe(collection,
-                                  ['attributes', 'collection', 'source', id, 'type'],
-                                  'nexus');
-        return (
-          <tooltip.IconButton
-            icon='edit'
-            disabled={(entry.mod === undefined) || ['nexus', 'bundle'].includes(type)}
-            tooltip={t('Edit Source')}
-            data-modid={id}
-            onClick={this.onQuerySource}
-          />
-        );
-      },
-    }, {
-      id: 'version-match',
-      name: 'Version',
-      description: 'The version to install',
-      calc: (entry: IModEntry) => {
-        const { collection } = this.props;
-        const { t } = this.props;
-        const id = entry.mod?.id ?? entry.rule?.reference?.id;
-        const version = entry.mod?.attributes?.['version'] ?? t('N/A');
-
-        if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
-          return t('Exact only ({{version}})', { replace: { version } });
-        }
-
-        if (entry.rule.reference.versionMatch === '*') {
-          return t('Latest');
-        } else if ((entry.rule.reference.versionMatch === undefined)
-                   || (entry.rule.reference.versionMatch || '').endsWith('+prefer')) {
-          return t('Prefer exact ({{version}})', { replace: { version } });
-        } else {
-          return t('Exact only ({{version}})', { replace: { version } });
-        }
-      },
-      placement: 'table',
-      edit: {
-        inline: true,
-        actions: false,
-        choices: (entry: IModEntry) => {
-          const { t, collection } = this.props;
-          const id = entry.mod?.id ?? entry.rule?.reference?.id;
-          const version = entry.mod?.attributes?.['version'] ?? t('N/A');
-
-          if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
-            return [
-              { key: 'exact', text: t('Exact only ({{version}})', { replace: { version } }) },
-            ];
-          }
-
-          return [
-            { key: 'exact', text: t('Exact only ({{version}})', { replace: { version } }) },
-            { key: 'prefer', text: t('Prefer exact ({{version}})', { replace: { version } }) },
-            { key: 'newest', text: t('Latest') },
-          ];
-        },
-        onChangeValue: (entry: IModEntry, value: any) => {
-          if (entry.mod === undefined) {
-            return;
-          }
-
-          const newRule = _.cloneDeep(entry.rule);
-          this.props.onRemoveRule(entry.rule);
-          newRule.reference.versionMatch = (value === 'exact')
-            ? entry.mod.attributes['version']
-            : (value === 'prefer')
-            ? '>=' + entry.mod.attributes['version'] + '+prefer'
-            : '*';
-          this.props.onAddRule(newRule);
-        },
-      },
-    }, {
-      id: 'install-type',
-      name: 'Install',
-      description: 'How the mod should be installed on the user system',
-      filter: new OptionsFilter([
-        { value: 'has-install-options', label: 'Has Installation Options' }], false, false),
-      calc: (entry: IModEntry) => {
-        const { collection } = this.props;
-        const id = entry.mod?.id ?? entry.rule?.reference?.id;
-
-        if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
-          return INSTALL_MODES['clone'];
-        }
-
-        const hasInstallerOptions =
-          (entry.mod?.attributes?.installerChoices?.options ?? []).length > 0;
-
-        const installMode =
-          util.getSafe(collection, ['attributes', 'collection', 'installMode', id], 'fresh');
-        return [INSTALL_MODES[installMode], hasInstallerOptions ? 'has-install-options' : 'no-options'];
-      },
-      placement: 'table',
-      help: 'If set to "Fresh Install" the mod will simply be installed fresh on the users system, '
-          + 'installer (if applicable) and everything.\n'
-          + 'If set to "Replicate" Vortex will try to replicate your exact setup for this mod. '
-          + 'This does not bundle the mod itself but the list of files to install and patches if '
-          + 'necessary. This may increase the size of the collection and the time it takes to '
-          + 'export it considerably.',
-      edit: {},
-      customRenderer: (entry: IModEntry) => {
-        const { t, collection } = this.props;
-        const id = entry.mod?.id ?? entry.rule?.reference?.id;
-
-        const hasInstallerOptions =
-          (entry.mod?.attributes?.installerChoices?.options ?? []).length > 0;
-
-        const installMode = util.getSafe(collection,
-          ['attributes', 'collection', 'installMode', id], 'fresh');
-
-        return (
-          <InstallModeRenderer
-            hasInstallerOptions={hasInstallerOptions}
-            currentInstallMode={installMode}
-            modId={id}
-            onSetInstallMode={this.changeInstallMode}
-            options={INSTALL_MODES}
-          />
-        );
-      },
-    }, {
-      id: 'instructions',
-      name: 'Instructions',
-      icon: 'edit',
-      calc: (entry: IModEntry) => {
-        const { collection } = this.props;
-
-        if (entry.mod === undefined) {
-          return null;
-        }
-
-        return collection.attributes?.collection?.instructions?.[entry.mod.id];
-      },
-      customRenderer: (entry: IModEntry, detailCell: boolean, t: types.TFunction) => {
-        const { collection } = this.props;
-
-        if (entry.mod === undefined) {
-          return null;
-        }
-
-        const instructions = collection.attributes?.collection?.instructions?.[entry.mod.id];
-        return (instructions !== undefined) ? (
-          <tooltip.IconButton
-            icon='edit'
-            tooltip={t('Edit Instructions')}
-            data-modid={entry.mod.id}
-            onClick={this.changeInstructions}
-          >
-            {t('Edit')}
-          </tooltip.IconButton>
-        ) : (
-          <tooltip.IconButton
-            icon='add'
-            tooltip={t('Add Instructions')}
-            data-modid={entry.mod.id}
-            onClick={this.changeInstructions}
-          >
-            {t('Add')}
-          </tooltip.IconButton>
-        );
-      },
-      placement: 'table',
-      edit: {},
-    },
-    {
-      id: 'phase',
-      name: 'Phase',
-      placement: 'table',
-      isToggleable: true,
-      isSortable: true,
-      isDefaultVisible: false,
-      groupName: (phase: any) => this.props.t('Phase {{phase}}', {
-        replace: { phase: (phase || 0).toString() } }),
-      isGroupable: true,
-      calc: mod => mod.rule.extra?.['phase'] ?? 0,
-      edit: {},
-    },
-  ];
+  private mColumns: Array<types.ITableAttribute<IModEntry>>;
 
   private mActions: ITableRowAction[] = [
     {
@@ -567,6 +284,356 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       entries,
       problems: this.checkProblems(props, entries),
     });
+
+    this.mColumns = [
+      {
+        id: 'name',
+        name: 'Mod Name',
+        description: 'Mod Name',
+        calc: (entry: IModEntry) => (entry.mod !== undefined)
+          ? util.renderModName(entry.mod)
+          : util.renderModReference(entry.rule.reference),
+        placement: 'table',
+        edit: {},
+        isDefaultSort: true,
+        isSortable: true,
+        filter: new TableTextFilter(true),
+        sortFunc: (lhs: string, rhs: string, locale: string): number => {
+          if ((this.mCollator === undefined) || (locale !== this.mLang)) {
+            this.mLang = locale;
+            this.mCollator = new Intl.Collator(locale, { sensitivity: 'base' });
+          }
+          return this.mCollator.compare(lhs, rhs);
+        },
+      }, {
+        id: 'tags',
+        name: 'Tag',
+        description: 'Mod Highlights',
+        customRenderer: (entry: IModEntry) => {
+          if (entry.mod === undefined) {
+            return (
+              <tooltip.Icon
+                name='feedback-error'
+                tooltip={this.props.t('This mod isn\'t installed.')}
+              />
+            );
+          }
+
+          const color = util.getSafe(entry.mod.attributes, ['color'], '');
+          const icon = util.getSafe(entry.mod.attributes, ['icon'], '');
+          const hasProblem = (this.state.problems[entry.mod.id] !== undefined)
+            && (this.state.problems[entry.mod.id].length > 0);
+          const hasHighlight = color || icon;
+
+          if (!color && !icon && !hasProblem) {
+            return null;
+          }
+          return (
+            <>
+              {hasHighlight ? (
+                <Icon
+                  className={'highlight-base ' + (color !== '' ? color : 'highlight-default')}
+                  name={icon !== '' ? icon : 'highlight'}
+                />
+              ) : null}
+              {hasProblem ? (
+                <tooltip.IconButton
+                  icon='incompatible'
+                  className='btn-embed'
+                  tooltip={this.state.problems[entry.mod.id]
+                    .map(problem => problem.summary).join('\n')}
+                  data-modid={entry.mod.id}
+                  onClick={this.showProblems}
+                />
+              ) : null}
+            </>
+          );
+        },
+        calc: (entry: IModEntry) => {
+          if (entry.mod === undefined) {
+            return ['not-installed', 'has-problems'];
+          }
+          const color = entry.mod.attributes?.color ?? '';
+          const icon = entry.mod.attributes?.icon ?? '';
+          const problems = this.state.problems[entry.mod.id] || [];
+
+          return [color, icon, problems.length > 0 ? 'has-problems' : 'no-problems'];
+        },
+        placement: 'table',
+        edit: {},
+        filter: new OptionsFilter([{ value: 'has-problems', label: 'Has Problems' }], false, false),
+      }, {
+        id: 'category',
+        name: 'Category',
+        description: 'Mod Category',
+        icon: 'sitemap',
+        placement: 'table',
+        calc: (mod: IModEntry) =>
+          util.resolveCategoryName(mod.mod.attributes?.category, this.context.api.store.getState()),
+        isToggleable: true,
+        edit: {},
+        isSortable: true,
+        isGroupable: (mod: IModEntry, t: types.TFunction) =>
+          util.resolveCategoryName(mod.mod.attributes?.category,
+            this.context.api.store.getState()) || t('<No category>'),
+        filter: new OptionsFilter(() => {
+          const state: types.IState = this.context.api.getState();
+          return Array.from(new Set(Object.values(this.state.entries)
+            .map(m => m.mod.attributes?.category)
+            .filter(c => !!c),
+          ))
+            .map(c => {
+              const name = util.resolveCategoryName(c, state);
+              return { value: name, label: name };
+            });
+        }, false, false),
+        sortFuncRaw: (lhs: IModEntry, rhs: IModEntry, locale: string): number =>
+          sortCategories(lhs.mod, rhs.mod, getCollator(locale), this.context.api.store.getState(),
+            this.categorySort()),
+      }, {
+        id: 'required',
+        name: 'Required',
+        description: 'Whether the entire collection will fail if this mod is missing',
+        calc: (mod: IModEntry) => {
+          return mod.rule.type === 'requires'
+            ? true
+            : false;
+        },
+        placement: 'table',
+        edit: {
+          inline: true,
+          actions: false,
+          choices: () => [
+            { key: 'required', bool: true } as any,
+            { key: 'optional', bool: false } as any,
+          ],
+          onChangeValue: (source: IModEntry, value: any) => {
+            this.props.onRemoveRule(source.rule);
+            const newRule = _.cloneDeep(source.rule);
+            newRule.type = value ? 'requires' : 'recommends';
+            this.props.onAddRule(newRule);
+          },
+        },
+      }, {
+        id: 'source',
+        name: 'Source',
+        description: 'How the user acquires the mod',
+        calc: (entry: IModEntry) => {
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+          const { collection } = this.props;
+          const type = util.getSafe(collection,
+            ['attributes', 'collection', 'source', id, 'type'],
+            'nexus');
+          return SOURCES[type];
+        },
+        placement: 'table',
+        edit: {
+          inline: true,
+          actions: false,
+          choices: () => Object.keys(SOURCES).map(key => ({ key, text: SOURCES[key] })),
+          onChangeValue: (entry: IModEntry, value: any) => {
+            const id = entry.mod?.id ?? entry.rule?.reference?.id;
+            if (id !== undefined) {
+              this.querySource(id, value);
+            }
+          },
+        },
+      }, {
+        id: 'edit-source',
+        placement: 'table',
+        edit: {},
+        calc: (entry: IModEntry) => {
+          const { collection } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+
+          const type = util.getSafe(collection,
+            ['attributes', 'collection', 'source', id, 'type'],
+            'nexus');
+          return SOURCES[type];
+        },
+        customRenderer: (entry: IModEntry) => {
+          const { t, collection } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+          const type = util.getSafe(collection,
+            ['attributes', 'collection', 'source', id, 'type'],
+            'nexus');
+          return (
+            <tooltip.IconButton
+              icon='edit'
+              disabled={(entry.mod === undefined) || ['nexus', 'bundle'].includes(type)}
+              tooltip={t('Edit Source')}
+              data-modid={id}
+              onClick={this.onQuerySource}
+            />
+          );
+        },
+      }, {
+        id: 'version-match',
+        name: 'Version',
+        description: 'The version to install',
+        calc: (entry: IModEntry) => {
+          const { collection } = this.props;
+          const { t } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+          const version = entry.mod?.attributes?.['version'] ?? t('N/A');
+
+          if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+            return t('Exact only ({{version}})', { replace: { version } });
+          }
+
+          if (entry.rule.reference.versionMatch === '*') {
+            return t('Latest');
+          } else if ((entry.rule.reference.versionMatch === undefined)
+            || (entry.rule.reference.versionMatch || '').endsWith('+prefer')) {
+            return t('Prefer exact ({{version}})', { replace: { version } });
+          } else {
+            return t('Exact only ({{version}})', { replace: { version } });
+          }
+        },
+        placement: 'table',
+        edit: {
+          inline: true,
+          actions: false,
+          choices: (entry: IModEntry) => {
+            const { t, collection } = this.props;
+            const id = entry.mod?.id ?? entry.rule?.reference?.id;
+            const version = entry.mod?.attributes?.['version'] ?? t('N/A');
+
+            if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+              return [
+                { key: 'exact', text: t('Exact only ({{version}})', { replace: { version } }) },
+              ];
+            }
+
+            return [
+              { key: 'exact', text: t('Exact only ({{version}})', { replace: { version } }) },
+              { key: 'prefer', text: t('Prefer exact ({{version}})', { replace: { version } }) },
+              { key: 'newest', text: t('Latest') },
+            ];
+          },
+          onChangeValue: (entry: IModEntry, value: any) => {
+            if (entry.mod === undefined) {
+              return;
+            }
+
+            const newRule = _.cloneDeep(entry.rule);
+            this.props.onRemoveRule(entry.rule);
+            newRule.reference.versionMatch = (value === 'exact')
+              ? entry.mod.attributes['version']
+              : (value === 'prefer')
+                ? '>=' + entry.mod.attributes['version'] + '+prefer'
+                : '*';
+            this.props.onAddRule(newRule);
+          },
+        },
+      }, {
+        id: 'install-type',
+        name: 'Install',
+        description: 'How the mod should be installed on the user system',
+        filter: new OptionsFilter([
+          { value: 'has-install-options', label: 'Has Installation Options' }], false, false),
+        calc: (entry: IModEntry) => {
+          const { collection } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+
+          if (collection.attributes?.collection?.source?.[id]?.type === 'bundle') {
+            return INSTALL_MODES['clone'];
+          }
+
+          const hasInstallerOptions =
+            (entry.mod?.attributes?.installerChoices?.options ?? []).length > 0;
+
+          const installMode =
+            util.getSafe(collection, ['attributes', 'collection', 'installMode', id], 'fresh');
+          return [INSTALL_MODES[installMode], hasInstallerOptions ? 'has-install-options' : 'no-options'];
+        },
+        placement: 'table',
+        help: 'If set to "Fresh Install" the mod will simply be installed fresh on the users system, '
+          + 'installer (if applicable) and everything.\n'
+          + 'If set to "Replicate" Vortex will try to replicate your exact setup for this mod. '
+          + 'This does not bundle the mod itself but the list of files to install and patches if '
+          + 'necessary. This may increase the size of the collection and the time it takes to '
+          + 'export it considerably.',
+        edit: {},
+        customRenderer: (entry: IModEntry) => {
+          const { t, collection } = this.props;
+          const id = entry.mod?.id ?? entry.rule?.reference?.id;
+
+          const hasInstallerOptions =
+            (entry.mod?.attributes?.installerChoices?.options ?? []).length > 0;
+
+          const installMode = util.getSafe(collection,
+            ['attributes', 'collection', 'installMode', id], 'fresh');
+
+          return (
+            <InstallModeRenderer
+              hasInstallerOptions={hasInstallerOptions}
+              currentInstallMode={installMode}
+              modId={id}
+              onSetInstallMode={this.changeInstallMode}
+              options={INSTALL_MODES}
+            />
+          );
+        },
+      }, {
+        id: 'instructions',
+        name: 'Instructions',
+        icon: 'edit',
+        calc: (entry: IModEntry) => {
+          const { collection } = this.props;
+
+          if (entry.mod === undefined) {
+            return null;
+          }
+
+          return collection.attributes?.collection?.instructions?.[entry.mod.id];
+        },
+        customRenderer: (entry: IModEntry, detailCell: boolean, t: types.TFunction) => {
+          const { collection } = this.props;
+
+          if (entry.mod === undefined) {
+            return null;
+          }
+
+          const instructions = collection.attributes?.collection?.instructions?.[entry.mod.id];
+          return (instructions !== undefined) ? (
+            <tooltip.IconButton
+              icon='edit'
+              tooltip={t('Edit Instructions')}
+              data-modid={entry.mod.id}
+              onClick={this.changeInstructions}
+            >
+              {t('Edit')}
+            </tooltip.IconButton>
+          ) : (
+            <tooltip.IconButton
+              icon='add'
+              tooltip={t('Add Instructions')}
+              data-modid={entry.mod.id}
+              onClick={this.changeInstructions}
+            >
+              {t('Add')}
+            </tooltip.IconButton>
+          );
+        },
+        placement: 'table',
+        edit: {},
+      },
+      {
+        id: 'phase',
+        name: 'Phase',
+        placement: 'table',
+        isToggleable: true,
+        isSortable: true,
+        isDefaultVisible: false,
+        groupName: (phase: any) => this.props.t('Phase {{phase}}', {
+          replace: { phase: (phase || 0).toString() },
+        }),
+        isGroupable: true,
+        calc: mod => mod.rule.extra?.['phase'] ?? 0,
+        edit: {},
+      },
+    ];
   }
 
   public UNSAFE_componentWillMount() {
@@ -649,6 +716,11 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         </Usage>
       </div>
     );
+  }
+
+  private categorySort() {
+    const state: types.IState = this.context.api.getState();
+    return state.settings.tables.mods.attributes?.['category']?.sortDirection ?? 'none';
   }
 
   private addMods = () =>  {
