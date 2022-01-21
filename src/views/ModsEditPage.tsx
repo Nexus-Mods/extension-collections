@@ -96,8 +96,8 @@ function modNameSort(lhs: types.IMod, rhs: types.IMod,
 
 function sortCategories(lhs: types.IMod, rhs: types.IMod,
                         collator: Intl.Collator, state: any, sortDir: string): number {
-  const lhsCat = util.resolveCategoryName(lhs.attributes?.category, state);
-  const rhsCat = util.resolveCategoryName(rhs.attributes?.category, state);
+  const lhsCat = util.resolveCategoryName(lhs?.attributes?.category, state);
+  const rhsCat = util.resolveCategoryName(rhs?.attributes?.category, state);
   return (lhsCat === rhsCat)
     ? modNameSort(lhs, rhs, collator, sortDir)
     : collator.compare(lhsCat, rhsCat);
@@ -369,24 +369,25 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         icon: 'sitemap',
         placement: 'table',
         calc: (mod: IModEntry) =>
-          util.resolveCategoryName(mod.mod.attributes?.category, this.context.api.store.getState()),
+          util.resolveCategoryName(mod.mod?.attributes?.category,
+                                   this.context.api.store.getState()),
         isToggleable: true,
         edit: {},
         isSortable: true,
         isGroupable: (mod: IModEntry, t: types.TFunction) =>
-          util.resolveCategoryName(mod.mod.attributes?.category,
+          util.resolveCategoryName(mod.mod?.attributes?.category,
             this.context.api.store.getState()) || t('<No category>'),
         filter: new OptionsFilter(() => {
           const state: types.IState = this.context.api.getState();
           return Array.from(new Set(Object.values(this.state.entries)
-            .map(m => m.mod.attributes?.category)
-            .filter(c => !!c),
-          ))
-            .map(c => {
-              const name = util.resolveCategoryName(c, state);
-              return { value: name, label: name };
-            });
-        }, false, false),
+            .map(entry => entry.mod?.attributes?.category)
+            .filter(entry => !!entry)
+            .map(entry => util.resolveCategoryName(entry, state))
+            .sort()))
+          .map(name => {
+            return { value: name, label: name };
+          });
+      }, false, false),
         sortFuncRaw: (lhs: IModEntry, rhs: IModEntry, locale: string): number =>
           sortCategories(lhs.mod, rhs.mod, getCollator(locale), this.context.api.store.getState(),
             this.categorySort()),
