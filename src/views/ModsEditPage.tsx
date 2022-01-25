@@ -661,7 +661,6 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         id='btn-more-mods'
         className='collection-add-mods-btn'
         onClick={this.addMods}
-        bsStyle='ghost'
       >
         <Icon name='add' />
         {t('Add more mods')}

@@ -98,6 +98,10 @@ $collection-mod-image-height: 200px;
 #collection-add-mods-container {
   display: flex;
   justify-content: center;
+  position: sticky;
+  bottom: 0.5em;
+  background: rgba($gray-lighter, 0.7);
+  padding: 0.5em 0;
   svg {
     margin-right: 0.5em;
   }
