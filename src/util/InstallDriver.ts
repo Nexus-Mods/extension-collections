@@ -362,7 +362,7 @@ class InstallDriver {
     const discovery = selectors.discoveryByGame(state, gameMode);
     const gameVersion = await currentgame.getInstalledVersion(discovery);
     const gvMatch = gv => gv.reference === gameVersion;
-    const revGameVersions = this.mRevisionInfo.gameVersions ?? [];
+    const revGameVersions = this.mRevisionInfo?.gameVersions ?? [];
     if ((revGameVersions.length ?? 0 !== 0)
         && (revGameVersions.find(gvMatch) === undefined)) {
       const choice = await this.mApi.showDialog('question', 'Different version', {
