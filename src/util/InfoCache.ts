@@ -121,12 +121,9 @@ class InfoCache {
     if (!!collectionInfo) {
       store.dispatch(updateCollectionInfo(
         collectionInfo.id.toString(), collectionInfo, Date.now()));
+      delete this.mCacheColRequests[collectionInfo.id.toString()];
     }
-    return Promise.resolve(collectionInfo)
-      .then((result: ICollection) => {
-        delete this.mCacheColRequests[collectionInfo.id.toString()];
-        return result;
-      });
+    return collectionInfo;
   }
 
   private async cacheRevisionInfo(revisionId: string,
