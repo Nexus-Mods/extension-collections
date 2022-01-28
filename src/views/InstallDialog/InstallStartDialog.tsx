@@ -134,7 +134,9 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   private changeProfile = (value: { value: string, label: string }) => {
-    this.nextState.selectedProfile = value.value;
+    if (!!value) {
+      this.nextState.selectedProfile = value.value;
+    }
   }
 
   private cancel = () => {
