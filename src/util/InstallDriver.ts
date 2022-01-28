@@ -332,7 +332,7 @@ class InstallDriver {
   }
 
   private startImpl = async () => {
-    if (this.mCollection === undefined) {
+    if ((this.mCollection === undefined) || (this.mProfile === undefined)) {
       return false;
     }
 
