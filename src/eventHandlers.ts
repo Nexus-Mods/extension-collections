@@ -68,7 +68,7 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 export function onCollectionUpdate(api: types.IExtensionApi): (...args: any[]) => void {
   return (gameId: string, collectionSlug: string,
           revisionNumber: number | string, source: string, oldModId: string) => {
-    if (source !== 'nexus') {
+    if ((source !== 'nexus') || (revisionNumber === undefined)) {
       return;
     }
 
