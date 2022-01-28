@@ -431,7 +431,7 @@ class InstallDriver {
   }
 
   private augmentRules(profile: types.IProfile, collection: types.IMod) {
-    util.batchDispatch(this.mApi.store, collection.rules.map(rule => {
+    util.batchDispatch(this.mApi.store, (collection.rules ?? []).map(rule => {
       if (rule.reference.repo === undefined) {
         return undefined;
       }
