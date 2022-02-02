@@ -10,7 +10,7 @@ import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
 
-export type Step = 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
+export type Step = 'prepare' | 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 
 export type UpdateCB = () => void;
 
@@ -18,7 +18,7 @@ class InstallDriver {
   private mApi: types.IExtensionApi;
   private mProfile: types.IProfile;
   private mCollection: types.IMod;
-  private mStep: Step = 'query';
+  private mStep: Step = 'prepare';
   private mUpdateHandlers: UpdateCB[] = [];
   private mInstalledMods: types.IMod[] = [];
   private mRequiredMods: types.IModRule[] = [];
@@ -29,6 +29,7 @@ class InstallDriver {
   private mInfoCache: InfoCache;
   private mTotalSize: number;
   private mOnStop: () => void;
+  private mPrepare: Promise<void> = Promise.resolve();
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -91,7 +92,14 @@ class InstallDriver {
       });
   }
 
+  public async prepare(func: () => Promise<void>) {
+    this.mPrepare = this.mPrepare.then(func);
+  }
+
   public async query(profile: types.IProfile, collection: types.IMod) {
+    await this.mPrepare;
+    this.mPrepare = Promise.resolve();
+
     if (!this.mInstallDone && (this.mCollection !== undefined)) {
       this.mApi.sendNotification({
         type: 'warning',
@@ -106,6 +114,9 @@ class InstallDriver {
   }
 
   public async start(profile: types.IProfile, collection: types.IMod) {
+    await this.mPrepare;
+    this.mPrepare = Promise.resolve();
+
     if (!this.mInstallDone && (this.mCollection !== undefined)) {
       this.mApi.sendNotification({
         type: 'warning',
@@ -293,7 +304,7 @@ class InstallDriver {
     this.mCollection = undefined;
     this.mProfile = undefined;
     this.mInstalledMods = [];
-    this.mStep = 'query';
+    this.mStep = 'prepare';
     this.mOnStop?.();
   }
 

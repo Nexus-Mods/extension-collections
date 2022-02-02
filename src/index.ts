@@ -601,7 +601,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       return;
     }
     if (mod.type === MOD_TYPE) {
-      if  (driver.collection === undefined) {
+      if (driver.collection === undefined) {
         driver.query(profile, mod);
       } else {
         api.sendNotification({
@@ -631,7 +631,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   });
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
-  api.events.on('collection-update', onCollectionUpdate(api));
+  api.events.on('collection-update', onCollectionUpdate(api, driver));
 
   api.events.on('did-finish-download', (dlId: string, outcome: string) => {
     if (outcome === 'finished') {

@@ -1,5 +1,7 @@
 import { ICollection, IDownloadURL, IRevision } from '@nexusmods/nexus-api';
-import { types, util } from 'vortex-api';
+import * as Bluebird from 'bluebird';
+import { actions, types, util } from 'vortex-api';
+import InstallDriver from './util/InstallDriver';
 
 async function collectionUpdate(api: types.IExtensionApi, gameId: string,
                                 collectionSlug: string, revisionNumber: string,
@@ -50,14 +52,68 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 
     api.events.emit('analytics-track-click-event', 'Collections', 'Update Collection');
 
-    await util.toPromise(cb =>
+    const oldRules = api.getState().persistent.mods[gameId][oldModId].rules ?? [];
+
+    const newModId = await util.toPromise(cb =>
       api.events.emit('start-install-download', dlId, undefined, cb));
 
-    // remove old revision
+    // remove old revision and mods installed for the old revision that are no longer required
 
-    await util.toPromise(cb => api.events.emit('remove-mod', gameId, oldModId, cb, {
-      incomplete: true,
-    }));
+    const mods = api.getState().persistent.mods[gameId];
+    // candidates is any mod that is depended upon by the old revision that was installed
+    // as a dependency
+    const candidates = oldRules
+      .filter(rule => ['requires', 'recommends'].includes(rule.type))
+      .map(rule => util.findModByRef(rule.reference, mods))
+      .filter(mod => (mod !== undefined)
+                  && (mod.attributes?.['installedAsDependency'] === true));
+
+    const notCandidates = Object.values(mods)
+      .filter(mod => !candidates.includes(mod) && ![oldModId, newModId].includes(mod.id));
+
+    const references = (rules: types.IModRule[], mod: types.IMod) =>
+      (rules ?? []).find(rule => ['requires', 'recommends'].includes(rule.type)
+        && util.testModReference(mod, rule.reference)) !== undefined;
+
+    // for each dependency of the collection,
+    const obsolete = candidates
+      // see if there is a mod outside candidates that requires it but before anything we
+      // check the new version of the collection because that's the most likely to require it
+      .filter(mod => !references(mods[newModId].rules, mod))
+      .filter(mod => notCandidates
+        // that depends upon the candidate,
+        .find(other => references(other.rules, mod)) === undefined);
+
+    let ops = { remove: [], keep: [] };
+
+    if (obsolete.length > 0) {
+      const result = await api.showDialog('question', 'Remove obsolete mods?', {
+        text: 'The following mods were installed as part of this collection but are '
+          + 'no longer included in the new revision. If you don\'t remove them now '
+          + 'they will henceforth be treated as manually installed mods.',
+        checkboxes: obsolete.map(mod =>
+          ({ id: mod.id, text: util.renderModName(mod), value: true })),
+      }, [
+        { label: 'Keep all' },
+        { label: 'Remove selected' },
+      ]);
+
+      ops = Object.keys(result.input).reduce((prev, value) => {
+        if (result.input[value]) {
+          prev.remove.push(value);
+        } else {
+          prev.keep.push(value);
+        }
+        return prev;
+      }, { remove: [], keep: [] });
+    }
+
+    // mark kept mods as manually installed, otherwise this will be queried again
+    util.batchDispatch(api.store, ops.keep.map(modId =>
+      actions.setModAttribute(gameId, modId, 'installedAsDependency', false)));
+
+    await util.toPromise(cb => api.events.emit('remove-mods', gameId,
+      [oldModId, ...ops.remove], cb, { incomplete: true, ignoreInstalling: true }));
   } catch (err) {
     if (!(err instanceof util.UserCanceled)) {
       api.showErrorNotification('Failed to download collection', err);
@@ -65,16 +121,19 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
   }
 }
 
-export function onCollectionUpdate(api: types.IExtensionApi): (...args: any[]) => void {
+export function onCollectionUpdate(api: types.IExtensionApi,
+                                   driver: InstallDriver): (...args: any[]) => void {
   return (gameId: string, collectionSlug: string,
           revisionNumber: number | string, source: string, oldModId: string) => {
     if ((source !== 'nexus') || (revisionNumber === undefined)) {
       return;
     }
 
-    collectionUpdate(api, gameId, collectionSlug, revisionNumber.toString(), oldModId)
-      .catch(err => {
-        api.showErrorNotification('Failed to update collection', err);
-      });
+    driver.prepare(() =>
+      Bluebird.resolve(collectionUpdate(api, gameId, collectionSlug,
+                                        revisionNumber.toString(), oldModId))
+        .catch(err => {
+          api.showErrorNotification('Failed to update collection', err);
+        }));
   };
 }
