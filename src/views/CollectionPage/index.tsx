@@ -8,6 +8,7 @@ import CollectionEdit from './CollectionEdit';
 import CollectionPage from './CollectionPage';
 import StartPage from './StartPage';
 
+import { IRating } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
 import { WithTranslation, withTranslation } from 'react-i18next';
@@ -424,7 +425,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       if (!(err instanceof util.UserCanceled)) {
         // possible reason for ProcessCanceled is that (un-)deployment may
         // not be possible atm, we definitively should report that
-        api.showErrorNotification('Failed to remove Mods', err, {
+        api.showErrorNotification('Failed to remove mods', err, {
           allowReport: !(err instanceof util.ProcessCanceled),
         });
       }
@@ -446,10 +447,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }
 
     const vote = success ? 'positive' : 'negative';
-    const voted = (await api.emitAndAwait('rate-nexus-collection-revision',
-      parseInt(revisionId, 10), vote))[0];
-    if (voted) {
-      api.store.dispatch(updateSuccessRate(revisionId, vote));
+    const voted: { success: boolean, averageRating?: IRating } =
+      (await api.emitAndAwait('rate-nexus-collection-revision', parseInt(revisionId, 10), vote))[0];
+    if (voted.success) {
+      api.store.dispatch(
+        updateSuccessRate(revisionId, vote,
+                          voted.averageRating.average, voted.averageRating.total));
     }
   }
 
@@ -474,12 +477,28 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   private remove = (modId: string) => {
     const { mods } = this.props;
 
-    if (mods[modId].attributes?.editable) {
-      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
-      return this.removeWorkshop(modId);
-    } else {
-      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
-      return this.cancel(modId, 'Remove collection');
+    const { api } = this.context;
+
+    try {
+      if (mods[modId].attributes?.editable) {
+        api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
+        return this.removeWorkshop(modId);
+      } else {
+        api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
+        return this.cancel(modId, 'Remove collection');
+      }
+    } catch (err) {
+      if (err instanceof util.UserCanceled) {
+        log('info', 'collection removal canceled by user');
+      } else if (err instanceof util.ProcessCanceled) {
+        api.sendNotification({
+          type: 'warning',
+          title: 'Removal failed',
+          message: err.message,
+        });
+      } else {
+        api.showErrorNotification('Failed to remove collection', err);
+      }
     }
   }
 

@@ -19,29 +19,13 @@ const persistentReducer: types.IReducerSpec = {
                           { timestamp, info: revisionInfo });
     },
     [actions.updateSuccessRate as any]: (state, payload) => {
-      const { revisionId, vote } = payload;
+      const { revisionId, vote, average, total } = payload;
 
       const revPath = ['revisions', revisionId, 'info'];
 
-      const oldOwnRating =
-        util.getSafe<RatingOptions>(state, [...revPath, 'metadata', 'ratingValue'], null);
-      const rating = util.getSafe(state, [...revPath, 'rating'],
-        { average: 0.0, total: 0 });
-      let numSuccess = (rating.average / 100) * rating.total;
-      if (oldOwnRating === 'positive') {
-        numSuccess = Math.max(0, numSuccess - 1);
-      }
-      let total = rating.total;
-      if ([null, 'abstained'].includes(oldOwnRating)) {
-        ++total;
-      }
-      if (vote === 'positive') {
-        ++numSuccess;
-      }
-
       state = util.setSafe(state, [...revPath, 'metadata', 'ratingValue'], vote);
       return util.setSafe(state, [...revPath, 'rating'], {
-        average: Math.floor((numSuccess * 100) / total),
+        average,
         total,
       });
     },
