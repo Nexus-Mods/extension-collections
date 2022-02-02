@@ -308,6 +308,11 @@ class InstallDriver {
 
     const mods = this.mApi.getState().persistent.mods[profile.gameId];
 
+    if (mods === undefined) {
+      log('error', 'no mods for game', { gameId: profile.gameId });
+      return {};
+    }
+
     return (collection.rules ?? []).reduce((prev, rule) => {
       if (!['requires', 'recommends'].includes(rule.type)) {
         return prev;
