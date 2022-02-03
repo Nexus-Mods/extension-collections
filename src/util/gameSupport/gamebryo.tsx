@@ -167,7 +167,7 @@ export async function parser(api: types.IExtensionApi,
       const existing = (state as any).userlist.plugins.find(plug =>
         plug.name.toUpperCase() === plugin.name.toUpperCase());
 
-      if (plugin.group !== undefined) {
+      if ((plugin.group !== undefined) && (existing?.group === undefined)) {
         prev.push({
           type: 'SET_PLUGIN_GROUP',
           payload: {
