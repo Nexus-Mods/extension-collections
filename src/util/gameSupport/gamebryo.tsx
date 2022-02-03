@@ -167,35 +167,33 @@ export async function parser(api: types.IExtensionApi,
       const existing = (state as any).userlist.plugins.find(plug =>
         plug.name.toUpperCase() === plugin.name.toUpperCase());
 
-      if (existing !== undefined) {
-        if (plugin.group !== undefined) {
-          prev.push({
-            type: 'SET_PLUGIN_GROUP',
-            payload: {
-              pluginId: plugin.name.toLowerCase(),
-              group: plugin.group,
-            },
-          });
-        }
-
-        ['requires', 'incompatible', 'after'].forEach(type => {
-          const lootType = toLootType(type);
-          (plugin[type] || []).forEach(ref => {
-            const match = iter => refName(iter).toUpperCase() === ref.toUpperCase();
-
-            if (util.getSafe(existing, [lootType], []).find(match) === undefined) {
-              prev.push({
-                type: 'ADD_USERLIST_RULE',
-                payload: {
-                  pluginId: plugin.name.toLowerCase(),
-                  reference: ref,
-                  type,
-                },
-              });
-            }
-          });
+      if (plugin.group !== undefined) {
+        prev.push({
+          type: 'SET_PLUGIN_GROUP',
+          payload: {
+            pluginId: plugin.name.toLowerCase(),
+            group: plugin.group,
+          },
         });
       }
+
+      ['requires', 'incompatible', 'after'].forEach(type => {
+        const lootType = toLootType(type);
+        (plugin[type] || []).forEach(ref => {
+          const match = iter => refName(iter).toUpperCase() === ref.toUpperCase();
+
+          if (util.getSafe(existing, [lootType], []).find(match) === undefined) {
+            prev.push({
+              type: 'ADD_USERLIST_RULE',
+              payload: {
+                pluginId: plugin.name.toLowerCase(),
+                reference: ref,
+                type,
+              },
+            });
+          }
+        });
+      });
       return prev;
   }, []));
 }
