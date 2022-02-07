@@ -147,6 +147,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         hotKey: { code: 46 },
       },
       {
+        icon: 'show',
+        title: 'Show in Mods',
+        action: this.showInMods,
+        singleRowAction: true,
+        multiRowAction: false,
+      },
+      {
         icon: 'toggle-disabled',
         title: 'Ignore',
         action: this.ignoreSelected,
@@ -730,6 +737,18 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       .catch(err => {
         this.context.api.showErrorNotification('Failed to remove selected mods', err);
       });
+  }
+
+  private showInMods = (modIds: string[]) => {
+    const { modsEx } = this.state;
+
+    this.showMods();
+
+    const modId = modsEx[modIds[0]].id;
+    setTimeout(() => {
+      this.context.api.events.emit('mods-scroll-to', modId);
+      this.context.api.highlightControl('.' + util.sanitizeCSSId(modId), 5000);
+    }, 2000);
   }
 
   private updateModsEx(oldProps: ICollectionPageProps,
