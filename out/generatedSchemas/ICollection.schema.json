@@ -1,0 +1,355 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/ICollection"
+    }
+  ],
+  "definitions": {
+    "ICollection": {
+      "type": "object",
+      "properties": {
+        "plugins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "enabled"
+            ]
+          }
+        },
+        "pluginRules": {
+          "type": "object",
+          "properties": {
+            "plugins": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "group": {
+                    "type": "string"
+                  },
+                  "after": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "after"
+                ]
+              }
+            },
+            "groups": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "group": {
+                    "type": "string"
+                  },
+                  "after": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "after"
+                ]
+              }
+            }
+          },
+          "required": [
+            "plugins"
+          ]
+        },
+        "info": {
+          "$ref": "#/definitions/ICollectionInfo"
+        },
+        "mods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ICollectionMod"
+          }
+        },
+        "modRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ICollectionModRule"
+          }
+        }
+      },
+      "required": [
+        "info",
+        "mods",
+        "modRules"
+      ]
+    },
+    "ICollectionInfo": {
+      "type": "object",
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "authorUrl": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "domainName": {
+          "type": "string"
+        },
+        "gameVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "author",
+        "authorUrl",
+        "name",
+        "description",
+        "domainName",
+        "gameVersions"
+      ]
+    },
+    "ICollectionMod": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "domainName": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/definitions/ICollectionSourceInfo"
+        },
+        "hashes": {},
+        "choices": {},
+        "instructions": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "details": {
+          "$ref": "#/definitions/ICollectionModDetails"
+        },
+        "phase": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "optional",
+        "domainName",
+        "source"
+      ]
+    },
+    "ICollectionSourceInfo": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/SourceType"
+        },
+        "url": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "modId": {
+          "type": "number"
+        },
+        "fileId": {
+          "type": "number"
+        },
+        "updatePolicy": {
+          "$ref": "#/definitions/UpdatePolicy"
+        },
+        "adultContent": {
+          "type": "boolean"
+        },
+        "md5": {
+          "type": "string"
+        },
+        "fileSize": {
+          "type": "number"
+        },
+        "logicalFilename": {
+          "type": "string"
+        },
+        "fileExpression": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "SourceType": {
+      "type": "string",
+      "enum": [
+        "browse",
+        "manual",
+        "direct",
+        "nexus",
+        "bundle"
+      ]
+    },
+    "UpdatePolicy": {
+      "type": "string",
+      "enum": [
+        "exact",
+        "latest",
+        "prefer"
+      ]
+    },
+    "ICollectionModDetails": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "ICollectionModRule": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/definitions/IModReference"
+        },
+        "type": {
+          "$ref": "#/definitions/RuleType"
+        },
+        "reference": {
+          "$ref": "#/definitions/IModReference"
+        }
+      },
+      "required": [
+        "source",
+        "type",
+        "reference"
+      ]
+    },
+    "IModReference": {
+      "type": "object",
+      "properties": {
+        "fileMD5": {
+          "type": "string"
+        },
+        "fileSize": {
+          "type": "number"
+        },
+        "gameId": {
+          "type": "string"
+        },
+        "versionMatch": {
+          "type": "string"
+        },
+        "logicalFileName": {
+          "type": "string"
+        },
+        "fileExpression": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "idHint": {
+          "type": "string"
+        },
+        "md5Hint": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "archiveId": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "object",
+          "properties": {
+            "gameId": {
+              "type": "string"
+            },
+            "modId": {
+              "type": "string"
+            },
+            "fileId": {
+              "type": "string"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "campaign": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "fileId",
+            "repository"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        }
+      }
+    },
+    "RuleType": {
+      "type": "string",
+      "enum": [
+        "before",
+        "after",
+        "requires",
+        "conflicts",
+        "recommends",
+        "provides"
+      ]
+    }
+  },
+  "exported": [
+    "ICollection"
+  ]
+}

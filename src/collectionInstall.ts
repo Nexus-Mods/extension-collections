@@ -9,6 +9,7 @@ import { BUNDLED_PATH, MOD_TYPE } from './constants';
 import * as _ from 'lodash';
 import * as path from 'path';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { readCollection } from './util/importCollection';
 
 /**
  * supported test for use in registerInstaller
@@ -30,10 +31,9 @@ export function makeInstall(api: types.IExtensionApi) {
                 gameId: string,
                 progressDelegate: types.ProgressDelegate)
                 : Promise<types.IInstallResult> => {
-    const collectionData = await fs.readFileAsync(path.join(destinationPath, 'collection.json'),
-      { encoding: 'utf-8' });
 
-    const collection: ICollection = JSON.parse(collectionData);
+    const collection: ICollection =
+      await readCollection(path.join(destinationPath, 'collection.json'));
 
     const filesToCopy = files
       .filter(filePath => !filePath.endsWith(path.sep)

@@ -9,6 +9,8 @@
     "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --progress --profile --color",
     "copy_assets": "copyfiles -f src/language.json dist && copyfiles -f src/icons.svg dist && copyfiles -f src/collectionicon.svg dist && copyfiles -f style.scss dist && copyfiles -f src/assets/fallback_tile.png dist",
     "bundle7z": "7z a -t7z collections.7z .\\dist\\index.js .\\dist\\info.json .\\dist\\language.json .\\dist\\*.svg .\\dist\\style.scss",
+    "update_validation": "generate-validation .",
+    "_postinstall": "npm run update_validation",
     "build": "npm run webpack && npm run copy_assets && extractInfo"
   },
   "devDependencies": {
@@ -33,6 +35,7 @@
     "shortid": "^2.2.16",
     "tmp": "^0.2.1",
     "ts-loader": "^9.2.6",
+    "ts-v-gen": "^1.0.1",
     "typescript": "^4.4.3",
     "vortex-api": "Nexus-Mods/vortex-api",
     "webpack": "^5.66.0",

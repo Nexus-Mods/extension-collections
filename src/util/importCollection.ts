@@ -1,8 +1,9 @@
 /// functions to postprocess collection manifest read from disk to give us an opportunity
 /// to maintain backwards compatibility if things change on our end
 
-import { fs } from 'vortex-api';
+import { fs, util } from 'vortex-api';
 import { ICollection, ICollectionModRule } from '../types/ICollection';
+import { validateICollection } from '../validationCode/validation';
 
 function isFuzzyVersion(input: string): boolean {
   if (!input) {
@@ -39,10 +40,20 @@ function postProcessRule(rule: ICollectionModRule): ICollectionModRule {
   return result;
 }
 
+function validationMessage(msg: any): string {
+  return `${(msg.instancePath || '/')} ${msg.message}`;
+}
+
 export async function readCollection(manifest: string): Promise<ICollection> {
   const collectionData = await fs.readFileAsync(manifest
     , { encoding: 'utf-8' });
   const collection: ICollection = JSON.parse(collectionData);
+  const readErrors = validateICollection(collection);
+  if (readErrors.length > 0) {
+    throw new util.ProcessCanceled(
+      'Collection invalid:\n' + readErrors.map(validationMessage).join('\n'),
+      readErrors.map(validationMessage));
+  }
   collection.modRules = (collection.modRules ?? []).map(rule => postProcessRule(rule));
 
   return collection;
