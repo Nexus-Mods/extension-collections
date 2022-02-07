@@ -322,6 +322,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { t, downloads, mods, profile } = this.props;
     const { api } = this.context;
 
+    const collection = mods[modId];
+    if (collection === undefined) {
+      return;
+    }
+
     if (message === undefined) {
       message = 'Are you sure you want to cancel the installation?';
     }
@@ -335,7 +340,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           + '\nPlease note, some mods may be required by multiple collections.\n'
           + '\nAre you sure you want to remove "{{collectionName}}" from your collections?',
       parameters: {
-        collectionName: util.renderModName(mods[modId]),
+        collectionName: util.renderModName(collection),
       },
       checkboxes: [
         { id: 'delete_mods', text: t('Remove mods'), value: false },
@@ -357,7 +362,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     let progress = 0;
     const notiId = shortid();
-    const modName = util.renderModName(mods[modId]);
+    const modName = util.renderModName(collection);
     const doProgress = (step: string, value: number) => {
       if (value <= progress) {
         return;
@@ -379,7 +384,6 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       doProgress('Removing dowloads', 0);
 
       // either way, all running downloads are canceled. If selected, so are finished downloads
-      const collection = mods[modId];
       let completed = 0;
       await Promise.all(collection.rules.map(async rule => {
         const dlId = util.findDownloadByRef(rule.reference, downloads);
