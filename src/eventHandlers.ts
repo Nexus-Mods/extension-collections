@@ -52,7 +52,8 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 
     api.events.emit('analytics-track-click-event', 'Collections', 'Update Collection');
 
-    const oldRules = api.getState().persistent.mods[gameId][oldModId].rules ?? [];
+    const oldMod = api.getState().persistent.mods[gameId][oldModId];
+    const oldRules = oldMod.rules ?? [];
 
     const newModId = await util.toPromise(cb =>
       api.events.emit('start-install-download', dlId, undefined, cb));
@@ -87,25 +88,57 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
     let ops = { remove: [], keep: [] };
 
     if (obsolete.length > 0) {
-      const result = await api.showDialog('question', 'Remove obsolete mods?', {
-        text: 'The following mods were installed as part of this collection but are '
-          + 'no longer included in the new revision. If you don\'t remove them now '
-          + 'they will henceforth be treated as manually installed mods.',
-        checkboxes: obsolete.map(mod =>
-          ({ id: mod.id, text: util.renderModName(mod), value: true })),
+      const collectionName = collection?.name ?? util.renderModName(oldMod);
+      const result: types.IDialogResult = await api.showDialog(
+        'question', 'Remove mods from old revision?', {
+        text: 'There are {{count}} mods installed that are not present in the latest '
+            + 'revision of "{{collectionName}}". It is recommended that you remove the '
+            + 'unused mods to avoid compatibility issues going forward. '
+            + 'If you choose to keep the mods installed they will no longer be associated '
+            + 'with this Collection and will be managed as if they have been installed '
+            + 'individually. Would you like to remove the old mods now?',
+        parameters: {
+          count: obsolete.length,
+          collectionName,
+        },
       }, [
-        { label: 'Keep all' },
-        { label: 'Remove selected' },
+        { label: 'Keep All' },
+        { label: 'Review Mods' },
+        { label: 'Remove All' },
       ]);
 
-      ops = Object.keys(result.input).reduce((prev, value) => {
-        if (result.input[value]) {
-          prev.remove.push(value);
+      if (result.action === 'Keep All') {
+        ops.keep = obsolete;
+      } else if (result.action === 'Remove All') {
+        ops.remove = obsolete;
+      } else { // Review
+        const reviewResult: types.IDialogResult = await api.showDialog(
+          'question', 'Remove mods from old revision?', {
+            text: 'The following mods are not present in the latest revision of '
+                + '"{{collectionName}}". Please select the ones to remove.',
+            parameters: {
+              collectionName,
+            },
+            checkboxes: obsolete.map(mod =>
+              ({ id: mod.id, text: util.renderModName(mod), value: true })),
+          }, [
+            { label: 'Keep All' },
+            { label: 'Remove selected' },
+          ],
+        );
+        if (reviewResult.action === 'Keep All') {
+          ops.keep = obsolete;
         } else {
-          prev.keep.push(value);
+          ops = Object.keys(result.input).reduce((prev, value) => {
+            if (result.input[value]) {
+              prev.remove.push(value);
+            } else {
+              prev.keep.push(value);
+            }
+            return prev;
+          }, { remove: [], keep: [] });
         }
-        return prev;
-      }, { remove: [], keep: [] });
+      }
     }
 
     // mark kept mods as manually installed, otherwise this will be queried again
