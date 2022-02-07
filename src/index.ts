@@ -67,13 +67,14 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
     const state: types.IState = api.store.getState();
 
     const profile = selectors.profileById(state, profileId);
+    const gameId = profile.gameId;
 
     const collection: types.IMod =
-      util.getSafe(state.persistent.mods, [profile.gameId, modId], undefined);
+      util.getSafe(state.persistent.mods, [gameId, modId], undefined);
 
     if ((collection !== undefined)
         && !reported.has(modId)
-        && (state.persistent.mods[profile.gameId][modId].type === MOD_TYPE)
+        && (state.persistent.mods[gameId][modId].type === MOD_TYPE)
         && !collection.attributes?.editable) {
 
       const collectionProfile = Object.keys(state.persistent.profiles)
@@ -83,7 +84,9 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
         title: 'Disable',
         action: dismiss => {
           dismiss();
-          api.store.dispatch(actions.setModEnabled(profile.id, modId, false));
+          if (profile !== undefined) {
+            api.store.dispatch(actions.setModEnabled(profile.id, modId, false));
+          }
         },
       }];
 
@@ -99,7 +102,7 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
               .catch(err => api.showErrorNotification('Failed to update collection', err));
           },
         });
-      } else {
+      } else if (profile !== undefined) {
         notiActions.unshift({
           title: 'Resume',
           action: dismiss => {

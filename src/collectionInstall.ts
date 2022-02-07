@@ -141,12 +141,12 @@ function applyCollectionRules(api: types.IExtensionApi,
  * exists
  */
 export async function postprocessCollection(api: types.IExtensionApi,
-                                            profile: types.IProfile,
+                                            gameId: string,
                                             collectionMod: types.IMod,
                                             collection: ICollection,
                                             mods: { [modId: string]: types.IMod }) {
   log('info', 'postprocess collection');
-  applyCollectionRules(api, profile.gameId, collection, mods);
+  applyCollectionRules(api, gameId, collection, mods);
 
   try {
     await util.toPromise(cb => api.events.emit('deploy-mods', cb));
@@ -154,11 +154,11 @@ export async function postprocessCollection(api: types.IExtensionApi,
     log('warn', 'Failed to deploy during collection post processing');
   }
 
-  const exts: IExtensionFeature[] = findExtensions(api.getState(), profile.gameId);
+  const exts: IExtensionFeature[] = findExtensions(api.getState(), gameId);
 
   for (const ext of exts) {
-    await ext.parse(profile.gameId, collection, collectionMod);
+    await ext.parse(gameId, collection, collectionMod);
   }
 
-  await parseGameSpecifics(api, profile.gameId, collection);
+  await parseGameSpecifics(api, gameId, collection);
 }

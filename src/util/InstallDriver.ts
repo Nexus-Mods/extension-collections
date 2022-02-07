@@ -87,8 +87,8 @@ class InstallDriver {
       });
 
     api.events.on('did-install-dependencies',
-      (profileId: string, modId: string, recommendations: boolean) => {
-        this.onDidInstallDependencies(profileId, modId, recommendations);
+      (gameId: string, modId: string, recommendations: boolean) => {
+        this.onDidInstallDependencies(gameId, modId, recommendations);
       });
   }
 
@@ -256,13 +256,12 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
-  private async onDidInstallDependencies(profileId: string,
+  private async onDidInstallDependencies(gameId: string,
                                          modId: string,
                                          recommendations: boolean) {
-    log('info', 'did install dependencies', { profileId, modId });
+    log('info', 'did install dependencies', { gameId, modId });
 
-    const profile = selectors.profileById(this.mApi.getState(), profileId);
-    const mods = this.mApi.getState().persistent.mods[profile.gameId];
+    const mods = this.mApi.getState().persistent.mods[gameId];
 
     if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
       if (!recommendations) {
@@ -286,13 +285,13 @@ class InstallDriver {
       }
     }
 
-    const stagingPath = selectors.installPathForGame(this.mApi.getState(), profile.gameId);
+    const stagingPath = selectors.installPathForGame(this.mApi.getState(), gameId);
     const mod = mods[modId];
     if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
       try {
         const collectionInfo: ICollection =
           await readCollection(path.join(stagingPath, mod.installationPath, 'collection.json'));
-        await postprocessCollection(this.mApi, profile, mod, collectionInfo, mods);
+        await postprocessCollection(this.mApi, gameId, mod, collectionInfo, mods);
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
           + 'platform where the collection has been created.');
