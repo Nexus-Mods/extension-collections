@@ -19,7 +19,7 @@ function getEnabledPlugins(state: types.IState,
     ...gamebryoLO[pluginName.toLowerCase()],
     name: pluginName,
   }))
-    .filter(lo => (lo !== undefined) && (lo.name !== undefined))
+    .filter(lo => (lo !== undefined) && (lo.name !== undefined) && (lo.enabled === true))
     .sort((lhs, rhs) => lhs.loadOrder - rhs.loadOrder)
     .map(lo => ({ name: lo.name, enabled: lo.enabled }));
 }
