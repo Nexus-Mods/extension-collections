@@ -50,7 +50,7 @@ function extractPluginRules(state: types.IState, plugins: string[]): IGamebryoRu
 }
 
 export interface ICollectionGamebryo {
-  plugins: Array<{ name: string, enabled: boolean }>;
+  plugins: Array<{ name: string, enabled?: boolean }>;
   pluginRules: IGamebryoRules;
 }
 
