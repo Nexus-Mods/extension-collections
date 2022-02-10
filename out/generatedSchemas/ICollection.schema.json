@@ -134,8 +134,7 @@
         "authorUrl",
         "name",
         "description",
-        "domainName",
-        "gameVersions"
+        "domainName"
       ]
     },
     "ICollectionMod": {

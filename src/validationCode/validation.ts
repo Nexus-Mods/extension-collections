@@ -1,4 +1,4 @@
-import validatecUkGaKhr from "./ICollection.validate";export function validateICollection(data): any[] {
-    var res = validatecUkGaKhr(data);
-    return (res === false) ? validatecUkGaKhr.prototype.constructor.errors : [];
+import validateBZKt from "./ICollection.validate";export function validateICollection(data): any[] {
+    var res = validateBZKt(data);
+    return (res === false) ? validateBZKt.prototype.constructor.errors : [];
 }

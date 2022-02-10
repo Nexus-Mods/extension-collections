@@ -7,7 +7,7 @@ export interface ICollectionInfo {
   name: string;
   description: string;
   domainName: string;
-  gameVersions: string[];
+  gameVersions?: string[];
 }
 
 export type UpdatePolicy = 'exact' | 'latest' | 'prefer';
