@@ -18,7 +18,7 @@ export interface IBaseProps {
   collection: types.IMod;
   mods?: { [modId: string]: types.IMod };
   incomplete?: boolean;
-  details: boolean;
+  details: boolean | 'some';
   imageTime: number;
   onResume?: (modId: string) => void;
   onPause?: (modId: string) => void;
@@ -167,7 +167,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             />
             {collection.attributes?.uploader ?? `${t(AUTHOR_UNKNOWN)}`}
           </div>
-          {details ? (
+          {(details === true) ? (
             <CollectionReleaseStatus
               t={t}
               active={active}
@@ -176,9 +176,9 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               incomplete={incomplete}
             />
           ) : null}
-          {details ? (
+          {(details !== false) ? (
             <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
-              <NewRevisionMarker t={t} collection={collection} />
+              {(details === true) ? <NewRevisionMarker t={t} collection={collection} /> : null}
               <div className='name no-hover'>
                 {util.renderModName(collection, { version: false })}
               </div>

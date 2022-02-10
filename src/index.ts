@@ -9,7 +9,7 @@ import { cloneCollection, createCollection, makeCollectionId } from './util/tran
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
 import CollectionsMainPage from './views/CollectionPage';
-import { InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
+import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
 
@@ -274,6 +274,13 @@ async function updateMeta(api: types.IExtensionApi) {
         const info: nexusApi.IRevision = await driver.infoCache.getRevisionInfo(
           revisionId, collectionSlug, revisionNumber, true);
         if (!!info) {
+          const currentRevision = info.collection.revisions
+            .filter(rev => rev.revisionStatus === 'published')
+            .sort((lhs, rhs) => rhs.revision - lhs.revision)
+            [0];
+          // currentRevision can be undefined if this collection has no published
+          // revision (i.e. the users own draft revision)
+
           api.store.dispatch(actions.setModAttributes(gameMode, modId, {
             customFileName: info.collection.name,
             collectionSlug: info.collection.slug,
@@ -285,6 +292,8 @@ async function updateMeta(api: types.IExtensionApi) {
             pictureUrl: info.collection.tileImage?.url,
             description: info.collection.description,
             shortDescription: info.collection.summary,
+            newestFileId: currentRevision?.revision,
+            newestVersion: currentRevision?.revision?.toString?.(),
             metadata: info.metadata,
             rating: info.rating,
           }));
@@ -317,6 +326,8 @@ function register(context: types.IExtensionContext,
     api: context.api,
     driver,
   }));
+
+  context.registerDialog('collection-changelog', InstallChangelogDialog, () => ({}));
 
   context.registerDialog('add-mod-to-collection', AddModsDialog, () => ({
     onAddSelection: (collectionId: string, modIds: string[]) => {

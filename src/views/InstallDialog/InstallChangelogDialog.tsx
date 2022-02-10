@@ -1,0 +1,138 @@
+import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+
+import React = require('react');
+import { Button, Media, Modal } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
+import * as ReactMarkdown from 'react-markdown';
+import { FlexLayout, MainContext, More, tooltip, types, util } from 'vortex-api';
+
+import { IRevision } from '@nexusmods/nexus-api';
+
+export interface IInstallChangelogDialogProps {
+  gameId: string;
+  collection: types.IMod;
+  revisionInfo: IRevision;
+  onContinue: () => void;
+  onCancel: () => void;
+}
+
+function nop() {
+  // nop
+}
+
+function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
+  const { collection, gameId, onCancel, onContinue, revisionInfo  } = props;
+
+  const { t } = useTranslation();
+
+  const context = React.useContext(MainContext);
+
+  const openUrl = React.useCallback(() => {
+    context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Updated Collection');
+    util.opn(util.nexusModsURL(
+      [revisionInfo.collection.game.domainName, 'collections', revisionInfo.collection.slug], {
+      campaign: util.Campaign.ViewCollection,
+      section: util.Section.Collections,
+    }));
+  }, [collection]);
+
+  if (collection === undefined) {
+    return null;
+  }
+
+  const changelog = revisionInfo.collectionChangelog;
+
+  return (
+    <Modal
+      id='install-changelog-dialog'
+      show={collection !== undefined}
+      onHide={nop}
+    >
+      <Modal.Header>
+        <Modal.Title>
+          {t('{{collectionName}} update',
+            { replace: { collectionName: util.renderModName(collection) } })}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Media.Left>
+          <CollectionThumbnail
+            t={t}
+            gameId={gameId}
+            collection={collection}
+            details='some'
+            imageTime={42}
+          />
+        </Media.Left>
+        <Media.Right>
+          <FlexLayout type='row'>
+            <h4>{t('Revision {{revNum}} Changelog',
+                  { replace: { revNum: revisionInfo.revision } })}</h4>
+            <div className='changelog-time'>{changelog.createdAt.formatted}</div>
+          </FlexLayout>
+          <div className='changelog-scroll'>
+            <ReactMarkdown>{changelog.description}</ReactMarkdown>
+          </div>
+        </Media.Right>
+        <tooltip.IconButton
+          icon='open-in-browser'
+          tooltip={t('Open Page')}
+          onClick={openUrl}
+        >
+          {t('View Collection')}
+        </tooltip.IconButton>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button onClick={onCancel}>{t('Later')}</Button>
+        <Button onClick={onContinue}>{t('Download Update')}</Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+let job: IInstallChangelogDialogProps;
+
+let jobUpdated: () => void;
+
+export function InstallChangelogDialog(props: {}) {
+  const [_, setIteration] = React.useState(0);
+
+  React.useEffect(() => {
+    jobUpdated = () => setIteration(i => i + 1);
+  }, []);
+
+  return (
+    <InstallChangelogDialogImpl
+      collection={job?.collection}
+      gameId={job?.gameId}
+      revisionInfo={job?.revisionInfo}
+      onContinue={job?.onContinue}
+      onCancel={job?.onCancel}
+    />
+  );
+}
+
+function showChangelog(collection: types.IMod, gameId: string, revisionInfo: IRevision)
+  : Promise<void> {
+
+  return new Promise((resolve: () => void, reject: (err: Error) => void) => {
+    job = {
+      collection,
+      gameId,
+      revisionInfo,
+      onContinue: () => {
+        job = undefined;
+        resolve();
+        jobUpdated();
+      },
+      onCancel: () => {
+        job = undefined;
+        reject(new util.UserCanceled());
+        jobUpdated();
+      },
+    };
+    jobUpdated();
+  });
+}
+
+export default showChangelog;

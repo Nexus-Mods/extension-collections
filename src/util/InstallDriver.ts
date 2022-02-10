@@ -10,7 +10,7 @@ import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
 
-export type Step = 'prepare' | 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
+export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
 
 export type UpdateCB = () => void;
 

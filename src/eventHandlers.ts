@@ -1,9 +1,10 @@
 import { ICollection, IDownloadURL, IRevision } from '@nexusmods/nexus-api';
 import * as Bluebird from 'bluebird';
-import { actions, types, util } from 'vortex-api';
+import { actions, selectors, types, util } from 'vortex-api';
 import InstallDriver from './util/InstallDriver';
+import showChangelog from './views/InstallDialog/InstallChangelogDialog';
 
-async function collectionUpdate(api: types.IExtensionApi, gameId: string,
+async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string,
                                 collectionSlug: string, revisionNumber: string,
                                 oldModId: string) {
   try {
@@ -17,13 +18,23 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
     if (collectionSlug !== collection.slug) {
       throw new Error(`Invalid collection "${collectionSlug}"`);
     }
+
+    const state = api.getState();
+    const gameMode = selectors.activeGameId(state);
+
+    const oldMod = state.persistent.mods[gameMode][oldModId];
+
+    if (!!latest.collectionChangelog?.description) {
+      await showChangelog(oldMod, gameMode, latest);
+    }
+
     const modInfo = {
-      game: gameId,
+      game: downloadGameId,
       source: 'nexus',
       name: collection?.name,
       nexus: {
         ids: {
-          gameId,
+          gameId: downloadGameId,
           collectionId: collection.id,
           collectionSlug,
           revisionId: latest.id,
@@ -52,7 +63,6 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 
     api.events.emit('analytics-track-click-event', 'Collections', 'Update Collection');
 
-    const oldMod = api.getState().persistent.mods[gameId][oldModId];
     const oldRules = oldMod.rules ?? [];
 
     const newModId = await util.toPromise(cb =>
@@ -60,7 +70,7 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 
     // remove old revision and mods installed for the old revision that are no longer required
 
-    const mods = api.getState().persistent.mods[gameId];
+    const mods = api.getState().persistent.mods[gameMode];
     // candidates is any mod that is depended upon by the old revision that was installed
     // as a dependency
     const candidates = oldRules
@@ -143,9 +153,9 @@ async function collectionUpdate(api: types.IExtensionApi, gameId: string,
 
     // mark kept mods as manually installed, otherwise this will be queried again
     util.batchDispatch(api.store, ops.keep.map(modId =>
-      actions.setModAttribute(gameId, modId, 'installedAsDependency', false)));
+      actions.setModAttribute(gameMode, modId, 'installedAsDependency', false)));
 
-    await util.toPromise(cb => api.events.emit('remove-mods', gameId,
+    await util.toPromise(cb => api.events.emit('remove-mods', gameMode,
       [oldModId, ...ops.remove], cb, { incomplete: true, ignoreInstalling: true }));
   } catch (err) {
     if (!(err instanceof util.UserCanceled)) {

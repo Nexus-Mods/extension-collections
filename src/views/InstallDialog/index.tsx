@@ -1,4 +1,5 @@
+import { InstallChangelogDialog } from './InstallChangelogDialog';
 import InstallFinishDialog from './InstallFinishedDialog';
 import InstallStartDialog from './InstallStartDialog';
 
-export { InstallFinishDialog, InstallStartDialog };
+export { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog };
