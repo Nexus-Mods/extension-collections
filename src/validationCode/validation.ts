@@ -1,4 +1,4 @@
-import validateBZKt from "./ICollection.validate";export function validateICollection(data): any[] {
-    var res = validateBZKt(data);
-    return (res === false) ? validateBZKt.prototype.constructor.errors : [];
+import validateVWaZtwL from "./ICollection.validate";export function validateICollection(data): any[] {
+    var res = validateVWaZtwL(data);
+    return (res === false) ? validateVWaZtwL.prototype.constructor.errors : [];
 }

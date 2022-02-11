@@ -1,7 +1,7 @@
 /// functions to postprocess collection manifest read from disk to give us an opportunity
 /// to maintain backwards compatibility if things change on our end
 
-import { fs, util } from 'vortex-api';
+import { fs, types, util } from 'vortex-api';
 import { ICollection, ICollectionModRule } from '../types/ICollection';
 import { validateICollection } from '../validationCode/validation';
 
@@ -44,15 +44,25 @@ function validationMessage(msg: any): string {
   return `${(msg.instancePath || '/')} ${msg.message}`;
 }
 
-export async function readCollection(manifest: string): Promise<ICollection> {
+export async function readCollection(api: types.IExtensionApi,
+                                     manifest: string): Promise<ICollection> {
   const collectionData = await fs.readFileAsync(manifest
     , { encoding: 'utf-8' });
   const collection: ICollection = JSON.parse(collectionData);
   const readErrors = validateICollection(collection);
   if (readErrors.length > 0) {
+    api.showErrorNotification('Collection validation mismatch',
+      'There was a validation issue with this collection. '
+      + 'During the testing phase, this is likely caused by the checks being too strict and '
+      + 'the collection itself should still work correctly.\n'
+      + 'To help us improve the validation, please report this error once on each '
+      + 'collection it appears for.\n\n'
+      + readErrors.map(validationMessage).join('\n'));
+    /*
     throw new util.ProcessCanceled(
-      'Collection invalid:\n' + readErrors.map(validationMessage).join('\n'),
+      'Collection invalid:\n' + ,
       readErrors.map(validationMessage));
+    */
   }
   collection.modRules = (collection.modRules ?? []).map(rule => postProcessRule(rule));
 

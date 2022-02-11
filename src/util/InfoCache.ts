@@ -102,12 +102,14 @@ class InfoCache {
     }
     const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
     try {
-      const collection = await readCollection(
+      const collection = await readCollection(this.mApi,
         path.join(stagingPath, colMod.installationPath, 'collection.json'));
       return collection.modRules;
     } catch (err) {
       if (err.code !== 'ENOENT') {
-        this.mApi.showErrorNotification('Failed to cache collection mod rules', err);
+        this.mApi.showErrorNotification('Failed to cache collection mod rules', err, {
+          allowReport: !(err instanceof util.ProcessCanceled),
+        });
       }
       return [];
     }

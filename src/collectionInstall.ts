@@ -33,7 +33,7 @@ export function makeInstall(api: types.IExtensionApi) {
                 : Promise<types.IInstallResult> => {
 
     const collection: ICollection =
-      await readCollection(path.join(destinationPath, 'collection.json'));
+      await readCollection(api, path.join(destinationPath, 'collection.json'));
 
     const filesToCopy = files
       .filter(filePath => !filePath.endsWith(path.sep)

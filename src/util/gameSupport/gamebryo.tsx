@@ -38,7 +38,9 @@ interface IGamebryoRules {
 function extractPluginRules(state: types.IState, plugins: string[]): IGamebryoRules {
   const installedPlugins: Set<string> = new Set(plugins.map(name => name.toLowerCase()));
   const customisedPlugins =
-    state['userlist'].plugins.filter(plug => installedPlugins.has(plug.name.toLowerCase()));
+    state['userlist'].plugins.filter((plug: IUserlistEntry) =>
+      installedPlugins.has(plug.name.toLowerCase())
+      && ((plug.after !== undefined) || (plug.group !== undefined)));
 
   // TODO this may be a bit overly simplified.
   // we include the rules on all plugins currently enabled but this may include plugins that

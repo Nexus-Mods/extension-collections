@@ -290,7 +290,8 @@ class InstallDriver {
     if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
       try {
         const collectionInfo: ICollection =
-          await readCollection(path.join(stagingPath, mod.installationPath, 'collection.json'));
+          await readCollection(this.mApi,
+            path.join(stagingPath, mod.installationPath, 'collection.json'));
         await postprocessCollection(this.mApi, gameId, mod, collectionInfo, mods);
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
