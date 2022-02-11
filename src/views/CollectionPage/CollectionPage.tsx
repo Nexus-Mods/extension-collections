@@ -512,6 +512,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     const { api } = this.context;
 
     const batch = [];
+    batch.push(actions.setAttributeFilter('mods', undefined, undefined));
     batch.push(actions.setAttributeFilter('mods', 'dependencies',
       ['depends', collection.id, util.renderModName(collection)]));
     batch.push(actions.setAttributeSort('mods', 'dependencies', 'asc'));
