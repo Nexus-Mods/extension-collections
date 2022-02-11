@@ -123,6 +123,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     const Interface = getInterface(profile.gameId);
 
+    const nextRev = collection.attributes?.revisionNumber;
+
     return (
       <FlexLayout type='column'>
         <FlexLayout.Fixed className='collection-edit-header'>
@@ -141,7 +143,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               onClick={this.upload}
               disabled={uploadDisabled !== undefined}
             >
-              {t('Upload')}
+              {t('Upload {{rev}}', { replace: {
+                rev: nextRev !== undefined ? `Rev ${nextRev}` : t('New'),
+              }})}
             </tooltip.IconButton>
             <tooltip.IconButton
               icon='open-ext'
