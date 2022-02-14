@@ -118,9 +118,9 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
       ]);
 
       if (result.action === 'Keep All') {
-        ops.keep = obsolete;
+        ops.keep = obsolete.map(mod => mod.id);
       } else if (result.action === 'Remove All') {
-        ops.remove = obsolete;
+        ops.remove = obsolete.map(mod => mod.id);
       } else { // Review
         const reviewResult: types.IDialogResult = await api.showDialog(
           'question', 'Remove mods from old revision?', {
@@ -137,10 +137,10 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
           ],
         );
         if (reviewResult.action === 'Keep All') {
-          ops.keep = obsolete;
+          ops.keep = obsolete.map(mod => mod.id);
         } else {
-          ops = Object.keys(result.input).reduce((prev, value) => {
-            if (result.input[value]) {
+          ops = Object.keys(reviewResult.input).reduce((prev, value) => {
+            if (reviewResult.input[value]) {
               prev.remove.push(value);
             } else {
               prev.keep.push(value);
@@ -156,7 +156,8 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
       actions.setModAttribute(gameMode, modId, 'installedAsDependency', false)));
 
     await util.toPromise(cb => api.events.emit('remove-mods', gameMode,
-      [oldModId, ...ops.remove], cb, { incomplete: true, ignoreInstalling: true }));
+      [oldModId, ...ops.remove],
+      cb, { incomplete: true, ignoreInstalling: true }));
   } catch (err) {
     if (!(err instanceof util.UserCanceled)) {
       api.showErrorNotification('Failed to download collection', err);
