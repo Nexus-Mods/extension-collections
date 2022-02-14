@@ -75,6 +75,7 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
           </div>
         </Media.Right>
         <tooltip.IconButton
+          className='collection-open-button'
           icon='open-in-browser'
           tooltip={t('Open Page')}
           onClick={openUrl}
