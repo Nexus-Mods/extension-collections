@@ -48,8 +48,7 @@
                   }
                 },
                 "required": [
-                  "name",
-                  "after"
+                  "name"
                 ]
               }
             },
@@ -72,8 +71,7 @@
                   }
                 },
                 "required": [
-                  "name",
-                  "after"
+                  "name"
                 ]
               }
             }

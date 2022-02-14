@@ -27,7 +27,7 @@ function getEnabledPlugins(state: types.IState,
 interface IUserlistEntry {
   name: string;
   group?: string;
-  after: string[];
+  after?: string[];
 }
 
 interface IGamebryoRules {
