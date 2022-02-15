@@ -477,6 +477,7 @@ function register(context: types.IExtensionContext,
         .then(() => collectionChanged.schedule())
         .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
     (instanceIds: string[]) => addCollectionCondition(context.api, instanceIds));
+
   context.registerAction('mods-multirow-actions', 300, 'collection', {}, 'Add to Collection...',
     (instanceIds: string[]) => addCollectionAction(context.api, instanceIds)
         .then(() => collectionChanged.schedule())
@@ -488,6 +489,7 @@ function register(context: types.IExtensionContext,
         .then(() => collectionChanged.schedule())
         .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
     (instanceIds: string[]) => removeCollectionCondition(context.api, instanceIds));
+
   context.registerAction('mods-multirow-actions', 300, 'collection', {},
                          'Remove from Collection...',
     (instanceIds: string[]) => removeCollectionAction(context.api, instanceIds)

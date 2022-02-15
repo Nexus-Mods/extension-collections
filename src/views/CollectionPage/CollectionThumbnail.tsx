@@ -292,9 +292,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       const nextRev = collection.attributes?.revisionNumber;
 
       result.push({
-        title: t('Upload {{rev}}', { replace: {
-          rev: nextRev !== undefined ? `Rev ${nextRev}` : t('New'),
-        }}),
+        title: t(nextRev !== undefined ? 'Upload Update' : 'Upload New'),
         icon: 'upload',
         action: (instanceIds: string[]) => onUpload(instanceIds[0]),
         condition: () => {

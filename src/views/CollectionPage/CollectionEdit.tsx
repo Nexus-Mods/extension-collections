@@ -143,9 +143,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
               onClick={this.upload}
               disabled={uploadDisabled !== undefined}
             >
-              {t('Upload {{rev}}', { replace: {
-                rev: nextRev !== undefined ? `Rev ${nextRev}` : t('New'),
-              }})}
+              {t(nextRev !== undefined ? 'Upload Update' : 'Upload New')}
             </tooltip.IconButton>
             <tooltip.IconButton
               icon='open-ext'
