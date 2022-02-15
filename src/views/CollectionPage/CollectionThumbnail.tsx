@@ -226,7 +226,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         condition: () => {
           const { attributes } = this.props.collection;
           return (attributes['newestVersion'] !== undefined)
-              && (attributes['newestVersion'] !== attributes['version']);
+              && (parseInt(attributes['newestVersion'], 10) > parseInt(attributes['version'], 10));
         },
         action: (instanceIds: string[]) => {
           onUpdate(instanceIds[0]);
