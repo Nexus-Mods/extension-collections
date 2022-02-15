@@ -179,7 +179,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
                                     gameId: string,
                                     modId: string,
                                     uploaderName: string)
-                                    : Promise<string> {
+                                    : Promise<{ slug: string, revisionNumber: number }> {
   const state: types.IState = api.store.getState();
   const mod = state.persistent.mods[gameId][modId];
 
@@ -195,6 +195,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
 
   let collectionId: number;
   let collectionSlug: string;
+  let revisionNumber: number;
 
   try {
     info = await generateCollectionInfo(api, gameId, mod, progress, onError);
@@ -219,7 +220,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
                                                  result.collection.slug));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'source', 'nexus'));
       const revisionId = result.revision?.id ?? result['revisionId'];
-      const revisionNumber = result.revision?.revision ?? result['revisionNumber'];
+      revisionNumber = result.revision?.revision ?? result['revisionNumber'];
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionId', revisionId));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'revisionNumber', revisionNumber));
       api.store.dispatch(actions.setModAttribute(gameId, modId, 'version',
@@ -267,7 +268,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
     }
   }
 
-  return collectionSlug;
+  return { slug: collectionSlug, revisionNumber };
 }
 
 export async function doExportToFile(api: types.IExtensionApi, gameId: string, modId: string) {

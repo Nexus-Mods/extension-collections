@@ -233,7 +233,12 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     const { collection } = revision;
     if (collection !== undefined) {
       this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Added Collection');
-      util.opn(`${NEXUS_NEXT_URL}/${collection.game.domainName}/collections/${collection.slug}`);
+      util.opn(util.nexusModsURL([collection.game.domainName,
+        'collections', collection.slug,
+        'revisions', revision.revision.toString()], {
+        campaign: util.Campaign.ViewCollection,
+        section: util.Section.Collections,
+      }));
     }
   }
 

@@ -560,7 +560,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     if (choice.action === 'Upload') {
       try {
-        const slug = await doExportToAPI(api, profile.gameId, collectionId, userInfo.name);
+        const { slug, revisionNumber } =
+          await doExportToAPI(api, profile.gameId, collectionId, userInfo.name);
         if (slug !== undefined) {
           api.sendNotification({
             type: 'success',
@@ -570,7 +571,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 title: 'Open in Browser', action: () => {
                   const game = selectors.gameById(api.getState(), profile.gameId);
                   const domainName = util.nexusGameId(game);
-                  const url = util.nexusModsURL([domainName, 'collections', slug], {
+                  const url = util.nexusModsURL(
+                    [domainName, 'collections', slug, 'revisions', revisionNumber.toString()], {
                     campaign: util.Campaign.ViewCollection,
                     section: util.Section.Collections,
                   });
