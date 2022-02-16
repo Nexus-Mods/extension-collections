@@ -4,9 +4,10 @@ import React = require('react');
 import { Button, Media, Modal } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import * as ReactMarkdown from 'react-markdown';
-import { FlexLayout, MainContext, More, tooltip, types, util } from 'vortex-api';
+import { FlexLayout, MainContext, tooltip, types, util } from 'vortex-api';
 
 import { IRevision } from '@nexusmods/nexus-api';
+import { useSelector } from 'react-redux';
 
 export interface IInstallChangelogDialogProps {
   gameId: string;
@@ -24,6 +25,8 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
   const { collection, gameId, onCancel, onContinue, revisionInfo  } = props;
 
   const { t } = useTranslation();
+  const lang: string = useSelector<types.IState, string>(state =>
+    state.settings.interface.language);
 
   const context = React.useContext(MainContext);
 
@@ -41,6 +44,7 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
   }
 
   const changelog = revisionInfo.collectionChangelog;
+  const changelogDate = new Date(changelog.createdAt);
 
   return (
     <Modal
@@ -68,7 +72,7 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
           <FlexLayout type='row'>
             <h4>{t('Revision {{revNum}} Changelog',
                   { replace: { revNum: revisionInfo.revision } })}</h4>
-            <div className='changelog-time'>{changelog.createdAt.formatted}</div>
+            <div className='changelog-time'>{changelogDate.toLocaleDateString(lang)}</div>
           </FlexLayout>
           <div className='changelog-scroll'>
             <ReactMarkdown>{changelog.description}</ReactMarkdown>
