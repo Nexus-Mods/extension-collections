@@ -361,7 +361,7 @@ class InstallDriver {
     const profile = this.mProfile;
 
     const state: types.IState = this.mApi.store.getState();
-    const mods = state.persistent.mods[profile.gameId];
+    const mods = state.persistent.mods[profile.gameId] ?? {};
     const modInfo = state.persistent.downloads.files[collection.archiveId]?.modInfo;
     const nexusInfo = modInfo?.nexus;
 
