@@ -231,7 +231,7 @@ class InstallDriver {
         installing: this.finishInstalling,
         review: this.close,
       };
-      const res = await steps[this.mStep]();
+      const res = await steps[this.mStep]?.();
       if (res !== false) {
         this.triggerUpdate();
       }
