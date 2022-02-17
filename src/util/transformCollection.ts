@@ -710,6 +710,18 @@ export async function cloneCollection(api: types.IExtensionApi,
     return true;
   };
 
+  const ruleSimplify = (rule: types.IModRule): types.IModRule => {
+    const referencedMod = util.findModByRef(rule.reference, mods);
+    return ({
+      ...rule,
+      reference: {
+        archiveId: referencedMod.archiveId,
+        id: referencedMod.id,
+        idHint: referencedMod.id,
+      },
+    });
+  };
+
   const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.userId;
   let name = 'Copy of ' + existingCollection.attributes?.name;
   if (name.length > MAX_COLLECTION_NAME_LENGTH) {
@@ -747,7 +759,9 @@ export async function cloneCollection(api: types.IExtensionApi,
       ...ownCollectionAttributes,
     },
     installationPath: id,
-    rules: existingCollection.rules.filter(ruleFilter),
+    rules: existingCollection.rules
+      .filter(ruleFilter)
+      .map(ruleSimplify),
   };
 
   try {
