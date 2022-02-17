@@ -23,8 +23,10 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
     const gameMode = selectors.activeGameId(state);
 
     const oldMod = state.persistent.mods[gameMode][oldModId];
+    // oldMod might be undefined if the user manually removed the collection in the time
+    // it took us to download the new revision
 
-    if (!!latest.collectionChangelog?.description) {
+    if (!!latest.collectionChangelog?.description && (oldMod !== undefined)) {
       await showChangelog(oldMod, gameMode, latest);
     }
 
@@ -63,7 +65,7 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
 
     api.events.emit('analytics-track-click-event', 'Collections', 'Update Collection');
 
-    const oldRules = oldMod.rules ?? [];
+    const oldRules = oldMod?.rules ?? [];
 
     const newModId = await util.toPromise(cb =>
       api.events.emit('start-install-download', dlId, undefined, cb));
