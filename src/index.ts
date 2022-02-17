@@ -130,7 +130,9 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
 let driver: InstallDriver;
 
-async function cloneInstalledCollection(api: types.IExtensionApi, collectionId: string) {
+async function cloneInstalledCollection(api: types.IExtensionApi,
+                                        collectionId: string)
+                                        : Promise<string> {
   const state = api.getState();
   const gameMode = selectors.activeGameId(state);
   const mods = state.persistent.mods[gameMode];
@@ -154,6 +156,8 @@ async function cloneInstalledCollection(api: types.IExtensionApi, collectionId: 
   if (result.action === 'Clone') {
     const id = makeCollectionId(shortid());
     return cloneCollection(api, gameMode, id, collectionId);
+  } else {
+    return Promise.resolve(undefined);
   }
 }
 
@@ -325,6 +329,8 @@ function register(context: types.IExtensionContext,
   context.registerDialog('collection-finish', InstallFinishDialog, () => ({
     api: context.api,
     driver,
+    onClone: (collectionId: string) => cloneInstalledCollection(context.api, collectionId),
+    editCollection: (id: string) => collectionsCB.editCollection(id),
   }));
 
   context.registerDialog('collection-changelog', InstallChangelogDialog, () => ({}));

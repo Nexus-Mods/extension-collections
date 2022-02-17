@@ -252,6 +252,10 @@ $collection-mod-image-height: 200px;
       font-size: larger;
       font-weight: bold;
     }
+    .collection-finished-optional-buttons {
+      display: flex;
+      gap: 1em;
+    }
   }
 }
 
@@ -1236,4 +1240,23 @@ ul.collection-mods-page-attrib-tooltip {
   .collection-open-button {
     margin-top: $half-gutter;
   }
+}
+
+.collection-can-clone-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  align-items: flex-start;
+}
+
+.collections-you-curated-tag {
+  border-radius: 20px;
+  background-color: $white;
+  color: $black;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5em;
+  gap: 0.5em;
+  width: fit-content;
 }

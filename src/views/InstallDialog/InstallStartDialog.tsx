@@ -3,6 +3,8 @@ import InstallDriver, { Step } from '../../util/InstallDriver';
 
 import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
 
+import YouCuratedTag from './YouCuratedThisTag';
+
 import * as React from 'react';
 import { Button, Media } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
@@ -23,6 +25,7 @@ interface IConnectedProps {
   allProfiles: { [profileId: string]: types.IProfile };
   mods: { [modId: string]: types.IMod };
   isPremium: boolean;
+  userInfo: { userId: number };
 }
 
 interface IActionProps {
@@ -72,7 +75,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   public render(): React.ReactNode {
-    const { t, driver,  allProfiles, profile } = this.props;
+    const { t, driver,  allProfiles, profile, userInfo } = this.props;
     const { selectedProfile } = this.state;
 
     if ((driver === undefined) || (profile === undefined)) {
@@ -91,6 +94,8 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
       }))
       .concat({ value: '__new', label: t('Create new profile') });
 
+    const ownCollection: boolean = driver.collectionInfo?.user?.memberId === userInfo?.userId;
+
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
         <Modal.Body>
@@ -104,6 +109,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
             />
           </Media.Left>
           <Media.Right style={{ width: '100%' }}>
+            {ownCollection ? <YouCuratedTag t={t} /> : null}
             <h5>{game.name}</h5>
             <h3>{util.renderModName(driver.collection)}</h3>
             <p>{t('has been added to your collections.')}</p>
@@ -177,12 +183,15 @@ function mapStateToProps(state: types.IState): IConnectedProps {
     ? profile.gameId
     : undefined;
 
+  const { userInfo } = state.persistent['nexus'] ?? {};
+
   if (editCollectionId !== undefined) {
     return {
       profile,
       allProfiles: state.persistent.profiles,
       mods: state.persistent.mods[gameMode],
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
+      userInfo,
     };
   } else {
     return {
@@ -190,6 +199,7 @@ function mapStateToProps(state: types.IState): IConnectedProps {
       allProfiles: state.persistent.profiles,
       mods: emptyObject,
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
+      userInfo,
     };
   }
 }

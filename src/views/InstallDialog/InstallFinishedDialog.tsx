@@ -2,8 +2,10 @@ import * as React from 'react';
 import { Button, Media, Panel } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { actions, FlexLayout, Modal, selectors, types, util } from 'vortex-api';
+import { actions, Modal, tooltip, types, util } from 'vortex-api';
 import { NAMESPACE } from '../../constants';
+
+import YouCuratedTag from './YouCuratedThisTag';
 
 import InstallDriver from '../../util/InstallDriver';
 import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
@@ -11,6 +13,8 @@ import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
 export interface IInstallFinishedDialogProps {
   api: types.IExtensionApi;
   driver: InstallDriver;
+  onClone: (collectionId: string) => Promise<string>;
+  editCollection: (id: string) => void;
 }
 
 function nop() {
@@ -18,8 +22,11 @@ function nop() {
 }
 
 function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
-  const { api, driver } = props;
+  const { api, driver, onClone } = props;
   const { t } = useTranslation(api.NAMESPACE);
+
+  const userInfo = useSelector<types.IState, { userId: number }>(state =>
+    state.persistent['nexus']?.userInfo ?? {});
 
   const forceUpdate = React.useState(0)[1];
 
@@ -44,12 +51,35 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
     }
   }, [driver]);
 
+  const installAllOptionals = React.useCallback(() => {
+    const coll = driver.collection;
+    driver.installRecommended();
+  }, []);
+
+  const clone = React.useCallback(async () => {
+    const id: string = await onClone(driver.collection.id);
+    if (id !== undefined) {
+      props.editCollection(id);
+      driver.continue();
+    }
+  }, [driver, onClone]);
+
   const collection = driver.collection;
 
-  const optionals = (collection?.rules ?? [])
-    .filter(rule => rule.type === 'recommends');
+  const mods = useSelector<types.IState, { [modId: string]: types.IMod }>(state =>
+    (driver.profile !== undefined)
+      ? state.persistent.mods[driver.profile?.gameId]
+      : {});
+
+  const optionals = React.useMemo(() => {
+    return (collection?.rules ?? [])
+      .filter(rule => (rule.type === 'recommends')
+                   && (util.findModByRef(rule.reference, mods) === undefined));
+  }, [collection?.rules, mods]);
 
   const game = driver.profile !== undefined ? util.getGame(driver.profile.gameId) : undefined;
+
+  const ownCollection: boolean = driver.collectionInfo?.user?.memberId === userInfo?.userId;
 
   return (
     <Modal
@@ -75,6 +105,12 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
             <h5>{game?.name}</h5>
             <h3>{util.renderModName(driver.collection)}</h3>
             {driver.collection?.attributes?.shortDescription ?? t('No description')}
+            {ownCollection && (optionals.length > 0) ? (
+              <div>
+                <YouCuratedTag t={t} />
+                {t('To edit this collection you must install all of the optional mods')}
+              </div>
+            ) : null}
           </Media.Right>
         </div>
         {(optionals.length > 0) ? (
@@ -91,7 +127,23 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
                 ns: NAMESPACE,
               })}
             </p>
-            <Button onClick={showOptionals}>{t('Show optional mods')}</Button>
+            <div className='collection-finished-optional-buttons'>
+              <Button onClick={showOptionals}>{t('Show optional mods')}</Button>
+              <Button onClick={installAllOptionals}>{t('Install all optional mods')}</Button>
+            </div>
+          </div>
+        ) : ownCollection ? (
+          <div className='collection-can-clone-container'>
+            <YouCuratedTag t={t} />
+            {t('You now have the whole collection installed, you can start editing '
+               + 'your collection by cloning it.')}
+            <tooltip.IconButton
+              icon='clone'
+              tooltip={t('Clone the collection to the workshop for editing')}
+              onClick={clone}
+            >
+              {t('Clone')}
+            </tooltip.IconButton>
           </div>
         ) : null}
       </Modal.Body>

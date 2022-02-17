@@ -72,12 +72,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     if (props.onSetupCallbacks !== undefined) {
       props.onSetupCallbacks({
         viewCollection: (collectionId: string) => {
-          this.nextState.selectedCollection = collectionId;
-          this.nextState.viewMode = 'view';
+          this.showPage('view', collectionId);
         },
         editCollection: (collectionId: string) => {
-          this.nextState.selectedCollection = collectionId;
-          this.nextState.viewMode = 'edit';
+          this.showPage('edit', collectionId);
         },
       });
     }
@@ -201,6 +199,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     );
   }
 
+  private showPage(page: 'view' | 'edit', modId: string) {
+      this.nextState.selectedCollection = modId;
+      this.nextState.viewMode = page;
+  }
+
   private onUpdateMeta = () => {
     this.props.onUpdateMeta();
     this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Refresh');
@@ -224,8 +227,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   private view = (modId: string) => {
-    this.nextState.selectedCollection = modId;
-    this.nextState.viewMode = 'view';
+    this.showPage('view', modId);
   }
 
   private edit = async (modId: string) => {
@@ -253,8 +255,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         return;
       }
     }
-    this.nextState.selectedCollection = modId;
-    this.nextState.viewMode = 'edit';
+    this.showPage('edit', modId);
   }
 
   private pause = async (modId: string, silent?: boolean) => {
@@ -313,8 +314,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   private clone = async (collectionId: string) => {
     const id: string = await this.props.onCloneCollection(collectionId);
     if (id !== undefined) {
-      this.nextState.selectedCollection = id;
-      this.nextState.viewMode = 'edit';
+      this.showPage('edit', id);
     }
   }
 

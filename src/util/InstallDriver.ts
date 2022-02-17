@@ -10,7 +10,7 @@ import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
 
-export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'review';
+export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'recommendations' | 'review';
 
 export type UpdateCB = () => void;
 
@@ -110,6 +110,7 @@ class InstallDriver {
     this.mProfile = profile;
     this.mCollection = collection;
     this.mStep = 'query';
+    await this.initCollectionInfo();
     this.triggerUpdate();
   }
 
@@ -132,7 +133,7 @@ class InstallDriver {
     this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
 
     await this.startInstall();
-
+    await this.initCollectionInfo();
     this.triggerUpdate();
   }
 
@@ -222,13 +223,22 @@ class InstallDriver {
     this.triggerUpdate();
   }
 
+  public installRecommended() {
+    this.mApi.emitAndAwait('install-from-dependencies',
+                           this.mCollection.id, this.mCollection.rules, true);
+    this.mStep = 'recommendations';
+  }
+
   public async continue() {
     if (this.canContinue()) {
+      await this.initCollectionInfo();
+
       const steps = {
         query: this.startInstall,
         start: this.begin,
         disclaimer: this.closeDisclaimers,
         installing: this.finishInstalling,
+        recommendations: this.finishInstalling,
         review: this.close,
       };
       const res = await steps[this.mStep]?.();
@@ -256,6 +266,21 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
+  private async initCollectionInfo() {
+    const slug = this.collectionSlug;
+    const state: types.IState = this.mApi.store.getState();
+    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const nexusInfo = modInfo?.nexus;
+    this.mCollectionInfo = nexusInfo?.collectionInfo
+      ?? await this.mInfoCache.getCollectionInfo(slug)
+      // this last fallback is for the weird case where we have revision info cached but
+      // not collection info and fetching is not possible because it's been deleted from the
+      // site
+      // Not sure if/why this would happen on live, it did occur during testing because the
+      // stuff was getting deleted from the DB directly
+      ?? this.mRevisionInfo?.collection;
+  }
+
   private async onDidInstallDependencies(gameId: string,
                                          modId: string,
                                          recommendations: boolean) {
@@ -264,6 +289,10 @@ class InstallDriver {
     const mods = this.mApi.getState().persistent.mods[gameId];
 
     if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
+      // update the stored collection because it might have been updated as part of the
+      // dependency installation
+      this.mCollection = mods[modId];
+
       if (!recommendations) {
         const filter = rule =>
           (rule.type === 'requires')
@@ -272,6 +301,7 @@ class InstallDriver {
 
         const incomplete = this.mCollection.rules.find(filter);
         if (incomplete === undefined) {
+          await this.initCollectionInfo();
           this.mStep = 'review';
         } else {
           this.mInstallDone = true;
@@ -281,7 +311,19 @@ class InstallDriver {
         this.triggerUpdate();
       } else {
         // We finished installing optional mods for the current collection - reset everything.
-        this.onStop();
+        const filter = rule =>
+          (['requires', 'recommends'].includes(rule.type))
+          && (rule['ignored'] !== true)
+          && (util.findModByRef(rule.reference, mods) === undefined);
+
+        const incomplete = this.mCollection.rules.find(filter);
+        if (incomplete === undefined) {
+          // revisit review screen
+          await this.initCollectionInfo();
+          this.mStep = 'review';
+        } else {
+          this.onStop();
+        }
       }
     }
 
@@ -399,15 +441,6 @@ class InstallDriver {
         return false;
       }
     }
-
-    this.mCollectionInfo = nexusInfo?.collectionInfo
-      ?? await this.mInfoCache.getCollectionInfo(slug)
-      // this last fallback is for the weird case where we have revision info cached but
-      // not collection info and fetching is not possible because it's been deleted from the
-      // site
-      // Not sure if/why this would happen on live, it did occur during testing because the
-      // stuff was getting deleted from the DB directly
-      ?? this.mRevisionInfo?.collection;
 
     this.mApi.events.emit('view-collection', collection.id);
 
