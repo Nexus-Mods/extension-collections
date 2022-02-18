@@ -125,6 +125,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             t={t}
             game={game}
             installing={driver.installDone ? undefined : driver.collection}
+            infoCache={driver.infoCache}
             profile={profile}
             mods={mods}
             matchedReferences={matchedReferences ?? emptyObj}

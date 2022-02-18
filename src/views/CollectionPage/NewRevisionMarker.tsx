@@ -18,7 +18,7 @@ function NewRevisionMarker(props: INewRevisionMarkerProps) {
   return (
     <div className='collections-new-revision'>
       <Icon name='details'/>
-      {t('New Revision')}
+      {t('Update')}
     </div>
   );
 }

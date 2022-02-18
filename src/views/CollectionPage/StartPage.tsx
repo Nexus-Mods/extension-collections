@@ -12,6 +12,7 @@ import * as React from 'react';
 import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
 import { ComponentEx, EmptyPlaceholder, Icon, IconBar, tooltip, types, util } from 'vortex-api';
+import InfoCache from '../../util/InfoCache';
 
 const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSc3csy4ycVBECvHQDgri37Gqq1gOuTQ7LcpiIaOkGHpDsW4kA/viewform?usp=sf_link';
 const BUG_REPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdmDBdGjTQVRa7wRouN4yP6zMvqsxTT86R-DwmQXZq7SWGCSg/viewform?usp=sf_link';
@@ -20,6 +21,7 @@ export interface IStartPageProps {
   t: i18next.TFunction;
   game: types.IGameStored;
   installing: types.IMod;
+  infoCache: InfoCache;
   profile: types.IProfile;
   activeTab: string;
   mods: { [modId: string]: types.IMod };
@@ -221,6 +223,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                       mods={mods}
                       incomplete={matchedReferences[mod.id]?.includes?.(null)}
                       collection={mod}
+                      infoCache={this.props.infoCache}
                       onView={onView}
                       onRemove={onRemove}
                       onResume={onResume}
@@ -266,6 +269,7 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                       t={t}
                       gameId={profile.gameId}
                       collection={mod}
+                      infoCache={this.props.infoCache}
                       imageTime={imageTime}
                       mods={mods}
                       incomplete={matchedReferences[mod.id]?.includes?.(null)}

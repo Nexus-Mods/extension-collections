@@ -1,12 +1,15 @@
+import { IRevision } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import memoizeOne from 'memoize-one';
 import * as path from 'path';
 import * as React from 'react';
 import { FormControl, FormGroup, Image as BSImage, Panel } from 'react-bootstrap';
+import { TFunction } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
+import InfoCache from '../../util/InfoCache';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 import NewRevisionMarker from './NewRevisionMarker';
 
@@ -16,6 +19,7 @@ export interface IBaseProps {
   gameId: string;
   installing?: types.IMod;
   collection: types.IMod;
+  infoCache?: InfoCache;
   mods?: { [modId: string]: types.IMod };
   incomplete?: boolean;
   details: boolean | 'some';
@@ -111,13 +115,61 @@ function ModNameField(props: IModNameFieldProps) {
   );
 }
 
+interface ISuccessRatingProps {
+  t: TFunction;
+  infoCache: InfoCache;
+  collectionSlug: string;
+  revisionNumber: number;
+  revisionId: string;
+}
+
+function SuccessRating(props: ISuccessRatingProps) {
+  const { t, collectionSlug, infoCache, revisionNumber, revisionId } = props;
+
+  const [rating, setRating] = React.useState(undefined);
+
+  React.useEffect(() => {
+    (async () => {
+      const rev = await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+      if (rev.rating.total < 3) {
+        setRating(undefined);
+      } else {
+        setRating(rev.rating.average);
+      }
+    })();
+  }, [revisionId]);
+
+  const classes = [
+    'collection-success-indicator',
+  ];
+
+  if (rating === undefined) {
+    classes.push('success-rating-insufficient');
+  } else if (rating < 33) {
+    classes.push('success-rating-bad');
+  } else if (rating < 66) {
+    classes.push('success-rating-dubious');
+  } else {
+    classes.push('success-rating-good');
+  }
+
+  return (
+    <div className={classes.join(' ')}>
+      <Icon name='health' />
+      {(rating === undefined)
+        ? t('Awaiting')
+        : t('{{rating}}%', { replace: { rating } })}
+    </div>
+  );
+}
+
 class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   private imageURLs = memoizeOne((collection: types.IMod) =>
     [collection.attributes?.pictureUrl, path.join(__dirname, 'fallback_tile.png')]
       .filter(iter => iter !== undefined));
 
   public render(): JSX.Element {
-    const { t, collection, details,
+    const { t, collection, details, infoCache,
             incomplete, mods, onEdit, profile } = this.props;
 
     if (collection === undefined) {
@@ -154,19 +206,13 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     return (
       <Panel className={classes.join(' ')} bsStyle={active ? 'primary' : 'default'}>
         <Panel.Body className='collection-thumbnail-body'>
+          {(details === true) ? <NewRevisionMarker t={t} collection={collection} /> : null}
           <Image
             className='thumbnail-img'
             srcs={this.imageURLs(collection)}
             circle={false}
           />
           <div className='gradient' />
-          <div className='author'>
-            <BSImage
-              src={collection.attributes?.uploaderAvatar ?? 'assets/images/noavatar.png'}
-              circle
-            />
-            {collection.attributes?.uploader ?? `${t(AUTHOR_UNKNOWN)}`}
-          </div>
           {(details === true) ? (
             <CollectionReleaseStatus
               t={t}
@@ -178,7 +224,22 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           ) : null}
           {(details !== false) ? (
             <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
-              {(details === true) ? <NewRevisionMarker t={t} collection={collection} /> : null}
+              <div className='collection-revision-and-rating'>
+                <div className='revision-number'>
+                  {t('Revision {{number}}', { replace: {
+                    number: collection.attributes.version ?? '0',
+                  } })}
+                </div>
+                {infoCache !== undefined
+                  ? <SuccessRating
+                      t={t}
+                      infoCache={infoCache}
+                      collectionSlug={collection.attributes?.collectionSlug}
+                      revisionNumber={collection.attributes?.revisionNumber}
+                      revisionId={collection.attributes?.revisionId}
+                  />
+                  : null}
+              </div>
               <div className='name no-hover'>
                 {util.renderModName(collection, { version: false })}
               </div>
@@ -192,13 +253,19 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                 </div>
                 ) : null}
               <div className='details'>
-                <div><Icon name='mods' />{refMods.length}</div>
-                <div><Icon name='archive' />{util.bytesToString(totalSize)}</div>
-                <div className='revision-number'>
-                  {t('Revision {{number}}', { replace: {
-                    number: collection.attributes.version ?? '0',
-                  } })}
+                <div className='author'>
+                  {/*
+                  <BSImage
+                    src={collection.attributes?.uploaderAvatar ?? 'assets/images/noavatar.png'}
+                    circle
+                  />
+                  */}
+                  {t('By {{uploader}}', { replace: {
+                    uploader: collection.attributes?.uploader ?? t(AUTHOR_UNKNOWN)},
+                    })}
                 </div>
+                <div><Icon name='mods' />{refMods.length}</div>
+                {/*<div><Icon name='archive' />{util.bytesToString(totalSize)}</div>*/}
               </div>
             </div>
           ) : null}
