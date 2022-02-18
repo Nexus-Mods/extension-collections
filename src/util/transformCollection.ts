@@ -875,7 +875,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   }
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
-  const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId],
+  const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
                                        mod?.rules ?? [], mod?.id);
 
   if (mod === undefined) {

@@ -203,6 +203,12 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       classes.push('has-menu');
     }
 
+    const { revisionId, collectionSlug, revisionNumber } = collection.attributes ?? {};
+
+    const validRemote = (revisionId !== undefined)
+                     && (collectionSlug !== undefined)
+                     && (revisionNumber !== undefined);
+
     return (
       <Panel className={classes.join(' ')} bsStyle={active ? 'primary' : 'default'}>
         <Panel.Body className='collection-thumbnail-body'>
@@ -230,13 +236,13 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
                     number: collection.attributes.version ?? '0',
                   } })}
                 </div>
-                {infoCache !== undefined
+                {(infoCache !== undefined) && validRemote
                   ? <SuccessRating
                       t={t}
                       infoCache={infoCache}
-                      collectionSlug={collection.attributes?.collectionSlug}
-                      revisionNumber={collection.attributes?.revisionNumber}
-                      revisionId={collection.attributes?.revisionId}
+                      collectionSlug={collectionSlug}
+                      revisionNumber={revisionNumber}
+                      revisionId={revisionId}
                   />
                   : null}
               </div>
