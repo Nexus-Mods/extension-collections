@@ -131,7 +131,7 @@ function SuccessRating(props: ISuccessRatingProps) {
   React.useEffect(() => {
     (async () => {
       const rev = await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
-      if (rev.rating.total < 3) {
+      if ((rev?.rating?.total ?? 0) < 3) {
         setRating(undefined);
       } else {
         setRating(rev.rating.average);
@@ -145,9 +145,9 @@ function SuccessRating(props: ISuccessRatingProps) {
 
   if (rating === undefined) {
     classes.push('success-rating-insufficient');
-  } else if (rating < 33) {
+  } else if (rating < 50) {
     classes.push('success-rating-bad');
-  } else if (rating < 66) {
+  } else if (rating < 75) {
     classes.push('success-rating-dubious');
   } else {
     classes.push('success-rating-good');
