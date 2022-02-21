@@ -37,6 +37,7 @@ export interface ICollectionSourceInfo {
 
 export interface ICollectionModDetails {
   type?: string;
+  category?: string;
 }
 
 export interface ICollectionMod {

@@ -2,9 +2,9 @@ import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
+import { genDefaultsAction } from './util/defaults';
 import { addExtension } from './util/extension';
 import InstallDriver from './util/InstallDriver';
-import { genDefaultInstallModeAction } from './util/installMode';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
@@ -19,7 +19,8 @@ import {
   initFromProfile,
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
-import { makeInstall, postprocessCollection, testSupported } from './collectionInstall';
+import { doExportToFile } from './collectionExport';
+import { makeInstall, testSupported } from './collectionInstall';
 import { MOD_TYPE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
@@ -535,7 +536,7 @@ function register(context: types.IExtensionContext,
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const { store } = api;
 
-  const applyDefaultInstallMode = new util.Debouncer(() => {
+  const applyCollectionModDefaults = new util.Debouncer(() => {
     const gameMode = selectors.activeGameId(state());
     const mods = util.getSafe(state(), ['persistent', 'mods', gameMode], {});
     const collectionIds = Object.keys(mods).filter(id => (mods[id]?.type === MOD_TYPE));
@@ -547,7 +548,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const collMods = (collection.rules ?? [])
         .map(rule => util.findModByRef(rule.reference, mods))
         .filter(rule => rule !== undefined);
-      const action = genDefaultInstallModeAction(api, id, collMods, gameMode);
+      const action = genDefaultsAction(api, id, collMods, gameMode);
       if (action !== undefined) {
         accum.push(action);
       }
@@ -600,7 +601,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }) !== undefined;
 
     if (foundRuleChanges) {
-      applyDefaultInstallMode.schedule();
+      applyCollectionModDefaults.schedule();
       if (changed === undefined) {
         // The collectionChanged callback hasn't been called; yet
         //  the mod entries had been changed - we need to call the CB

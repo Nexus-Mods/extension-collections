@@ -39,7 +39,6 @@ interface IConnectedProps {
 
 interface IActionProps {
   onSetModAttribute: (gameId: string, modId: string, key: string, value: any) => void;
-  onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) => void;
   onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onAddModsDialog: (collectionId: string) => void;
@@ -330,8 +329,6 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
   return {
     onSetModAttribute: (gameId: string, modId: string, key: string, value: any) =>
       dispatch(actions.setModAttribute(gameId, modId, key, value)),
-    onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) =>
-      dispatch(actions.setModAttributes(gameId, modId, attributes)),
     onAddRule: (gameId: string, modId: string, rule: types.IModRule) =>
       dispatch(actions.addModRule(gameId, modId, rule)),
     onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) =>
