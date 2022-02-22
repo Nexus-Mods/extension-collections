@@ -521,12 +521,19 @@ function register(context: types.IExtensionContext,
       addExtension({ id, generate, parse, clone, condition, title, editComponent });
     };
 
-  context.registerActionCheck('ADD_NOTIFICATION', (state: any, action: Redux.Action) => {
+  context.registerActionCheck('ADD_NOTIFICATION', (state: types.IState, action: Redux.Action) => {
     const notification: types.INotification = action['payload'];
-    const ruleMatches = rule => rule.reference.tag === notification.replace.tag;
-    if (notification.id.startsWith('multiple-plugins-')
-        && (driver?.collection !== undefined)
-        && ((driver.collection.rules ?? []).find(ruleMatches) !== undefined)) {
+    const ruleMatches = rule => rule.reference.tag === notification.replace?.tag;
+
+    let collection: types.IMod;
+    if ((driver?.collection !== undefined) && notification.id.startsWith('multiple-plugins-')) {
+      // reference tags may be updated during installation, so we need to get the
+      // updated collection if necessary
+      collection = state.persistent.mods[driver.profile.gameId]?.[driver.collection.id]
+                ?? driver.collection;
+    }
+
+    if ((collection?.rules ?? []).find(ruleMatches) !== undefined) {
       return false as any;
     }
     return undefined;
