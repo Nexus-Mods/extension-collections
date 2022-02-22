@@ -227,6 +227,7 @@ class InstallDriver {
     this.mApi.emitAndAwait('install-from-dependencies',
                            this.mCollection.id, this.mCollection.rules, true);
     this.mStep = 'recommendations';
+    this.triggerUpdate();
   }
 
   public async continue() {

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Button, Media, Panel } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { actions, Modal, tooltip, types, util } from 'vortex-api';
+import { actions, log, Modal, tooltip, types, util } from 'vortex-api';
 import { NAMESPACE } from '../../constants';
 
 import YouCuratedTag from './YouCuratedThisTag';
@@ -52,8 +52,10 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   }, [driver]);
 
   const installAllOptionals = React.useCallback(() => {
-    const coll = driver.collection;
-    driver.installRecommended();
+    // double check we're not triggering this multiple times.
+    if (driver.step === 'review') {
+      driver.installRecommended();
+    }
   }, []);
 
   const clone = React.useCallback(async () => {
