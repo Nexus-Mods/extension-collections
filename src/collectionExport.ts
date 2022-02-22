@@ -265,6 +265,8 @@ export async function doExportToAPI(api: types.IExtensionApi,
         ],
       });
       throw new util.ProcessCanceled('collection rejected');
+    } else if (err instanceof util.ProcessCanceled) {
+      api.showErrorNotification('Failed to upload collection', err, { allowReport: false });
     } else {
       throw err;
     }
