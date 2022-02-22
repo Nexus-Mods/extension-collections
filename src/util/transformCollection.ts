@@ -262,7 +262,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
         hashes,
         choices,
         instructions: collectionInfo.instructions?.[mod.id],
-        author: mod.attributes?.uploader,
+        author: mod.attributes?.author,
         details: {
           category: util.resolveCategoryName(mod.attributes?.category, state),
         },
