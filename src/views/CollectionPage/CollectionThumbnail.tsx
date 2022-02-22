@@ -285,6 +285,12 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     );
   }
 
+  private invoke(action: (inst: string) => void, inst: string[]) {
+    if ((action !== undefined) && (inst !== undefined) && (inst.length > 0)) {
+      action(inst[0]);
+    }
+  }
+
   private get actions() {
     const { t, collection, incomplete, installing, onEdit, onPause, onUpload,
             onRemove, onResume, onUpdate, onView } = this.props;
@@ -302,7 +308,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               && (parseInt(attributes['newestVersion'], 10) > parseInt(attributes['version'], 10));
         },
         action: (instanceIds: string[]) => {
-          onUpdate(instanceIds[0]);
+          this.invoke(onUpdate, instanceIds);
         },
       } as any);
     }
@@ -311,7 +317,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         title: 'View',
         icon: 'show',
         action: (instanceIds: string[]) => {
-          onView(instanceIds[0]);
+          this.invoke(onView, instanceIds);
         },
       });
       if (incomplete && (onResume !== undefined)) {
@@ -328,9 +334,9 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           },
           action: (instanceIds: string[]) => {
             if (onResume !== undefined) {
-              onResume(instanceIds[0]);
+              this.invoke(onResume, instanceIds);
             }
-            onView(instanceIds[0]);
+            this.invoke(onView, instanceIds);
           },
         });
       }
@@ -340,8 +346,8 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
           icon: 'pause',
           condition: () => installing?.id === collection.id,
           action: (instanceIds: string[]) => {
-            onPause?.(instanceIds[0]);
-            onView(instanceIds[0]);
+            this.invoke(onPause, instanceIds);
+            this.invoke(onView, instanceIds);
           },
         });
       }
@@ -350,14 +356,14 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       result.push({
         title: 'Edit',
         icon: 'edit',
-        action: (instanceIds: string[]) => onEdit(instanceIds[0]),
+        action: (instanceIds: string[]) => this.invoke(onEdit, instanceIds),
       });
     }
     if (onRemove) {
       result.push({
         title: 'Remove',
         icon: 'remove',
-        action: (instanceIds: string[]) => onRemove(instanceIds[0]),
+        action: (instanceIds: string[]) => this.invoke(onRemove, instanceIds),
       });
     }
 
@@ -367,7 +373,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
       result.push({
         title: t(nextRev !== undefined ? 'Upload Update' : 'Upload New'),
         icon: 'upload',
-        action: (instanceIds: string[]) => onUpload(instanceIds[0]),
+        action: (instanceIds: string[]) => this.invoke(onUpload, instanceIds),
         condition: () => {
           const refMods: types.IModRule[] = (collection.rules ?? [])
             .filter(rule => ['requires', 'recommends'].includes(rule.type));
@@ -384,7 +390,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
   }
 
   private renderMenu(refMods: types.IModRule[], totalSize: number): JSX.Element[] {
-    const { t, collection, onEdit } = this.props;
+    const { t, collection } = this.props;
 
     return [(
       <div key='primary-buttons' className='hover-content'>
