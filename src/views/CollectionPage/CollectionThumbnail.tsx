@@ -218,7 +218,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
             srcs={this.imageURLs(collection)}
             circle={false}
           />
-          <div className='gradient' />
+          {(details !== false) ? <div className='gradient' /> : null}
           {(details === true) ? (
             <CollectionReleaseStatus
               t={t}
