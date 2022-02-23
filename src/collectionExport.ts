@@ -11,6 +11,8 @@ import * as path from 'path';
 import { dir as tmpDir } from 'tmp';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 
+import { getEnabledTweaks } from './initweaks';
+
 async function withTmpDir(cb: (tmpPath: string) => Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     tmpDir((err, tmpPath, cleanup) => {
@@ -63,10 +65,12 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
 
   const stagingPath = selectors.installPath(state);
   const modPath = path.join(stagingPath, mod.installationPath);
-
   try {
-    await fs.copyAsync(path.join(modPath, 'INI Tweaks'),
-                       path.join(outputPath, 'INI Tweaks'));
+    const tweaks = await getEnabledTweaks(modPath, mod);
+    for (const tweak of tweaks) {
+      await fs.copyAsync(path.join(modPath, 'INI Tweaks', tweak),
+                       path.join(outputPath, 'INI Tweaks', tweak));
+    }
   } catch (err) {
     if (err.code !== 'ENOENT') {
       throw err;
