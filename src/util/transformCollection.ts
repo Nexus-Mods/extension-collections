@@ -261,7 +261,9 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
         source,
         hashes,
         choices,
-        instructions: collectionInfo.instructions?.[mod.id],
+        instructions: !!collectionInfo.instructions?.[mod.id]
+          ? collectionInfo.instructions?.[mod.id]
+          : undefined,
         author: mod.attributes?.author,
         details: {
           category: util.resolveCategoryName(mod.attributes?.category, state),
@@ -498,7 +500,9 @@ export function collectionModToRule(knownGames: types.IGameStored[],
       version: mod.version,
       url: mod.source.url,
       name: mod.name,
-      instructions: mod.instructions,
+      instructions: !!mod.instructions
+        ? mod.instructions
+        : undefined,
       phase: mod.phase ?? 0,
     },
   } as any;
