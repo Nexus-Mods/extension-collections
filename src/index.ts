@@ -529,8 +529,12 @@ function register(context: types.IExtensionContext,
     if ((driver?.collection !== undefined) && notification.id.startsWith('multiple-plugins-')) {
       // reference tags may be updated during installation, so we need to get the
       // updated collection if necessary
-      collection = state.persistent.mods[driver.profile.gameId]?.[driver.collection.id]
-                ?? driver.collection;
+      if (driver.profile !== undefined) {
+        collection = state.persistent.mods[driver.profile.gameId]?.[driver.collection.id]
+                  ?? driver.collection;
+      } else {
+        collection = driver.collection;
+      }
     }
 
     if ((collection?.rules ?? []).find(ruleMatches) !== undefined) {
