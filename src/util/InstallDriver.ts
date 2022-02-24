@@ -294,36 +294,38 @@ class InstallDriver {
       // dependency installation
       this.mCollection = mods[modId];
 
-      if (!recommendations) {
-        const filter = rule =>
-          (rule.type === 'requires')
-          && (rule['ignored'] !== true)
-          && (util.findModByRef(rule.reference, mods) === undefined);
+      if (this.mCollection !== undefined) {
+        if (!recommendations) {
+          const filter = rule =>
+            (rule.type === 'requires')
+            && (rule['ignored'] !== true)
+            && (util.findModByRef(rule.reference, mods) === undefined);
 
-        const incomplete = this.mCollection.rules.find(filter);
-        if (incomplete === undefined) {
-          await this.initCollectionInfo();
-          this.mStep = 'review';
+          const incomplete = this.mCollection.rules.find(filter);
+          if (incomplete === undefined) {
+            await this.initCollectionInfo();
+            this.mStep = 'review';
+          } else {
+            this.mInstallDone = true;
+            this.mInstallingMod = undefined;
+          }
+          this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
+          this.triggerUpdate();
         } else {
-          this.mInstallDone = true;
-          this.mInstallingMod = undefined;
-        }
-        this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
-        this.triggerUpdate();
-      } else {
-        // We finished installing optional mods for the current collection - reset everything.
-        const filter = rule =>
-          (['requires', 'recommends'].includes(rule.type))
-          && (rule['ignored'] !== true)
-          && (util.findModByRef(rule.reference, mods) === undefined);
+          // We finished installing optional mods for the current collection - reset everything.
+          const filter = rule =>
+            (['requires', 'recommends'].includes(rule.type))
+            && (rule['ignored'] !== true)
+            && (util.findModByRef(rule.reference, mods) === undefined);
 
-        const incomplete = this.mCollection.rules.find(filter);
-        if (incomplete === undefined) {
-          // revisit review screen
-          await this.initCollectionInfo();
-          this.mStep = 'review';
-        } else {
-          this.onStop();
+          const incomplete = this.mCollection.rules.find(filter);
+          if (incomplete === undefined) {
+            // revisit review screen
+            await this.initCollectionInfo();
+            this.mStep = 'review';
+          } else {
+            this.onStop();
+          }
         }
       }
     }
