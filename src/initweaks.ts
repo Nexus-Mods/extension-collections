@@ -6,7 +6,7 @@ import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { IINITweak, TweakArray } from './types/IINITweak';
 import TweakList from './views/IniTweaks';
 
-import { INI_TWEAKS_PATH, MOD_TYPE, OPTIONAL_TWEAK_PREFIX } from './constants';
+import { INI_TWEAKS_PATH, OPTIONAL_TWEAK_PREFIX } from './constants';
 
 const gameSupport = {
     skyrim: {
@@ -79,21 +79,6 @@ async function getTweaks(dirPath: string): Promise<string[]> {
   } catch (err) {
     log('debug', 'failed to find tweaks', err);
     return [];
-  }
-}
-
-export async function getEnabledTweaks(modPath: string,
-                                       mod: types.IMod): Promise<string[]> {
-  const tweakPath = path.join(modPath, INI_TWEAKS_PATH);
-  const tweaks = await getTweaks(tweakPath);
-  if (mod.type === MOD_TYPE) {
-    return tweaks.reduce((accum, fileName) => {
-      const modTweaks = util.getSafe(mod, ['enabledINITweaks'], []).map(name => name.toLowerCase());
-      if (modTweaks.includes(fileName.toLowerCase())) {
-        accum.push(fileName)
-      }
-      return accum;
-    }, []);
   }
 }
 
