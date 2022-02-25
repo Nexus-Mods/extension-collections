@@ -7,7 +7,7 @@ import { Icon, RadialProgress, types } from 'vortex-api';
 interface ICollectionItemStatusProps {
   t: i18next.TFunction;
   mod: IModEx;
-  download: types.IDownload;
+  download?: types.IDownload;
   notifications: types.INotification[];
   container: Element;
   installing: boolean;
@@ -60,13 +60,13 @@ class CollectionItemStatus extends React.Component<ICollectionItemStatusProps, {
         </div>
       );
     } else if (mod.state === 'downloading') {
-      if (download.state === 'paused') {
+      if (download?.state === 'paused') {
         return (
           <div className='collection-status-paused'>
             <Icon name='pause'/>{t('Download paused')}
           </div>
         );
-      } else if (download.state === 'failed') {
+      } else if (download?.state === 'failed') {
         return (
           <div className='collection-status-failed'>
             <Icon name='warning' />{t('Download failed')}
