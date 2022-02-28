@@ -34,7 +34,6 @@ export interface IBaseProps {
 }
 
 interface IConnectedProps {
-  stagingPath: string;
   profile: types.IProfile;
 }
 
@@ -421,7 +420,6 @@ const emptyObj = {};
 
 function mapStateToProps(state: types.IState, ownProps: IBaseProps): IConnectedProps {
   return {
-    stagingPath: selectors.installPathForGame(state, ownProps.gameId),
     profile: selectors.activeProfile(state),
   };
 }
