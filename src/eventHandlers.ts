@@ -162,7 +162,9 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
       cb, { incomplete: true, ignoreInstalling: true }));
   } catch (err) {
     if (!(err instanceof util.UserCanceled)) {
-      api.showErrorNotification('Failed to download collection', err);
+      api.showErrorNotification('Failed to download collection', err, {
+        allowReport: !(err instanceof util.ProcessCanceled),
+      });
     }
   }
 }
