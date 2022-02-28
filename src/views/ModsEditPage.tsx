@@ -35,6 +35,7 @@ type ProblemType = 'invalid-ids'
                  | 'choices-fuzzy-version'
                  | 'bundled-fuzzy-version'
                  | 'web-fuzzy-version'
+                 | 'web-url-missing'
                  | 'bundle-copyright'
                  | 'direct-download'
                  | 'installer-choices-not-saved'
@@ -768,14 +769,15 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
 
     const res: IProblem[] = [];
 
-    const source: string =
-      collection.attributes?.collection?.source?.[entry.mod.id]?.type ?? 'nexus';
-    const installMode: string =
-      collection?.attributes?.collection?.installMode?.[entry.mod.id] ?? 'fresh';
+    const attributes = collection.attributes?.collection;
+
+    const source = attributes?.source?.[entry.mod.id];
+    const sourceType: string = source?.type ?? 'nexus';
+    const installMode: string = attributes?.installMode?.[entry.mod.id] ?? 'fresh';
 
     const { versionMatch } = entry.rule.reference;
 
-    if ((source === 'nexus')
+    if ((sourceType === 'nexus')
         && (isNaN(parseInt(entry.mod.attributes?.modId, 10))
             || isNaN(parseInt(entry.mod.attributes?.fileId, 10)))) {
       res.push({
@@ -808,7 +810,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       });
     }
 
-    if ((source === 'bundle')
+    if ((sourceType === 'bundle')
         && ((versionMatch === '*') || versionMatch?.endsWith?.('+prefer'))) {
       res.push({
         type: 'bundled-fuzzy-version',
@@ -816,19 +818,29 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         message: t('If you bundle a mod the user gets exactly the version of the mod you '
                  + 'have, the Version selection is pointless in this case.'),
       });
-    } else if (['browse', 'direct'].includes(source)
-               && versionMatch?.endsWith?.('+prefer')) {
-      res.push({
-        type: 'web-fuzzy-version',
-        summary: t('Version choice has no effect on mods using generic download.'),
-        message: t('The option to "prefer exact version" only works with sources that '
-                 + 'support mod updates (Nexus Mods). For other sources your options '
-                 + 'are to use the exact same version you have locally or to accept whatever '
-                 + 'version the user downloads.'),
-      });
+    } else if (['browse', 'direct'].includes(sourceType)) {
+      if (versionMatch?.endsWith?.('+prefer')) {
+        res.push({
+          type: 'web-fuzzy-version',
+          summary: t('Version choice has no effect on mods using generic download.'),
+          message: t('The option to "prefer exact version" only works with sources that '
+                   + 'support mod updates (Nexus Mods). For other sources your options '
+                   + 'are to use the exact same version you have locally or to accept whatever '
+                   + 'version the user downloads.'),
+        });
+      }
+
+      if (!source.url) {
+        res.push({
+          type: 'web-url-missing',
+          summary: t('No URL set'),
+          message: t('The sources "Browse a website" and "Direct download" require that '
+                     + 'you provide a URL to download from.'),
+        });
+      }
     }
 
-    if (source === 'bundle') {
+    if (sourceType === 'bundle') {
       res.push({
         type: 'bundle-copyright',
         summary: t('Only bundle mods you have the right to do so'),
@@ -836,7 +848,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                  + 'have the right to do so, e.g. if it\'s dynamically generated content '
                  + 'or if it\'s your own mod.'),
       });
-    } else if (source === 'direct') {
+    } else if (sourceType === 'direct') {
       res.push({
         type: 'direct-download',
         summary: t('Please verify you are allowed to do direct download on this site'),

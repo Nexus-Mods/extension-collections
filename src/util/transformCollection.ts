@@ -80,6 +80,10 @@ function deduceSource(mod: types.IMod,
     assign(res, 'adultContent', sourceInfo?.adultContent);
   }
 
+  if (['browse', 'direct'].includes(res.type) && !res.url) {
+    throw new Error(`"${mod.id}" has no URL set`);
+  }
+
   // since we store bundled mods uncompressed the md5 hash won't be the same
   if (sourceInfo?.type !== 'bundle') {
     assign(res, 'md5', mod.attributes?.fileMD5);
