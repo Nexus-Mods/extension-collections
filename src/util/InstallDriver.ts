@@ -285,9 +285,11 @@ class InstallDriver {
   private async onDidInstallDependencies(gameId: string,
                                          modId: string,
                                          recommendations: boolean) {
-    log('info', 'did install dependencies', { gameId, modId });
-
     const mods = this.mApi.getState().persistent.mods[gameId];
+
+    if (mods[modId]?.type === MOD_TYPE) {
+      log('info', 'did install dependencies', { gameId, modId });
+    }
 
     if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
       // update the stored collection because it might have been updated as part of the
