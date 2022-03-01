@@ -39,7 +39,9 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   }, [driver]);
 
   const skip = React.useCallback(() => {
-    driver.continue();
+    if (driver.collection !== undefined) {
+      driver.continue();
+    }
   }, [driver]);
 
   const showOptionals = React.useCallback(() => {

@@ -250,6 +250,9 @@ class InstallDriver {
   }
 
   public canContinue() {
+    if (this.mCollection === undefined) {
+      return false;
+    }
     if (this.mStep === 'installing') {
       return this.mInstallDone;
     } else if (this.mStep === 'disclaimer') {
