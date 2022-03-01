@@ -306,7 +306,7 @@ class InstallDriver {
             && (rule['ignored'] !== true)
             && (util.findModByRef(rule.reference, mods) === undefined);
 
-          const incomplete = this.mCollection.rules.find(filter);
+          const incomplete = (this.mCollection.rules ?? []).find(filter);
           if (incomplete === undefined) {
             await this.initCollectionInfo();
             this.mStep = 'review';
@@ -323,7 +323,7 @@ class InstallDriver {
             && (rule['ignored'] !== true)
             && (util.findModByRef(rule.reference, mods) === undefined);
 
-          const incomplete = this.mCollection.rules.find(filter);
+          const incomplete = (this.mCollection.rules ?? []).find(filter);
           if (incomplete === undefined) {
             // revisit review screen
             await this.initCollectionInfo();
