@@ -617,7 +617,7 @@ function createRulesFromProfile(profile: types.IProfile,
                   && (modId !== existingId)
                   // no nested collections allowed
                   && (mods[modId].type !== MOD_TYPE)
-                  && (mods[modId].attributes['generated'] !== true))
+                  && (mods[modId].attributes?.['generated'] !== true))
     .map(modId => {
       // don't forget what we set up regarding version matching
       let versionMatch: string;
