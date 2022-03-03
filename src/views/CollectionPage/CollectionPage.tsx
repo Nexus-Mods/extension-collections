@@ -22,7 +22,7 @@ import ReactDOM = require('react-dom');
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import * as semver from 'semver';
-import { actions, ComponentEx, FlexLayout, ITableRowAction, OptionsFilter, Table,
+import { actions, ComponentEx, FlexLayout, ITableRowAction, log, OptionsFilter, Table,
          TableTextFilter, tooltip, types, util } from 'vortex-api';
 
 export interface ICollectionPageProps {
@@ -341,7 +341,14 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     if (((revisionId !== undefined) || (collectionSlug !== undefined))
         && (userInfo !== undefined)) {
       const { infoCache } = this.props.driver;
-      await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+      try {
+        await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+      } catch (err) {
+        log('error', 'failed to get remote info for revision', {
+          revisionId, collectionSlug, revisionNumber,
+          error: err.message,
+        });
+      }
     }
 
     const modsEx = this.initModsEx(this.props);
@@ -359,8 +366,15 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       const { attributes } = collection;
       const { revisionId, collectionSlug, revisionNumber } = attributes ?? {};
       if ((revisionId !== undefined) || (collectionSlug !== undefined)) {
-        await
-          this.props.driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+        try {
+          await this.props.driver.infoCache.getRevisionInfo(
+            revisionId, collectionSlug, revisionNumber);
+        } catch (err) {
+          log('error', 'failed to get remote info for revision', {
+            revisionId, collectionSlug, revisionNumber,
+            error: err.message,
+          });
+        }
       }
     }
   }

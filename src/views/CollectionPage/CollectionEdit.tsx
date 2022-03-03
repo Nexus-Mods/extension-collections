@@ -18,7 +18,7 @@ import { Badge, Panel, Tab, Tabs } from 'react-bootstrap';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
+import { actions, ComponentEx, FlexLayout, log, tooltip, types, util } from 'vortex-api';
 
 const INIT_PAGE = 'mods';
 
@@ -240,8 +240,15 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       const { revisionId, collectionSlug, revisionNumber } = collection.attributes ?? {};
 
       if ((revisionId !== undefined) || (collectionSlug !== undefined)) {
-        this.nextState.revision = (await this.props.driver.infoCache.getRevisionInfo(
-            revisionId, collectionSlug, revisionNumber)) ?? undefined;
+        try {
+          this.nextState.revision = (await this.props.driver.infoCache.getRevisionInfo(
+              revisionId, collectionSlug, revisionNumber)) ?? undefined;
+        } catch (err) {
+          log('error', 'failed to get remote info for revision', {
+            revisionId, collectionSlug, revisionNumber,
+            error: err.message,
+          });
+        }
       }
     }
   }

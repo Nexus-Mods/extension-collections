@@ -7,7 +7,7 @@ import { FormControl, FormGroup, Image as BSImage, Panel } from 'react-bootstrap
 import { TFunction } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
+import { actions, Icon, IconBar, Image, log, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import InfoCache from '../../util/InfoCache';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
@@ -129,11 +129,18 @@ function SuccessRating(props: ISuccessRatingProps) {
 
   React.useEffect(() => {
     (async () => {
-      const rev = await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
-      if ((rev?.rating?.total ?? 0) < 3) {
-        setRating(undefined);
-      } else {
-        setRating(rev.rating.average);
+      try {
+        const rev = await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+        if ((rev?.rating?.total ?? 0) < 3) {
+          setRating(undefined);
+        } else {
+          setRating(rev.rating.average);
+        }
+      } catch (err) {
+        log('error', 'failed to get remote info for revision', {
+          revisionId, collectionSlug, revisionNumber,
+          error: err.message,
+        });
       }
     })();
   }, [revisionId]);

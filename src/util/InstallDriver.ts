@@ -419,8 +419,13 @@ class InstallDriver {
     const revisionId = this.revisionId;
 
     if (revisionId !== undefined) {
-      this.mRevisionInfo = nexusInfo?.revisionInfo
-        ?? await this.mInfoCache.getRevisionInfo(revisionId, slug, this.revisionNumber);
+      try {
+        this.mRevisionInfo = nexusInfo?.revisionInfo
+          ?? await this.mInfoCache.getRevisionInfo(revisionId, slug, this.revisionNumber);
+      } catch (err) {
+        log('error', 'failed to get remote info for revision', {
+          revisionId, slug, revisionNumber: this.revisionNumber, error: err.message });
+      }
     }
 
     const gameMode = profile.gameId;
