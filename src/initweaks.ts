@@ -13,16 +13,16 @@ const gameSupport = {
         gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
     },
     skyrimse: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
+        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini', 'SkyrimCustom.ini'],
     },
     skyrimvr: {
         gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
     },
     fallout3: {
-        gameSettingsFiles: ['Fallout.ini'],
+        gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini', 'FalloutCustom.ini'],
     },
     fallout4: {
-        gameSettingsFiles: ['Fallout4.ini', 'Fallout4Prefs.ini'],
+        gameSettingsFiles: ['Fallout4.ini', 'Fallout4Prefs.ini', 'Fallout4Custom.ini'],
     },
     fallout4vr: {
         gameSettingsFiles: ['Fallout4Custom.ini', 'Fallout4Prefs.ini'],
