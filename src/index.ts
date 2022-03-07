@@ -454,7 +454,7 @@ function register(context: types.IExtensionContext,
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
       const profile: types.IProfile = selectors.activeProfile(stateFunc());
-      context.api.events.emit('install-recommendations', profile.id, modIds);
+      context.api.events.emit('install-recommendations', profile.id, profile.gameId, modIds);
     }, (modIds: string[]) => {
       const gameMode = selectors.activeGameId(stateFunc());
       const mod = stateFunc().persistent.mods[gameMode][modIds[0]];

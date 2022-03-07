@@ -512,7 +512,8 @@ class InstallDriver {
       return;
     }
 
-    this.mApi.events.emit('install-dependencies', this.mProfile.id, [this.mCollection.id], true);
+    this.mApi.events.emit('install-dependencies',
+      this.mProfile.id, this.mProfile.gameId, [this.mCollection.id], true);
     // skipping disclaimer for now
     this.mStep = 'installing';
   }
