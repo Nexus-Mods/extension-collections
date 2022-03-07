@@ -75,7 +75,7 @@ class InfoCache {
       return this.mCacheRevRequests[revisionId];
     }
 
-    if (revisions[revisionId].info === null) {
+    if (!(revisions[revisionId]?.info?.collection)) {
       return Promise.resolve(undefined);
     }
 
