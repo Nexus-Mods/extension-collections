@@ -1,18 +1,74 @@
-import { NEXUS_NEXT_URL } from '../../constants';
-import { IModEx } from '../../types/IModEx';
-import CollectionModDetails from './CollectionModDetails';
 import CollectionReleaseStatus from './CollectionReleaseStatus';
 import CollectionThumbnail from './CollectionThumbnail';
-import SlideshowControls from './SlideshowControls';
 
 import HealthIndicator from '../HealthIndicator';
 
-import { ICollectionRevisionMod, IRevision, RatingOptions } from '@nexusmods/nexus-api';
+import {
+  ICollection,
+  IRevision, RatingOptions,
+} from '@nexusmods/nexus-api';
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
-import { Media, Panel } from 'react-bootstrap';
-import { ActionDropdown, ComponentEx, FlexLayout, tooltip, types, util } from 'vortex-api';
+import { Image as BSImage, Media, Panel } from 'react-bootstrap';
+import { ActionDropdown, ComponentEx, FlexLayout, Image, MainContext, tooltip, types, util } from 'vortex-api';
+
+const ENDORSE_DELAY_MS = 12 * 60 * 60 * 1000;
+
+interface IEndorseButtonProps {
+  t: types.TFunction;
+  mod: types.IMod;
+  collection: ICollection;
+  gameId: string;
+}
+
+function EndorseButton(props: IEndorseButtonProps) {
+  const { t, collection, gameId, mod } = props;
+
+  const context = React.useContext(MainContext);
+
+  const endorse = React.useCallback(() => {
+    context.api.events.emit('endorse-mod', gameId, mod.id, 'endorse');
+  }, []);
+
+  const timeSinceInstall = Date.now() - (new Date(mod.attributes?.installTime ?? 0)).getTime();
+
+  return (
+    <tooltip.IconButton
+      icon='endorse-yes'
+      tooltip={t('Endorse collection')}
+      className='collection-ghost-button'
+      onClick={endorse}
+      disabled={timeSinceInstall < ENDORSE_DELAY_MS}
+    >
+      {collection?.endorsements ?? '?'}
+    </tooltip.IconButton>
+  );
+}
+
+interface ICommentButtonProps {
+  t: types.TFunction;
+  collection: ICollection;
+}
+
+function CommentButton(props: ICommentButtonProps) {
+  const { t, collection } = props;
+
+  const click = React.useCallback(() => {
+    util.opn(collection['commentLink']);
+  }, [collection]);
+
+  return (
+    <tooltip.IconButton
+      icon='comments'
+      className='collection-ghost-button'
+      tooltip={t('Comments')}
+      onClick={click}
+    >
+      {collection.forumTopic?.postsCount ?? 0}
+    </tooltip.IconButton>
+  );
+}
 
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
@@ -23,10 +79,8 @@ interface ICollectionOverviewProps {
   revision: IRevision;
   votedSuccess: RatingOptions;
   incomplete: boolean;
-  modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
   onSetEnabled: (enable: boolean) => void;
   onShowMods: () => void;
-  onDeselectMods?: () => void;
   onClose?: () => void;
   onClone?: (collectionId: string) => void;
   onRemove?: (collectionId: string) => void;
@@ -88,22 +142,9 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   }
 
   public render(): JSX.Element {
-    const { t, collection, incomplete, modSelection, profile, revision, votedSuccess } = this.props;
-
-    let { selIdx } = this.state;
-    if (selIdx >= modSelection.length) {
-      selIdx = 0;
-    }
-
-    const depRules = (collection.rules || [])
-      .filter(rule => ['requires', 'recommends'].includes(rule.type));
-
-    const modDetails = modSelection.length > 0;
+    const { t, collection, incomplete, profile, revision, votedSuccess } = this.props;
 
     const classes = ['collection-overview'];
-    if (modDetails) {
-      classes.push('collection-mod-selection');
-    }
 
     return (
       <Panel className={classes.join(' ')}>
@@ -132,23 +173,6 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                     incomplete={incomplete}
                   />
                   <div className='flex-filler'/>
-                  {modSelection.length > 1 ? (
-                    <>
-                      <SlideshowControls
-                        t={t}
-                        numItems={modSelection.length}
-                        onChangeItem={this.setSelection}
-                        autoProgressTimeMS={5000}
-                      />
-                      <div className='flex-filler'/>
-                      <tooltip.IconButton
-                        className='btn-embed'
-                        tooltip={t('Deselects mods')}
-                        icon='close'
-                        onClick={this.props.onDeselectMods}
-                      />
-                    </>
-                  ) : null}
                 </div>
               </FlexLayout.Fixed>
               <FlexLayout.Flex className='collection-description-container'>
@@ -156,68 +180,87 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                   {collection.attributes?.shortDescription ?? t('No description')}
                 </div>
               </FlexLayout.Flex>
-              <FlexLayout.Flex>
-                {
-                  modDetails ? (
-                    <CollectionModDetails
-                      t={t}
-                      local={modSelection[selIdx]?.local}
-                      remote={modSelection[selIdx]?.remote}
-                      gameId={profile.gameId}
-                    />
-                  ) : (
-                    null
-                  )
-                }
-              </FlexLayout.Flex>
               <FlexLayout.Fixed className='collection-page-detail-bar'>
                 <FlexLayout type='row'>
+                  <FlexLayout.Fixed className='collection-detail-cell '>
+                    <FlexLayout type='row'>
+                      <Image
+                        srcs={[
+                          collection.attributes?.uploaderAvatar ?? 'assets/images/noavatar.png',
+                        ]}
+                        circle
+                      />
+                      <div>
+                        <div className='title'>{t('Curated')}</div>
+                        <div>{collection.attributes?.uploader}</div>
+                      </div>
+                    </FlexLayout>
+                  </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
-                    <div className='title'>{t('Uploaded')}</div>
-                    <div>{this.renderTime(collection.attributes?.uploadedTimestamp)}</div>
+                    <div className='title'>{t('Revision')}</div>
+                    <div>{collection.attributes?.revisionNumber}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Last updated')}</div>
                     <div>{this.renderTime(collection.attributes?.updatedTimestamp)}</div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
+                    <div className='title'>{t('Uploaded')}</div>
+                    <div>{this.renderTime(collection.attributes?.uploadedTimestamp)}</div>
+                  </FlexLayout.Fixed>
+                  {/*
+                  <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Mods')}</div>
                     <div>{depRules.length}</div>
+                  </FlexLayout.Fixed>
+                  */}
+                  <FlexLayout.Fixed>
+                    <EndorseButton
+                      t={t}
+                      collection={revision.collection}
+                      mod={collection}
+                      gameId={profile.gameId}
+                    />
+                  </FlexLayout.Fixed>
+                  <FlexLayout.Fixed>
+                    <CommentButton t={t} collection={revision.collection} />
                   </FlexLayout.Fixed>
                   <FlexLayout.Flex>
                     <div />
                   </FlexLayout.Flex>
-                  <FlexLayout.Fixed>
-                    {(revision?.revisionStatus !== 'is_private') ? (
-                      <HealthIndicator
-                        t={t}
-                        revisionNumber={revision?.revision ?? 0}
-                        value={revision?.rating}
-                        onVoteSuccess={this.voteSuccess}
-                        ownSuccess={votedSuccess}
-                      />
-                    ) : null}
-                  </FlexLayout.Fixed>
-                  <FlexLayout.Fixed>
+                </FlexLayout>
+              </FlexLayout.Fixed>
+            </FlexLayout>
+          </Media.Body>
+          <Media.Right>
+            <div className='collection-health-container'>
+              <FlexLayout type='column'>
+                <FlexLayout.Fixed>
+                  {(revision?.revisionStatus !== 'is_private') ? (
+                    <HealthIndicator
+                      t={t}
+                      revisionNumber={revision?.revision ?? 0}
+                      value={revision?.rating}
+                      onVoteSuccess={this.voteSuccess}
+                      ownSuccess={votedSuccess}
+                    />
+                  ) : null}
+                </FlexLayout.Fixed>
+                <FlexLayout.Flex>
+                  <div className='collection-workshop-actions'>
                     <ActionDropdown
                       t={t}
                       id='collection-workshop-actions'
                       staticElements={this.mWorkshopActions}
                     />
-                  </FlexLayout.Fixed>
-                </FlexLayout>
-              </FlexLayout.Fixed>
-            </FlexLayout>
-          </Media.Body>
+                  </div>
+                </FlexLayout.Flex>
+              </FlexLayout>
+            </div>
+          </Media.Right>
         </Media>
       </Panel>
     );
-  }
-
-  private setSelection = (idx: number) => {
-    this.nextState.selIdx = (this.props.modSelection.length === 0)
-      ? 0
-      : idx % this.props.modSelection.length;
   }
 
   private enable = () => {

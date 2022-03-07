@@ -51,8 +51,16 @@ function CollectionModDetails(props: ICollectionModDetails) {
   }, [uploaderId]);
 
   return (
-    <Panel className='installing-mod-overview'>
+    <div className='installing-mod-overview'>
       <FlexLayout type='row'>
+        <FlexLayout.Fixed className='collection-mod-detail-imagecontainer'>
+          {(image)
+            ? <ZoomableImage
+              className='installing-mod-image'
+              url={image}
+            />
+            : null}
+        </FlexLayout.Fixed>
         <FlexLayout.Flex fill>
           <FlexLayout type='column'>
             <FlexLayout.Fixed>
@@ -70,6 +78,11 @@ function CollectionModDetails(props: ICollectionModDetails) {
                 ) : null}
               </FlexLayout>
             </FlexLayout.Fixed>
+            <FlexLayout.Flex>
+              <div className='collection-description'>
+                {util.bbcodeToReact(description)}
+              </div>
+            </FlexLayout.Flex>
             <FlexLayout.Fixed>
               <FlexLayout type='row'>
                 <FlexLayout.Fixed className='collection-detail-cell'>
@@ -96,23 +109,10 @@ function CollectionModDetails(props: ICollectionModDetails) {
                 </FlexLayout.Fixed>
               </FlexLayout>
             </FlexLayout.Fixed>
-            <FlexLayout.Flex>
-              <div className='collection-description'>
-                {util.bbcodeToReact(description)}
-              </div>
-            </FlexLayout.Flex>
           </FlexLayout>
         </FlexLayout.Flex>
-        <FlexLayout.Fixed className='collection-mod-detail-imagecontainer'>
-          {(image)
-            ? <ZoomableImage
-              className='installing-mod-image'
-              url={image}
-            />
-            : null}
-        </FlexLayout.Fixed>
       </FlexLayout>
-    </Panel>
+    </div>
   );
 }
 

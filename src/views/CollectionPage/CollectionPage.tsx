@@ -9,6 +9,7 @@ import { modRuleId } from '../../util/util';
 
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
+import CollectionOverviewSelection from './CollectionOverviewSelection';
 import CollectionProgress from './CollectionProgress';
 
 import { ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nexusmods/nexus-api';
@@ -424,29 +425,42 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       this.mInstalling = undefined;
     }
 
+    const selection = ((this.mInstalling && (driver.collectionInfo !== undefined))
+      ? revisionInfo?.modFiles?.map?.(file => ({ local: undefined, remote: file }))
+      : modSelection) ?? [];
+
     return (
       <FlexLayout type='column' className={className}>
         <FlexLayout.Fixed className='collection-overview-panel'>
-            <CollectionOverview
-              t={t}
-              language={language}
-              profile={profile}
-              collection={collection}
-              totalSize={totalSize}
-              revision={this.revisionMerged(collectionInfo, revisionInfo)}
-              votedSuccess={votedSuccess}
-              onSetEnabled={this.setEnabled}
-              onShowMods={this.showMods}
-              onClose={this.close}
-              onClone={this.clone}
-              onRemove={this.remove}
-              onVoteSuccess={onVoteSuccess}
-              onDeselectMods={this.unselectMods}
-              incomplete={incomplete}
-              modSelection={((this.mInstalling && (driver.collectionInfo !== undefined))
-                ? revisionInfo?.modFiles?.map?.(file => ({ local: undefined, remote: file }))
-                : modSelection) ?? []}
-            />
+          {(selection.length > 0)
+            ? (
+              <CollectionOverviewSelection
+                t={t}
+                profile={profile}
+                collection={collection}
+                onDeselectMods={this.unselectMods}
+                incomplete={incomplete}
+                modSelection={selection}
+              />
+            )
+            : (
+              <CollectionOverview
+                t={t}
+                language={language}
+                profile={profile}
+                collection={collection}
+                totalSize={totalSize}
+                revision={this.revisionMerged(collectionInfo, revisionInfo)}
+                votedSuccess={votedSuccess}
+                onSetEnabled={this.setEnabled}
+                onShowMods={this.showMods}
+                onClose={this.close}
+                onClone={this.clone}
+                onRemove={this.remove}
+                onVoteSuccess={onVoteSuccess}
+                incomplete={incomplete}
+              />
+            )}
         </FlexLayout.Fixed>
         <FlexLayout.Flex className='collection-mods-panel'>
           <Panel ref={this.setTableContainerRef}>

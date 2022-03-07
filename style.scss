@@ -1,8 +1,10 @@
 $border-radius: 4px;
 $collection-thumbnail-width: 230px;
 $collection-thumbnail-height: 288px;
+$collection-thumbnail-compact-width: 165px;
+$collection-thumbnail-compact-height: 206px;
 $collection-mod-image-width: 360px;
-$collection-mod-image-height: 200px;
+$collection-mod-image-height: 122px;
 
 #table-collection-mods .header-name {
   p {
@@ -276,6 +278,10 @@ $collection-mod-image-height: 200px;
 ul.collection-mods-page-attrib-tooltip {
   padding-inline-start: 1em;
   margin-bottom: 0;
+}
+
+.collection-description {
+  width: 60em;
 }
 
 .collection-description-popover {
@@ -586,6 +592,8 @@ ul.collection-mods-page-attrib-tooltip {
 
   .collection-thumbnail.panel {
     margin: $half-gutter;
+    width: $collection-thumbnail-width;
+    height: $collection-thumbnail-height;
   }
 
   .collection-thumbnail-body {
@@ -626,10 +634,6 @@ ul.collection-mods-page-attrib-tooltip {
 .collection-detail-cell {
   padding: 0 0.5em;
 
-  &:not(:first-child) {
-    border-left: 1px solid $gray-light;
-  }
-
   img {
     width: 32px;
     height: 32px;
@@ -642,14 +646,25 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
+.collection-ghost-button {
+  border: 1px solid $border-color;
+  border-radius: 26px;
+  padding: 0.5em 1em;
+  background-color: transparent;
+}
+
 .collection-overview.panel {
   overflow: hidden;
-  padding-right: 1em;
   padding: $half-gutter;
-  height: calc(#{$collection-thumbnail-height} + #{$gutter-width} + 2 * #{$border-width});
+  border: 0px;
+  border-top: 1px solid $border-color;
+  height: calc(#{$collection-thumbnail-compact-height} + #{$gutter-width} + 2 * #{$border-width});
+  background-color: transparent;
 
   .panel {
     border: none;
+    width: unset;
+    height: 100%;
   }
 
   .media {
@@ -662,22 +677,16 @@ ul.collection-mods-page-attrib-tooltip {
   }
 
   .collection-thumbnail {
-    margin: 0 $half-gutter;
-    // max-width: $collection-thumbnail-width;
-    // max-height: 100%;
-    // width: auto;
-    // height: auto;
-    // width: auto;
 
     .thumbnail-img {
       transition: max-width 500ms, max-height 500ms;
-      max-width: $collection-thumbnail-width !important;
-      max-height: $collection-thumbnail-height !important;
+      max-width: $collection-thumbnail-compact-width !important;
+      max-height: $collection-thumbnail-compact-height !important;
     }
   }
 
   &.collection-mod-selection {
-    height: calc(#{$collection-mod-image-height} + #{$gutter-width} + 2 * #{$border-width});
+    height: calc(#{$collection-thumbnail-compact-height} + #{$gutter-width} + 2 * #{$border-width});
 
    .collection-thumbnail {
       max-width: calc(#{$collection-thumbnail-width} / 2) !important;
@@ -686,11 +695,6 @@ ul.collection-mods-page-attrib-tooltip {
         max-width: calc(#{$collection-thumbnail-width} / 2) !important;
         max-height: calc(#{$collection-thumbnail-height} / 2) !important;
       }
-    }
-
-    .installing-mod-image .zoomable-image {
-      max-width: $collection-mod-image-width;
-      max-height: $collection-mod-image-height;
     }
 
     .collection-page-detail-bar {
@@ -723,7 +727,13 @@ ul.collection-mods-page-attrib-tooltip {
   margin-right: 0.5em;
 }
 
-.installing-mod-overview.panel {
+.installing-mod-overview {
+  height: 100%;
+
+  > .layout-container {
+    gap: 1em;
+  }
+
   .installing-mod-title {
     @extend .h3;
   }
@@ -741,6 +751,11 @@ ul.collection-mods-page-attrib-tooltip {
     max-height: 100%;
     width: auto;
     height: auto;
+
+    .zoomable-image {
+      max-width: $collection-mod-image-width;
+      max-height: $collection-mod-image-height;
+    }
   }
 
   .collection-open-mod-in-browser {
@@ -780,7 +795,6 @@ ul.collection-mods-page-attrib-tooltip {
     }
   }
 
-  .collection-overview-panel,
   .collection-mods-panel-outer {
     padding: $half-gutter;
   }
@@ -884,7 +898,7 @@ ul.collection-mods-page-attrib-tooltip {
 
 .collection-premium-banner {
   padding: $half-gutter;
-  width: 25em;
+  width: 20em;
   height: 100%;
 
   > .layout-container {
@@ -1046,6 +1060,31 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
+.collection-health-container {
+  width: 20em;
+  height: 100%;
+
+  .collection-workshop-actions {
+    height: 100%;
+    display: flex;
+    align-items: center;
+
+    .dropdown {
+      display: flex;
+      width: 100%;
+
+      svg {
+        margin-right: 0.5em;
+      }
+
+      > :first-child {
+        flex: 1 1 0;
+        text-align: left;
+      }
+    }
+  }
+}
+
 .collection-health-indicator {
   .icon-button {
     @extend .btn-embed;
@@ -1059,7 +1098,9 @@ ul.collection-mods-page-attrib-tooltip {
   margin-bottom: auto;
   height: auto !important;
   border: $border-width solid $border-color;
-  padding: 0.5em;
+  background-color: $brand-bg;
+  border-radius: 4px;
+  overflow: hidden;
 
   .icon-revision, .icon-health {
     margin-right: 0.5em;
@@ -1069,8 +1110,62 @@ ul.collection-mods-page-attrib-tooltip {
     padding: 0 1em;
   }
 
-  > :not(:last-child) {
-    border-right: 1px solid $border-color;
+  .collection-health-header {
+    background-color: $brand-menu;
+    padding: 1em;
+    font-weight: bold;
+    font-size: larger;
+  }
+
+  .collection-health-body {
+    padding: 1em;
+    font-weight: bold;
+    gap: 1em;
+    .collection-health-rating-text {
+      font-size: larger;
+    }
+  }
+
+  .collection-revision-rating-container {
+    fill: $brand-primary;
+    width: 64px;
+    height: 64px;
+
+    .centered-overlay {
+      position: absolute;
+      display: flex;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .collection-voting-pill {
+    background-color: $brand-menu;
+    border-radius: 1.5em;
+    display: flex;
+    align-items: center;
+
+    > * {
+      display: flex;
+      align-items: center;
+      padding: 0.5em;
+    }
+
+    > :first-child {
+      padding-left: 0.8em;
+    }
+
+    > :last-child {
+      padding-right: 0.8em;
+    }
+
+    > :not(:last-child) {
+      border-right: 1px solid $border-color;
+    }
   }
 }
 
@@ -1281,6 +1376,22 @@ ul.collection-mods-page-attrib-tooltip {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.radial-progress-success-rating-insufficient {
+  fill: $text-color-disabled;
+}
+
+.radial-progress-success-rating-bad {
+  fill: $brand-danger;
+}
+
+.radial-progress-success-rating-dubious {
+  fill: $brand-warning;
+}
+
+.radial-progress-success-rating-good {
+  fill: $brand-success;
 }
 
 .collection-success-indicator {

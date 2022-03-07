@@ -3,7 +3,7 @@ import I18next from 'i18next';
 import memoizeOne from 'memoize-one';
 import * as path from 'path';
 import * as React from 'react';
-import { FormControl, FormGroup, Image as BSImage, Panel } from 'react-bootstrap';
+import { FormControl, FormGroup, Panel } from 'react-bootstrap';
 import { TFunction } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
