@@ -39,7 +39,7 @@ function EndorseButton(props: IEndorseButtonProps) {
       tooltip={t('Endorse collection')}
       className='collection-ghost-button'
       onClick={endorse}
-      disabled={timeSinceInstall < ENDORSE_DELAY_MS}
+      disabled={(timeSinceInstall < ENDORSE_DELAY_MS) || (collection?.endorsements === undefined)}
     >
       {collection?.endorsements ?? '?'}
     </tooltip.IconButton>
@@ -55,7 +55,9 @@ function CommentButton(props: ICommentButtonProps) {
   const { t, collection } = props;
 
   const click = React.useCallback(() => {
-    util.opn(collection['commentLink']);
+    if (collection?.['commentLink'] !== undefined) {
+      util.opn(collection['commentLink']);
+    }
   }, [collection]);
 
   return (
@@ -64,8 +66,9 @@ function CommentButton(props: ICommentButtonProps) {
       className='collection-ghost-button'
       tooltip={t('Comments')}
       onClick={click}
+      disabled={collection?.['commentLink'] === undefined}
     >
-      {collection.forumTopic?.postsCount ?? 0}
+      {collection?.forumTopic?.postsCount ?? 0}
     </tooltip.IconButton>
   );
 }

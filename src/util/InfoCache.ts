@@ -135,7 +135,9 @@ class InfoCache {
     const { store } = this.mApi;
 
     if ((collectionSlug === undefined) || (revisionNumber === undefined)) {
-      return Promise.reject(new Error('missing collection/revision id'));
+      const err = new Error('missing collection/revision id');
+      err['allowReport'] = false;
+      return Promise.reject(err);
     }
 
     const revisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision',
