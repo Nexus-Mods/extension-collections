@@ -382,11 +382,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     };
 
     try {
-      doProgress('Removing dowloads', 0);
+      doProgress('Removing downloads', 0);
 
       // either way, all running downloads are canceled. If selected, so are finished downloads
       let completed = 0;
-      await Promise.all(collection.rules.map(async rule => {
+      await Promise.all((collection.rules ?? []).map(async rule => {
         const dlId = util.findDownloadByRef(rule.reference, downloads);
 
         if (dlId !== undefined) {
@@ -396,14 +396,14 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
           }
         }
-        doProgress('Removing dowloads', 50 * ((completed++) / collection.rules.length));
+        doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
       }));
 
       doProgress('Removing mods', 50);
       completed = 0;
       // if selected, remove mods
       if (result.input.delete_mods) {
-        const removeMods: string[] = collection.rules
+        const removeMods: string[] = (collection.rules ?? [])
           .map(rule => util.findModByRef(rule.reference, mods))
           .filter(mod => mod !== undefined)
           .map(mod => mod.id);
@@ -527,7 +527,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     api.events.emit('analytics-track-click-event', 'Collections', 'Upload collection');
 
-    const missing = mods[collectionId].rules.filter(rule =>
+    const missing = (mods[collectionId].rules ?? []).filter(rule =>
       ['requires', 'recommends'].includes(rule.type)
       && (util.findModByRef(rule.reference, mods) === undefined));
     if (missing.length > 0) {
