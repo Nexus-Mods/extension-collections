@@ -12,7 +12,8 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
       (await api.emitAndAwait('get-nexus-collection-revision',
                               collectionSlug, parseInt(revisionNumber, 10)))[0];
     if (latest === undefined) {
-      throw new Error(`Invalid revision "${collectionSlug}:${revisionNumber}"`);
+      throw new util.ProcessCanceled(
+        `Server returned no info on collection ${collectionSlug}, revision ${revisionNumber}`);
     }
     const collection: ICollection = latest.collection;
     if (collectionSlug !== collection.slug) {
