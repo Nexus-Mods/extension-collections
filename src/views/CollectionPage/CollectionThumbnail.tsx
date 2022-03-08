@@ -239,7 +239,7 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               <div className='collection-revision-and-rating'>
                 <div className='revision-number'>
                   {t('Revision {{number}}', { replace: {
-                    number: collection.attributes.version ?? '0',
+                    number: collection.attributes?.version ?? '0',
                   } })}
                 </div>
                 {(infoCache !== undefined) && validRemote
@@ -310,8 +310,8 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         group: 'optional',
         condition: () => {
           const { attributes } = this.props.collection;
-          return (attributes['newestVersion'] !== undefined)
-              && (parseInt(attributes['newestVersion'], 10) > parseInt(attributes['version'], 10));
+          return (attributes?.newestVersion !== undefined)
+              && (parseInt(attributes.newestVersion, 10) > parseInt(attributes.version, 10));
         },
         action: (instanceIds: string[]) => {
           this.invoke(onUpdate, instanceIds);
