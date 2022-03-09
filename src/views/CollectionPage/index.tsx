@@ -598,7 +598,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { api } = this.context;
 
     const ruleGroups = rules.reduce((prev, rule) => {
-      prev[rule.type].push(rule);
+      if (prev[rule.type] !== undefined) {
+        prev[rule.type].push(rule);
+      } else {
+        log('error', 'unexpected rule encountered', { collectionId, ruleType: rule.type });
+      }
       return prev;
     }, { requires: [], recommends: [] });
 
