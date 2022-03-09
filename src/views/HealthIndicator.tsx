@@ -9,10 +9,11 @@ export interface IHealthIndicatorProps {
   ownSuccess: RatingOptions;
   revisionNumber: number;
   onVoteSuccess: (success: boolean) => void;
+  voteAllowed: boolean;
 }
 
 function HealthIndicator(props: IHealthIndicatorProps) {
-  const { t, onVoteSuccess, ownSuccess, revisionNumber, value } = props;
+  const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed } = props;
   if (value === undefined) {
     return null;
   }
@@ -70,18 +71,24 @@ function HealthIndicator(props: IHealthIndicatorProps) {
                   <tooltip.IconButton
                     className={ownSuccess === 'positive' ? 'voted' : undefined}
                     icon='vote-up'
-                    tooltip={t('Collection worked (mostly)')}
+                    tooltip={voteAllowed
+                      ? t('Collection worked (mostly)')
+                      : t('You must wait for 12 hours between downloading a collection revision and rating it')}
                     data-success={true}
                     onClick={voteSuccess}
+                    disabled={!voteAllowed}
                   />
                 </FlexLayout.Fixed>
                 <FlexLayout.Fixed>
                   <tooltip.IconButton
                     className={ownSuccess === 'negative' ? 'voted' : undefined}
                     icon='vote-down'
-                    tooltip={t('Collection didn\'t work (in a significant way)')}
+                    tooltip={voteAllowed
+                      ? t('Collection didn\'t work (in a significant way)')
+                      : t('You must wait for 12 hours between downloading a collection revision and rating it')}
                     data-success={false}
                     onClick={voteSuccess}
+                    disabled={!voteAllowed}
                   />
                 </FlexLayout.Fixed>
               </FlexLayout>

@@ -20,10 +20,11 @@ interface IEndorseButtonProps {
   mod: types.IMod;
   collection: ICollection;
   gameId: string;
+  voteAllowed: boolean;
 }
 
 function EndorseButton(props: IEndorseButtonProps) {
-  const { t, collection, gameId, mod } = props;
+  const { t, collection, gameId, mod, voteAllowed } = props;
 
   const context = React.useContext(MainContext);
 
@@ -31,15 +32,15 @@ function EndorseButton(props: IEndorseButtonProps) {
     context.api.events.emit('endorse-mod', gameId, mod.id, 'endorse');
   }, []);
 
-  const timeSinceInstall = Date.now() - (new Date(mod.attributes?.installTime ?? 0)).getTime();
-
   return (
     <tooltip.IconButton
       icon='endorse-yes'
-      tooltip={t('Endorse collection')}
+      tooltip={voteAllowed
+        ? t('Endorse collection')
+        : t('You must wait for 12 hours between downloading a collection and endorsing it')}
       className='collection-ghost-button'
       onClick={endorse}
-      disabled={(timeSinceInstall < ENDORSE_DELAY_MS) || (collection?.endorsements === undefined)}
+      disabled={!voteAllowed || (collection?.endorsements === undefined)}
     >
       {collection?.endorsements ?? '?'}
     </tooltip.IconButton>
@@ -149,6 +150,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const classes = ['collection-overview'];
 
+    const timeSinceInstall =
+      Date.now() - (new Date(collection.attributes?.installTime ?? 0)).getTime();
+
+    const voteAllowed = (timeSinceInstall >= ENDORSE_DELAY_MS);
+
     return (
       <Panel className={classes.join(' ')}>
         <Media>
@@ -223,6 +229,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                       collection={revision.collection}
                       mod={collection}
                       gameId={profile.gameId}
+                      voteAllowed={voteAllowed}
                     />
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed>
@@ -246,6 +253,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                       value={revision?.rating}
                       onVoteSuccess={this.voteSuccess}
                       ownSuccess={votedSuccess}
+                      voteAllowed={voteAllowed}
                     />
                   ) : null}
                 </FlexLayout.Fixed>
