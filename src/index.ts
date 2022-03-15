@@ -1,3 +1,4 @@
+import { clearPendingVote, updateSuccessRate } from './actions/persistent';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import { ICollection } from './types/ICollection';
@@ -19,9 +20,8 @@ import {
   initFromProfile,
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
-import { doExportToFile } from './collectionExport';
 import { makeInstall, testSupported } from './collectionInstall';
-import { MOD_TYPE } from './constants';
+import { DELAY_FIRST_VOTE_REQUEST, MOD_TYPE, TIME_BEFORE_VOTE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 import initTools from './tools';
@@ -544,6 +544,86 @@ function register(context: types.IExtensionContext,
   });
 }
 
+async function triggerVoteNotification(api: types.IExtensionApi,
+                                       revisionId: string,
+                                       collectionSlug: string, revisionNumber: number)
+                                       : Promise<void> {
+  const revInfo =
+    await driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+
+  const sendRating = async (success: boolean) => {
+    const vote = success ? 'positive' : 'negative';
+    const voted: { success: boolean, averageRating?: nexusApi.IRating } =
+      (await api.emitAndAwait('rate-nexus-collection-revision', parseInt(revisionId, 10), vote))[0];
+    if (voted.success) {
+      api.store.dispatch(
+        updateSuccessRate(revisionId, vote,
+                          voted.averageRating.average, voted.averageRating.total));
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    api.sendNotification({
+      type: 'info',
+      message: revInfo.collection.name,
+      title: 'Did the Collection work for you?',
+      noDismiss: true,
+      actions: [
+        {
+          title: 'Yes',
+          action: dismiss => {
+            api.events.emit('analytics-track-click-event', 'Notifications', 'Success rating - Yes');
+            sendRating(true);
+            resolve();
+            dismiss();
+          },
+        },
+        {
+          title: 'No',
+          action: dismiss => {
+            api.events.emit('analytics-track-click-event', 'Notifications', 'Success rating - No');
+            sendRating(false);
+            resolve();
+            dismiss();
+          },
+        },
+        {
+          icon: 'close',
+          action: dismiss => {
+            api.events.emit(
+              'analytics-track-click-event', 'Notifications', 'Success rating - Dismiss');
+            resolve();
+            dismiss();
+          },
+        } as any,
+      ],
+    });
+  });
+}
+
+async function checkVoteRequest(api: types.IExtensionApi): Promise<number> {
+  let elapsed = 0;
+  const state = api.getState();
+  const pendingVotes = state.persistent['collections'].pendingVotes ?? {};
+  const now = Date.now();
+
+  for (const revisionId of Object.keys(pendingVotes)) {
+    const pendingInfo = pendingVotes[revisionId];
+    if (pendingInfo.time < now) {
+      await triggerVoteNotification(api, revisionId,
+        pendingInfo.collectionSlug, pendingInfo.revisionNumber);
+      api.store.dispatch(clearPendingVote(revisionId));
+    } else {
+      elapsed = Math.max(elapsed, now - pendingInfo.time);
+    }
+  }
+
+  // this doesn't account for the delay caused by the user reacting to the notification so
+  // the next check and thereby next notification can take that much longer but I think
+  // that's so irrelevant
+  return TIME_BEFORE_VOTE - elapsed;
+}
+
 function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const { store } = api;
 
@@ -580,6 +660,15 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       driver.continue();
     }
   });
+
+  const doCheckVoteRequest = () => {
+    checkVoteRequest(api)
+      .then((nextCheck: number) => {
+        setTimeout(doCheckVoteRequest, nextCheck);
+      });
+  };
+
+  setTimeout(doCheckVoteRequest, DELAY_FIRST_VOTE_REQUEST);
 
   api.setStylesheet('collections', path.join(__dirname, 'style.scss'));
 

@@ -2,6 +2,7 @@ import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
 import { ICollection } from '../types/ICollection';
@@ -427,6 +428,9 @@ class InstallDriver {
           revisionId, slug, revisionNumber: this.revisionNumber, error: err.message });
       }
     }
+
+    this.mApi.store.dispatch(
+      setPendingVote(revisionId, slug, this.revisionNumber, Date.now()));
 
     const gameMode = profile.gameId;
     const currentgame = util.getGame(gameMode);

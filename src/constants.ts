@@ -21,3 +21,8 @@ export const MAX_COLLECTION_NAME_LENGTH = 36;
 
 export const INI_TWEAKS_PATH = 'Ini Tweaks';
 export const OPTIONAL_TWEAK_PREFIX = '(optional).';
+
+// time after installing a revision before we ask for a vote. in milliseconds
+export const TIME_BEFORE_VOTE = 48 * 60 * 60 * 1000;
+// upon start, time before we first check whether a revision needs to be rated. in milliseconds
+export const DELAY_FIRST_VOTE_REQUEST = 1 * 60 * 1000;

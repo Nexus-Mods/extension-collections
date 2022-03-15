@@ -29,10 +29,21 @@ const persistentReducer: types.IReducerSpec = {
         total,
       });
     },
+    [actions.setPendingVote as any]: (state, payload) => {
+      const { revisionId, collectionSlug, revisionNumber, time } = payload;
+
+      return util.setSafe(state, ['pendingVotes', revisionId], {
+        collectionSlug, revisionNumber, time });
+    },
+    [actions.clearPendingVote as any]: (state, payload) => {
+      const { revisionId } = payload;
+      return util.deleteOrNop(state, ['pendingVotes', revisionId]);
+    },
   },
   defaults: {
     collections: {},
     revisions: {},
+    pendingVotes: {},
   },
 };
 
