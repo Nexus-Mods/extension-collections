@@ -11,7 +11,7 @@ import Select from 'react-select';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
 import { ActionDropdown, actions, ComponentEx, FlexLayout, Icon, PureComponentEx, selectors,
-         types, Usage, util } from 'vortex-api';
+         More, types, Usage, util } from 'vortex-api';
 
 import { IINITweak, TweakArray } from '../types/IINITweak';
 
@@ -20,7 +20,6 @@ export interface IBaseProps extends IExtendedInterfaceProps {
   onRefreshTweaks: (modPath: string) => Promise<TweakArray>;
   onAddIniTweak: (modPath: string, settingsFiles: string[]) => Promise<void>;
   onRemoveIniTweak: (modPath: string, tweak: IINITweak) => Promise<void>;
-  onSetTweakRequired: (modPath: string, tweak: IINITweak) => Promise<void>;
 }
 
 interface IConnectedProps {
@@ -42,9 +41,7 @@ interface ITweakProps {
   tweaksPath: string;
   fileName: string;
   enabled: boolean;
-  required: boolean;
   onToggle: (fileName: string, enabled: boolean) => void;
-  onSetRequirement: (tweak: IINITweak) => void;
   onRemoveTweak: (tweak: IINITweak) => void;
 }
 
@@ -70,36 +67,25 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
   ];
 
   public render(): JSX.Element {
-    const { t, enabled, fileName, required } = this.props;
+    const { t, fileName } = this.props;
     const match = fileName.match(/(.*)\[(.*)\]\.ini/);
 
-    if (!match || (match.length < 2)) {
+    if (!match || (match.length < 3)) {
       return null;
     }
-
-    const options = [
-      { label: t('Required'), value: 'required' },
-      { label: t('Recommended'), value: 'recommended' },
-    ];
 
     return (
       <tr>
         <td className='cell-status'>{this.renderStatusActions()}</td>
-        <td className='cell-filename'>{match[1]}</td>
-        <td className='cell-requirement'>
-          <Select
-            options={options}
-            value={required ? 'required' : 'recommended'}
-            onChange={this.setRequirement}
-          />
-        </td>
+        <td className='cell-tweak-name'>{match[1]}</td>
+        <td className='cell-filename'>{`${match[2]}.ini`}</td>
         <td className='cell-edit'><a onClick={this.edit}><Icon name='edit' /></a></td>
       </tr>
     );
   }
 
   private renderStatusActions(): JSX.Element {
-    const { t, enabled } = this.props;
+    const { t } = this.props;
     return (
       <ActionDropdown
         t={t}
@@ -111,10 +97,8 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
   }
 
   private edit = () => {
-    const { tweaksPath, fileName, required } = this.props;
-    (required)
-      ? util.opn(path.join(tweaksPath, fileName)).catch(() => null)
-      : util.opn(path.join(tweaksPath, `${OPTIONAL_TWEAK_PREFIX}${fileName}`)).catch(() => null);
+    const { tweaksPath, fileName } = this.props;
+    util.opn(path.join(tweaksPath, fileName)).catch(() => null)
   }
 
   private enable = () => {
@@ -126,21 +110,13 @@ class Tweak extends PureComponentEx<ITweakProps, {}> {
   }
 
   private remove = () => {
-    const { fileName, onRemoveTweak, required } = this.props;
-    onRemoveTweak({ fileName, required });
+    const { fileName, onRemoveTweak } = this.props;
+    onRemoveTweak({ fileName });
   }
 
   private toggle = (enabled: boolean) => {
     const { fileName, onToggle } = this.props;
     onToggle(fileName, enabled);
-  }
-
-  private setRequirement = (value: { value: string, label: string }) => {
-    const { fileName, onSetRequirement } = this.props;
-    const required = value !== null
-      ? value.value === 'required'
-      : true;
-    onSetRequirement({ fileName, required });
   }
 }
 
@@ -182,13 +158,20 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
               <thead>
                 <tr>
                   <th className='header-status'>{t('Status')}</th>
-                  <th className='header-filename'>{t('Ini file')}</th>
-                  <th className='header-requirement'>{t('Requirement')}</th>
-                  <th className='header-edit'>{t('Edit')}</th>
+                  <th className='header-tweak-name'>{t('Tweak Name')}</th>
+                  <th className='header-filename'>{t('Ini File')}</th>
+                  <th className='header-edit'>
+                      {t('Edit')}
+                      <More id='edit-ini-file' name={t('Edit Ini File')}>
+                      {t('"Edit" allows you to input the ini tweak you want to '
+                       + 'apply to the target ini file. Please provide the section as '
+                       + 'well as your tweak(s). e.g.:\n\n[General]\nsIntroSequence=0')}
+                      </More>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {tweaks.map(this.renderTweak)}
+                {tweaks.map(tweak => this.renderTweak(tweak))}
               </tbody>
             </Table>
             <Button onClick={this.addIniTweak}>
@@ -230,7 +213,7 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
 
   private renderTweak = (tweak: IINITweak): JSX.Element => {
     const { t, collection, modsPath } = this.props;
-    const { fileName, required } = tweak;
+    const { fileName } = tweak;
     const isEnabled = util.getSafe(collection, ['enabledINITweaks'], []).indexOf(fileName) !== -1;
     return (
       <Tweak
@@ -238,10 +221,8 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
         key={`tweak-${fileName}`}
         tweaksPath={path.join(modsPath, collection.installationPath, INI_TWEAKS_PATH)}
         fileName={fileName}
-        required={required}
         enabled={isEnabled}
         onToggle={this.toggle}
-        onSetRequirement={this.setRequirement}
         onRemoveTweak={this.removeTweak}
       />);
   }
@@ -251,15 +232,6 @@ class TweakList extends ComponentEx<IProps, IComponentState> {
     if (collection?.installationPath && modsPath) {
       const modPath = path.join(modsPath, collection.installationPath);
       onRemoveIniTweak(modPath, tweak)
-        .then(() => this.refreshTweaks());
-    }
-  }
-
-  private setRequirement = (tweak: IINITweak) => {
-    const { collection, modsPath, onSetTweakRequired } = this.props;
-    if (collection?.installationPath && modsPath) {
-      const modPath = path.join(modsPath, collection.installationPath);
-      onSetTweakRequired(modPath, tweak)
         .then(() => this.refreshTweaks());
     }
   }

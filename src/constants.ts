@@ -20,6 +20,10 @@ export const MIN_COLLECTION_NAME_LENGTH = 3;
 export const MAX_COLLECTION_NAME_LENGTH = 36;
 
 export const INI_TWEAKS_PATH = 'Ini Tweaks';
+
+// Although the required property has been removed,
+//  we're keeping this for backwards compatibility as
+//  some released collections could still have it.
 export const OPTIONAL_TWEAK_PREFIX = '(optional).';
 
 // time after installing a revision before we ask for a vote. in milliseconds

@@ -6,7 +6,7 @@ import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { IINITweak, TweakArray } from './types/IINITweak';
 import TweakList from './views/IniTweaks';
 
-import { INI_TWEAKS_PATH, OPTIONAL_TWEAK_PREFIX } from './constants';
+import { INI_TWEAKS_PATH, MOD_TYPE, OPTIONAL_TWEAK_PREFIX } from './constants';
 
 const gameSupport = {
     skyrim: {
@@ -65,8 +65,6 @@ function TweakListWrap(api: types.IExtensionApi, prop: IExtendedInterfaceProps):
     onRefreshTweaks: genRefreshTweaks,
     onAddIniTweak: (modPath: string, settingsFiles: string[]) =>
       genAddIniTweak(api, modPath, settingsFiles),
-    onSetTweakRequired: (modPath: string, tweak: IINITweak) =>
-      genSetTweakRequired(api, modPath, tweak),
     onRemoveIniTweak: (modPath: string, tweak: IINITweak) =>
       genRemoveIniTweak(api, prop, modPath, tweak),
   });
@@ -82,33 +80,111 @@ async function getTweaks(dirPath: string): Promise<string[]> {
   }
 }
 
+export function getEnabledTweaks(api: types.IExtensionApi, gameId: string, modId: string) {
+  const state = api.getState();
+  const mods: { [modId: string]: types.IMod } = util.getSafe(state,
+    ['persistent', 'mods', gameId], {});
+  const tweaks = util.getSafe(mods[modId], ['enabledINITweaks'], []);
+  return tweaks;
+}
+
+export async function importTweaks(api: types.IExtensionApi,
+                                   profile: types.IProfile,
+                                   mods: { [modId: string]: types.IMod },
+                                   destCollection: types.IMod,
+                                   force?: boolean) {
+  const tweaks = await getAllTweaks(api, profile, mods);
+  const state = api.getState();
+  const stagingFolder = selectors.installPathForGame(state, profile.gameId);
+  const destTweakDirPath = path.join(stagingFolder,
+    destCollection.id, INI_TWEAKS_PATH);
+  const batchedActions = [];
+  const existingTweaks = destCollection.enabledINITweaks ?? [];
+  await fs.ensureDirWritableAsync(destTweakDirPath);
+  for (const tweak of tweaks) {
+    if (force !== true && existingTweaks.includes(tweak.fileName)) {
+      // Don't import existing tweaks.
+      continue;
+    }
+    try {
+      const dest = path.join(destTweakDirPath, path.basename(tweak.sourcePath));
+      await fs.copyAsync(tweak.sourcePath, dest, { overwrite: true });
+      batchedActions.push(actions.setINITweakEnabled(profile.gameId,
+        destCollection.id, tweak.fileName, true));
+    } catch (err) {
+      log('error', 'Unable to import tweak', err);
+      continue;
+    }
+  }
+
+  if (batchedActions.length > 0) {
+    util.batchDispatch(api.store, batchedActions);
+  }
+  return Promise.resolve(tweaks);
+}
+
+async function getAllTweaks(api: types.IExtensionApi,
+                            profile: types.IProfile,
+                            mods: { [modId: string]: types.IMod }): Promise<TweakArray> {
+  const state = api.getState();
+  if (profile?.gameId === undefined) {
+    return Promise.resolve([]);
+  }
+
+  const installationPath = selectors.installPathForGame(state, profile.gameId);
+  const enabledMods = Object.keys(mods)
+    .filter(id => util.getSafe(profile.modState, [id, 'enabled'], false));
+  const validTweaks: IINITweak[] = [];
+  for (const modId of enabledMods) {
+    const modPath = path.join(installationPath, mods[modId].installationPath);
+    const tweaks = getEnabledTweaks(api, profile.gameId, modId);
+    if (tweaks.length === 0) {
+      continue;
+    }
+    for (const tweak of tweaks) {
+      try {
+        const tweakPath = path.join(modPath, INI_TWEAKS_PATH, tweak);
+        await fs.statAsync(tweakPath);
+        validTweaks.push({
+          enabled: true,
+          sourcePath: tweakPath,
+          fileName: tweak,
+        });
+      } catch (err) {
+        continue;
+      }
+    }
+  }
+  return Promise.resolve(validTweaks);
+}
+
+async function removeOptionalPrefix(filePath: string) {
+  // The point of this function is to fix/remove the optional prefix
+  //  from existing ini tweaks.
+  try {
+    if (filePath.indexOf(OPTIONAL_TWEAK_PREFIX) !== -1) {
+      const trimmedFilePath = filePath.replace(OPTIONAL_TWEAK_PREFIX, '');
+      await fs.removeAsync(trimmedFilePath).catch(err => null);
+      await fs.linkAsync(filePath, trimmedFilePath);
+      await fs.removeAsync(filePath);
+      return Promise.resolve(trimmedFilePath);
+    } else {
+      // No fix needed.
+      return Promise.resolve(filePath);
+    }
+  } catch (err) {
+    log('error', 'failed to remove optional prefix from ini file', { error: err, filePath });
+    return Promise.resolve(filePath);
+  }
+}
+
 async function genRefreshTweaks(modPath: string): Promise<TweakArray> {
   const tweakPath = path.join(modPath, INI_TWEAKS_PATH);
   const tweaks = await getTweaks(tweakPath);
   return tweaks.reduce(async (accumP, twk) => {
     const accum = await accumP;
-    const required = !twk.startsWith(OPTIONAL_TWEAK_PREFIX);
-    const fileName = twk.startsWith(OPTIONAL_TWEAK_PREFIX)
-      ? twk.replace(OPTIONAL_TWEAK_PREFIX, '')
-      : twk;
-
-    const existingIdx = accum.findIndex(ext => ext.fileName === fileName);
-    if (existingIdx !== -1) {
-      const reqFile: fs.Stats = await fs.statAsync(path.join(tweakPath, twk));
-      const optFile: fs.Stats = await fs.statAsync(path.join(tweakPath, `${OPTIONAL_TWEAK_PREFIX}${twk}`));
-      const redundant = (reqFile.mtimeMs > optFile.mtimeMs)
-        ? path.join(tweakPath, `${OPTIONAL_TWEAK_PREFIX}${twk}`)
-        : path.join(tweakPath, twk);
-      try {
-        await fs.removeAsync(redundant);
-        const updatedReq = (reqFile.mtimeMs > optFile.mtimeMs) ? true : false;
-        accum[existingIdx].required = updatedReq;
-      } catch (err) {
-        log('error', 'failed to remove redundant entry', err);
-      }
-    } else {
-      accum.push({ required, fileName });
-    }
+    const filePath = await removeOptionalPrefix(path.join(tweakPath, twk));
+    accum.push({ fileName: path.basename(filePath) });
     return accum;
   }, Promise.resolve([]));
 }
@@ -128,9 +204,7 @@ async function genRemoveIniTweak(api: types.IExtensionApi,
       try {
         const tweaks = await genRefreshTweaks(modPath);
         const targetTweak = tweaks.find(twk => twk.fileName === tweak.fileName);
-        const tweakPath = targetTweak.required
-          ? path.join(modPath, INI_TWEAKS_PATH, targetTweak.fileName)
-          : path.join(modPath, INI_TWEAKS_PATH, `${OPTIONAL_TWEAK_PREFIX}${targetTweak.fileName}`);
+        const tweakPath = path.join(modPath, INI_TWEAKS_PATH, targetTweak.fileName);
         await fs.removeAsync(tweakPath);
         const { gameId, collection } = props;
         api.store.dispatch(actions.setINITweakEnabled(
@@ -187,76 +261,21 @@ async function genAddIniTweak(api: types.IExtensionApi,
   });
 }
 
-async function genSetTweakRequired(api: types.IExtensionApi,
-                                   modPath: string,
-                                   tweak: IINITweak): Promise<void> {
-  const { required, fileName } = tweak;
-  try {
-    const tweaks: TweakArray = await genRefreshTweaks(modPath);
-    const currentTweak = tweaks.find(twk => twk.fileName.indexOf(fileName) !== -1);
-    if (currentTweak !== undefined && required !== currentTweak.required) {
-      const src = currentTweak.required
-        ? path.join(modPath, INI_TWEAKS_PATH, currentTweak.fileName)
-        : path.join(modPath, INI_TWEAKS_PATH, `${OPTIONAL_TWEAK_PREFIX}${currentTweak.fileName}`);
-      const dest = required
-        ? path.join(path.dirname(src), fileName)
-        : path.join(path.dirname(src), `${OPTIONAL_TWEAK_PREFIX}${fileName}`);
-      await fs.renameAsync(src, dest);
-    }
-  } catch (err) {
-    api.showErrorNotification('Failed to set ini tweak requirement settings', err);
-  }
-}
-
 async function genEnableIniTweaks(api: types.IExtensionApi, gameId: string, mod: types.IMod) {
   const stagingPath = selectors.installPathForGame(api.getState(), gameId);
   const modPath = path.join(stagingPath, mod.installationPath);
   try {
     const tweaks: TweakArray = await genRefreshTweaks(modPath);
-    const required = tweaks.filter(tweak => tweak.required);
-    const optional = tweaks.filter(tweak => !tweak.required);
-    const batched = required.map(req =>
+    const batched = tweaks.map(req =>
       actions.setINITweakEnabled(gameId, mod.id, req.fileName, true));
     if (batched.length > 0) {
       util.batchDispatch(api.store, batched);
-    }
-    if (optional.length > 0) {
-      await enableOptionalIniTweaks(api, gameId, mod, optional);
     }
   } catch (err) {
     if (err.code !== 'ENOENT') {
       api.showErrorNotification('Failed to enable collection ini tweaks', err);
     }
   }
-}
-
-async function enableOptionalIniTweaks(api: types.IExtensionApi,
-                                       gameId: string,
-                                       mod: types.IMod,
-                                       optionalTweaks: TweakArray) {
-  return api.showDialog('question', 'Recommended/Optional INI Tweaks', {
-    text: 'The collection curator has highlighted several INI tweaks as recommended, '
-        + 'but optional. Although your game will probably benefit from these tweaks, it '
-        + 'is your choice whether you want to apply them.',
-    checkboxes: optionalTweaks.map((tweak, idx) => ({
-      id: tweak.fileName,
-      text: tweak.fileName,
-      value: false,
-    })),
-  }, [
-    { label: 'Cancel' },
-    { label: 'Confirm' },
-  ]).then((result: types.IDialogResult) => {
-    if (result.action === 'Confirm') {
-      const choices = Object.keys(result.input).filter(id => result.input[id]);
-      const batched = choices.map(choice =>
-        actions.setINITweakEnabled(gameId, mod.id, choice, true));
-      util.batchDispatch(api.store, batched);
-      return Promise.resolve();
-    } else {
-      return Promise.resolve();
-    }
-  });
 }
 
 function init(context: types.IExtensionContext) {

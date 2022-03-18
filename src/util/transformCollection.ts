@@ -15,6 +15,9 @@ import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { fileMD5 } from 'vortexmt';
+import { IINITweak } from '../types/IINITweak';
+
+import { importTweaks } from '../initweaks';
 
 function nop() {
   // nop
@@ -607,6 +610,14 @@ export async function modToCollection(api: types.IExtensionApi,
   return res;
 }
 
+async function createTweaksFromProfile(api: types.IExtensionApi,
+                                       profile: types.IProfile,
+                                       mods: {[modId: string]: types.IMod},
+                                       existingId: string): Promise<IINITweak[]> {
+  return importTweaks(api, profile, api.getState().persistent.mods[profile.gameId],
+    api.getState().persistent.mods[profile.gameId]?.[existingId]);
+}
+
 function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
                                 existingRules: types.IModRule[],
@@ -893,6 +904,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
 
   if (mod === undefined) {
     await createCollection(api, profile.gameId, id, name, rules);
+    await createTweaksFromProfile(api, profile, state.persistent.mods[profile.gameId] ?? {}, id);
   } else {
     updateCollection(api, profile.gameId, mod, rules);
   }

@@ -65,8 +65,11 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
   const modPath = path.join(stagingPath, mod.installationPath);
 
   try {
-    await fs.copyAsync(path.join(modPath, 'INI Tweaks'),
-                       path.join(outputPath, 'INI Tweaks'));
+    const tweaks = mod.enabledINITweaks ?? [];
+    for (const tweak of tweaks) {
+      await fs.copyAsync(path.join(modPath, 'INI Tweaks', tweak),
+                         path.join(outputPath, 'INI Tweaks', tweak));
+    }
   } catch (err) {
     if (err.code !== 'ENOENT') {
       throw err;
