@@ -1,7 +1,8 @@
-import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MOD_TYPE } from '../constants';
+import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MOD_TYPE, PATCHES_PATH } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
          ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
+import { scanForDiffs } from './binaryPatching';
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
@@ -229,6 +230,13 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
         --total;
       }
 
+      let patches: { [filePath: string]: string };
+      if (collectionInfo.saveEdits?.[mod.id] === true) {
+        const destPath = path.join(collectionPath, PATCHES_PATH, modName);
+        await fs.ensureDirWritableAsync(destPath);
+        patches = await scanForDiffs(api, game.id, mod.id, destPath);
+      }
+
       if (collectionInfo.source?.[mod.id]?.type === 'bundle') {
         const tlFiles = await fs.readdirAsync(modPath);
         const generatedName: string =
@@ -268,6 +276,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
         source,
         hashes,
         choices,
+        patches,
         instructions: !!collectionInfo.instructions?.[mod.id]
           ? collectionInfo.instructions?.[mod.id]
           : undefined,
@@ -511,6 +520,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
         ? mod.instructions
         : undefined,
       phase: mod.phase ?? 0,
+      patches: mod.patches,
     },
   } as any;
 
@@ -665,6 +675,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
     installMode: {},
     instructions: {},
     source: {},
+    saveEdits: {},
   };
 
   collectionMod.rules.forEach(rule => {
@@ -686,6 +697,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
       url: rule.downloadHint?.url,
       instructions: rule.downloadHint?.instructions,
     };
+    res.saveEdits[mod.id] = rule.extra?.patches !== undefined;
   });
 
   return res;

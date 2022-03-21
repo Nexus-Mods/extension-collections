@@ -12,6 +12,7 @@ export const PREMIUM_PATH = ['account', 'billing', 'premium'];
 export const TOS_URL = 'https://help.nexusmods.com/article/115-guidelines-for-collections';
 
 export const BUNDLED_PATH = 'bundled';
+export const PATCHES_PATH = 'patches';
 
 export const INSTALLING_NOTIFICATION_ID = 'installing-collection-';
 

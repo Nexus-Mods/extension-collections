@@ -1,3 +1,6 @@
 const webpack = require('vortex-api/bin/webpack').default;
 
-module.exports = webpack('modpacks', __dirname, 5);
+const config = webpack('modpacks', __dirname, 5);
+config.externals['./build/Release/bsdiff.node'] = './bsdiff.node';
+
+module.exports = config;

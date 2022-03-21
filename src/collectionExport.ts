@@ -1,4 +1,4 @@
-import { BUNDLED_PATH } from './constants';
+import { BUNDLED_PATH, PATCHES_PATH } from './constants';
 import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICollection';
 import { modToCollection as modToCollection } from './util/transformCollection';
 import { makeProgressFunction } from './util/util';
@@ -77,6 +77,7 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
   }
 
   await fs.copyAsync(path.join(modPath, BUNDLED_PATH), path.join(outputPath, BUNDLED_PATH));
+  await fs.copyAsync(path.join(modPath, PATCHES_PATH), path.join(outputPath, PATCHES_PATH));
 
   const zipPath = path.join(modPath, 'export',
                             `collection_${mod.attributes?.version ?? '0'}.7z`);
@@ -97,7 +98,7 @@ function filterInfoModSource(source: ICollectionSourceInfo): ICollectionSourceIn
 }
 
 function filterInfoMod(mod: ICollectionMod): ICollectionMod {
-  const res = _.omit(mod, ['hashes', 'choices', 'details', 'instructions', 'phase']);
+  const res = _.omit(mod, ['hashes', 'choices', 'patches', 'details', 'instructions', 'phase']);
   res.source = filterInfoModSource(res.source);
   return res;
 }

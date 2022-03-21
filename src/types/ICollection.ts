@@ -50,6 +50,7 @@ export interface ICollectionMod {
   hashes?: any;
   // installer-specific data to replicate the choices the author made
   choices?: any;
+  patches?: { [filePath: string]: string };
   instructions?: string;
   author?: string;
   details?: ICollectionModDetails;
@@ -85,6 +86,7 @@ export interface ICollectionAttributes {
   instructions?: { [modId: string]: string };
   source?: { [modId: string]: { type: SourceType, url?: string, instructions?: string } };
   installMode?: { [modId: string]: string };
+  saveEdits?: { [modId: string]: boolean };
 }
 
 export interface ICollectionModRuleEx extends ICollectionModRule {
