@@ -429,8 +429,12 @@ class InstallDriver {
       }
     }
 
-    this.mApi.store.dispatch(
-      setPendingVote(revisionId, slug, this.revisionNumber, Date.now()));
+    const { userInfo } = state.persistent['nexus'] ?? {};
+    // don't request a vote on own collection
+    if (this.mRevisionInfo?.collection?.user?.memberId !== userInfo?.userId) {
+      this.mApi.store.dispatch(
+        setPendingVote(revisionId, slug, this.revisionNumber, Date.now()));
+    }
 
     const gameMode = profile.gameId;
     const currentgame = util.getGame(gameMode);

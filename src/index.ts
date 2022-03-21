@@ -548,8 +548,19 @@ async function triggerVoteNotification(api: types.IExtensionApi,
                                        revisionId: string,
                                        collectionSlug: string, revisionNumber: number)
                                        : Promise<void> {
+  if ((collectionSlug === undefined) || (revisionNumber === undefined)) {
+    return Promise.resolve();
+  }
+
   const revInfo =
     await driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
+
+  if (revInfo === undefined) {
+    // no info about that revision? This might be a temporary network issue but if we don't
+    // resolve here and the revision actually doesn't exist any more we'd never get rid of
+    // the vote request
+    return Promise.resolve();
+  }
 
   const sendRating = async (success: boolean) => {
     const vote = success ? 'positive' : 'negative';
