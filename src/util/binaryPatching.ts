@@ -12,7 +12,8 @@ function crcFromBuf(data: Buffer) {
 }
 
 export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
-                                   modId: string, destPath: string) {
+                                   modId: string, destPath: string)
+                                   : Promise<{ [filePath: string]: string }> {
   const state = api.getState();
   const mod = state.persistent.mods[gameId][modId];
 
@@ -27,44 +28,44 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
 
   const choices = mod.attributes?.installerChoices;
 
-  const instRes: types.IInstallResult = (await
-    api.emitAndAwait('simulate-installer', gameId, mod.archiveId, { choices }))[0];
+  return new Promise<{ [filePath: string]: string }>((resolve) => {
+    api.events.emit('simulate-installer', gameId, mod.archiveId, { choices },
+                    async (instRes: types.IInstallResult, tempPath: string) => {
+      const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
+      const archivePath = path.join(dlPath, archive.localPath);
 
-  const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
-  const archivePath = path.join(dlPath, archive.localPath);
+      const sourceChecksums: { [fileName: string]: string } = {};
+      const szip = new util.SevenZip();
+      const archFiles = await szip.list(archivePath, undefined, async entries => {
+          for (const entry of entries) {
+            if (entry.attr !== 'D') {
+              sourceChecksums[entry.name] = entry['crc'].toUpperCase();
+            }
+          }
+        });
 
-  const sourceChecksums: { [fileName: string]: string } = {};
-  const szip = new util.SevenZip();
-  const archFiles = await szip.list(archivePath, undefined, async entries => {
-      for (const entry of entries) {
-        if (entry.attr !== 'D') {
-          sourceChecksums[entry.name] = entry['crc'].toUpperCase();
+      const result: { [filePath: string]: string } = {};
+
+      for (const file of instRes.instructions.filter(instr => instr.type === 'copy')) {
+        const srcCRC = sourceChecksums[file.source];
+        const dstFilePath = path.join(localPath, file.destination);
+        const dat = await fs.readFileAsync(dstFilePath);
+        const dstCRC =  crcFromBuf(dat);
+        if (srcCRC !== dstCRC) {
+          log('debug', 'found modified file', { filePath: file.source, srcCRC, dstCRC });
+          const srcFilePath = path.join(tempPath, file.source);
+          const patchPath = path.join(destPath, file.destination + '.diff');
+          await fs.ensureDirWritableAsync(path.dirname(patchPath));
+          await bsdiff.diff(srcFilePath, dstFilePath, patchPath, progress => {
+            // nop - currently not showing progress
+          });
+          result[file.destination] = srcCRC;
+          log('debug', 'patch created at', patchPath);
         }
       }
+      resolve(result);
     });
-
-  const result: { [filePath: string]: string } = {};
-
-  for (const file of instRes.instructions.filter(instr => instr.type === 'copy')) {
-    const srcCRC = sourceChecksums[file.source];
-    const dstFilePath = path.join(localPath, file.destination);
-    const dat = await fs.readFileAsync(dstFilePath);
-    const dstCRC =  crcFromBuf(dat);
-    if (srcCRC !== dstCRC) {
-      log('debug', 'found modified file', { filePath: file.source, srcCRC, dstCRC });
-      const srcFilePath =
-        path.join(util.getVortexPath('temp'), `simulating_${mod.archiveId}`, file.source);
-      const patchPath = path.join(destPath, file.destination + '.diff');
-      await fs.ensureDirWritableAsync(path.dirname(patchPath));
-      await bsdiff.diff(srcFilePath, dstFilePath, patchPath, progress => {
-        // nop - currently not showing progress
-      });
-      result[file.destination] = srcCRC;
-      log('debug', 'patch created at', patchPath);
-    }
-  }
-
-  return result;
+  });
 }
 
 export async function applyPatches(api: types.IExtensionApi,
