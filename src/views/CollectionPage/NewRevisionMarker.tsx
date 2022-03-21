@@ -9,9 +9,9 @@ interface INewRevisionMarkerProps {
 function NewRevisionMarker(props: INewRevisionMarkerProps) {
   const { t, collection } = props;
 
-  if ((collection.attributes['newestVersion'] === undefined)
-      || (parseInt(collection.attributes['newestVersion'], 10)
-          <= parseInt(collection.attributes['version'], 10))) {
+  if ((collection.attributes?.['newestVersion'] === undefined)
+      || (parseInt(collection.attributes?.['newestVersion'], 10)
+          <= parseInt(collection.attributes?.['version'], 10))) {
     return null;
   }
 
