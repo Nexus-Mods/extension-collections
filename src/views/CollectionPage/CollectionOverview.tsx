@@ -200,7 +200,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                         circle
                       />
                       <div>
-                        <div className='title'>{t('Curated')}</div>
+                        <div className='title'>{t('Curated by')}</div>
                         <div>{collection.attributes?.uploader}</div>
                       </div>
                     </FlexLayout>

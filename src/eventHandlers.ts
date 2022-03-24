@@ -174,7 +174,7 @@ export function onCollectionUpdate(api: types.IExtensionApi,
                                    driver: InstallDriver): (...args: any[]) => void {
   return (gameId: string, collectionSlug: string,
           revisionNumber: number | string, source: string, oldModId: string) => {
-    if ((source !== 'nexus') || (revisionNumber === undefined)) {
+    if ((source !== 'nexus') || (collectionSlug === undefined) || (revisionNumber === undefined)) {
       return;
     }
 
