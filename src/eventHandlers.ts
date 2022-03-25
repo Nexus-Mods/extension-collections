@@ -165,7 +165,8 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
     if (!(err instanceof util.UserCanceled)) {
       api.showErrorNotification('Failed to download collection', err, {
         allowReport: !(err instanceof util.ProcessCanceled),
-      });
+        warning: err instanceof util.ProcessCanceled,
+      } as any);
     }
   }
 }
