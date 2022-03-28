@@ -139,16 +139,18 @@ export function generateCollection(info: ICollectionInfo,
 /**
  * converts the rules in a mod into mod entries for a collection, ready for export
  */
-async function rulesToCollectionMods(api: types.IExtensionApi,
-                                     collection: types.IMod,
-                                     mods: { [modId: string]: types.IMod },
-                                     stagingPath: string,
-                                     game: types.IGame,
-                                     collectionInfo: ICollectionAttributes,
-                                     bundleTags: { [modId: string]: string },
-                                     onProgress: (percent: number, text: string) => void,
-                                     onError: (message: string, replace: any) => void)
-                                     : Promise<ICollectionMod[]> {
+async function rulesToCollectionMods(
+  api: types.IExtensionApi,
+  collection: types.IMod,
+  mods: { [modId: string]: types.IMod },
+  stagingPath: string,
+  game: types.IGame,
+  collectionInfo: ICollectionAttributes,
+  bundleTags: { [modId: string]: string },
+  onProgress: (percent: number, text: string) => void,
+  onError: (message: string, replace: any, mayIgnore: boolean) => void)
+  : Promise<ICollectionMod[]> {
+
   let total = collection.rules.length;
 
   let finished = 0;
@@ -296,7 +298,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
 
       onError('failed to pack "{{modName}}": {{error}}', {
         modName, error: err.message, stack: err.stack,
-      });
+      }, err['mayIgnore'] ?? true);
 
       return undefined;
     }
@@ -382,7 +384,8 @@ function extractModRules(collectionRules: types.IModRule[],
                          mods: { [modId: string]: types.IMod },
                          collectionAttributes: ICollectionAttributes,
                          bundleTags: { [modId: string]: string },
-                         onError: (message: string, replace: any) => void): ICollectionModRule[] {
+                         onError: (message: string, replace: any, mayIgnore: boolean) => void)
+                         : ICollectionModRule[] {
   // for each mod referenced by the collection, gather the (enabled) rules and transform
   // them such that they can be applied on the users system
   return collectionRules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
@@ -390,7 +393,7 @@ function extractModRules(collectionRules: types.IModRule[],
       ? mods[rule.reference.id]
       : util.findModByRef(rule.reference, mods);
     if (mod === undefined) {
-      onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id });
+      onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id }, true);
       return prev;
     } else if (mod.id === collection.id) {
       return prev;
@@ -531,14 +534,16 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   return res;
 }
 
-export async function modToCollection(api: types.IExtensionApi,
-                                      gameId: string,
-                                      stagingPath: string,
-                                      collection: types.IMod,
-                                      mods: { [modId: string]: types.IMod },
-                                      onProgress: (percent?: number, text?: string) => void,
-                                      onError: (message: string, replace: any) => void)
-                                      : Promise<ICollection> {
+export async function modToCollection(
+  api: types.IExtensionApi,
+  gameId: string,
+  stagingPath: string,
+  collection: types.IMod,
+  mods: { [modId: string]: types.IMod },
+  onProgress: (percent?: number, text?: string) => void,
+  onError: (message: string, replace: any, mayIgnore: boolean) => void)
+  : Promise<ICollection> {
+
   const state = api.getState();
 
   if (selectors.activeGameId(state) !== gameId) {

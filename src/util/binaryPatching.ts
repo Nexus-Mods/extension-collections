@@ -2,13 +2,21 @@ import * as bsdiffT from 'bsdiff-node';
 import * as crc32 from 'crc-32';
 import * as path from 'path';
 import { fs, log, selectors, types, util } from 'vortex-api';
-import { PATCHES_PATH } from '../constants';
+import { MAX_PATCH_SIZE, PATCHES_PATH } from '../constants';
 
 const bsdiff = util.lazyRequire<typeof bsdiffT>(() => require('bsdiff-node'));
 
 function crcFromBuf(data: Buffer) {
   // >>> 0 converts signed to unsigned
   return (crc32.buf(data) >>> 0).toString(16).toUpperCase();
+}
+
+async function validatePatch(srcFilePath: string, patchFilePath: string) {
+  const srcStats: fs.Stats = await fs.statAsync(srcFilePath);
+  const patchStats: fs.Stats = await fs.statAsync(patchFilePath);
+  if (patchStats.size > (srcStats.size * MAX_PATCH_SIZE)) {
+    throw new util.DataInvalid('patch too large');
+  }
 }
 
 export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
@@ -28,42 +36,71 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
 
   const choices = mod.attributes?.installerChoices;
 
-  return new Promise<{ [filePath: string]: string }>((resolve) => {
+  return new Promise<{ [filePath: string]: string }>((resolve, reject) => {
     api.events.emit('simulate-installer', gameId, mod.archiveId, { choices },
                     async (instRes: types.IInstallResult, tempPath: string) => {
-      const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
-      const archivePath = path.join(dlPath, archive.localPath);
+      try {
+        const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
+        const archivePath = path.join(dlPath, archive.localPath);
 
-      const sourceChecksums: { [fileName: string]: string } = {};
-      const szip = new util.SevenZip();
-      const archFiles = await szip.list(archivePath, undefined, async entries => {
-          for (const entry of entries) {
-            if (entry.attr !== 'D') {
-              sourceChecksums[entry.name] = entry['crc'].toUpperCase();
+        const sourceChecksums: { [fileName: string]: string } = {};
+        const szip = new util.SevenZip();
+        await szip.list(archivePath, undefined, async entries => {
+            for (const entry of entries) {
+              if (entry.attr !== 'D') {
+                sourceChecksums[entry.name] = entry['crc'].toUpperCase();
+              }
             }
-          }
-        });
-
-      const result: { [filePath: string]: string } = {};
-
-      for (const file of instRes.instructions.filter(instr => instr.type === 'copy')) {
-        const srcCRC = sourceChecksums[file.source];
-        const dstFilePath = path.join(localPath, file.destination);
-        const dat = await fs.readFileAsync(dstFilePath);
-        const dstCRC =  crcFromBuf(dat);
-        if (srcCRC !== dstCRC) {
-          log('debug', 'found modified file', { filePath: file.source, srcCRC, dstCRC });
-          const srcFilePath = path.join(tempPath, file.source);
-          const patchPath = path.join(destPath, file.destination + '.diff');
-          await fs.ensureDirWritableAsync(path.dirname(patchPath));
-          await bsdiff.diff(srcFilePath, dstFilePath, patchPath, progress => {
-            // nop - currently not showing progress
           });
-          result[file.destination] = srcCRC;
-          log('debug', 'patch created at', patchPath);
+
+        const result: { [filePath: string]: string } = {};
+
+        for (const file of instRes.instructions.filter(instr => instr.type === 'copy')) {
+          const srcCRC = sourceChecksums[file.source];
+          const dstFilePath = path.join(localPath, file.destination);
+          const dat = await fs.readFileAsync(dstFilePath);
+          const dstCRC =  crcFromBuf(dat);
+          if (srcCRC !== dstCRC) {
+            log('debug', 'found modified file', { filePath: file.source, srcCRC, dstCRC });
+            const srcFilePath = path.join(tempPath, file.source);
+            const patchPath = path.join(destPath, file.destination + '.diff');
+            await fs.ensureDirWritableAsync(path.dirname(patchPath));
+            await bsdiff.diff(srcFilePath, dstFilePath, patchPath, progress => {
+              // nop - currently not showing progress
+            });
+            try {
+              await validatePatch(srcFilePath, patchPath);
+              result[file.destination] = srcCRC;
+            } catch (err) {
+              await fs.removeAsync(patchPath);
+
+              const res: types.IDialogResult = await api.showDialog('error',
+                'Can\'t save local edits', {
+                text: 'The local modifications to file "{{fileName}}" can not be included in '
+                    + 'the collection.\n'
+                    + 'We don\'t allow edits that exceed a certain percentage '
+                    + 'of the original file size.\n'
+                    + 'If you continue anyway this file will be installed unmodified for users.',
+                parameters: {
+                  fileName: file.source,
+                },
+              }, [
+                { label: 'Cancel' },
+                { label: 'Continue' },
+              ]);
+
+              if (res.action === 'Cancel') {
+                err['mayIgnore'] = false;
+                throw err;
+              }
+            }
+            log('debug', 'patch created at', patchPath);
+          }
         }
+        resolve(result);
+      } catch (err) {
+        reject(err);
       }
-      resolve(result);
     });
   });
 }

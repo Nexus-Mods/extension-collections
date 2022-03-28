@@ -31,3 +31,5 @@ export const OPTIONAL_TWEAK_PREFIX = '(optional).';
 export const TIME_BEFORE_VOTE = 48 * 60 * 60 * 1000;
 // upon start, time before we first check whether a revision needs to be rated. in milliseconds
 export const DELAY_FIRST_VOTE_REQUEST = 1 * 60 * 1000;
+
+export const MAX_PATCH_SIZE = 0.2;

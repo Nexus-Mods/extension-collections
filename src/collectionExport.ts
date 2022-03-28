@@ -43,11 +43,13 @@ async function zip(zipPath: string, sourcePath: string): Promise<void> {
   await zipper.add(zipPath, files.map(fileName => path.join(sourcePath, fileName)));
 }
 
-async function generateCollectionInfo(api: types.IExtensionApi, gameId: string,
-                                      collection: types.IMod,
-                                      progress: (percent: number, text: string) => void,
-                                      error: (message: string, replace: any) => void)
-                                      : Promise<ICollection> {
+async function generateCollectionInfo(
+  api: types.IExtensionApi, gameId: string,
+  collection: types.IMod,
+  progress: (percent: number, text: string) => void,
+  error: (message: string, replace: any, mayIgnore: boolean) => void)
+  : Promise<ICollection> {
+
   const state = api.getState();
   const mods = state.persistent.mods[gameId];
   const stagingPath = selectors.installPath(state);
@@ -191,8 +193,11 @@ export async function doExportToAPI(api: types.IExtensionApi,
 
   const errors: Array<{ message: string, replace: any }> = [];
 
-  const onError = (message: string, replace: any) => {
+  let mayIgnore: boolean = true;
+
+  const onError = (message: string, replace: any, allowIgnore: boolean) => {
     errors.push({ message, replace });
+    mayIgnore &&= allowIgnore;
   };
 
   let info: ICollection;
@@ -204,7 +209,11 @@ export async function doExportToAPI(api: types.IExtensionApi,
   try {
     info = await generateCollectionInfo(api, gameId, mod, progress, onError);
     if (errors.length > 0) {
-      await queryErrorsContinue(api, errors);
+      if (mayIgnore) {
+        await queryErrorsContinue(api, errors);
+      } else {
+        throw new util.UserCanceled();
+      }
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writeCollectionToFile(state, info, mod, tmpPath);
