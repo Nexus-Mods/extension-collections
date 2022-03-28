@@ -431,8 +431,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         // possible reason for ProcessCanceled is that (un-)deployment may
         // not be possible atm, we definitively should report that
         api.showErrorNotification('Failed to remove mods', err, {
+          message: modName,
           allowReport: !(err instanceof util.ProcessCanceled),
-        });
+          warning: (err instanceof util.ProcessCanceled),
+        } as any);
       }
     } finally {
       api.dismissNotification(notiId);

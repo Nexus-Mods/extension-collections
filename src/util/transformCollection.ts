@@ -881,17 +881,18 @@ function updateCollection(api: types.IExtensionApi,
 
   const removedRules: types.IModRule[] = [];
   // remove rules not found in newRules
-  util.batchDispatch(api.store, mod.rules.reduce((prev: Redux.Action[], rule: types.IModRule) => {
+  util.batchDispatch(api.store, (mod.rules ?? []).reduce(
+    (prev: Redux.Action[], rule: types.IModRule) => {
       if (newRules.find(iter => _.isEqual(rule, iter)) === undefined) {
         removedRules.push(rule);
         prev.push(actions.removeModRule(gameId, mod.id, rule));
       }
       return prev;
     }, []));
-  // add rules not found in the old list
 
+  // add rules not found in the old list
   util.batchDispatch(api.store, newRules.reduce((prev: Redux.Action[], rule: types.IModRule) => {
-    if (mod.rules.find(iter => _.isEqual(rule, iter)) === undefined) {
+    if ((mod.rules ?? []).find(iter => _.isEqual(rule, iter)) === undefined) {
       prev.push(actions.addModRule(gameId, mod.id, rule));
     }
     return prev;
