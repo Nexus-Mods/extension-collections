@@ -5,24 +5,30 @@ import * as Redux from 'redux';
 import { actions, selectors, types, util } from 'vortex-api';
 
 export async function initFromProfile(api: types.IExtensionApi, profileId: string) {
-  const { id, name, updated } = await createCollectionFromProfile(api, profileId);
-  api.store.dispatch(actions.setModEnabled(profileId, id, true));
-  api.sendNotification({
-    type: 'success',
-    id: 'collection-created',
-    title: updated ? 'Collection updated' : 'Collection created',
-    message: name,
-    displayMS: util.calcDuration(name.length + 20),
-    actions: [
-      {
-        title: 'Edit',
-        action: dismiss => {
-          api.events.emit('edit-collection', id);
-          dismiss();
+  try {
+    const { id, name, updated } = await createCollectionFromProfile(api, profileId);
+    api.store.dispatch(actions.setModEnabled(profileId, id, true));
+    api.sendNotification({
+      type: 'success',
+      id: 'collection-created',
+      title: updated ? 'Collection updated' : 'Collection created',
+      message: name,
+      displayMS: util.calcDuration(name.length + 20),
+      actions: [
+        {
+          title: 'Edit',
+          action: dismiss => {
+            api.events.emit('edit-collection', id);
+            dismiss();
+          },
         },
-      },
-    ],
-  });
+      ],
+    });
+  } catch (err) {
+    if (!(err instanceof util.UserCanceled)) {
+      throw err;
+    }
+  }
 }
 
 export function addCollectionCondition(api: types.IExtensionApi, instanceIds: string[]) {

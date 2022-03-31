@@ -97,7 +97,7 @@ class InfoCache {
       util.getSafe(state, ['persistent', 'mods', gameId], {});
     const colMod = Object.values(mods).find(iter =>
       (iter.type === MOD_TYPE) && (iter.attributes?.revisionId === revisionId));
-    if (colMod === undefined) {
+    if (colMod?.installationPath === undefined) {
       return [];
     }
     const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));

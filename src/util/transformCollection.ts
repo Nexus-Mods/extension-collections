@@ -1,4 +1,5 @@
-import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MOD_TYPE, PATCHES_PATH } from '../constants';
+import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH,
+         MOD_TYPE, PATCHES_PATH } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
          ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
@@ -904,6 +905,26 @@ function updateCollection(api: types.IExtensionApi,
   }, []));
 }
 
+export function validateName(t: types.TFunction,
+                             content: types.IDialogContent): types.IConditionResult[] {
+  const input = content.input[0].value || '';
+  if ((input.length >= MIN_COLLECTION_NAME_LENGTH)
+    && (input.length <= MAX_COLLECTION_NAME_LENGTH)) {
+    return [];
+  } else {
+    return [{
+      id: 'name',
+      errorText: t('Name must be between {{min}}-{{max}} characters long', {
+        replace: {
+          min: MIN_COLLECTION_NAME_LENGTH,
+          max: MAX_COLLECTION_NAME_LENGTH,
+        },
+      }),
+      actions: ['Create'],
+    }];
+  }
+}
+
 export async function createCollectionFromProfile(api: types.IExtensionApi,
                                                   profileId: string)
     : Promise<{ id: string, name: string, updated: boolean }> {
@@ -911,19 +932,40 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const profile = state.persistent.profiles[profileId];
 
   const id = makeCollectionId(profileId);
-  let name = `Collection: ${profile.name}`;
-  if (name.length > MAX_COLLECTION_NAME_LENGTH) {
-    name = name.slice(0, MAX_COLLECTION_NAME_LENGTH - 3) + '...';
-  }
+
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
                                        mod?.rules ?? [], mod?.id);
 
+  let name: string;
+
   if (mod === undefined) {
-    await createCollection(api, profile.gameId, id, name, rules);
-    await createTweaksFromProfile(api, profile, state.persistent.mods[profile.gameId] ?? {}, id);
+    const t = api.translate;
+    const result = await api.showDialog('question', 'New collection from profile', {
+      text: 'Create a collection containing the mods enabled in your current profile.',
+      input: [{
+        id: 'name',
+        label: 'Please enter a name for your new collection',
+        type: 'text',
+        value: profile.name,
+      }],
+      condition: content => validateName(t, content),
+    }, [
+      { label: 'Cancel' },
+      { label: 'Create', default: true },
+    ]);
+
+    if (result.action === 'Create') {
+      name = result.input['name'];
+      await createCollection(api, profile.gameId, id, name, rules);
+      await createTweaksFromProfile(
+        api, profile, state.persistent.mods[profile.gameId] ?? {}, id);
+    } else {
+      throw new util.UserCanceled();
+    }
   } else {
+    name = mod.attributes?.name;
     updateCollection(api, profile.gameId, mod, rules);
   }
 

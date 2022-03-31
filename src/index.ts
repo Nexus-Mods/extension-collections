@@ -162,9 +162,11 @@ async function cloneInstalledCollection(api: types.IExtensionApi,
   }
 }
 
-function createNewCollection(api: types.IExtensionApi, profile: types.IProfile, name: string) {
+async function createNewCollection(
+  api: types.IExtensionApi, profile: types.IProfile, name: string) {
+
   const id = makeCollectionId(shortid());
-  createCollection(api, profile.gameId, id, name, []);
+  await createCollection(api, profile.gameId, id, name, []);
   api.sendNotification({
     type: 'success',
     id: 'collection-created',
