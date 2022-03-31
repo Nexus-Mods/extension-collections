@@ -3,7 +3,7 @@ import {
   MAX_COLLECTION_NAME_LENGTH,
   MIN_COLLECTION_NAME_LENGTH,
   MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
-import { makeCollectionId } from '../../util/transformCollection';
+import { makeCollectionId, validateName } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
@@ -318,35 +318,40 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
     util.opn(BUG_REPORT_URL).catch(() => null);
   }
 
-  private fromProfile = () => {
-    const { profile } = this.props;
-    initFromProfile(this.context.api, profile.id)
-      .then(() => this.refreshImages())
-      .catch(err => this.context.api.showErrorNotification('Failed to init collection', err));
+  private fromProfile = async () => {
+    const { t, profile } = this.props;
+
+    try {
+      // initFromProfile will automatically query for the name
+      await initFromProfile(this.context.api, profile.id);
+      this.refreshImages();
+    } catch (err) {
+      if (!(err instanceof util.UserCanceled)) {
+        this.context.api.showErrorNotification('Failed to init collection', err);
+      }
+    }
   }
 
-  private fromEmpty = () => {
+  private fromEmpty = async () => {
     const { t, onCreateCollection } = this.props;
-    this.context.api.showDialog('question', 'Name', {
-      text: 'Please enter a name for your new collection.',
-      input: [{ id: 'name', label: 'Collection Name', type: 'text' }],
-      condition: (content: types.IDialogContent): types.ConditionResults => {
-        const validation = validateCollectionName(t, content.input[0].value || '');
-        if (validation !== undefined) {
-          return [{ actions: ['Create'], errorText: validation, id: 'name' }];
-        } else {
-          return [];
-        }
-      },
-    }, [
-      { label: 'Cancel' },
-      { label: 'Create', default: true },
-    ])
-      .then((result: types.IDialogResult) => {
-        if (result.action === 'Create') {
-          onCreateCollection(result.input['name']);
-        }
-      });
+
+    try {
+      const result = await this.context.api.showDialog('question', 'New empty Collection', {
+        text: 'Create an empty collection which you can manually add mods to.',
+        input: [{ id: 'name', label: 'Collection Name', type: 'text' }],
+        condition: content => validateName(t, content),
+      }, [
+        { label: 'Cancel' },
+        { label: 'Create', default: true },
+      ]);
+
+      if (result.action === 'Create') {
+        await onCreateCollection(result.input['name']);
+        this.refreshImages();
+      }
+    } catch (err) {
+      this.context.api.showErrorNotification('Failed to init collection', err);
+    }
   }
 
   private refreshImages() {
