@@ -783,7 +783,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const dlInfo: types.IDownload =
         util.getSafe(state().persistent.downloads.files, [dlId], undefined);
       const profile = selectors.activeProfile(state());
-      if (profile === undefined) {
+      if ((profile === undefined) || (dlInfo === undefined)) {
         return;
       }
       if (!dlInfo.game.includes(profile.gameId)) {
