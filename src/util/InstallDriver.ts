@@ -355,7 +355,9 @@ class InstallDriver {
   }
 
   private onStop() {
-    this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + this.mCollection.id);
+    if (this.mCollection !== undefined) {
+      this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + this.mCollection.id);
+    }
     this.mCollection = undefined;
     this.mProfile = undefined;
     this.mInstalledMods = [];
