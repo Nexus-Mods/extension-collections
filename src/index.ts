@@ -557,7 +557,7 @@ async function triggerVoteNotification(api: types.IExtensionApi,
   const revInfo =
     await driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
 
-  if (revInfo === undefined) {
+  if (!revInfo) {
     // no info about that revision? This might be a temporary network issue but if we don't
     // resolve here and the revision actually doesn't exist any more we'd never get rid of
     // the vote request
