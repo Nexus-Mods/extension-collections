@@ -331,6 +331,9 @@ class InstallDriver {
             && (util.findModByRef(rule.reference, mods) === undefined);
 
           const incomplete = (this.mCollection.rules ?? []).find(filter);
+
+          this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
+
           if (incomplete === undefined) {
             // revisit review screen
             await this.initCollectionInfo();
@@ -358,6 +361,9 @@ class InstallDriver {
   }
 
   private onStop() {
+    if (this.mCollection !== undefined) {
+      this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + this.mCollection.id);
+    }
     this.mCollection = undefined;
     this.mProfile = undefined;
     this.mInstalledMods = [];

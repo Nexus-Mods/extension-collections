@@ -557,7 +557,7 @@ async function triggerVoteNotification(api: types.IExtensionApi,
   const revInfo =
     await driver.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
 
-  if (revInfo === undefined) {
+  if (!revInfo) {
     // no info about that revision? This might be a temporary network issue but if we don't
     // resolve here and the revision actually doesn't exist any more we'd never get rid of
     // the vote request
@@ -783,7 +783,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       const dlInfo: types.IDownload =
         util.getSafe(state().persistent.downloads.files, [dlId], undefined);
       const profile = selectors.activeProfile(state());
-      if (profile === undefined) {
+      if ((profile === undefined) || (dlInfo === undefined)) {
         return;
       }
       if (!dlInfo.game.includes(profile.gameId)) {
