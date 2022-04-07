@@ -17,12 +17,14 @@ export interface IModsPageProps {
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   showPhaseUsage: boolean;
+  showBinpatchWarning: boolean;
   onSetModVersion: (modId: string, version: 'exact' | 'newest') => void;
   onAddRule: (rule: types.IModRule) => void;
   onRemoveRule: (rule: types.IModRule) => void;
   onSetCollectionAttribute: (path: string[], value: any) => void;
   onAddModsDialog: (modId: string) => void;
   onDismissPhaseUsage: () => void;
+  onDismissBinpatchWarning: () => void;
   onShowPhaseColumn: () => void;
 }
 
@@ -648,7 +650,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           actions: false,
           onChangeValue: (source: IModEntry, value: any) => {
             (async () => {
-              if (value) {
+              if (value && this.props.showBinpatchWarning) {
                 const result = await this.context.api.showDialog('question', 'Save Local Edits', {
                   bbcode: 'With this option enabled, when you upload the Collection Vortex will '
                     + 'compare your files on disk against the archive provided by the mod author '
@@ -670,6 +672,10 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
                 ]);
                 if (result.action === 'Enable') {
                   const state = this.context.api.getState();
+
+                  if (result.input['dont_show_again']) {
+                    this.props.onDismissBinpatchWarning();
+                  }
 
                   const gameMode = selectors.activeGameId(state);
                   const archive = state.persistent.downloads.files[source.mod.archiveId];

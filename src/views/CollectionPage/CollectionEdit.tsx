@@ -35,6 +35,7 @@ export interface ICollectionEditBaseProps {
 interface IConnectedProps {
   phaseColumnVisible: boolean;
   showPhaseUsage: boolean;
+  showBinpatchWarning: boolean;
 }
 
 interface IActionProps {
@@ -43,6 +44,7 @@ interface IActionProps {
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onAddModsDialog: (collectionId: string) => void;
   onDismissPhaseUsage: () => void;
+  onDismissBinpatchWarning: () => void;
   onShowPhaseColumn: () => void;
 }
 
@@ -106,7 +108,8 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 
   public render(): React.ReactNode {
-    const { t, mods, collection, exts, onDismissPhaseUsage,
+    const { t, mods, collection, showBinpatchWarning, exts,
+            onDismissBinpatchWarning, onDismissPhaseUsage,
             profile, showPhaseUsage } = this.props;
     const { page, revision } = this.state;
 
@@ -169,11 +172,13 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   t={t}
                   onSetModVersion={null}
                   showPhaseUsage={showPhaseUsage}
+                  showBinpatchWarning={showBinpatchWarning}
                   onAddRule={this.addRule}
                   onRemoveRule={this.removeRule}
                   onSetCollectionAttribute={this.setCollectionAttribute}
                   onAddModsDialog={this.addModsDialog}
                   onDismissPhaseUsage={onDismissPhaseUsage}
+                  onDismissBinpatchWarning={onDismissBinpatchWarning}
                   onShowPhaseColumn={this.showPhaseColumn}
                 />
               </Panel>
@@ -329,6 +334,7 @@ function mapStateToProps(state: types.IState, ownProps: ICollectionEditBaseProps
   return {
     phaseColumnVisible: settings.tables['collection-mods']?.attributes?.phase?.enabled ?? false,
     showPhaseUsage: settings.interface.usage['collection-phase'] ?? true,
+    showBinpatchWarning: settings.interface.usage['binpatch-warning'] ?? true,
   };
 }
 
@@ -344,6 +350,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(startAddModsToCollection(collectionId)),
     onDismissPhaseUsage: () =>
       dispatch(actions.showUsageInstruction('collection-phase', false)),
+    onDismissBinpatchWarning: () =>
+      dispatch(actions.showUsageInstruction('binpatch-warning', false)),
     onShowPhaseColumn: () =>
       dispatch(actions.setAttributeVisible('collection-mods', 'phase', true)),
   };
