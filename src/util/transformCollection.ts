@@ -158,7 +158,9 @@ async function rulesToCollectionMods(
 
   const collectionPath = path.join(stagingPath, collection.installationPath);
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
+  await fs.removeAsync(path.join(collectionPath, PATCHES_PATH));
   await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
+  await fs.ensureDirAsync(path.join(collectionPath, PATCHES_PATH));
 
   const state = api.getState();
   const downloads = state.persistent.downloads.files;
