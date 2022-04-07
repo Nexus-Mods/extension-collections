@@ -11,6 +11,7 @@ import InstallModeRenderer from './InstallModeRenderer';
 import {
   ComponentEx, EmptyPlaceholder, fs, Icon, ITableRowAction, OptionsFilter, selectors,
   Table, TableTextFilter, tooltip, types, Usage, util } from 'vortex-api';
+import { ADULT_CONTENT_URL } from '../constants';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
@@ -1164,9 +1165,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           {
             id: 'adult',
             bbcode: 'Mod contains adult content. '
-                  + '([url=https://help.nexusmods.com/article/19-adult-content-guidelines]'
-                  + 'Adult Content Guidelines'
-                  + '[/url])',
+                  + `([url=${ADULT_CONTENT_URL}]Adult Content Guidelines[/url])`,
             value: src.adultContent ?? false,
           },
         ],

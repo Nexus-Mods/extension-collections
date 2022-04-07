@@ -10,6 +10,7 @@ export const NEXUS_PROTOCOL = 'https:';
 export const PREMIUM_PATH = ['account', 'billing', 'premium'];
 
 export const TOS_URL = 'https://help.nexusmods.com/article/115-guidelines-for-collections';
+export const ADULT_CONTENT_URL = 'https://help.nexusmods.com/article/19-adult-content-guidelines';
 
 export const BUNDLED_PATH = 'bundled';
 export const PATCHES_PATH = 'patches';
