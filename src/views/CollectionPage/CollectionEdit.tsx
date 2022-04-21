@@ -289,7 +289,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
       util.opn(util.nexusModsURL(
         [collection.game.domainName,
           'collections', collection.slug,
-          'revisions', revision.revision.toString()], {
+          'revisions', revision.revisionNumber.toString()], {
         campaign: util.Campaign.ViewCollection,
         section: util.Section.Collections,
       }));

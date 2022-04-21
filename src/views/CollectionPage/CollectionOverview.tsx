@@ -249,7 +249,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                   {(revision?.revisionStatus !== 'is_private') ? (
                     <HealthIndicator
                       t={t}
-                      revisionNumber={revision?.revision ?? 0}
+                      revisionNumber={revision?.revisionNumber ?? 0}
                       value={revision?.rating}
                       onVoteSuccess={this.voteSuccess}
                       ownSuccess={votedSuccess}
@@ -289,7 +289,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
       this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Added Collection');
       util.opn(util.nexusModsURL([collection.game.domainName,
         'collections', collection.slug,
-        'revisions', revision.revision.toString()], {
+        'revisions', revision.revisionNumber.toString()], {
         campaign: util.Campaign.ViewCollection,
         section: util.Section.Collections,
       }));
