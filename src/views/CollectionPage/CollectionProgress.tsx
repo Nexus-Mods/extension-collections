@@ -59,7 +59,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
         downloaded: 'pending',
         installing: 'installing',
         downloading: 'downloading',
-      }[mod.state];
+      }[mod.state] ?? 'pending';
     };
 
     interface IModGroups {
