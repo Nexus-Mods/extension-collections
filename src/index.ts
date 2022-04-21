@@ -283,7 +283,7 @@ async function updateMeta(api: types.IExtensionApi) {
         if (!!info) {
           const currentRevision = info.collection.revisions
             .filter(rev => rev.revisionStatus === 'published')
-            .sort((lhs, rhs) => rhs.revision - lhs.revision)
+            .sort((lhs, rhs) => rhs.revisionNumber - lhs.revisionNumber)
             [0];
           // currentRevision can be undefined if this collection has no published
           // revision (i.e. the users own draft revision)
@@ -291,7 +291,7 @@ async function updateMeta(api: types.IExtensionApi) {
           api.store.dispatch(actions.setModAttributes(gameMode, modId, {
             customFileName: info.collection.name,
             collectionSlug: info.collection.slug,
-            revisionNumber: info.revision,
+            revisionNumber: info.revisionNumber,
             author: info.collection.user?.name,
             uploader: info.collection.user?.name,
             uploaderAvatar: info.collection.user?.avatar,
@@ -299,8 +299,8 @@ async function updateMeta(api: types.IExtensionApi) {
             pictureUrl: info.collection.tileImage?.url,
             description: info.collection.description,
             shortDescription: info.collection.summary,
-            newestFileId: currentRevision?.revision,
-            newestVersion: currentRevision?.revision?.toString?.(),
+            newestFileId: currentRevision?.revisionNumber,
+            newestVersion: currentRevision?.revisionNumber?.toString?.(),
             metadata: info.metadata,
             rating: info.rating,
           }));
@@ -857,11 +857,11 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       if ((collModId !== undefined) && !mods[gameId][collModId].attributes.editable) {
         const newestVersion = coll.revisions
           .filter(rev => rev.revisionStatus === 'published')
-          .sort((lhs, rhs) => rhs.revision - lhs.revision);
+          .sort((lhs, rhs) => rhs.revisionNumber - lhs.revisionNumber);
 
         if (newestVersion.length > 0) {
           api.store.dispatch(actions.setModAttribute(gameId, collModId,
-            'newestVersion', newestVersion[0].revision.toString()));
+            'newestVersion', newestVersion[0].revisionNumber.toString()));
         }
       }
     });
