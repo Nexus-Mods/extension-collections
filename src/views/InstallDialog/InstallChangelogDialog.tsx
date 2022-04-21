@@ -71,7 +71,7 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
         <Media.Right>
           <FlexLayout type='row'>
             <h4>{t('Revision {{revNum}} Changelog',
-                  { replace: { revNum: revisionInfo.revision } })}</h4>
+                  { replace: { revNum: revisionInfo.revisionNumber } })}</h4>
             <div className='changelog-time'>{changelogDate.toLocaleDateString(lang)}</div>
           </FlexLayout>
           <div className='changelog-scroll'>

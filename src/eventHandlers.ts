@@ -41,7 +41,7 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
           collectionId: collection.id,
           collectionSlug,
           revisionId: latest.id,
-          revisionNumber: latest.revision,
+          revisionNumber: latest.revisionNumber,
         },
         revisionInfo: latest,
       },
@@ -53,7 +53,7 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
       const fileName = util.sanitizeFilename(collection.name);
       dlId = await util.toPromise(cb =>
         api.events.emit('start-download', downloadURLs.map(iter => iter.URI), modInfo,
-          fileName + `-rev${latest.revision}.7z`, cb, 'never', { allowInstall: false }));
+          fileName + `-rev${latest.revisionNumber}.7z`, cb, 'never', { allowInstall: false }));
     } catch (err) {
       if (err.name === 'AlreadyDownloaded') {
         const { files } = api.getState().persistent.downloads;
