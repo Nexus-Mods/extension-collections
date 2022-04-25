@@ -57,6 +57,7 @@ interface IComponentState {
 }
 
 const emptyObj = {};
+const emptyArr = [];
 
 class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, IComponentState> {
   private mMatchRefDebouncer: util.Debouncer;
@@ -101,6 +102,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   public render(): JSX.Element {
     const { t, downloads, driver, game, mods, notifications, profile } = this.props;
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
+
+    if (profile === undefined) {
+      return null;
+    }
 
     const collection = (selectedCollection !== undefined)
       ? mods[selectedCollection]
@@ -644,15 +649,15 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
 function mapStateToProps(state: types.IState): IConnectedProps {
   const profile = selectors.activeProfile(state);
-  const game = selectors.gameById(state, profile.gameId);
+  const game = profile !== undefined ? selectors.gameById(state, profile.gameId) : undefined;
   return {
     game,
     profile,
-    mods: state.persistent.mods[profile.gameId] || emptyObj,
+    mods: profile !== undefined ? (state.persistent.mods[profile.gameId] ?? emptyObj) : emptyObj,
     notifications: state.session.notifications.notifications,
     downloads: state.persistent.downloads.files,
     userInfo: state.persistent['nexus']?.userInfo,
-    exts: findExtensions(state, profile.gameId),
+    exts: profile !== undefined ? findExtensions(state, profile.gameId) : emptyArr,
   };
 }
 
