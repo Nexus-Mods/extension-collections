@@ -1411,3 +1411,21 @@ ul.collection-mods-page-attrib-tooltip {
     color: $brand-success;
   }
 }
+
+#collection-start-page .tab-pane {
+  .panel-heading {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.collection-sort-container {
+  width: 20em;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+
+  > .Select {
+    flex: 1 1 0;
+  }
+}
