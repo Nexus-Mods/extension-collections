@@ -1,6 +1,7 @@
 import { clearPendingVote, updateSuccessRate } from './actions/persistent';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
+import settingsReducer from './reducers/settings';
 import { ICollection } from './types/ICollection';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { genDefaultsAction } from './util/defaults';
@@ -323,6 +324,7 @@ function register(context: types.IExtensionContext,
   let collectionsCB: ICallbackMap;
 
   context.registerReducer(['session', 'collections'], sessionReducer);
+  context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
   context.registerDialog('collection-install', InstallStartDialog, () => ({

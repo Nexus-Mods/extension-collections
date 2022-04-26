@@ -3,16 +3,21 @@ import {
   MAX_COLLECTION_NAME_LENGTH,
   MIN_COLLECTION_NAME_LENGTH,
   MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
+import InfoCache from '../../util/InfoCache';
 import { makeCollectionId, validateName } from '../../util/transformCollection';
 
 import CollectionThumbnail from './CollectionThumbnail';
 
+import { IRevision } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
+import * as _ from 'lodash';
 import * as React from 'react';
 import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
+import { connect } from 'react-redux';
+import Select from 'react-select';
 import { ComponentEx, EmptyPlaceholder, Icon, IconBar, tooltip, types, util } from 'vortex-api';
-import InfoCache from '../../util/InfoCache';
+import { setSortAdded, setSortWorkshop } from '../../actions/settings';
 
 const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSc3csy4ycVBECvHQDgri37Gqq1gOuTQ7LcpiIaOkGHpDsW4kA/viewform?usp=sf_link';
 const BUG_REPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdmDBdGjTQVRa7wRouN4yP6zMvqsxTT86R-DwmQXZq7SWGCSg/viewform?usp=sf_link';
@@ -37,10 +42,26 @@ export interface IStartPageProps {
   onSetActiveTab: (tabId: string) => void;
 }
 
+interface IConnectedProps {
+  sortAdded: string;
+  sortWorkshop: string;
+}
+
+interface IActionProps {
+  onSetSortAdded: (sorting: string) => void;
+  onSetSortWorkshop: (sorting: string) => void;
+}
+
+interface ISortItem {
+  mod: types.IMod;
+  revision: IRevision;
+}
+
 interface IComponentState {
   createOpen: boolean;
   mousePosition: { x: number, y: number };
   imageTime: number;
+  collectionsEx: { added: ISortItem[], workshop: ISortItem[] };
 }
 
 const nop = () => null;
@@ -145,30 +166,41 @@ function CreateCard(props: ICreateCardProps) {
   );
 }
 
-class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
-  constructor(props: IStartPageProps) {
+type IProps = IStartPageProps & IConnectedProps & IActionProps;
+
+class StartPage extends ComponentEx<IProps, IComponentState> {
+  constructor(props: IProps) {
     super(props);
     this.initState({
       createOpen: false,
       imageTime: Date.now(),
       mousePosition: { x: 0, y: 0 },
+      collectionsEx: { added: [], workshop: [] },
     });
+  }
+
+  public componentDidMount(): void {
+    const collectionsNow = Object.values(this.props.mods).filter(mod => mod.type === MOD_TYPE);
+    this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop);
+  }
+
+  public componentDidUpdate(prevProps: IProps, prevState: Readonly<IComponentState>): void {
+    const collectionsPrev = Object.values(prevProps.mods).filter(mod => mod.type === MOD_TYPE);
+    const collectionsNow = Object.values(this.props.mods).filter(mod => mod.type === MOD_TYPE);
+
+    if (!_.isEqual(collectionsPrev, collectionsNow)
+        || (prevProps.sortAdded !== this.props.sortAdded)
+        || (prevProps.sortWorkshop !== this.props.sortWorkshop)) {
+      this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop);
+    }
   }
 
   public render(): JSX.Element {
     const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause,
-            onRemove, onResume, onUpdate, onUpload, onView } = this.props;
-    const { imageTime } = this.state;
+            onRemove, onResume, onUpdate, onUpload, onView, sortAdded, sortWorkshop } = this.props;
+    const { imageTime, collectionsEx } = this.state;
 
-    const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
-    const { foreign, own } = collections.reduce((prev, mod) => {
-      if (util.getSafe(mod.attributes, ['editable'], false)) {
-        prev.own.push(mod);
-      } else {
-        prev.foreign.push(mod);
-      }
-      return prev;
-    }, { foreign: [], own: [] });
+    const { added, workshop } = collectionsEx;
 
     const id = makeCollectionId(profile.id);
 
@@ -209,20 +241,37 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                 <Panel.Title>
                   {t('View and manage collections created by other users.')}
                 </Panel.Title>
+                <div className='flex-fill' />
+                <div className='collection-sort-container'>
+                  {t('Sort by:')}
+                  <Select
+                    className='select-compact'
+                    options={[
+                      { value: 'alphabetical', label: t('Name A-Z') },
+                      { value: 'datedownloaded', label: t('Date downloaded') },
+                      { value: 'recentlyupdated', label: t('Recently updated') },
+                    ]}
+                    value={sortAdded}
+                    onChange={this.setSortAdded}
+                    clearable={false}
+                    autosize={false}
+                    searchable={false}
+                  />
+                </div>
               </Panel.Heading>
               <Panel.Body>
                 <div className='collection-list'>
                   <AddCard t={t} onClick={this.openCollections} />
-                  {foreign.map(mod =>
+                  {added.map(mod =>
                     <CollectionThumbnail
-                      key={mod.id}
+                      key={mod.mod.id}
                       t={t}
                       gameId={profile.gameId}
                       imageTime={imageTime}
                       installing={installing}
                       mods={mods}
-                      incomplete={matchedReferences[mod.id]?.includes?.(null)}
-                      collection={mod}
+                      incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
+                      collection={mod.mod}
                       infoCache={this.props.infoCache}
                       onView={onView}
                       onRemove={onRemove}
@@ -254,6 +303,23 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     </a>
                   </Trans>
                 </Panel.Title>
+                <div className='flex-fill' />
+                <div className='collection-sort-container'>
+                  {t('Sort by:')}
+                  <Select
+                    className='select-compact'
+                    options={[
+                      { value: 'alphabetical', label: t('Name A-Z') },
+                      { value: 'datecreated', label: t('Date created') },
+                      { value: 'recentlyupdated', label: t('Recently updated') },
+                    ]}
+                    value={sortWorkshop}
+                    onChange={this.setSortWorkshop}
+                    clearable={false}
+                    autosize={false}
+                    searchable={false}
+                  />
+                </div>
               </Panel.Heading>
               <Panel.Body>
                 <div className='collection-list'>
@@ -263,16 +329,16 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
                     onCreateEmpty={this.fromEmpty}
                     onTrackClick={this.trackEvent}
                   />
-                  {own.map(mod =>
+                  {workshop.map(mod =>
                     <CollectionThumbnail
-                      key={mod.id}
+                      key={mod.mod.id}
                       t={t}
                       gameId={profile.gameId}
-                      collection={mod}
+                      collection={mod.mod}
                       infoCache={this.props.infoCache}
                       imageTime={imageTime}
                       mods={mods}
-                      incomplete={matchedReferences[mod.id]?.includes?.(null)}
+                      incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
                       onEdit={onEdit}
                       onRemove={onRemove}
                       onUpload={onUpload}
@@ -285,6 +351,63 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
         </Tabs>
       </>
     );
+  }
+
+  private sorter(sorting: string): (lhs: ISortItem, rhs: ISortItem) => number {
+    const alphabetical = (lhs: ISortItem, rhs: ISortItem) =>
+      util.renderModName(lhs.mod).localeCompare(util.renderModName(rhs.mod));
+
+    return {
+      alphabetical,
+      datedownloaded: (lhs: ISortItem, rhs: ISortItem) =>
+        // we install collections immediately and remove the archive, so this is the best
+        // approximation but also should be 100% correct
+        (rhs.mod.attributes?.installTime ?? '')
+          .localeCompare(lhs.mod.attributes?.installTime ?? ''),
+      datecreated: (lhs: ISortItem, rhs: ISortItem) =>
+        (rhs.mod.attributes?.installTime ?? '')
+          .localeCompare(lhs.mod.attributes?.installTime ?? ''),
+      recentlyupdated: (lhs: ISortItem, rhs: ISortItem) =>
+        (rhs.revision?.updatedAt ?? rhs.mod.attributes?.installTime ?? '').localeCompare?.(
+          lhs.revision?.updatedAt ?? lhs.mod.attributes?.installTime ?? ''),
+    }[sorting] ?? alphabetical;
+  }
+
+  private updateSorted(collections: types.IMod[],
+                       sortAdded: string,
+                       sortWorkshop: string) {
+
+    Promise.all(collections.map(async mod => {
+      const { revisionId, collectionSlug, revisionNumber } = mod.attributes ?? {};
+      const revision = revisionNumber !== undefined
+        ? await this.props.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber)
+        : undefined;
+      return { mod, revision };
+    }))
+    .then((result: ISortItem[]) => {
+      let { foreign, own }: { foreign: ISortItem[], own: ISortItem[] } =
+        result.reduce((prev, mod) => {
+          if (util.getSafe(mod.mod.attributes, ['editable'], false)) {
+            prev.own.push(mod);
+          } else {
+            prev.foreign.push(mod);
+          }
+          return prev;
+        }, { foreign: [], own: [] });
+
+      foreign = foreign.sort(this.sorter(sortAdded));
+      own = own.sort(this.sorter(sortWorkshop));
+      this.nextState.collectionsEx = { added: foreign, workshop: own };
+    })
+    ;
+  }
+
+  private setSortAdded = (value: { value: string, label: string }) => {
+    this.props.onSetSortAdded(value.value);
+  }
+
+  private setSortWorkshop = (value: { value: string, label: string }) => {
+    this.props.onSetSortWorkshop(value.value);
   }
 
   private setActiveTab = (tabId: any) => {
@@ -359,4 +482,19 @@ class StartPage extends ComponentEx<IStartPageProps, IComponentState> {
   }
 }
 
-export default StartPage as React.ComponentClass<IStartPageProps>;
+function mapStateToProps(state: any): IConnectedProps {
+  return {
+    sortAdded: state.settings.collections.sortAdded ?? 'datedownloaded',
+    sortWorkshop: state.settings.collections.sortWorkshop ?? 'recentlyupdated',
+  };
+}
+
+function mapDispatchToProps(dispatch): IActionProps {
+  return {
+    onSetSortAdded: (sorting: string) => dispatch(setSortAdded(sorting)),
+    onSetSortWorkshop: (sorting: string) => dispatch(setSortWorkshop(sorting)),
+  };
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(
+  StartPage) as any as React.ComponentClass<IStartPageProps>;
