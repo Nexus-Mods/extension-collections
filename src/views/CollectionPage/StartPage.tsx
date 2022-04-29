@@ -64,6 +64,10 @@ interface IComponentState {
   collectionsEx: { added: ISortItem[], workshop: ISortItem[] };
 }
 
+function dateCompare(lhs: Date | string, rhs: Date | string): number {
+  return (new Date(lhs ?? 0)).getTime() - (new Date(rhs ?? 0)).getTime();
+}
+
 const nop = () => null;
 
 // allow any unicode character that is considered a letter or a number and the
@@ -362,14 +366,12 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
       datedownloaded: (lhs: ISortItem, rhs: ISortItem) =>
         // we install collections immediately and remove the archive, so this is the best
         // approximation but also should be 100% correct
-        (rhs.mod.attributes?.installTime ?? '')
-          .localeCompare(lhs.mod.attributes?.installTime ?? ''),
+        dateCompare(rhs.mod.attributes?.installTime, lhs.mod.attributes?.installTime),
       datecreated: (lhs: ISortItem, rhs: ISortItem) =>
-        (rhs.mod.attributes?.installTime ?? '')
-          .localeCompare(lhs.mod.attributes?.installTime ?? ''),
+        dateCompare(rhs.mod.attributes?.installTime, lhs.mod.attributes?.installTime),
       recentlyupdated: (lhs: ISortItem, rhs: ISortItem) =>
-        (rhs.revision?.updatedAt ?? rhs.mod.attributes?.installTime ?? '').localeCompare?.(
-          lhs.revision?.updatedAt ?? lhs.mod.attributes?.installTime ?? ''),
+        dateCompare(rhs.revision?.updatedAt ?? rhs.mod.attributes?.installTime,
+                    lhs.revision?.updatedAt ?? lhs.mod.attributes?.installTime),
     }[sorting] ?? alphabetical;
   }
 
