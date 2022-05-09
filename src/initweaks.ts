@@ -133,7 +133,8 @@ async function getAllTweaks(api: types.IExtensionApi,
 
   const installationPath = selectors.installPathForGame(state, profile.gameId);
   const enabledMods = Object.keys(mods)
-    .filter(id => util.getSafe(profile.modState, [id, 'enabled'], false));
+    .filter(id => util.getSafe(profile.modState, [id, 'enabled'], false)
+               && (mods[id].installationPath !== undefined));
   const validTweaks: IINITweak[] = [];
   for (const modId of enabledMods) {
     const modPath = path.join(installationPath, mods[modId].installationPath);
