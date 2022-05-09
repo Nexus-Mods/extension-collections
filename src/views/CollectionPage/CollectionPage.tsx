@@ -151,6 +151,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         icon: 'show',
         title: 'Show in Mods',
         action: this.showInMods,
+        condition: instanceId => this.modAtLeastDownloaded(instanceId),
         singleRowAction: true,
         multiRowAction: false,
       },
@@ -642,6 +643,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     } else {
       return false;
     }
+  }
+
+  private modAtLeastDownloaded = (instanceIds: string | string[]) => {
+    const instanceId: string = Array.isArray(instanceIds) ? instanceIds[0] : instanceIds;
+    const mod = this.state.modsEx[instanceId];
+    return mod.state !== null;
   }
 
   private ignoreSelected = (modIds: string[]) => {
