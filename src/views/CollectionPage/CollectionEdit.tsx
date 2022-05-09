@@ -284,7 +284,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     const { revision } = this.state;
     const { collection } = revision;
 
-    if (collection !== undefined) {
+    if ((collection !== undefined) && (revision?.revisionNumber !== undefined)) {
       this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Workshop Collection');
       util.opn(util.nexusModsURL(
         [collection.game.domainName,

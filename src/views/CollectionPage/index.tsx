@@ -570,7 +570,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       try {
         const { slug, revisionNumber } =
           await doExportToAPI(api, profile.gameId, collectionId, userInfo.name);
-        if (slug !== undefined) {
+        if ((slug !== undefined) && (revisionNumber !== undefined)) {
           api.sendNotification({
             type: 'success',
             message: 'Collection submitted',
