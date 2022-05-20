@@ -247,7 +247,12 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
 
         // update the source reference to match the actual bundled file
         source.fileExpression = generatedName;
-        source.fileSize = (await fs.statAsync(destPath)).size;
+        let totalSize: number = 0;
+        await turbowalk(destPath, items =>
+          totalSize += items.reduce((sub: number, entry) => sub + entry.size, 0));
+
+        // source.fileSize = (await fs.statAsync(destPath)).size;
+        source.fileSize = totalSize;
       }
 
       onProgress(Math.floor((finished / total) * 100), modName);
