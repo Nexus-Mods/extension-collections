@@ -492,7 +492,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { api } = this.context;
 
     try {
-      if (mods[modId].attributes?.editable) {
+      if (mods[modId]?.attributes?.editable) {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
         return this.removeWorkshop(modId);
       } else {
