@@ -346,16 +346,21 @@ function register(context: types.IExtensionContext,
       const gameId = selectors.activeGameId(state);
       const collection = state.persistent.mods[gameId][collectionId];
 
-      modIds.forEach(modId => {
-        if (!alreadyIncluded(collection.rules, modId)) {
-          context.api.store.dispatch(actions.addModRule(gameId, collectionId, {
-            type: 'requires',
-            reference: {
-              id: modId,
-            },
-          }));
-        }
-      });
+      if (collection !== undefined) {
+        modIds.forEach(modId => {
+          if (!alreadyIncluded(collection.rules, modId)) {
+            context.api.store.dispatch(actions.addModRule(gameId, collectionId, {
+              type: 'requires',
+              reference: {
+                id: modId,
+              },
+            }));
+          }
+        });
+      } else {
+        log('warn', 'failed to add mods to collection, collection no longer found',
+            { gameId, collectionId, modIds });
+      }
     },
   }));
 
