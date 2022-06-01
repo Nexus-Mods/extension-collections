@@ -53,7 +53,7 @@ function toInt(input: string | number | undefined | null) {
 function deduceSource(mod: types.IMod,
                       sourceInfo: ICollectionSourceInfo,
                       versionMatcher: string,
-                      metaInfo: ILookupResult,
+                      metaInfo: ILookupResult[],
                       tag: string)
                       : ICollectionSourceInfo {
   const res: Partial<ICollectionSourceInfo> = (sourceInfo !== undefined)
@@ -95,7 +95,7 @@ function deduceSource(mod: types.IMod,
   // prefering the logical name from the meta db because on imported files, the file may
   // have been renamed before installation
   assign(res, 'logicalFilename',
-    metaInfo?.value?.logicalFileName ?? mod.attributes?.logicalFileName);
+    metaInfo?.[0]?.value?.logicalFileName ?? mod.attributes?.logicalFileName);
   if (sourceInfo?.updatePolicy !== undefined) {
     assign(res, 'updatePolicy', sourceInfo.updatePolicy);
   } else if (sourceInfo?.type === 'bundle') {
