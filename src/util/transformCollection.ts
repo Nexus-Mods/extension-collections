@@ -118,9 +118,7 @@ function deduceSource(mod: types.IMod,
     assign(res, 'fileExpression', sanitizeExpression(mod.attributes.fileName));
   }
 
-  if (sourceInfo?.type === 'bundle') {
-    assign(res, 'tag', tag);
-  }
+  assign(res, 'tag', tag);
 
   return res as ICollectionSourceInfo;
 }
