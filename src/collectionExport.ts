@@ -262,14 +262,14 @@ export async function doExportToAPI(api: types.IExtensionApi,
       throw new util.ProcessCanceled('collection rejected');
     } else if (err.constructor.name === 'GraphError') {
       const message: string = err.message;
-      const details: IGraphErrorDetail[] = err['details'];
+      const details: IGraphErrorDetail[] = err['details'] ?? [];
       api.sendNotification({
         type: 'error',
         message: 'The server rejected this collection',
         actions: [
           { title: 'More', action: () => {
             api.showDialog('error', 'The server rejected this collection', {
-              text: details.map(detail =>
+              text: details.length === 0 ? message : details.map(detail =>
                 renderGraphErrorDetail(api, gameId, modId, message, detail)).join('\n'),
             }, [
               { label: 'Close' },

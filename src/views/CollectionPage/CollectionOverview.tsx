@@ -285,7 +285,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
   private openUrl = () => {
     const { revision } = this.props;
     const { collection } = revision;
-    if (collection !== undefined) {
+    if ((collection !== undefined) && (revision?.revisionNumber !== undefined)) {
       this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Added Collection');
       util.opn(util.nexusModsURL([collection.game.domainName,
         'collections', collection.slug,

@@ -55,7 +55,7 @@ function toInt(input: string | number | undefined | null) {
 function deduceSource(mod: types.IMod,
                       sourceInfo: ICollectionSourceInfo,
                       versionMatcher: string,
-                      metaInfo: ILookupResult,
+                      metaInfo: ILookupResult[],
                       tag: string)
                       : ICollectionSourceInfo {
   const res: Partial<ICollectionSourceInfo> = (sourceInfo !== undefined)
@@ -97,7 +97,7 @@ function deduceSource(mod: types.IMod,
   // prefering the logical name from the meta db because on imported files, the file may
   // have been renamed before installation
   assign(res, 'logicalFilename',
-    metaInfo?.value?.logicalFileName ?? mod.attributes?.logicalFileName);
+    metaInfo?.[0]?.value?.logicalFileName ?? mod.attributes?.logicalFileName);
   if (sourceInfo?.updatePolicy !== undefined) {
     assign(res, 'updatePolicy', sourceInfo.updatePolicy);
   } else if (sourceInfo?.type === 'bundle') {
@@ -120,9 +120,7 @@ function deduceSource(mod: types.IMod,
     assign(res, 'fileExpression', sanitizeExpression(mod.attributes.fileName));
   }
 
-  if (sourceInfo?.type === 'bundle') {
-    assign(res, 'tag', tag);
-  }
+  assign(res, 'tag', tag);
 
   return res as ICollectionSourceInfo;
 }
@@ -260,7 +258,12 @@ async function rulesToCollectionMods(
 
         // update the source reference to match the actual bundled file
         source.fileExpression = generatedName;
-        source.fileSize = (await fs.statAsync(destPath)).size;
+        let totalSize: number = 0;
+        await turbowalk(destPath, items =>
+          totalSize += items.reduce((sub: number, entry) => sub + entry.size, 0));
+
+        // source.fileSize = (await fs.statAsync(destPath)).size;
+        source.fileSize = totalSize;
       }
 
       onProgress(Math.floor((finished / total) * 100), modName);

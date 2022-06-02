@@ -89,7 +89,7 @@ async function cloneTools(api: types.IExtensionApi,
       ? tool.exe
       : path.join(discovery.path, tool.exe);
 
-    return Object.keys(knownTools)
+    return Object.keys(knownTools ?? {})
       .find(iter => (knownTools[iter].custom && !knownTools[iter].hidden)
                 && (normalizePath(knownTools[iter].path) === normalizePath(exePath)
                  || knownTools[iter].name === tool.name));
