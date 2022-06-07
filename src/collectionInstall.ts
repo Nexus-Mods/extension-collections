@@ -121,6 +121,11 @@ function applyCollectionRules(api: types.IExtensionApi,
         exDestRules.forEach(exDestRule => {
           prev.push(actions.removeModRule(gameId, destMod.id, exDestRule));
         });
+        rule.reference = {
+          id: destMod.id,
+          idHint: destMod.id,
+          archiveId: destMod.archiveId,
+        };
       }
 
       if (!exists) {
