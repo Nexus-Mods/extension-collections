@@ -498,7 +498,7 @@ class InstallDriver {
     const fileId = rule.reference.repo?.fileId;
 
     if ((modId === undefined) || (fileId === undefined)
-        || (ref.modId === undefined) || (ref.fileId === undefined)) {
+        || !ref.modId || !ref.fileId) {
       return false;
     }
 
