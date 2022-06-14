@@ -101,6 +101,10 @@ class InstallDriver {
     await this.mPrepare;
     this.mPrepare = Promise.resolve();
 
+    if (collection?.archiveId === undefined) {
+      return;
+    }
+
     if (!this.mInstallDone && (this.mCollection !== undefined)) {
       this.mApi.sendNotification({
         type: 'warning',
@@ -118,6 +122,10 @@ class InstallDriver {
   public async start(profile: types.IProfile, collection: types.IMod) {
     await this.mPrepare;
     this.mPrepare = Promise.resolve();
+
+    if (collection?.archiveId === undefined) {
+      return;
+    }
 
     if (!this.mInstallDone && (this.mCollection !== undefined)) {
       this.mApi.sendNotification({
@@ -232,7 +240,7 @@ class InstallDriver {
   }
 
   public async continue() {
-    if (this.canContinue()) {
+    if (this.canContinue() && (this.mCollection?.archiveId !== undefined)) {
       await this.initCollectionInfo();
 
       const steps = {
@@ -272,6 +280,9 @@ class InstallDriver {
   }
 
   private async initCollectionInfo() {
+    if (this.mCollection?.archiveId === undefined) {
+      return;
+    }
     const slug = this.collectionSlug;
     const state: types.IState = this.mApi.store.getState();
     const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
@@ -405,7 +416,7 @@ class InstallDriver {
   }
 
   private startImpl = async () => {
-    if ((this.mCollection === undefined) || (this.mProfile === undefined)) {
+    if ((this.mCollection?.archiveId === undefined) || (this.mProfile === undefined)) {
       return false;
     }
 
@@ -498,7 +509,7 @@ class InstallDriver {
     const fileId = rule.reference.repo?.fileId;
 
     if ((modId === undefined) || (fileId === undefined)
-        || (ref.modId === undefined) || (ref.fileId === undefined)) {
+        || !ref.modId || !ref.fileId) {
       return false;
     }
 

@@ -1,7 +1,7 @@
 import { RatingOptions } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
-import { FlexLayout, Icon, RadialProgress, tooltip } from 'vortex-api';
+import { FlexLayout, Icon, RadialProgress, tooltip, MainContext } from 'vortex-api';
 
 export interface IHealthIndicatorProps {
   t: I18next.TFunction;
@@ -13,6 +13,7 @@ export interface IHealthIndicatorProps {
 }
 
 function HealthIndicator(props: IHealthIndicatorProps) {
+  const context = React.useContext(MainContext);
   const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed } = props;
   if (value === undefined) {
     return null;
@@ -20,7 +21,13 @@ function HealthIndicator(props: IHealthIndicatorProps) {
 
   const voteSuccess = React.useCallback((evt: React.MouseEvent<any>) => {
     const { success } = evt.currentTarget.dataset;
-    onVoteSuccess(success === 'true');
+    const isUpvote = success === 'true'
+    onVoteSuccess(isUpvote);
+    context.api.events.emit(
+      'analytics-track-click-event',
+      'Collections',
+      isUpvote ? 'Upvote Collection' : 'Downvote Collection'
+    );
   }, []);
 
   const RadialProgressT: any = RadialProgress;
