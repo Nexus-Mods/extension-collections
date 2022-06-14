@@ -369,7 +369,6 @@ function register(context: types.IExtensionContext,
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
     group: 'per-game',
-    badge: new util.ReduxProp(context.api, [], () => 'Alpha'),
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
