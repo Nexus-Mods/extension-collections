@@ -30,6 +30,7 @@ function EndorseButton(props: IEndorseButtonProps) {
 
   const endorse = React.useCallback(() => {
     context.api.events.emit('endorse-mod', gameId, mod.id, 'endorse');
+    context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
   }, []);
 
   return (
@@ -54,9 +55,11 @@ interface ICommentButtonProps {
 
 function CommentButton(props: ICommentButtonProps) {
   const { t, collection } = props;
+  const context = React.useContext(MainContext);
 
   const click = React.useCallback(() => {
     if (collection?.['commentLink'] !== undefined) {
+      context.api.events.emit('analytics-track-click-event', 'Collections', 'Comments');
       util.opn(collection['commentLink']);
     }
   }, [collection]);

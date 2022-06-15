@@ -1004,7 +1004,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         category: download.modInfo?.nexus?.modInfo?.category_id,
         source: download.modInfo?.nexus !== undefined ? 'nexus' : undefined,
         modId,
-        downloadGame: download.game,
+        downloadGame: Array.isArray(download.game) ? download.game[0] : download.game,
       },
     };
   }
