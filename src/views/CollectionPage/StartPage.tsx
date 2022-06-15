@@ -209,151 +209,125 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
     const id = makeCollectionId(profile.id);
 
     return (
-      <>
-        <div className='feedback-bar'>
-          <Icon name='details' />
-          <span className='feedback-bar__text'>
-            {/* #60a5fb */}
-            {t('Collections are in an early testing stage, you may find some features are '
-               + 'incomplete. Please share your feedback or report bugs you find.')}
-          </span>
-          <div className='feedback-bar__buttons'>
-            <tooltip.IconButton
-              icon='feedback'
-              tooltip='Opens the feedback page in your default browser'
-              onClick={this.openFeedback}
-            >
-              {t('Feedback')}
-            </tooltip.IconButton>
-            <tooltip.IconButton
-              icon='bug'
-              tooltip={t('Open bug report page in your default browser')}
-              onClick={this.openBugReport}
-            >
-              {t('Bugs')}
-            </tooltip.IconButton>
-          </div>
-        </div>
-        <Tabs id='collection-start-page' activeKey={activeTab} onSelect={this.setActiveTab}>
-          <Tab
-            tabClassName='collection-tab'
-            eventKey='active-collections'
-            title={<><Icon name='add'/>{t('Added Collections')}</>}
-          >
-            <Panel>
-              <Panel.Heading>
-                <Panel.Title>
-                  {t('View and manage collections created by other users.')}
-                </Panel.Title>
-                <div className='flex-fill' />
-                <div className='collection-sort-container'>
-                  {t('Sort by:')}
-                  <Select
-                    className='select-compact'
-                    options={[
-                      { value: 'alphabetical', label: t('Name A-Z') },
-                      { value: 'datedownloaded', label: t('Date downloaded') },
-                      { value: 'recentlyupdated', label: t('Recently updated') },
-                    ]}
-                    value={sortAdded}
-                    onChange={this.setSortAdded}
-                    clearable={false}
-                    autosize={false}
-                    searchable={false}
-                  />
-                </div>
-              </Panel.Heading>
-              <Panel.Body>
-                <div className='collection-list'>
-                  <AddCard t={t} onClick={this.openCollections} />
-                  {added.map(mod =>
-                    <CollectionThumbnail
-                      key={mod.mod.id}
-                      t={t}
-                      gameId={profile.gameId}
-                      imageTime={imageTime}
-                      installing={installing}
-                      mods={mods}
-                      incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
-                      collection={mod.mod}
-                      infoCache={this.props.infoCache}
-                      onView={onView}
-                      onRemove={onRemove}
-                      onResume={onResume}
-                      onPause={onPause}
-                      onUpdate={onUpdate}
-                      details={true}
-                    />)}
-                </div>
-              </Panel.Body>
-            </Panel>
-          </Tab>
-          <Tab
-            tabClassName='collection-tab'
-            eventKey='collection-workshop'
-            title={<><Icon name='highlight-tool' />{t('Workshop')}</>}
-          >
-            <Panel>
-              <Panel.Heading>
-                <Panel.Title>
-                  <Trans ns={NAMESPACE} i18nKey='collection-own-page'>
-                    Build your own collections and share them with the Nexus Mods community.
-                    You can view all your uploaded collections&nbsp;<a
-                      onClick={this.openMyCollectionsPage}
-                      className='my-collections-page-link'
-                      title={t('Open My Collections Page')}
-                    >
-                      here.
-                    </a>
-                  </Trans>
-                </Panel.Title>
-                <div className='flex-fill' />
-                <div className='collection-sort-container'>
-                  {t('Sort by:')}
-                  <Select
-                    className='select-compact'
-                    options={[
-                      { value: 'alphabetical', label: t('Name A-Z') },
-                      { value: 'datecreated', label: t('Date created') },
-                      { value: 'recentlyupdated', label: t('Recently updated') },
-                    ]}
-                    value={sortWorkshop}
-                    onChange={this.setSortWorkshop}
-                    clearable={false}
-                    autosize={false}
-                    searchable={false}
-                  />
-                </div>
-              </Panel.Heading>
-              <Panel.Body>
-                <div className='collection-list'>
-                  <CreateCard
+      <Tabs id='collection-start-page' activeKey={activeTab} onSelect={this.setActiveTab}>
+        <Tab
+          tabClassName='collection-tab'
+          eventKey='active-collections'
+          title={<><Icon name='add'/>{t('Added Collections')}</>}
+        >
+          <Panel>
+            <Panel.Heading>
+              <Panel.Title>
+                {t('View and manage collections created by other users.')}
+              </Panel.Title>
+              <div className='flex-fill' />
+              <div className='collection-sort-container'>
+                {t('Sort by:')}
+                <Select
+                  className='select-compact'
+                  options={[
+                    { value: 'alphabetical', label: t('Name A-Z') },
+                    { value: 'datedownloaded', label: t('Date downloaded') },
+                    { value: 'recentlyupdated', label: t('Recently updated') },
+                  ]}
+                  value={sortAdded}
+                  onChange={this.setSortAdded}
+                  clearable={false}
+                  autosize={false}
+                  searchable={false}
+                />
+              </div>
+            </Panel.Heading>
+            <Panel.Body>
+              <div className='collection-list'>
+                <AddCard t={t} onClick={this.openCollections} />
+                {added.map(mod =>
+                  <CollectionThumbnail
+                    key={mod.mod.id}
                     t={t}
-                    onCreateFromProfile={this.fromProfile}
-                    onCreateEmpty={this.fromEmpty}
-                    onTrackClick={this.trackEvent}
-                  />
-                  {workshop.map(mod =>
-                    <CollectionThumbnail
-                      key={mod.mod.id}
-                      t={t}
-                      gameId={profile.gameId}
-                      collection={mod.mod}
-                      infoCache={this.props.infoCache}
-                      imageTime={imageTime}
-                      mods={mods}
-                      incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
-                      onEdit={onEdit}
-                      onRemove={onRemove}
-                      onUpload={onUpload}
-                      details={true}
-                    />)}
-                </div>
-              </Panel.Body>
-            </Panel>
-          </Tab>
-        </Tabs>
-      </>
+                    gameId={profile.gameId}
+                    imageTime={imageTime}
+                    installing={installing}
+                    mods={mods}
+                    incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
+                    collection={mod.mod}
+                    infoCache={this.props.infoCache}
+                    onView={onView}
+                    onRemove={onRemove}
+                    onResume={onResume}
+                    onPause={onPause}
+                    onUpdate={onUpdate}
+                    details={true}
+                  />)}
+              </div>
+            </Panel.Body>
+          </Panel>
+        </Tab>
+        <Tab
+          tabClassName='collection-tab'
+          eventKey='collection-workshop'
+          title={<><Icon name='highlight-tool' />{t('Workshop')}</>}
+        >
+          <Panel>
+            <Panel.Heading>
+              <Panel.Title>
+                <Trans ns={NAMESPACE} i18nKey='collection-own-page'>
+                  Build your own collections and share them with the Nexus Mods community.
+                  You can view all your uploaded collections&nbsp;<a
+                    onClick={this.openMyCollectionsPage}
+                    className='my-collections-page-link'
+                    title={t('Open My Collections Page')}
+                  >
+                    here.
+                  </a>
+                </Trans>
+              </Panel.Title>
+              <div className='flex-fill' />
+              <div className='collection-sort-container'>
+                {t('Sort by:')}
+                <Select
+                  className='select-compact'
+                  options={[
+                    { value: 'alphabetical', label: t('Name A-Z') },
+                    { value: 'datecreated', label: t('Date created') },
+                    { value: 'recentlyupdated', label: t('Recently updated') },
+                  ]}
+                  value={sortWorkshop}
+                  onChange={this.setSortWorkshop}
+                  clearable={false}
+                  autosize={false}
+                  searchable={false}
+                />
+              </div>
+            </Panel.Heading>
+            <Panel.Body>
+              <div className='collection-list'>
+                <CreateCard
+                  t={t}
+                  onCreateFromProfile={this.fromProfile}
+                  onCreateEmpty={this.fromEmpty}
+                  onTrackClick={this.trackEvent}
+                />
+                {workshop.map(mod =>
+                  <CollectionThumbnail
+                    key={mod.mod.id}
+                    t={t}
+                    gameId={profile.gameId}
+                    collection={mod.mod}
+                    infoCache={this.props.infoCache}
+                    imageTime={imageTime}
+                    mods={mods}
+                    incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
+                    onEdit={onEdit}
+                    onRemove={onRemove}
+                    onUpload={onUpload}
+                    details={true}
+                  />)}
+              </div>
+            </Panel.Body>
+          </Panel>
+        </Tab>
+      </Tabs>
     );
   }
 
