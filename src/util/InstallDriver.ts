@@ -505,6 +505,10 @@ class InstallDriver {
   }
 
   private matchRepo(rule: types.IModRule, ref: nexusApi.IModFile) {
+    if (ref === null) {
+      return false;
+    }
+
     const modId = rule.reference.repo?.modId;
     const fileId = rule.reference.repo?.fileId;
 
