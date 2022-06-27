@@ -72,7 +72,7 @@ function makeColumns(onSelect: (modIds: string[], value: boolean) => void)
 
 function AddModsDialog(props: IAddModsDialogProps) {
   const { onAddSelection } = props;
-  const [ t ] = useTranslation(NAMESPACE);
+  const { t } = useTranslation(NAMESPACE);
   const store = useStore();
   const dispatch = useDispatch();
   const hide = React.useCallback(() => {
