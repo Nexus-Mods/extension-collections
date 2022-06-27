@@ -240,6 +240,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods, userInfo } = this.props;
     const { api } = this.context;
 
+    if (mods[modId] === undefined) {
+      return;
+    }
+
     const author = mods[modId].attributes['uploaderId'];
 
     if ((author !== undefined) && (author !== userInfo?.userId)) {
@@ -268,6 +272,9 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { downloads, mods } = this.props;
 
     const collection = mods[modId];
+    if (collection === undefined) {
+      return;
+    }
 
     (collection?.rules ?? []).forEach(rule => {
       const dlId = util.findDownloadByRef(rule.reference, downloads);
@@ -452,6 +459,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const collection = mods[modId];
 
+    if (collection === undefined) {
+      return;
+    }
+
     const { revisionId } = collection.attributes;
 
     if (revisionId === undefined) {
@@ -488,8 +499,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
   private remove = (modId: string) => {
     const { mods } = this.props;
-
     const { api } = this.context;
+
+    if (mods[modId] === undefined) {
+      return;
+    }
 
     try {
       if (mods[modId]?.attributes?.editable) {
@@ -521,6 +535,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const gameMode = selectors.activeGameId(state);
     const mod = mods[collectionId];
 
+    if (mod === undefined) {
+      return;
+    }
+
     const downloadGame = util.getSafe(mod.attributes, ['downloadGame'], gameMode);
     const newestFileId = util.getSafe(mod.attributes, ['newestVersion'], undefined);
     this.context.api.events.emit('collection-update',
@@ -532,9 +550,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods, profile, userInfo } = this.props;
     const { api } = this.context;
 
+    if (mods[collectionId] === undefined) {
+      return;
+    }
+
     api.events.emit('analytics-track-click-event', 'Collections', 'Upload collection');
 
-    const missing = (mods[collectionId].rules ?? []).filter(rule =>
+    const missing = (mods[collectionId]?.rules ?? []).filter(rule =>
       ['requires', 'recommends'].includes(rule.type)
       && (util.findModByRef(rule.reference, mods) === undefined));
     if (missing.length > 0) {
@@ -635,6 +657,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
   private resume = async (modId: string) => {
     const { driver, mods, profile, userInfo } = this.props;
+
+    if (mods[modId] === undefined) {
+      return;
+    }
 
     if ((userInfo === null) || (userInfo === undefined)) {
       const { api } = this.context;
