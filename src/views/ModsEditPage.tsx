@@ -230,17 +230,22 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
       singleRowAction: true,
       multiRowAction: true,
       action: (instanceIds: string[]) => {
+        const { entries } = this.state;
+        const filteredIds = instanceIds.filter(id => entries[id] !== undefined);
+
         this.context.api.showDialog('question', 'Confirm removal', {
           text: 'Really remove these mods from this collection? (They are not removed from Vortex)',
-          message: instanceIds.map(id => this.state.entries[id].mod !== undefined
-            ? util.renderModName(this.state.entries[id].mod)
-            : util.renderModReference(this.state.entries[id].rule.reference)).join('\n'),
+          message: filteredIds.map(id => entries[id].mod !== undefined
+            ? util.renderModName(entries[id].mod)
+            : util.renderModReference(entries[id].rule.reference)).join('\n'),
         }, [
           { label: 'Cancel' },
           { label: 'Remove', action: () => {
-            instanceIds.forEach(id => {
-              this.props.onRemoveRule(this.state.entries[id].rule);
-              delete this.nextState.entries[id];
+            filteredIds.forEach(id => {
+              if (entries[id] !== undefined) {
+                this.props.onRemoveRule(entries[id].rule);
+                delete this.nextState.entries[id];
+              }
             });
           } },
         ]);
