@@ -94,7 +94,8 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
       }))
       .concat({ value: '__new', label: t('Create new profile') });
 
-    const ownCollection: boolean = driver.collectionInfo?.user?.memberId === userInfo?.userId;
+    const ownCollection: boolean = (userInfo?.userId !== undefined)
+                                && (driver.collectionInfo?.user?.memberId === userInfo?.userId);
 
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
