@@ -167,8 +167,11 @@ $collection-mod-image-height: 122px;
 }
 
 .table-collection-mods .highlight-base {
-  width: 2em;
-  height: 2em;
+  // width: 2em;
+  // height: 2em;
+  padding: 0;
+  margin-right: 0.5em;
+
   &:hover {
     color: inherit;
   }

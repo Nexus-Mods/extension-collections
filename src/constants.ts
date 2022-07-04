@@ -10,8 +10,10 @@ export const NEXUS_PROTOCOL = 'https:';
 export const PREMIUM_PATH = ['account', 'billing', 'premium'];
 
 export const TOS_URL = 'https://help.nexusmods.com/article/115-guidelines-for-collections';
+export const ADULT_CONTENT_URL = 'https://help.nexusmods.com/article/19-adult-content-guidelines';
 
 export const BUNDLED_PATH = 'bundled';
+export const PATCHES_PATH = 'patches';
 
 export const INSTALLING_NOTIFICATION_ID = 'installing-collection-';
 
@@ -30,3 +32,5 @@ export const OPTIONAL_TWEAK_PREFIX = '(optional).';
 export const TIME_BEFORE_VOTE = 48 * 60 * 60 * 1000;
 // upon start, time before we first check whether a revision needs to be rated. in milliseconds
 export const DELAY_FIRST_VOTE_REQUEST = 1 * 60 * 1000;
+
+export const MAX_PATCH_SIZE = 0.2;

@@ -1,7 +1,9 @@
-import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH, MOD_TYPE } from '../constants';
+import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH,
+         MOD_TYPE, PATCHES_PATH } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
          ICollectionModRule, ICollectionModRuleEx, ICollectionSourceInfo } from '../types/ICollection';
 
+import { scanForDiffs } from './binaryPatching';
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
 import { renderReference, ruleId } from './util';
@@ -136,23 +138,27 @@ export function generateCollection(info: ICollectionInfo,
 /**
  * converts the rules in a mod into mod entries for a collection, ready for export
  */
-async function rulesToCollectionMods(api: types.IExtensionApi,
-                                     collection: types.IMod,
-                                     mods: { [modId: string]: types.IMod },
-                                     stagingPath: string,
-                                     game: types.IGame,
-                                     collectionInfo: ICollectionAttributes,
-                                     bundleTags: { [modId: string]: string },
-                                     onProgress: (percent: number, text: string) => void,
-                                     onError: (message: string, replace: any) => void)
-                                     : Promise<ICollectionMod[]> {
+async function rulesToCollectionMods(
+  api: types.IExtensionApi,
+  collection: types.IMod,
+  mods: { [modId: string]: types.IMod },
+  stagingPath: string,
+  game: types.IGame,
+  collectionInfo: ICollectionAttributes,
+  bundleTags: { [modId: string]: string },
+  onProgress: (percent: number, text: string) => void,
+  onError: (message: string, replace: any, mayIgnore: boolean) => void)
+  : Promise<ICollectionMod[]> {
+
   let total = collection.rules.length;
 
   let finished = 0;
 
   const collectionPath = path.join(stagingPath, collection.installationPath);
   await fs.removeAsync(path.join(collectionPath, BUNDLED_PATH));
+  await fs.removeAsync(path.join(collectionPath, PATCHES_PATH));
   await fs.ensureDirAsync(path.join(collectionPath, BUNDLED_PATH));
+  await fs.ensureDirAsync(path.join(collectionPath, PATCHES_PATH));
 
   const state = api.getState();
   const downloads = state.persistent.downloads.files;
@@ -227,6 +233,13 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
         --total;
       }
 
+      let patches: { [filePath: string]: string };
+      if (collectionInfo.saveEdits?.[mod.id] === true) {
+        const destPath = path.join(collectionPath, PATCHES_PATH, modName);
+        await fs.ensureDirWritableAsync(destPath);
+        patches = await scanForDiffs(api, game.id, mod.id, destPath);
+      }
+
       if (collectionInfo.source?.[mod.id]?.type === 'bundle') {
         const tlFiles = await fs.readdirAsync(modPath);
         const generatedName: string =
@@ -271,6 +284,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
         source,
         hashes,
         choices,
+        patches,
         instructions: !!collectionInfo.instructions?.[mod.id]
           ? collectionInfo.instructions?.[mod.id]
           : undefined,
@@ -290,7 +304,7 @@ async function rulesToCollectionMods(api: types.IExtensionApi,
 
       onError('failed to pack "{{modName}}": {{error}}', {
         modName, error: err.message, stack: err.stack,
-      });
+      }, err['mayIgnore'] ?? true);
 
       return undefined;
     }
@@ -376,7 +390,8 @@ function extractModRules(collectionRules: types.IModRule[],
                          mods: { [modId: string]: types.IMod },
                          collectionAttributes: ICollectionAttributes,
                          bundleTags: { [modId: string]: string },
-                         onError: (message: string, replace: any) => void): ICollectionModRule[] {
+                         onError: (message: string, replace: any, mayIgnore: boolean) => void)
+                         : ICollectionModRule[] {
   // for each mod referenced by the collection, gather the (enabled) rules and transform
   // them such that they can be applied on the users system
   return collectionRules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
@@ -384,7 +399,7 @@ function extractModRules(collectionRules: types.IModRule[],
       ? mods[rule.reference.id]
       : util.findModByRef(rule.reference, mods);
     if (mod === undefined) {
-      onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id });
+      onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id }, true);
       return prev;
     } else if (mod.id === collection.id) {
       return prev;
@@ -514,6 +529,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
         ? mod.instructions
         : undefined,
       phase: mod.phase ?? 0,
+      patches: mod.patches,
     },
   } as any;
 
@@ -524,14 +540,16 @@ export function collectionModToRule(knownGames: types.IGameStored[],
   return res;
 }
 
-export async function modToCollection(api: types.IExtensionApi,
-                                      gameId: string,
-                                      stagingPath: string,
-                                      collection: types.IMod,
-                                      mods: { [modId: string]: types.IMod },
-                                      onProgress: (percent?: number, text?: string) => void,
-                                      onError: (message: string, replace: any) => void)
-                                      : Promise<ICollection> {
+export async function modToCollection(
+  api: types.IExtensionApi,
+  gameId: string,
+  stagingPath: string,
+  collection: types.IMod,
+  mods: { [modId: string]: types.IMod },
+  onProgress: (percent?: number, text?: string) => void,
+  onError: (message: string, replace: any, mayIgnore: boolean) => void)
+  : Promise<ICollection> {
+
   const state = api.getState();
 
   if (selectors.activeGameId(state) !== gameId) {
@@ -668,6 +686,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
     installMode: {},
     instructions: {},
     source: {},
+    saveEdits: {},
   };
 
   collectionMod.rules.forEach(rule => {
@@ -689,6 +708,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
       url: rule.downloadHint?.url,
       instructions: rule.downloadHint?.instructions,
     };
+    res.saveEdits[mod.id] = rule.extra?.patches !== undefined;
   });
 
   return res;

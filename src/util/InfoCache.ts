@@ -5,7 +5,7 @@ import { readCollection } from './importCollection';
 
 import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as path from 'path';
-import { fs, log, selectors, types, util } from 'vortex-api';
+import { log, selectors, types, util } from 'vortex-api';
 
 // TODO: temporarily reducing expire time around switch to slugs identifying collections,
 // used to be once per day
@@ -59,19 +59,12 @@ class InfoCache {
                                forceFetch?: boolean)
                                : Promise<IRevision> {
     const { store } = this.mApi;
-    const revisions = store.getState().persistent.collections.revisions ?? {};
+    const revisions: { [id: string]: { info: IRevision, timestamp: number } } =
+      store.getState().persistent.collections.revisions ?? {};
     if (forceFetch
         || (revisions[revisionId]?.timestamp === undefined)
         || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
-      log('info', 'revision info cache outdated', {
-        timestamp: revisions[revisionId]?.timestamp,
-        now: Date.now(),
-      });
-
-      if (this.mCacheRevRequests[revisionId] === undefined) {
-        this.mCacheRevRequests[revisionId] =
-          this.cacheRevisionInfo(revisionId, collectionSlug, revisionNumber);
-      }
+      this.fetchRevisionInfo(revisions, revisionId, collectionSlug, revisionNumber);
       return this.mCacheRevRequests[revisionId];
     }
 
@@ -89,6 +82,21 @@ class InfoCache {
     };
   }
 
+  private fetchRevisionInfo(revisions,
+                            revisionId: string,
+                            collectionSlug: string,
+                            revisionNumber: number): void {
+    log('info', 'revision info cache outdated', {
+      timestamp: revisions[revisionId]?.timestamp,
+      now: Date.now(),
+    });
+
+    if (this.mCacheRevRequests[revisionId] === undefined) {
+      this.mCacheRevRequests[revisionId] =
+        this.cacheRevisionInfo(revisionId, collectionSlug, revisionNumber);
+    }
+  }
+
   private async cacheCollectionModRules(revisionId: string): Promise<ICollectionModRule[]> {
     const store = this.mApi.store;
     const state = store.getState();
@@ -102,8 +110,8 @@ class InfoCache {
     }
     const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
     try {
-      const collection = await readCollection(this.mApi,
-        path.join(stagingPath, colMod.installationPath, 'collection.json'));
+      const collection = await readCollection(
+        this.mApi, path.join(stagingPath, colMod.installationPath, 'collection.json'));
       return collection.modRules;
     } catch (err) {
       if (err.code !== 'ENOENT') {
@@ -118,14 +126,31 @@ class InfoCache {
   private async cacheCollectionInfo(collectionSlug: string): Promise<ICollection> {
     const { store } = this.mApi;
 
-    const collectionInfo: ICollection = (await this.mApi.emitAndAwait(
-        'get-nexus-collection', collectionSlug))[0];
+    const collectionInfo: ICollection =
+      (await this.mApi.emitAndAwait('get-nexus-collection', collectionSlug))[0];
     if (!!collectionInfo) {
       store.dispatch(updateCollectionInfo(
         collectionInfo.id.toString(), collectionInfo, Date.now()));
       delete this.mCacheColRequests[collectionInfo.id.toString()];
     }
     return collectionInfo;
+  }
+
+  private updateRevisionCacheState(store: types.ThunkStore<any>,
+                                   revisionId: string,
+                                   revisionInfo: any,
+                                   now: number): void {
+    // we cache revision info and collection info separately to reduce duplication
+    // in the application state
+    store.dispatch(updateCollectionInfo(
+      revisionInfo.collection.id.toString(), revisionInfo.collection, now));
+    store.dispatch(updateRevisionInfo(revisionId, {
+      ...revisionInfo,
+      collection: {
+        id: revisionInfo.collection.id,
+        slug: revisionInfo.collection.slug,
+      },
+    }, now));
   }
 
   private async cacheRevisionInfo(revisionId: string,
@@ -141,29 +166,17 @@ class InfoCache {
     }
 
     const revisionInfo = (await this.mApi.emitAndAwait('get-nexus-collection-revision',
-        collectionSlug, revisionNumber))[0];
+                                                       collectionSlug, revisionNumber))[0];
     const now = Date.now();
 
     if (!!revisionInfo) {
-      // we cache revision info and collection info separately to reduce duplication
-      // in the application state
-      store.dispatch(updateCollectionInfo(
-        revisionInfo.collection.id.toString(), revisionInfo.collection, now));
-      store.dispatch(updateRevisionInfo(revisionId, {
-        ...revisionInfo,
-        collection: {
-          id: revisionInfo.collection.id,
-          slug: revisionInfo.collection.slug,
-        },
-      }, now));
+      this.updateRevisionCacheState(store, revisionId, revisionInfo, now);
     } else {
       store.dispatch(updateRevisionInfo(revisionId, null, now));
     }
-    return Promise.resolve(revisionInfo)
-      .then((result: IRevision) => {
-        delete this.mCacheRevRequests[revisionId];
-        return result ?? null;
-      });
+    const result: IRevision = await revisionInfo;
+    delete this.mCacheRevRequests[revisionId];
+    return result ?? null;
   }
 }
 

@@ -1,4 +1,4 @@
-import { BUNDLED_PATH } from './constants';
+import { BUNDLED_PATH, PATCHES_PATH } from './constants';
 import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICollection';
 import { modToCollection as modToCollection } from './util/transformCollection';
 import { makeProgressFunction } from './util/util';
@@ -43,11 +43,13 @@ async function zip(zipPath: string, sourcePath: string): Promise<void> {
   await zipper.add(zipPath, files.map(fileName => path.join(sourcePath, fileName)));
 }
 
-async function generateCollectionInfo(api: types.IExtensionApi, gameId: string,
-                                      collection: types.IMod,
-                                      progress: (percent: number, text: string) => void,
-                                      error: (message: string, replace: any) => void)
-                                      : Promise<ICollection> {
+async function generateCollectionInfo(
+  api: types.IExtensionApi, gameId: string,
+  collection: types.IMod,
+  progress: (percent: number, text: string) => void,
+  error: (message: string, replace: any, mayIgnore: boolean) => void)
+  : Promise<ICollection> {
+
   const state = api.getState();
   const mods = state.persistent.mods[gameId];
   const stagingPath = selectors.installPath(state);
@@ -77,6 +79,7 @@ async function writeCollectionToFile(state: types.IState, info: ICollection,
   }
 
   await fs.copyAsync(path.join(modPath, BUNDLED_PATH), path.join(outputPath, BUNDLED_PATH));
+  await fs.copyAsync(path.join(modPath, PATCHES_PATH), path.join(outputPath, PATCHES_PATH));
 
   const zipPath = path.join(modPath, 'export',
                             `collection_${mod.attributes?.version ?? '0'}.7z`);
@@ -97,7 +100,7 @@ function filterInfoModSource(source: ICollectionSourceInfo): ICollectionSourceIn
 }
 
 function filterInfoMod(mod: ICollectionMod): ICollectionMod {
-  const res = _.omit(mod, ['hashes', 'choices', 'details', 'instructions', 'phase']);
+  const res = _.omit(mod, ['hashes', 'choices', 'patches', 'details', 'instructions', 'phase']);
   res.source = filterInfoModSource(res.source);
   return res;
 }
@@ -190,8 +193,11 @@ export async function doExportToAPI(api: types.IExtensionApi,
 
   const errors: Array<{ message: string, replace: any }> = [];
 
-  const onError = (message: string, replace: any) => {
+  let mayIgnore: boolean = true;
+
+  const onError = (message: string, replace: any, allowIgnore: boolean) => {
     errors.push({ message, replace });
+    mayIgnore &&= allowIgnore;
   };
 
   let info: ICollection;
@@ -203,7 +209,11 @@ export async function doExportToAPI(api: types.IExtensionApi,
   try {
     info = await generateCollectionInfo(api, gameId, mod, progress, onError);
     if (errors.length > 0) {
-      await queryErrorsContinue(api, errors);
+      if (mayIgnore) {
+        await queryErrorsContinue(api, errors);
+      } else {
+        throw new util.UserCanceled();
+      }
     }
     await withTmpDir(async tmpPath => {
       const filePath = await writeCollectionToFile(state, info, mod, tmpPath);

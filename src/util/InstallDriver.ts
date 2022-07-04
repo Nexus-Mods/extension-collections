@@ -7,6 +7,7 @@ import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
 import { ICollection } from '../types/ICollection';
 import { IRevisionEx } from '../types/IRevisionEx';
+import { applyPatches } from './binaryPatching';
 import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
@@ -37,7 +38,7 @@ class InstallDriver {
 
     this.mInfoCache = new InfoCache(api);
 
-    api.onAsync('will-install-mod', (gameId, archiveId, modId) => {
+    api.onAsync('will-install-mod', (gameId: string, archiveId: string, modId: string) => {
       const state: types.IState = api.store.getState();
       const download = state.persistent.downloads.files[archiveId];
       if (download !== undefined) {
@@ -46,7 +47,7 @@ class InstallDriver {
       return Promise.resolve();
     });
 
-    api.events.on('did-install-mod', (gameId, archiveId, modId) => {
+    api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
       const state: types.IState = api.store.getState();
       const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
       // verify the mod installed is actually one required by this collection
@@ -54,7 +55,12 @@ class InstallDriver {
         util.testModReference(mod, iter.reference));
       if ((mod !== undefined) && (required !== undefined)) {
         this.mInstalledMods.push(mod);
-        this.updateProgress(this.mProfile, this.mCollection);
+        if ((this.mCollection !== undefined)
+            && (required.reference.description !== undefined)) {
+          this.updateProgress(this.mProfile, this.mCollection);
+          applyPatches(api, this.mCollection.installationPath,
+                       gameId, required.reference.description, modId, required.extra.patches);
+        }
       }
       this.triggerUpdate();
     });

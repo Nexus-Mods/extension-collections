@@ -2,26 +2,30 @@ import { ICollectionSourceInfo, SourceType } from '../types/ICollection';
 
 import I18next from 'i18next';
 import * as _ from 'lodash';
+import * as path from 'path';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 
 import InstallModeRenderer from './InstallModeRenderer';
 
 import {
-  ComponentEx, EmptyPlaceholder, Icon, ITableRowAction, OptionsFilter, Table, TableTextFilter,
-  tooltip, types, Usage, util } from 'vortex-api';
+  ComponentEx, EmptyPlaceholder, fs, Icon, ITableRowAction, OptionsFilter, selectors,
+  Table, TableTextFilter, tooltip, types, Usage, util } from 'vortex-api';
+import { ADULT_CONTENT_URL } from '../constants';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   showPhaseUsage: boolean;
+  showBinpatchWarning: boolean;
   onSetModVersion: (modId: string, version: 'exact' | 'newest') => void;
   onAddRule: (rule: types.IModRule) => void;
   onRemoveRule: (rule: types.IModRule) => void;
   onSetCollectionAttribute: (path: string[], value: any) => void;
   onAddModsDialog: (modId: string) => void;
   onDismissPhaseUsage: () => void;
+  onDismissBinpatchWarning: () => void;
   onShowPhaseColumn: () => void;
 }
 
@@ -40,6 +44,8 @@ type ProblemType = 'invalid-ids'
                  | 'direct-download'
                  | 'installer-choices-not-saved'
                  | 'no-version-set'
+                 | 'local-edits-fuzzy-version'
+                 | 'local-edits-bundle'
 ;
 
 interface IProblem {
@@ -625,8 +631,85 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         },
         placement: 'table',
         edit: {},
-      },
-      {
+      }, {
+        id: 'local_edits',
+        name: 'Binary patching',
+        icon: 'edit',
+        help: 'With this option enabled, any changes you did to the files in this mods will '
+            + 'also be included in the Collection.',
+        placement: 'table',
+        calc: (entry: IModEntry) => {
+          const { collection } = this.props;
+
+          if (entry.mod === undefined) {
+            return false;
+          }
+
+          return collection.attributes?.collection?.saveEdits?.[entry.mod.id] ?? false;
+        },
+        edit: {
+          choices: () => [
+            { key: 'ignore', bool: false } as any,
+            { key: 'save', bool: true } as any,
+          ],
+          inline: true,
+          actions: false,
+          onChangeValue: (source: IModEntry, value: any) => {
+            (async () => {
+              if (value && this.props.showBinpatchWarning) {
+                const result = await this.context.api.showDialog('question', 'Save Local Edits', {
+                  bbcode: 'With this option enabled, when you upload the Collection Vortex will '
+                    + 'compare your files on disk against the archive provided by the mod author '
+                    + 'and include patches so that any modifications get replicated when a user '
+                    + 'installs your collection.\n'
+                    + 'This allows for more customization but there are considerable drawbacks:\n'
+                    + '[list]'
+                    + '[*]Uploading the collection will take longer - a lot if it\'s a big mod\n'
+                    + '[*]these patches apply only to the exact same version&variant of the mod, '
+                    + 'if the user updates the mod the patch will be undone.'
+                    + '[/list]\n'
+                    + 'Therefore please only use this option if you absolutely have to.',
+                  checkboxes: [
+                    { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
+                  ],
+                }, [
+                  { label: 'Cancel' },
+                  { label: 'Enable' },
+                ]);
+                if (result.action === 'Enable') {
+                  const state = this.context.api.getState();
+
+                  if (result.input['dont_show_again']) {
+                    this.props.onDismissBinpatchWarning();
+                  }
+
+                  const gameMode = selectors.activeGameId(state);
+                  const archive = state.persistent.downloads.files[source.mod.archiveId];
+                  const dlPath = selectors.downloadPathForGame(state, gameMode);
+                  if (archive !== undefined) {
+                    try {
+                      await fs.statAsync(path.join(dlPath, archive.localPath));
+                      // await scanForDiffs(this.context.api, gameMode, source.mod.id);
+                      this.props.onSetCollectionAttribute(['saveEdits', source.mod.id], value);
+                    } catch (err) {
+                      if (err.code === 'ENOENT') {
+                        this.context.api.showErrorNotification('Failed to enable "Local Edits"',
+                          'To enable this feature, the corresponding archive has to exist to '
+                          + 'compare against.', { allowReport: false });
+                      } else {
+                        this.context.api.showErrorNotification(
+                          'Failed to enable "Local Edits"', err);
+                      }
+                    }
+                  }
+                }
+              } else {
+                this.props.onSetCollectionAttribute(['saveEdits', source.mod.id], value);
+              }
+            })();
+          },
+        },
+      }, {
         id: 'phase',
         name: 'Phase',
         placement: 'table',
@@ -779,6 +862,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     const source = attributes?.source?.[entry.mod.id];
     const sourceType: string = source?.type ?? 'nexus';
     const installMode: string = attributes?.installMode?.[entry.mod.id] ?? 'fresh';
+    const saveEdits: boolean = attributes?.saveEdits?.[entry.mod.id] ?? false;
 
     const { versionMatch } = entry.rule.reference;
 
@@ -841,6 +925,28 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           summary: t('No URL set'),
           message: t('The sources "Browse a website" and "Direct download" require that '
                      + 'you provide a URL to download from.'),
+        });
+      }
+    }
+
+    if (saveEdits) {
+      if ((versionMatch === '*') || versionMatch?.endsWith?.('+prefer')) {
+        res.push({
+          type: 'local-edits-fuzzy-version',
+          summary: t('Version choice incompatible with saving local edits.'),
+          message: t('Local edits can only be applied if the user gets the exact same files '
+                     + 'as you have installed locally, meaning they have to use the exact '
+                     + 'same version of the mod.'),
+        });
+      }
+
+      if (sourceType === 'bundle') {
+        res.push({
+          type: 'local-edits-bundle',
+          summary: t('Combining the option to save edits and bundling makes no sense.'),
+          message: t('The option to "bundle" already bundles the edited files, storing '
+                     + 'the edits separately would not be useful as they can\'t and '
+                     + 'don\'t have to be applied.'),
         });
       }
     }
@@ -1064,9 +1170,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           {
             id: 'adult',
             bbcode: 'Mod contains adult content. '
-                  + '([url=https://help.nexusmods.com/article/19-adult-content-guidelines]'
-                  + 'Adult Content Guidelines'
-                  + '[/url])',
+                  + `([url=${ADULT_CONTENT_URL}]Adult Content Guidelines[/url])`,
             value: src.adultContent ?? false,
           },
         ],
