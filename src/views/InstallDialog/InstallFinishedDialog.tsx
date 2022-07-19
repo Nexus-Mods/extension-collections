@@ -21,12 +21,14 @@ function nop() {
   // nop
 }
 
+const emptyObject = {};
+
 function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   const { api, driver, onClone } = props;
   const { t } = useTranslation(api.NAMESPACE);
 
   const userInfo = useSelector<types.IState, { userId: number }>(state =>
-    state.persistent['nexus']?.userInfo ?? {});
+    state.persistent['nexus']?.userInfo ?? emptyObject);
 
   const forceUpdate = React.useState(0)[1];
 
@@ -160,4 +162,4 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   );
 }
 
-export default InstallFinishedDialog;
+export default React.memo(InstallFinishedDialog);

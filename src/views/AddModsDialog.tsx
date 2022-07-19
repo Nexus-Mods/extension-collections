@@ -171,4 +171,4 @@ function AddModsDialog(props: IAddModsDialogProps) {
   );
 }
 
-export default AddModsDialog;
+export default React.memo(AddModsDialog);

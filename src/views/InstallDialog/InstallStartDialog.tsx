@@ -225,4 +225,4 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
 export default
   withTranslation(['common', NAMESPACE])(
     connect(mapStateToProps, mapDispatchToProps)(
-      InstallDialog) as any) as React.ComponentClass<IInstallDialogProps>;
+      React.memo(InstallDialog)) as any) as React.ComponentClass<IInstallDialogProps>;

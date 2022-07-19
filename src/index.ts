@@ -319,6 +319,28 @@ interface ICallbackMap { [cbName: string]: (...args: any[]) => void; }
 
 let collectionChangedCB: () => void;
 
+function onAddSelectionImpl(api: types.IExtensionApi, collectionId: string, modIds: string[]) {
+  const state = api.getState();
+  const gameId = selectors.activeGameId(state);
+  const collection = state.persistent.mods[gameId][collectionId];
+
+  if (collection !== undefined) {
+    modIds.forEach(modId => {
+      if (!alreadyIncluded(collection.rules, modId)) {
+        api.store.dispatch(actions.addModRule(gameId, collectionId, {
+          type: 'requires',
+          reference: {
+            id: modId,
+          },
+        }));
+      }
+    });
+  } else {
+    log('warn', 'failed to add mods to collection, collection no longer found',
+        { gameId, collectionId, modIds });
+  }
+}
+
 function register(context: types.IExtensionContext,
                   onSetCallbacks: (callbacks: ICallbackMap) => void) {
   let collectionsCB: ICallbackMap;
@@ -331,37 +353,23 @@ function register(context: types.IExtensionContext,
     driver,
   }));
 
+  const onClone = (collectionId: string) => cloneInstalledCollection(context.api, collectionId);
+  const editCollection = (id: string) => collectionsCB.editCollection(id);
+
   context.registerDialog('collection-finish', InstallFinishDialog, () => ({
     api: context.api,
     driver,
-    onClone: (collectionId: string) => cloneInstalledCollection(context.api, collectionId),
-    editCollection: (id: string) => collectionsCB.editCollection(id),
+    onClone,
+    editCollection,
   }));
 
   context.registerDialog('collection-changelog', InstallChangelogDialog, () => ({}));
 
-  context.registerDialog('add-mod-to-collection', AddModsDialog, () => ({
-    onAddSelection: (collectionId: string, modIds: string[]) => {
-      const state = context.api.getState();
-      const gameId = selectors.activeGameId(state);
-      const collection = state.persistent.mods[gameId][collectionId];
+  const onAddSelection = (collectionId: string, modIds: string[]) =>
+    onAddSelectionImpl(context.api, collectionId, modIds);
 
-      if (collection !== undefined) {
-        modIds.forEach(modId => {
-          if (!alreadyIncluded(collection.rules, modId)) {
-            context.api.store.dispatch(actions.addModRule(gameId, collectionId, {
-              type: 'requires',
-              reference: {
-                id: modId,
-              },
-            }));
-          }
-        });
-      } else {
-        log('warn', 'failed to add mods to collection, collection no longer found',
-            { gameId, collectionId, modIds });
-      }
-    },
+  context.registerDialog('add-mod-to-collection', AddModsDialog, () => ({
+    onAddSelection,
   }));
 
   let resetPageCB: () => void;
