@@ -55,7 +55,7 @@ class InstallDriver {
         util.testModReference(mod, iter.reference));
       if ((mod !== undefined) && (required !== undefined)) {
         this.mInstalledMods.push(mod);
-        if ((this.mCollection !== undefined)
+        if ((this.mCollection?.installationPath !== undefined)
             && (required.reference.description !== undefined)) {
           this.updateProgress(this.mProfile, this.mCollection);
           applyPatches(api, this.mCollection.installationPath,
