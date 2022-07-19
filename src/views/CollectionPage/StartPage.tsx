@@ -125,23 +125,27 @@ function CreateCard(props: ICreateCardProps) {
 
   const classes = ['collection-add-btn'];
 
-  const actions: types.IActionDefinition[] = [
-    {
-      title: 'From Profile',
-      icon: 'profile',
-      action: (instanceIds: string[]) => {
-        onTrackClick('Collections', 'From profile');
-        props.onCreateFromProfile();
+  const actions = React.useRef<types.IActionDefinition[]>([]);
+  
+  React.useEffect(() => {
+    actions.current = [
+      {
+        title: 'From Profile',
+        icon: 'profile',
+        action: () => {
+          onTrackClick('Collections', 'From profile');
+          props.onCreateFromProfile();
+        },
+      }, {
+        title: 'Empty',
+        icon: 'show',
+        action: () => {
+          onTrackClick('Collections', 'Empty');
+          props.onCreateEmpty();
+        },
       },
-    }, {
-      title: 'Empty',
-      icon: 'show',
-      action: (instanceIds: string[]) => {
-        onTrackClick('Collections', 'Empty');
-        props.onCreateEmpty();
-      },
-    },
-  ];
+    ];
+  }, [props.onCreateFromProfile, props.onCreateEmpty]);
 
   return (
     <Panel className={classes.join(' ')} bsStyle='default'>
@@ -156,7 +160,7 @@ function CreateCard(props: ICreateCardProps) {
             <IconBar
               className='buttons'
               group='collection-actions'
-              staticElements={actions}
+              staticElements={actions.current}
               collapse={false}
               buttonType='text'
               orientation='vertical'

@@ -33,12 +33,12 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   const forceUpdate = React.useState(0)[1];
 
   React.useEffect(() => {
-    if (driver !== undefined)  {
-      driver.onUpdate(() => {
+    driver.onUpdate(() => {
+      if ((driver?.collection !== undefined) && (driver?.step === 'review')) {
         forceUpdate(i => i + 1);
-      });
-    }
-  }, [driver]);
+      }
+    });
+  }, [driver, forceUpdate]);
 
   const skip = React.useCallback(() => {
     if (driver.collection !== undefined) {
@@ -75,7 +75,7 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   const mods = useSelector<types.IState, { [modId: string]: types.IMod }>(state =>
     (driver.profile !== undefined)
       ? state.persistent.mods[driver.profile?.gameId]
-      : {});
+      : emptyObject);
 
   const optionals = React.useMemo(() => {
     return (collection?.rules ?? [])
