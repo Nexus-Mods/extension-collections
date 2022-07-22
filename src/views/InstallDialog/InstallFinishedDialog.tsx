@@ -57,7 +57,7 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
 
   const installAllOptionals = React.useCallback(() => {
     // double check we're not triggering this multiple times.
-    if (driver.step === 'review') {
+    if ((driver.step === 'review') && (driver.collection !== undefined)) {
       driver.installRecommended();
     }
   }, []);
