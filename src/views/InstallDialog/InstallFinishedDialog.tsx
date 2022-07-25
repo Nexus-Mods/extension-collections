@@ -66,6 +66,9 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
   }, []);
 
   const clone = React.useCallback(async () => {
+    if (driver.collection === undefined) {
+      return;
+    }
     const id: string = await onClone(driver.collection.id);
     if (id !== undefined) {
       props.editCollection(id);
