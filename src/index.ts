@@ -510,14 +510,14 @@ function register(context: types.IExtensionContext,
   context.registerAction('mods-action-icons', 300, 'collection', {}, 'Remove from Collection...',
     (instanceIds: string[]) => removeCollectionAction(context.api, instanceIds)
         .then(() => collectionChanged.schedule())
-        .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
+        .catch(err => context.api.showErrorNotification('failed to remove mod from collection', err)),
     (instanceIds: string[]) => removeCollectionCondition(context.api, instanceIds));
 
   context.registerAction('mods-multirow-actions', 300, 'collection', {},
                          'Remove from Collection...',
     (instanceIds: string[]) => removeCollectionAction(context.api, instanceIds)
         .then(() => collectionChanged.schedule())
-        .catch(err => context.api.showErrorNotification('failed to add mod to collection', err)),
+        .catch(err => context.api.showErrorNotification('failed to remove mod from collection', err)),
     (instanceIds: string[]) => removeCollectionCondition(context.api, instanceIds));
 
   context.registerAttributeExtractor(100, genAttributeExtractor(context.api));
