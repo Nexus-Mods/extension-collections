@@ -3,6 +3,7 @@ import React = require('react');
 import { ControlLabel, ListGroup, ListGroupItem, Panel } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
 import { fs, Icon, log, selectors, Spinner, Toggle, tooltip, types, util } from 'vortex-api';
+import { ICollectionMod } from '../../types/ICollection';
 import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 
 interface IGamebryoLO {
@@ -119,7 +120,8 @@ function refName(iter: string | { name: string }): string {
 
 export async function parser(api: types.IExtensionApi,
                              gameId: string,
-                             collection: ICollectionGamebryo) {
+                             collection: ICollectionGamebryo,
+                             mods: { [modId: string]: types.IMod }) {
   const state: types.IState = api.getState();
 
   if ((state as any).userlist === undefined) {
@@ -148,12 +150,20 @@ export async function parser(api: types.IExtensionApi,
     return prev;
   }, []));
 
+  const stagingPath = selectors.installPathForGame(state, gameId);
+  const includedPlugins = await getIncludedPlugins(gameId, stagingPath, mods, Object.keys(mods));
+  const isEnabled = (pluginName: string) => collection.plugins.find(plugin =>
+    ((plugin.name === pluginName) && (plugin.enabled))) !== undefined;
+
   // set up plugins and their rules
-  util.batchDispatch(api.store, collection.plugins.map(plugin => ({
-    type: 'SET_PLUGIN_ENABLED', payload: {
-      pluginName: plugin.name,
-      enabled: plugin.enabled,
-    } })));
+  util.batchDispatch(api.store, includedPlugins.map(plugin => {
+    return {
+      type: 'SET_PLUGIN_ENABLED', payload: {
+        pluginName: plugin,
+        enabled: isEnabled(plugin),
+      }
+    }
+  }));
 
   // dismiss all "mod x contains multiple plugins" notifications because we're enabling plugins
   // automatically.

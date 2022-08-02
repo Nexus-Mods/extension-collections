@@ -73,10 +73,11 @@ export function generateGameSpecifics(state: types.IState,
 
 export function parseGameSpecifics(api: types.IExtensionApi,
                                    gameId: string,
-                                   collection: ICollection)
+                                   collection: ICollection,
+                                   mods: { [modId: string]: types.IMod })
                                    : Promise<void> {
   if ((gameSupport[gameId] !== undefined) && (gameSupport[gameId].parser !== undefined)) {
-    return gameSupport[gameId].parser(api, gameId, collection);
+    return gameSupport[gameId].parser(api, gameId, collection, mods);
   } else {
     return Promise.resolve();
   }
