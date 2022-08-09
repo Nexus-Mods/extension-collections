@@ -1,6 +1,6 @@
 import * as PromiseBB from 'bluebird';
 import { createHash } from 'crypto';
-import { fs, log, types, util } from 'vortex-api';
+import { types, util } from 'vortex-api';
 import { ICollectionModRuleEx } from '../types/ICollection';
 import { IModEx } from '../types/IModEx';
 

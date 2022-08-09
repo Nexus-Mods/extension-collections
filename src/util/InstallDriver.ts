@@ -1,8 +1,6 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
-import _ = require('lodash');
 import * as path from 'path';
-import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
@@ -13,7 +11,6 @@ import { applyPatches } from './binaryPatching';
 import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
-import { fileMD5Async } from './transformCollection';
 
 export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'recommendations' | 'review';
 
@@ -498,48 +495,10 @@ class InstallDriver {
     this.mApi.dismissNotification(getUnfulfilledNotificationId(collection.id));
     this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
 
-    const required = []
+    const required = (collection?.rules ?? [])
       .filter(rule => rule.type === 'requires');
-    for (const rule of (collection?.rules ?? [])) {
-      if (rule.type !== 'requires') {
-        continue;
-      }
-
-      const modByRef = util.findModByRef(rule.reference, mods);
-      if (modByRef === undefined) {
-        required.push(rule);
-        continue;
-      }
-
-      if (rule.fileList?.length ?? 0 > 0) {
-        const stagingPath = selectors.installPathForGame(state, profile.gameId);
-        const modPath = path.join(stagingPath, modByRef.installationPath);
-        const presentFiles = await new Promise(async (resolve, reject) => {
-          let entries: IEntry[];
-          await turbowalk(modPath, async input => {
-            entries = [].concat(entries, input);
-          }, {});
-
-          const presentFiles = await Promise.all(entries
-            .filter(iter => !!iter && !iter.isDirectory)
-            .map(async iter => ({
-              path: path.relative(modPath, iter.filePath),
-              md5: await fileMD5Async(iter.filePath),
-            })
-          ));
-          return resolve(presentFiles);
-        });
-        if (!_.isEqual(presentFiles, rule.fileList)) {
-          required.push(rule);
-          continue;
-        }
-      }
-      const modInstallerChoices = modByRef?.attributes?.installerChoices?.options ?? {};
-      const ruleInstallerChoices = rule?.installerChoices?.options ?? {};
-      const installerChoicesMatch = _.isEqual(ruleInstallerChoices, modInstallerChoices);
-      return !installerChoicesMatch;
-    }
-    this.mRequiredMods = required;
+    this.mRequiredMods = required
+      .filter(rule => util.findModByRef(rule.reference, mods) === undefined);
 
     if (this.mRequiredMods.length === 0) {
       this.mInstallDone = false;

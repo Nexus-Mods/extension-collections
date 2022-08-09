@@ -25,7 +25,7 @@ function nop() {
   // nop
 }
 
-export const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
+const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
   fileMD5(fileName,
           (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result),
           nop);
