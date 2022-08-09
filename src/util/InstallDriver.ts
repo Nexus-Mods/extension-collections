@@ -1,6 +1,6 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as path from 'path';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
