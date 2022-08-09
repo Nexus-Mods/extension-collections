@@ -656,6 +656,10 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           actions: false,
           onChangeValue: (source: IModEntry, value: any) => {
             (async () => {
+              if (source.mod === undefined) {
+                // mod not/no longer installed?
+                return;
+              }
               if (value && this.props.showBinpatchWarning) {
                 const result = await this.context.api.showDialog('question', 'Save Local Edits', {
                   bbcode: 'With this option enabled, when you upload the Collection Vortex will '
