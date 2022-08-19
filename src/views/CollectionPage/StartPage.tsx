@@ -383,11 +383,15 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private setSortAdded = (value: { value: string, label: string }) => {
-    this.props.onSetSortAdded(value.value);
+    if (!!value) {
+      this.props.onSetSortAdded(value.value);
+    }
   }
 
   private setSortWorkshop = (value: { value: string, label: string }) => {
-    this.props.onSetSortWorkshop(value.value);
+    if (!!value) {
+      this.props.onSetSortWorkshop(value.value);
+    }
   }
 
   private setActiveTab = (tabId: any) => {
