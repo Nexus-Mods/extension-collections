@@ -62,7 +62,7 @@ async function getIncludedPlugins(gameId: string,
                                   mods: { [modId: string]: types.IMod },
                                   modIds: string[])
                                   : Promise<string[]> {
-  const extensions = ['fallout4', 'skyrimse'].indexOf(gameId) === -1
+  const extensions = ['fallout4', 'skyrimse'].includes(gameId)
     ? new Set(['.esp', '.esm', '.esl'])
     : new Set(['.esp', '.esm']);
 
