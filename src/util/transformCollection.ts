@@ -291,13 +291,11 @@ async function rulesToCollectionMods(
         author: mod.attributes?.author,
         details: {
           category: util.resolveCategoryName(mod.attributes?.category, state),
+          type: mod.type,
         },
         phase: rule.extra?.['phase'] ?? 0,
       };
 
-      if (mod.type !== '') {
-        res.details['type'] = mod.type;
-      }
       return res;
     } catch (err) {
       --total;
