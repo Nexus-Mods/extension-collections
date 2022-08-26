@@ -22,7 +22,7 @@ import {
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
 import { makeInstall, testSupported } from './collectionInstall';
-import { DELAY_FIRST_VOTE_REQUEST, MOD_TYPE, TIME_BEFORE_VOTE } from './constants';
+import { DELAY_FIRST_VOTE_REQUEST, INSTALLING_NOTIFICATION_ID, MOD_TYPE, TIME_BEFORE_VOTE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 import initTools from './tools';
@@ -37,6 +37,7 @@ import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
+import { doExportToFile } from './collectionExport';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -62,6 +63,26 @@ function onlyLocalRules(rule: types.IModRule) {
     && (rule.reference.repo === undefined);
 }
 
+const modsBeingRemoved = new Set<string>();
+
+function makeModKey(gameId: string, modId: string): string {
+  return `${gameId}_${modId}`;
+}
+
+function makeWillRemoveMods() {
+  return (gameId: string, modIds: string[]) => {
+    modIds.forEach(modId => modsBeingRemoved.add(makeModKey(gameId, modId)));
+    return Promise.resolve();
+  };
+}
+
+function makeDidRemoveMods() {
+  return (gameId: string, modIds: string[]) => {
+    modIds.forEach(modId => modsBeingRemoved.delete(makeModKey(gameId, modId)));
+    return Promise.resolve();
+  };
+}
+
 function makeOnUnfulfilledRules(api: types.IExtensionApi) {
   const reported = new Set<string>();
 
@@ -70,6 +91,10 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
     const profile = selectors.profileById(state, profileId);
     const gameId = profile.gameId;
+
+    if (modsBeingRemoved.has(makeModKey(gameId, modId))) {
+      return PromiseBB.resolve(false);
+    }
 
     const collection: types.IMod =
       util.getSafe(state.persistent.mods, [gameId, modId], undefined);
@@ -183,6 +208,179 @@ async function createNewCollection(
       },
     ],
   });
+}
+
+async function pauseCollection(api: types.IExtensionApi,
+                               gameId: string,
+                               modId: string,
+                               silent?: boolean) {
+  const state = api.getState();
+  const mods = state.persistent.mods[gameId];
+  const downloads = state.persistent.downloads.files;
+
+  const collection = mods[modId];
+  if (collection === undefined) {
+    return;
+  }
+
+  (collection?.rules ?? []).forEach(rule => {
+    const dlId = util.findDownloadByRef(rule.reference, downloads);
+    if (dlId !== undefined) {
+      api.events.emit('pause-download', dlId);
+    }
+  });
+  await api.emitAndAwait('cancel-dependency-install', modId);
+
+  driver.cancel();
+
+  api.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
+  if (silent !== true) {
+    api.sendNotification({
+      id: 'collection-pausing',
+      type: 'success',
+      title: 'Collection pausing',
+      message: 'Already queued mod installations will still finish',
+    });
+  }
+}
+
+async function removeCollection(api: types.IExtensionApi,
+                                gameId: string,
+                                modId: string,
+                                cancel: boolean) {
+  const state = api.getState();
+  const mods = state.persistent.mods[gameId];
+
+  const t = api.translate;
+
+  const collection = mods[modId];
+  if (collection === undefined) {
+    return;
+  }
+
+  const filter = rule =>
+    (rule.type === 'requires')
+    && (rule['ignored'] !== true)
+    && (util.findModByRef(rule.reference, mods) === undefined);
+
+  const incomplete = (collection.rules ?? []).find(filter);
+
+  const message: string = cancel && incomplete
+    ? 'Are you sure you want to cancel the installation?'
+    : 'Are you sure you want to remove the collection?';
+
+  const result = await api.showDialog(
+    'question',
+    message, {
+      text: 'This collection will be removed from Vortex and unlinked from any associated mods. '
+        + 'You can also choose to uninstall mods related to this collection and delete the '
+        + 'downloaded archives.\n'
+        + '\nPlease note, some mods may be required by multiple collections.\n'
+        + '\nAre you sure you want to remove "{{collectionName}}" from your collections?',
+      parameters: {
+        collectionName: util.renderModName(collection),
+      },
+      checkboxes: [
+        { id: 'delete_mods', text: t('Remove mods'), value: false },
+        { id: 'delete_archives', text: t('Delete mod archives'), value: false },
+      ],
+    }, [
+      { label: 'Cancel' },
+      { label: 'Remove Collection' },
+    ]);
+
+  // apparently one can't cancel out of the cancellation...
+  if (result.action === 'Cancel') {
+    return;
+  }
+
+  const deleteArchives = result.input.delete_archives;
+  const deleteMods = result.input.delete_mods;
+
+  modsBeingRemoved.add(makeModKey(gameId, modId));
+
+  await pauseCollection(api, gameId, modId, true);
+
+  let progress = 0;
+  const notiId = shortid();
+  const modName = util.renderModName(collection);
+  const doProgress = (step: string, value: number) => {
+    if (value <= progress) {
+      return;
+    }
+    progress = value;
+    api.sendNotification({
+      id: notiId,
+      type: 'activity',
+      title: 'Removing {{name}}',
+      message: step,
+      progress,
+      replace: {
+        name: modName,
+      },
+    });
+  };
+
+  try {
+    doProgress('Removing downloads', 0);
+    const downloads = state.persistent.downloads.files;
+
+    // either way, all running downloads are canceled. If selected, so are finished downloads
+    let completed = 0;
+    await Promise.all((collection.rules ?? []).map(async rule => {
+      const dlId = util.findDownloadByRef(rule.reference, downloads);
+
+      if (dlId !== undefined) {
+        const download = state.persistent.downloads.files[dlId];
+        if ((download !== undefined)
+          && (deleteArchives || (download.state !== 'finished'))) {
+          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+        }
+      }
+      doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
+    }));
+
+    doProgress('Removing mods', 50);
+    completed = 0;
+    // if selected, remove mods
+    if (deleteMods) {
+      const removeMods: string[] = (collection.rules ?? [])
+        .map(rule => util.findModByRef(rule.reference, mods))
+        .filter(mod => mod !== undefined)
+        .map(mod => mod.id);
+
+      await util.toPromise(cb =>
+        api.events.emit('remove-mods', gameId, removeMods, cb, {
+          progressCB: (idx: number, length: number, name: string) => {
+            doProgress(name, 50 + (50 * idx) / length);
+          },
+        }));
+    }
+
+    { // finally remove the collection itself
+      doProgress('Removing collection', 0.99);
+      const download = state.persistent.downloads.files[collection.archiveId];
+      if (download !== undefined) {
+        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+      }
+      await util.toPromise(cb => api.events.emit('remove-mod', gameId, modId, cb, {
+        incomplete: true,
+      }));
+    }
+  } catch (err) {
+    if (!(err instanceof util.UserCanceled)) {
+      // possible reason for ProcessCanceled is that (un-)deployment may
+      // not be possible atm, we definitively should report that
+      api.showErrorNotification('Failed to remove mods', err, {
+        message: modName,
+        allowReport: !(err instanceof util.ProcessCanceled),
+        warning: (err instanceof util.ProcessCanceled),
+      } as any);
+    }
+  } finally {
+    modsBeingRemoved.delete(makeModKey(gameId, modId));
+    api.dismissNotification(notiId);
+  }
 }
 
 function genAttributeExtractor(api: types.IExtensionApi) {
@@ -354,6 +552,11 @@ function register(context: types.IExtensionContext,
   }));
 
   const onClone = (collectionId: string) => cloneInstalledCollection(context.api, collectionId);
+  const onCreateCollection = (profile: types.IProfile, name: string) =>
+    createNewCollection(context.api, profile, name);
+  const onRemoveCollection = (gameId: string, modId: string, cancel: boolean) => 
+    removeCollection(context.api, gameId, modId, cancel);
+  const onUpdateMeta = () => updateMeta(context.api);
   const editCollection = (id: string) => collectionsCB.editCollection(id);
 
   context.registerDialog('collection-finish', InstallFinishDialog, () => ({
@@ -373,6 +576,11 @@ function register(context: types.IExtensionContext,
   }));
 
   let resetPageCB: () => void;
+  const resetCB = (cb) => resetPageCB = cb;
+  const onSetupCallbacks = (callbacks: ICallbackMap) => {
+    collectionsCB = callbacks;
+    onSetCallbacks(callbacks);
+  }
 
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
@@ -380,16 +588,12 @@ function register(context: types.IExtensionContext,
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
-      onSetupCallbacks: (callbacks: ICallbackMap) => {
-        collectionsCB = callbacks;
-        onSetCallbacks(callbacks);
-      },
-      onCloneCollection: (collectionId: string) =>
-        cloneInstalledCollection(context.api, collectionId),
-      onCreateCollection: (profile: types.IProfile, name: string) =>
-        createNewCollection(context.api, profile, name),
-      onUpdateMeta: () => updateMeta(context.api),
-      resetCB: (cb) => resetPageCB = cb,
+      onSetupCallbacks,
+      onRemoveCollection,
+      onCloneCollection: onClone,
+      onCreateCollection,
+      onUpdateMeta,
+      resetCB,
     }),
     onReset: () => resetPageCB?.(),
     priority: 90,
@@ -454,6 +658,11 @@ function register(context: types.IExtensionContext,
     isDefaultVisible: false,
   };
   context.registerTableAttribute('mods', collectionAttribute);
+
+  context.registerAction('mods-action-icons', 25, 'save', {}, 'Export Collection',
+    (modIds: string[]) => {
+      doExportToFile(context.api, selectors.activeGameId(stateFunc()), modIds[0]);
+    });
 
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
     (modIds: string[]) => {
@@ -779,6 +988,9 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       }
     }
   });
+
+  api.onAsync('will-remove-mods', makeWillRemoveMods());
+  api.onAsync('did-remove-mods', makeDidRemoveMods());
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
   api.events.on('collection-update', onCollectionUpdate(api, driver));

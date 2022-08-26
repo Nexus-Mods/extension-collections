@@ -1,6 +1,6 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
-import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL, TOS_URL} from '../../constants';
+import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, TOS_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
@@ -15,9 +15,8 @@ import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { generate as shortid } from 'shortid';
 import { actions, ComponentEx, FlexLayout, log, MainPage, selectors, tooltip,
-          types, util } from 'vortex-api';
+         types, util } from 'vortex-api';
 
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
@@ -26,6 +25,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
+  onRemoveCollection: (gameId: string, modId: string, cancel: boolean) => Promise<void>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
   onUpdateMeta: () => void;
 
@@ -302,12 +302,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods, profile } = this.props;
     const { api } = this.context;
 
-    const result = await api.showDialog('question',
+    const result = await api.showDialog(
+      'question',
       'Remove Collection (Workshop)', {
         text: 'Deleting a collection will not remove the mods that have been added to it.\n\n'
-            + 'Any changes made to this collection since the last upload to Nexus Mods will '
-            + 'be lost.\n\n'
-            + 'Are you sure you want to remove "{{collectionName}}" from your Workshop?',
+          + 'Any changes made to this collection since the last upload to Nexus Mods will '
+          + 'be lost.\n\n'
+          + 'Are you sure you want to remove "{{collectionName}}" from your Workshop?',
         parameters: {
           collectionName: util.renderModName(mods[modId]),
         },
@@ -331,126 +332,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }
   }
 
-  private cancel = async (modId: string, message?: string) => {
-    const { t, downloads, mods, profile } = this.props;
-    const { api } = this.context;
+  private cancel = async (modId: string, cancel?: boolean) => {
+    const { profile } = this.props;
 
-    const collection = mods[modId];
-    if (collection === undefined) {
-      return;
-    }
-
-    if (message === undefined) {
-      message = 'Are you sure you want to cancel the installation?';
-    }
-
-    const result = await api.showDialog(
-      'question',
-      message, {
-      text: 'This collection will be removed from Vortex and unlinked from any associated mods. '
-          + 'You can also choose to uninstall mods related to this collection and delete the '
-          + 'downloaded archives.\n'
-          + '\nPlease note, some mods may be required by multiple collections.\n'
-          + '\nAre you sure you want to remove "{{collectionName}}" from your collections?',
-      parameters: {
-        collectionName: util.renderModName(collection),
-      },
-      checkboxes: [
-        { id: 'delete_mods', text: t('Remove mods'), value: false },
-        { id: 'delete_archives', text: t('Delete mod archives'), value: false },
-      ],
-    }, [
-      { label: 'Cancel' },
-      { label: 'Remove Collection' },
-    ]);
-
-    // apparently one can't cancel out of the cancellation...
-    if (result.action === 'Cancel') {
-      return;
-    }
-
-    await this.pause(modId, true);
-
-    const state: types.IState = api.store.getState();
-
-    let progress = 0;
-    const notiId = shortid();
-    const modName = util.renderModName(collection);
-    const doProgress = (step: string, value: number) => {
-      if (value <= progress) {
-        return;
-      }
-      progress = value;
-      api.sendNotification({
-        id: notiId,
-        type: 'activity',
-        title: 'Removing {{name}}',
-        message: step,
-        progress,
-        replace: {
-          name: modName,
-        },
-      });
-    };
-
-    try {
-      doProgress('Removing downloads', 0);
-
-      // either way, all running downloads are canceled. If selected, so are finished downloads
-      let completed = 0;
-      await Promise.all((collection.rules ?? []).map(async rule => {
-        const dlId = util.findDownloadByRef(rule.reference, downloads);
-
-        if (dlId !== undefined) {
-          const download = state.persistent.downloads.files[dlId];
-          if ((download !== undefined)
-              && (result.input.delete_archives || (download.state !== 'finished'))) {
-            await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
-          }
-        }
-        doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
-      }));
-
-      doProgress('Removing mods', 50);
-      completed = 0;
-      // if selected, remove mods
-      if (result.input.delete_mods) {
-        const removeMods: string[] = (collection.rules ?? [])
-          .map(rule => util.findModByRef(rule.reference, mods))
-          .filter(mod => mod !== undefined)
-          .map(mod => mod.id);
-
-        await util.toPromise(cb =>
-          api.events.emit('remove-mods', profile.gameId, removeMods, cb, {
-            progressCB: (idx: number, length: number, name: string) => {
-              doProgress(name, 50 + (50 * idx) / length);
-            },
-          }));
-      }
-
-      { // finally remove the collection itself
-        doProgress('Removing collection', 0.99);
-        const download = state.persistent.downloads.files[collection.archiveId];
-        if (download !== undefined) {
-          await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
-        }
-        await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb, {
-          incomplete: true,
-        }));
-      }
-    } catch (err) {
-      if (!(err instanceof util.UserCanceled)) {
-        // possible reason for ProcessCanceled is that (un-)deployment may
-        // not be possible atm, we definitively should report that
-        api.showErrorNotification('Failed to remove mods', err, {
-          message: modName,
-          allowReport: !(err instanceof util.ProcessCanceled),
-          warning: (err instanceof util.ProcessCanceled),
-        } as any);
-      }
-    } finally {
-      api.dismissNotification(notiId);
-    }
+    return this.props.onRemoveCollection(profile.gameId, modId, cancel ?? true);
   }
 
   private voteSuccess = async (modId: string, success: boolean) => {
@@ -511,7 +396,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         return this.removeWorkshop(modId);
       } else {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
-        return this.cancel(modId, 'Remove collection');
+        return this.cancel(modId, false);
       }
     } catch (err) {
       if (err instanceof util.UserCanceled) {
