@@ -55,7 +55,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     super(props);
 
     this.initState({
-      selectedProfile: props.profile?.id,
+      selectedProfile: undefined,
     });
 
     if (props.driver !== undefined) {
@@ -66,11 +66,6 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   public componentDidUpdate(prevProps: IProps) {
     if ((this.props.driver !== undefined) && (this.props.driver !== prevProps.driver))  {
       this.props.driver.onUpdate(() => this.forceUpdate());
-    }
-    if ((prevProps.profile !== undefined)
-        && (this.props.profile !== undefined)
-        && (prevProps.profile.id !== this.props.profile.id)) {
-      this.nextState.selectedProfile = this.props.profile.id;
     }
   }
 
@@ -119,7 +114,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
               <FlexLayout.Flex>
                 <Select
                   options={profileOptions}
-                  value={selectedProfile}
+                  value={selectedProfile ?? profile.id}
                   onChange={this.changeProfile}
                   clearable={false}
                 />
@@ -153,7 +148,8 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   private next = () => {
     const { allProfiles, driver, onAddProfile, onSetProfilesVisible, profile } = this.props;
     const { selectedProfile } = this.state;
-    let profileId = this.state.selectedProfile;
+
+    let profileId = selectedProfile ?? profile?.id;
 
     if (this.state.selectedProfile === '__new') {
       profileId = shortid();
@@ -168,7 +164,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
       onAddProfile(newProfile);
       onSetProfilesVisible();
       driver.profile = newProfile;
-    } else if (selectedProfile !== profile.id) {
+    } else if ((selectedProfile !== undefined) && (selectedProfile !== profile.id)) {
       driver.profile = allProfiles[selectedProfile];
     }
     driver.continue();
