@@ -580,9 +580,13 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 .collection-status {
-  background-color: $brand-primary;
+  color: $white;
+  background-color: $gray-light;
   text-transform: uppercase;
   padding: 0 0.5em;
+  &.enabled {
+    background-color: $brand-success;
+  }
 }
 
 .collection-list {
