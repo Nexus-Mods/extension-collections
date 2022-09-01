@@ -653,6 +653,23 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
+@media only screen and (max-width: 1250px) {
+  .collection-description {
+    width: 40em;
+  }
+}
+
+@media only screen and (max-width: 1150px) {
+  .collection-detail-cell {
+    &.hideable {
+      display: none;
+    }
+  }
+  .collection-description {
+    width: 30em;
+  }
+}
+
 .collection-ghost-button {
   border: 1px solid $border-color;
   border-radius: 26px;
