@@ -547,8 +547,22 @@ function register(context: types.IExtensionContext,
   context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
+  const onSwitchProfile = (profileId: string) => {
+    return new Promise<void>((resolve, reject) => {
+      context.api.events.once('profile-did-change', newProfileId => {
+        if (newProfileId === profileId) {
+          resolve();
+        } else {
+          reject(new Error('Failed to switch to profile'));
+        }
+      });
+      context.api.store.dispatch(actions.setNextProfile(profileId));
+    });
+  };
+
   context.registerDialog('collection-install', InstallStartDialog, () => ({
     driver,
+    onSwitchProfile,
   }));
 
   const onClone = (collectionId: string) => cloneInstalledCollection(context.api, collectionId);
