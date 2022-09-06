@@ -22,7 +22,6 @@ interface IInstallDialogProps {
 }
 
 interface IConnectedProps {
-  profile: types.IProfile;
   allProfiles: { [profileId: string]: types.IProfile };
   mods: { [modId: string]: types.IMod };
   isPremium: boolean;
@@ -149,12 +148,14 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   public render(): React.ReactNode {
-    const { t, driver,  allProfiles, nextProfileId, profile, userInfo } = this.props;
+    const { t, driver, allProfiles, nextProfileId, userInfo } = this.props;
     const { selectedProfile } = this.state;
 
-    if ((driver === undefined) || (profile === undefined)) {
+    if (driver?.profile === undefined) {
       return null;
     }
+
+    const { profile } = driver;
 
     if (nextProfileId !== profile.id) {
       return null;
@@ -227,7 +228,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   private next = () => {
     if (!this.state.confirmProfile
         && (this.state.selectedProfile !== undefined)
-        && (this.state.selectedProfile !== this.props.profile.id)) {
+        && (this.state.selectedProfile !== this.props.driver?.profile?.id)) {
       this.nextState.confirmProfile = true;
     } else {
       this.startInstall();
@@ -241,8 +242,10 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   private startInstall() {
-    const { allProfiles, driver, onAddProfile, onSetProfilesVisible, profile } = this.props;
+    const { allProfiles, driver, onAddProfile, onSetProfilesVisible } = this.props;
     const { selectedProfile } = this.state;
+
+    const { profile } = driver;
 
     let profileId = selectedProfile ?? profile?.id;
 
@@ -268,18 +271,14 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 
 const emptyObject = {};
 
-function mapStateToProps(state: types.IState): IConnectedProps {
+function mapStateToProps(state: types.IState, ownProps: IInstallDialogProps): IConnectedProps {
   const { editCollectionId } = (state.session as any).collections;
-  const profile = selectors.activeProfile(state);
-  const gameMode = profile !== undefined
-    ? profile.gameId
-    : undefined;
+  const gameMode = ownProps.driver?.profile?.gameId;
 
   const { userInfo } = state.persistent['nexus'] ?? {};
 
   if (editCollectionId !== undefined) {
     return {
-      profile,
       allProfiles: state.persistent.profiles,
       mods: state.persistent.mods[gameMode],
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
@@ -288,7 +287,6 @@ function mapStateToProps(state: types.IState): IConnectedProps {
     };
   } else {
     return {
-      profile,
       allProfiles: state.persistent.profiles,
       mods: emptyObject,
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),

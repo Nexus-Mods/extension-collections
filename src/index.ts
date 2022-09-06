@@ -1062,22 +1062,31 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.events.on('view-collection', (collectionId: string) => {
+  api.events.on('view-collection', (modId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      collectionsCB().viewCollection?.(collectionId);
+      collectionsCB().viewCollection?.(modId);
     }, 100);
   });
 
-  api.events.on('edit-collection', (collectionId: string) => {
+  api.events.on('edit-collection', (modId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      collectionsCB().editCollection?.(collectionId);
+      collectionsCB().editCollection?.(modId);
     }, 100);
+  });
+
+  api.events.on('resume-collection', (gameId: string, modId: string) => {
+    const state = api.getState();
+    const profileId = selectors.lastActiveProfileForGame(state, gameId);
+    const profile = state.persistent.profiles[profileId];
+    const mod = state.persistent.mods[gameId]?.[modId];
+    log('info', 'resume collection', { gameId, modId, archiveId: mod?.archiveId });
+    driver.start(profile, mod);
   });
 
   api.onStateChange(['persistent', 'collections', 'collections'], (prev, cur) => {

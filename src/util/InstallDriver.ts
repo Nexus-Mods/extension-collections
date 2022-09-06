@@ -139,6 +139,7 @@ class InstallDriver {
         message: 'Already installing a collection',
         displayMS: 5000,
       });
+      log('warn', 'already installing a collection');
       return;
     }
 
