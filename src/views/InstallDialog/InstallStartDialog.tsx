@@ -1,4 +1,4 @@
-import { NAMESPACE } from '../../constants';
+import { MAX_COLLECTION_NAME_LENGTH, NAMESPACE } from '../../constants';
 import InstallDriver, { Step } from '../../util/InstallDriver';
 
 import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
@@ -95,17 +95,21 @@ function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
 
 interface IInstallDialogConfirmProfileProps {
   t: types.TFunction;
+  collectionName: string;
   selectedProfile: types.IProfile;
 }
 
 function InstallDialogConfirmProfile(props: IInstallDialogConfirmProfileProps) {
-  const { t, selectedProfile } = props;
+  const { t, collectionName, selectedProfile } = props;
+
+  const profileName = selectedProfile?.name
+                    ?? collectionName;
 
   return (
     <>
       <p>{t('is installing to profile: {{profileName}}', {
         replace: {
-          profileName: selectedProfile.name
+          profileName,
         },
       })}</p>
       <p>{t('Do you want to switch to this profile?')}</p>
@@ -165,7 +169,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 
     const ownCollection: boolean = (userInfo?.userId !== undefined)
                                 && (driver.collectionInfo?.user?.memberId === userInfo?.userId);
-
+    const collectionName = util.renderModName(driver.collection);
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
         <Modal.Body>
@@ -181,11 +185,12 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
           <Media.Right style={{ width: '100%' }}>
             {ownCollection ? <YouCuratedTag t={t} /> : null}
             <h5>{game.name}</h5>
-            <h3>{util.renderModName(driver.collection)}</h3>
+            <h3>{collectionName}</h3>
             {(this.state.confirmProfile && (selectedProfile !== undefined)) ? (
               <InstallDialogConfirmProfile
                 t={t}
-                selectedProfile={allProfiles[selectedProfile]}
+                collectionName={collectionName}
+                selectedProfile={selectedProfile === '__new' ? undefined : allProfiles[selectedProfile]}
               />
             ) : (
               <InstallDialogSelectProfile
@@ -229,6 +234,23 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     if (!this.state.confirmProfile
         && (this.state.selectedProfile !== undefined)
         && (this.state.selectedProfile !== this.props.driver?.profile?.id)) {
+      if (this.state.selectedProfile === '__new') {
+        const { driver, onAddProfile, onSetProfilesVisible } = this.props;
+        const { profile } = driver;
+
+        const profileId = shortid();
+        const name = util.renderModName(driver.collection);
+        const newProfile = {
+          id: profileId,
+          gameId: profile.gameId,
+          name,
+          modState: {},
+          lastActivated: 0,
+        };
+        onAddProfile(newProfile);
+        onSetProfilesVisible();
+        this.nextState.selectedProfile = profileId;
+      }
       this.nextState.confirmProfile = true;
     } else {
       this.startInstall();
@@ -242,29 +264,15 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   private startInstall() {
-    const { allProfiles, driver, onAddProfile, onSetProfilesVisible } = this.props;
+    const { allProfiles, driver } = this.props;
     const { selectedProfile } = this.state;
 
     const { profile } = driver;
 
-    let profileId = selectedProfile ?? profile?.id;
-
-    if (this.state.selectedProfile === '__new') {
-      profileId = shortid();
-      const name = util.renderModName(driver.collection);
-      const newProfile = {
-        id: profileId,
-        gameId: profile.gameId,
-        name,
-        modState: {},
-        lastActivated: 0,
-      };
-      onAddProfile(newProfile);
-      onSetProfilesVisible();
-      driver.profile = newProfile;
-    } else if ((selectedProfile !== undefined) && (selectedProfile !== profile.id)) {
+    if ((selectedProfile !== undefined) && (selectedProfile !== profile.id)) {
       driver.profile = allProfiles[selectedProfile];
     }
+
     driver.continue();
   }
 }
