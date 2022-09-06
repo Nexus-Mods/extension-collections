@@ -975,6 +975,8 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
     if (mod.type === MOD_TYPE) {
       if (driver.collection === undefined) {
+        const awaitProfileSwitch = api.ext?.awaitProfileSwitch ?? (() => Promise.resolve());
+        await awaitProfileSwitch();
         driver.query(profile, mod);
       } else {
         api.sendNotification({
