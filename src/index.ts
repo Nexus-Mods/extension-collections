@@ -36,8 +36,7 @@ import * as React from 'react';
 import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
-import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
-import { doExportToFile } from './collectionExport';
+import { actions, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -658,11 +657,6 @@ function register(context: types.IExtensionContext,
     isDefaultVisible: false,
   };
   context.registerTableAttribute('mods', collectionAttribute);
-
-  context.registerAction('mods-action-icons', 25, 'save', {}, 'Export Collection',
-    (modIds: string[]) => {
-      doExportToFile(context.api, selectors.activeGameId(stateFunc()), modIds[0]);
-    });
 
   context.registerAction('mods-action-icons', 25, 'collection-edit', {}, 'Edit Collection',
     (modIds: string[]) => {
