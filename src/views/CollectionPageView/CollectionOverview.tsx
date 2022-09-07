@@ -1,7 +1,7 @@
-import CollectionReleaseStatus from './CollectionReleaseStatus';
-import CollectionThumbnail from './CollectionThumbnail';
+import CollectionReleaseStatus from '../CollectionReleaseStatus';
+import CollectionThumbnail from '../CollectionTile';
 
-import HealthIndicator from '../HealthIndicator';
+import HealthIndicator from './HealthIndicator';
 
 import {
   ICollection,

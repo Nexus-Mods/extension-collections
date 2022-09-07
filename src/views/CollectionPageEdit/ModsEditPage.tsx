@@ -1,4 +1,4 @@
-import { ICollectionSourceInfo, SourceType } from '../types/ICollection';
+import { ICollectionSourceInfo, SourceType } from '../../types/ICollection';
 
 import I18next from 'i18next';
 import * as _ from 'lodash';
@@ -11,7 +11,7 @@ import InstallModeRenderer from './InstallModeRenderer';
 import {
   ComponentEx, EmptyPlaceholder, fs, Icon, ITableRowAction, OptionsFilter, selectors,
   Table, TableTextFilter, tooltip, types, Usage, util } from 'vortex-api';
-import { ADULT_CONTENT_URL } from '../constants';
+import { ADULT_CONTENT_URL } from '../../constants';
 
 export interface IModsPageProps {
   t: I18next.TFunction;

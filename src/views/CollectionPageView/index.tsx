@@ -1051,7 +1051,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private initModsEx(props: ICollectionPageProps): { [modId: string]: IModEx } {
     const { collection } = props;
 
-    return (collection.rules || [])
+    return (collection?.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .reduce<{ [modId: string]: IModEx }> ((prev, rule) => {
         const id = modRuleId(rule);

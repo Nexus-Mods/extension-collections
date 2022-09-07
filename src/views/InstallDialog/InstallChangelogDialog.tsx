@@ -1,4 +1,4 @@
-import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+import CollectionThumbnail from '../CollectionTile';
 
 import React = require('react');
 import { Button, Media, Modal } from 'react-bootstrap';

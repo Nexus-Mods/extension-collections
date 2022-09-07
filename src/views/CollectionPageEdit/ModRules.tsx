@@ -3,8 +3,8 @@ import memoize from 'memoize-one';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { ComponentEx, log, Toggle, types, util } from 'vortex-api';
-import { ICollectionModRule, ICollectionModRuleEx } from '../types/ICollection';
-import { renderReference, ruleId } from '../util/util';
+import { ICollectionModRule, ICollectionModRuleEx } from '../../types/ICollection';
+import { renderReference, ruleId } from '../../util/util';
 
 export interface IModsPageProps {
   t: I18next.TFunction;

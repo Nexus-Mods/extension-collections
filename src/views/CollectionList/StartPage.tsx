@@ -6,7 +6,7 @@ import {
 import InfoCache from '../../util/InfoCache';
 import { makeCollectionId, validateName } from '../../util/transformCollection';
 
-import CollectionThumbnail from './CollectionThumbnail';
+import CollectionThumbnail from '../CollectionTile';
 
 import { IRevision } from '@nexusmods/nexus-api';
 import i18next from 'i18next';

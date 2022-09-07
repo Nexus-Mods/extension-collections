@@ -10,7 +10,7 @@ import InstallDriver from './util/InstallDriver';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
-import CollectionsMainPage from './views/CollectionPage';
+import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';

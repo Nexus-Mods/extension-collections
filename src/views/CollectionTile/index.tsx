@@ -10,7 +10,7 @@ import * as Redux from 'redux';
 import { actions, Icon, IconBar, Image, log, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import InfoCache from '../../util/InfoCache';
-import CollectionReleaseStatus from './CollectionReleaseStatus';
+import CollectionReleaseStatus from '../CollectionReleaseStatus';
 import NewRevisionMarker from './NewRevisionMarker';
 
 export interface IBaseProps {

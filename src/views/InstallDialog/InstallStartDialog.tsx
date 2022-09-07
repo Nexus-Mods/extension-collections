@@ -1,7 +1,7 @@
 import { MAX_COLLECTION_NAME_LENGTH, NAMESPACE } from '../../constants';
 import InstallDriver, { Step } from '../../util/InstallDriver';
 
-import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+import CollectionThumbnail from '../CollectionTile';
 
 import YouCuratedTag from './YouCuratedThisTag';
 

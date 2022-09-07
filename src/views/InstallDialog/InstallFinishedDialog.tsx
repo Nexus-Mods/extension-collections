@@ -8,7 +8,7 @@ import { NAMESPACE } from '../../constants';
 import YouCuratedTag from './YouCuratedThisTag';
 
 import InstallDriver from '../../util/InstallDriver';
-import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+import CollectionThumbnail from '../CollectionTile';
 
 export interface IInstallFinishedDialogProps {
   api: types.IExtensionApi;

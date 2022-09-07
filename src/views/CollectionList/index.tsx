@@ -4,8 +4,8 @@ import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, TOS_URL} from '../../c
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
-import CollectionEdit from './CollectionEdit';
-import CollectionPage from './CollectionPage';
+import CollectionEdit from '../CollectionPageEdit';
+import CollectionPage from '../CollectionPageView';
 import StartPage from './StartPage';
 
 import { IRating } from '@nexusmods/nexus-api';
