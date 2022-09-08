@@ -4,9 +4,10 @@ import {
   MIN_COLLECTION_NAME_LENGTH,
   MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
 import InfoCache from '../../util/InfoCache';
-import { makeCollectionId, validateName } from '../../util/transformCollection';
+import { validateName } from '../../util/transformCollection';
 
 import CollectionThumbnail from '../CollectionTile';
+import CollectionThumbnailRemote from '../CollectionTile/RemoteTile';
 
 import { IRevision } from '@nexusmods/nexus-api';
 import i18next from 'i18next';
@@ -16,7 +17,7 @@ import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
 import { connect } from 'react-redux';
 import Select from 'react-select';
-import { ComponentEx, EmptyPlaceholder, Icon, IconBar, tooltip, types, util } from 'vortex-api';
+import { ComponentEx, EmptyPlaceholder, Icon, IconBar, types, util } from 'vortex-api';
 import { setSortAdded, setSortWorkshop } from '../../actions/settings';
 
 const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSc3csy4ycVBECvHQDgri37Gqq1gOuTQ7LcpiIaOkGHpDsW4kA/viewform?usp=sf_link';
@@ -29,9 +30,11 @@ export interface IStartPageProps {
   infoCache: InfoCache;
   profile: types.IProfile;
   activeTab: string;
+  ownCollections: IRevision[];
   mods: { [modId: string]: types.IMod };
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
+  onInstallCollection: (revision: IRevision) => Promise<void>;
   onEdit: (modId: string) => void;
   onUpdate: (modId: string) => void;
   onUpload: (modId: string) => void;
@@ -43,6 +46,7 @@ export interface IStartPageProps {
 }
 
 interface IConnectedProps {
+  userInfo: { name: string, userId: number };
   sortAdded: string;
   sortWorkshop: string;
 }
@@ -204,13 +208,12 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, activeTab, installing, profile, matchedReferences, mods, onEdit, onPause,
-            onRemove, onResume, onUpdate, onUpload, onView, sortAdded, sortWorkshop } = this.props;
+    const { t, activeTab, installing, profile, matchedReferences, mods,
+      onEdit, onPause, onInstallCollection, onRemove, onResume, onUpdate, onUpload, onView,
+      sortAdded, sortWorkshop } = this.props;
     const { imageTime, collectionsEx } = this.state;
 
     const { added, workshop } = collectionsEx;
-
-    const id = makeCollectionId(profile.id);
 
     return (
       <Tabs id='collection-start-page' activeKey={activeTab} onSelect={this.setActiveTab}>
@@ -312,21 +315,31 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
                   onCreateEmpty={this.fromEmpty}
                   onTrackClick={this.trackEvent}
                 />
-                {workshop.map(mod =>
-                  <CollectionThumbnail
-                    key={mod.mod.id}
-                    t={t}
-                    gameId={profile.gameId}
-                    collection={mod.mod}
-                    infoCache={this.props.infoCache}
-                    imageTime={imageTime}
-                    mods={mods}
-                    incomplete={matchedReferences[mod.mod.id]?.includes?.(null)}
-                    onEdit={onEdit}
-                    onRemove={onRemove}
-                    onUpload={onUpload}
-                    details={true}
-                  />)}
+                {workshop.map(mod => (mod.mod !== undefined)
+                  ? (
+                    <CollectionThumbnail
+                      t={t}
+                      key={mod.mod.id}
+                      gameId={profile.gameId}
+                      collection={mod.mod}
+                      infoCache={this.props.infoCache}
+                      imageTime={imageTime}
+                      mods={mods}
+                      incomplete={(mod.mod === undefined)
+                        ?? matchedReferences[mod.mod.id]?.includes?.(null)}
+                      onEdit={onEdit}
+                      onRemove={onRemove}
+                      onUpload={onUpload}
+                      details={true}
+                    />
+                  ) : (
+                    <CollectionThumbnailRemote
+                      t={t}
+                      key={mod.revision.id}
+                      revision={mod.revision}
+                      onInstallCollection={onInstallCollection}
+                    />
+                  ))}
               </div>
             </Panel.Body>
           </Panel>
@@ -335,18 +348,25 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
     );
   }
 
+  private name(input: ISortItem): string {
+    return (input.mod !== undefined)
+      ? util.renderModName(input.mod)
+      : (input.revision?.collection?.name ?? '');
+  }
+  
   private sorter(sorting: string): (lhs: ISortItem, rhs: ISortItem) => number {
     const alphabetical = (lhs: ISortItem, rhs: ISortItem) =>
-      util.renderModName(lhs.mod).localeCompare(util.renderModName(rhs.mod));
+      this.name(lhs).localeCompare(this.name(rhs));
 
     return {
       alphabetical,
       datedownloaded: (lhs: ISortItem, rhs: ISortItem) =>
         // we install collections immediately and remove the archive, so this is the best
         // approximation but also should be 100% correct
-        dateCompare(rhs.mod.attributes?.installTime, lhs.mod.attributes?.installTime),
+        dateCompare(rhs.mod?.attributes?.installTime, lhs.mod?.attributes?.installTime),
       datecreated: (lhs: ISortItem, rhs: ISortItem) =>
-        dateCompare(rhs.mod.attributes?.installTime, lhs.mod.attributes?.installTime),
+        dateCompare(rhs.mod?.attributes?.installTime ?? rhs.revision?.createdAt
+                  , lhs.mod?.attributes?.installTime ?? lhs.revision?.createdAt),
       recentlyupdated: (lhs: ISortItem, rhs: ISortItem) =>
         dateCompare(rhs.revision?.updatedAt ?? rhs.mod.attributes?.installTime,
                     lhs.revision?.updatedAt ?? lhs.mod.attributes?.installTime),
@@ -364,22 +384,30 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
         : undefined;
       return { mod, revision };
     }))
-    .then((result: ISortItem[]) => {
-      let { foreign, own }: { foreign: ISortItem[], own: ISortItem[] } =
-        result.reduce((prev, mod) => {
-          if (util.getSafe(mod.mod.attributes, ['editable'], false)) {
-            prev.own.push(mod);
-          } else {
-            prev.foreign.push(mod);
-          }
-          return prev;
-        }, { foreign: [], own: [] });
+      .then((result: ISortItem[]) => {
+        let { foreign, own }: { foreign: ISortItem[], own: ISortItem[] } =
+          result.reduce((prev, mod) => {
+            if (util.getSafe(mod.mod.attributes, ['editable'], false)) {
+              prev.own.push(mod);
+            } else {
+              prev.foreign.push(mod);
+            }
+            return prev;
+          }, { foreign: [], own: [] });
 
-      foreign = foreign.sort(this.sorter(sortAdded));
-      own = own.sort(this.sorter(sortWorkshop));
-      this.nextState.collectionsEx = { added: foreign, workshop: own };
-    })
-    ;
+        const installed = new Set(own.map(res => res.mod.attributes?.['collectionSlug']));
+
+        own.push(...this.props.ownCollections
+          .filter(coll => !installed.has(coll.collection.slug))
+          .map(coll => ({
+            mod: undefined,
+            revision: coll,
+          })));
+
+        foreign = foreign.sort(this.sorter(sortAdded));
+        own = own.sort(this.sorter(sortWorkshop));
+        this.nextState.collectionsEx = { added: foreign, workshop: own };
+      });
   }
 
   private setSortAdded = (value: { value: string, label: string }) => {
@@ -426,7 +454,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private fromProfile = async () => {
-    const { t, profile } = this.props;
+    const { profile } = this.props;
 
     try {
       // initFromProfile will automatically query for the name
@@ -468,6 +496,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
 function mapStateToProps(state: any): IConnectedProps {
   return {
+    userInfo: state.persistent['nexus']?.userInfo,
     sortAdded: state.settings.collections.sortAdded ?? 'datedownloaded',
     sortWorkshop: state.settings.collections.sortWorkshop ?? 'recentlyupdated',
   };

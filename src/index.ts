@@ -37,6 +37,7 @@ import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, log, OptionsFilter, selectors, types, util } from 'vortex-api';
+import { IRevision } from '@nexusmods/nexus-api';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -207,6 +208,29 @@ async function createNewCollection(
       },
     ],
   });
+}
+
+async function installCollection(api: types.IExtensionApi, revision: IRevision) {
+  return api.showDialog('question', 'Collection not installed', {
+    text: 'You can only edit collections that are fully installed in this '
+      + 'setup. Please ensure you install the collection with all '
+      + 'optional items, then clone the collection into the Workshop.'
+  }, [
+    { label: 'Cancel' },
+    { label: 'Install' },
+  ])
+    .then(result => {
+      if (result.action === 'Install') {
+        const gameId = revision.collection.game.domainName;
+        api.events.emit(
+          'start-download', [`nxm://${gameId}/collections/${revision.collection.slug}/revisions/${revision.revisionNumber}`],
+          {}, undefined, (err) => {
+            if (err !== null) {
+              api.showErrorNotification('Failed to download collection', err);
+            }
+          }, undefined, { allowInstall: 'force' });
+      }
+    });
 }
 
 async function pauseCollection(api: types.IExtensionApi,
@@ -538,6 +562,12 @@ function onAddSelectionImpl(api: types.IExtensionApi, collectionId: string, modI
   }
 }
 
+const localState = util.makeReactive<{
+  ownCollections: IRevision[],
+}>({
+  ownCollections: [],
+});
+
 function register(context: types.IExtensionContext,
                   onSetCallbacks: (callbacks: ICallbackMap) => void) {
   let collectionsCB: ICallbackMap;
@@ -571,6 +601,7 @@ function register(context: types.IExtensionContext,
     removeCollection(context.api, gameId, modId, cancel);
   const onUpdateMeta = () => updateMeta(context.api);
   const editCollection = (id: string) => collectionsCB.editCollection(id);
+  const onInstallCollection = (revision: IRevision) => installCollection(context.api, revision);
 
   context.registerDialog('collection-finish', InstallFinishDialog, () => ({
     api: context.api,
@@ -601,6 +632,8 @@ function register(context: types.IExtensionContext,
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
+      ownCollections: localState.ownCollections,
+      onInstallCollection,
       onSetupCallbacks,
       onRemoveCollection,
       onCloneCollection: onClone,
@@ -1118,6 +1151,13 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const iconPath = path.join(__dirname, 'collectionicon.svg');
   document.getElementById('content').style
     .setProperty('--collection-icon', `url(${pathToFileURL(iconPath).href})`);
+
+  api.events.on('gamemode-activated', (gameId: string) => {
+    api.emitAndAwait('get-my-collections', gameId)
+      .then(result => {
+        localState.ownCollections = result[0];
+      })
+  });
 }
 
 function init(context: types.IExtensionContext): boolean {

@@ -4,12 +4,12 @@ import { getInterface } from '../../util/gameSupport';
 import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
 
-import { NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
+import { NAMESPACE } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
-import ModRules from '../ModRules';
-import ModsEditPage from '../ModsEditPage';
+import ModRules from './ModRules';
+import ModsEditPage from './ModsEditPage';
 
 import { IRevision } from '@nexusmods/nexus-api';
 import memoize from 'memoize-one';

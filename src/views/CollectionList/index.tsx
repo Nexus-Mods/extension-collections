@@ -8,7 +8,7 @@ import CollectionEdit from '../CollectionPageEdit';
 import CollectionPage from '../CollectionPageView';
 import StartPage from './StartPage';
 
-import { IRating } from '@nexusmods/nexus-api';
+import { IRating, IRevision } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
 import { WithTranslation, withTranslation } from 'react-i18next';
@@ -22,11 +22,13 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
 
+  ownCollections: IRevision[];
   driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
   onRemoveCollection: (gameId: string, modId: string, cancel: boolean) => Promise<void>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
+  onInstallCollection: (revision: IRevision) => Promise<void>;
   onUpdateMeta: () => void;
 
   resetCB: (cb: () => void) => void;
@@ -100,7 +102,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, driver, game, mods, notifications, profile } = this.props;
+    const { t, downloads, driver, game, mods, notifications, ownCollections, profile } = this.props;
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     if (profile === undefined) {
@@ -129,6 +131,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           <StartPage
             t={t}
             game={game}
+            ownCollections={ownCollections}
             installing={driver.installDone ? undefined : driver.collection}
             infoCache={driver.infoCache}
             profile={profile}
@@ -144,6 +147,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             onResume={this.resume}
             onPause={this.pause}
             onSetActiveTab={this.setActiveTab}
+            onInstallCollection={this.props.onInstallCollection}
           />
         </>
       );
