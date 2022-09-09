@@ -59,7 +59,7 @@ class InstallDriver {
             && (required.reference.description !== undefined)) {
           this.updateProgress(this.mProfile, this.mCollection);
           applyPatches(api, this.mCollection.installationPath,
-                       gameId, required.reference.description, modId, required.extra.patches);
+                       gameId, required.reference.description, modId, required.extra?.patches);
         }
       }
       this.triggerUpdate();
