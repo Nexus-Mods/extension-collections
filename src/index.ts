@@ -1155,7 +1155,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   api.events.on('gamemode-activated', (gameId: string) => {
     api.emitAndAwait('get-my-collections', gameId)
       .then(result => {
-        localState.ownCollections = result[0];
+        localState.ownCollections = result[0] ?? [];
       })
   });
 }

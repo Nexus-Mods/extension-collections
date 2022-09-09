@@ -487,6 +487,8 @@ class InstallDriver {
       }
     }
 
+    this.mApi.events.emit('will-install-collection', profile.gameId, collection.id);
+
     this.mApi.events.emit('view-collection', collection.id);
 
     this.updateProgress(profile, collection);
@@ -563,6 +565,7 @@ class InstallDriver {
   }
 
   private close = () => {
+    this.mApi.events.emit('did-install-collection', this.mProfile.gameId, this.mCollection.id);
     this.mCollection = undefined;
     this.mInstallDone = true;
     this.triggerUpdate();
