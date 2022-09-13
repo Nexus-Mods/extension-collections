@@ -119,11 +119,14 @@ export async function applyPatches(api: types.IExtensionApi,
   for (const filePath of Object.keys(patches ?? {})) {
     try {
       const srcPath = path.join(modPath, filePath);
+      const diffPath = path.join(patchesPath, filePath) + '.diff';
+      // if the patch is missing, trigger the error here because bsdiff would produce a non-standard
+      // string exception
+      await fs.statAsync(diffPath);
       const srcDat = await fs.readFileAsync(srcPath);
       const srcCRC = crcFromBuf(srcDat);
       if (srcCRC === patches[filePath]) {
-        await bsdiff.patch(
-          srcPath, srcPath + '.patched', path.join(patchesPath, filePath) + '.diff');
+        await bsdiff.patch(srcPath, srcPath + '.patched', diffPath);
         await fs.removeAsync(srcPath);
         await fs.renameAsync(srcPath + '.patched', srcPath);
         log('info', 'patched', srcPath);
