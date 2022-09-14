@@ -2,7 +2,7 @@ import * as bsdiffT from 'bsdiff-node';
 import * as crc32 from 'crc-32';
 import * as path from 'path';
 import { fs, log, selectors, types, util } from 'vortex-api';
-import { MAX_PATCH_SIZE, PATCHES_PATH } from '../constants';
+import { MAX_PATCH_SIZE, PATCHES_PATH, PATCH_OVERHEAD } from '../constants';
 
 const bsdiff = util.lazyRequire<typeof bsdiffT>(() => require('bsdiff-node'));
 
@@ -14,7 +14,7 @@ function crcFromBuf(data: Buffer) {
 async function validatePatch(srcFilePath: string, patchFilePath: string) {
   const srcStats: fs.Stats = await fs.statAsync(srcFilePath);
   const patchStats: fs.Stats = await fs.statAsync(patchFilePath);
-  if (patchStats.size > (srcStats.size * MAX_PATCH_SIZE)) {
+  if ((patchStats.size - PATCH_OVERHEAD) > (srcStats.size * MAX_PATCH_SIZE)) {
     throw new util.DataInvalid('patch too large');
   }
 }
