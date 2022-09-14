@@ -8,7 +8,7 @@ const bsdiff = util.lazyRequire<typeof bsdiffT>(() => require('bsdiff-node'));
 
 function crcFromBuf(data: Buffer) {
   // >>> 0 converts signed to unsigned
-  return (crc32.buf(data) >>> 0).toString(16).toUpperCase();
+  return (crc32.buf(data) >>> 0).toString(16).toUpperCase().padStart(8, '0');
 }
 
 async function validatePatch(srcFilePath: string, patchFilePath: string) {
@@ -20,7 +20,8 @@ async function validatePatch(srcFilePath: string, patchFilePath: string) {
 }
 
 export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
-                                   modId: string, destPath: string)
+                                   modId: string, destPath: string,
+                                   onProgress: (percent: number, text: string) => void)
                                    : Promise<{ [filePath: string]: string }> {
   const state = api.getState();
   const mod = state.persistent.mods[gameId][modId];
@@ -59,8 +60,11 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
           const srcCRC = sourceChecksums[file.source];
           const dstFilePath = path.join(localPath, file.destination);
           const dat = await fs.readFileAsync(dstFilePath);
-          const dstCRC =  crcFromBuf(dat);
+          const dstCRC = crcFromBuf(dat);
           if (srcCRC !== dstCRC) {
+            onProgress(undefined, api.translate('Creating patch for {{fileName}}', { replace: {
+              fileName: path.basename(file.source),
+            } }));
             log('debug', 'found modified file', { filePath: file.source, srcCRC, dstCRC });
             const srcFilePath = path.join(tempPath, file.source);
             const patchPath = path.join(destPath, file.destination + '.diff');

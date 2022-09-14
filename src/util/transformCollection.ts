@@ -237,7 +237,7 @@ async function rulesToCollectionMods(
       if (collectionInfo.saveEdits?.[mod.id] === true) {
         const destPath = path.join(collectionPath, PATCHES_PATH, modName);
         await fs.ensureDirWritableAsync(destPath);
-        patches = await scanForDiffs(api, game.id, mod.id, destPath);
+        patches = await scanForDiffs(api, game.id, mod.id, destPath, onProgress);
       }
 
       if (collectionInfo.source?.[mod.id]?.type === 'bundle') {
