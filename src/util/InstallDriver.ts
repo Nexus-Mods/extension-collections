@@ -60,6 +60,7 @@ class InstallDriver {
           this.updateProgress(this.mProfile, this.mCollection);
           applyPatches(api, this.mCollection.installationPath,
                        gameId, required.reference.description, modId, required.extra?.patches);
+          api.store.dispatch(actions.setFileOverride(gameId, modId, required.extra?.fileOverrides));
         }
       }
       this.triggerUpdate();

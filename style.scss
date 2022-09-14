@@ -1459,3 +1459,12 @@ ul.collection-mods-page-attrib-tooltip {
     flex: 1 1 0;
   }
 }
+
+#collection-file-overrides {
+  .table {
+    width: fit-content;
+    td {
+      border-top: unset;
+    }
+  }
+}

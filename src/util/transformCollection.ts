@@ -21,6 +21,11 @@ import { IINITweak } from '../types/IINITweak';
 
 import { importTweaks } from '../initweaks';
 
+interface IResolvedRule {
+  mod: types.IMod;
+  rule: types.IModRule;
+}
+
 function nop() {
   // nop
 }
@@ -141,6 +146,7 @@ export function generateCollection(info: ICollectionInfo,
 async function rulesToCollectionMods(
   api: types.IExtensionApi,
   collection: types.IMod,
+  resolvedRules: IResolvedRule[],
   mods: { [modId: string]: types.IMod },
   stagingPath: string,
   game: types.IGame,
@@ -150,7 +156,7 @@ async function rulesToCollectionMods(
   onError: (message: string, replace: any, mayIgnore: boolean) => void)
   : Promise<ICollectionMod[]> {
 
-  let total = collection.rules.length;
+  let total = resolvedRules.length;
 
   let finished = 0;
 
@@ -164,17 +170,11 @@ async function rulesToCollectionMods(
   const downloads = state.persistent.downloads.files;
   const downloadPath = selectors.downloadPathForGame(state, game.id);
 
-  const result: ICollectionMod[] = await Promise.all(collection.rules.map(async (rule, idx) => {
-    const mod = (rule.reference.id !== undefined)
-      ? mods[rule.reference.id]
-      : util.findModByRef(rule.reference, mods);
+  const fileOverridesIds = new Set(Object.keys(collectionInfo.fileOverrides ?? {})
+    .filter(modId => collectionInfo.fileOverrides[modId]));
 
-    if ((mod === undefined) || (mod.type === MOD_TYPE)) {
-      // don't include the collection itself (or any other collection for that matter,
-      // nested collections aren't allowed)
-      --total;
-      return undefined;
-    }
+  const result: ICollectionMod[] = await Promise.all(resolvedRules.map(async resolvedRule => {
+    const { mod, rule } = resolvedRule;
 
     const fileName = downloads[mod.archiveId]?.localPath;
 
@@ -294,6 +294,7 @@ async function rulesToCollectionMods(
           type: mod.type,
         },
         phase: rule.extra?.['phase'] ?? 0,
+        fileOverrides: fileOverridesIds.has(mod.id) ? mod.fileOverrides : undefined,
       };
 
       return res;
@@ -383,26 +384,16 @@ function ruleEnabled(rule: ICollectionModRule,
   return collection.attributes?.collection?.rule?.[id] ?? true;
 }
 
-function extractModRules(collectionRules: types.IModRule[],
+function extractModRules(collectionRules: IResolvedRule[],
                          collection: types.IMod,
                          mods: { [modId: string]: types.IMod },
                          collectionAttributes: ICollectionAttributes,
-                         bundleTags: { [modId: string]: string },
-                         onError: (message: string, replace: any, mayIgnore: boolean) => void)
+                         bundleTags: { [modId: string]: string })
                          : ICollectionModRule[] {
   // for each mod referenced by the collection, gather the (enabled) rules and transform
   // them such that they can be applied on the users system
-  return collectionRules.reduce((prev: ICollectionModRule[], rule: types.IModRule) => {
-    const mod = (rule.reference.id !== undefined)
-      ? mods[rule.reference.id]
-      : util.findModByRef(rule.reference, mods);
-    if (mod === undefined) {
-      onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id }, true);
-      return prev;
-    } else if (mod.id === collection.id) {
-      return prev;
-    }
-
+  return collectionRules.reduce((prev: ICollectionModRule[], resolvedRule: IResolvedRule) => {
+    const { mod } = resolvedRule;
     const source: types.IModReference = util.makeModReference(mod);
 
     // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
@@ -528,6 +519,7 @@ export function collectionModToRule(knownGames: types.IGameStored[],
         : undefined,
       phase: mod.phase ?? 0,
       patches: mod.patches,
+      fileOverrides: mod.fileOverrides,
     },
   } as any;
 
@@ -614,12 +606,30 @@ export async function modToCollection(
     return prev;
   }, {});
 
-  const modRules = extractModRules(collection.rules, collection, mods,
-                                   collectionAttributes, bundleTags, onError);
+  const resolvedRules = collection.rules.reduce<IResolvedRule[]>(
+    (prev, rule: types.IModRule) => {
+      const mod = (rule.reference.id !== undefined)
+        ? mods[rule.reference.id]
+        : util.findModByRef(rule.reference, mods);
+
+      if (mod === undefined) {
+        onError('Not packaging mod that isn\'t installed: "{{id}}"', { id: rule.reference.id }, true);
+      } else if (mod.type === MOD_TYPE) {
+        // don't include the collection itself (or any other collection for that matter,
+        // nested collections aren't allowed)
+      } else {
+        prev.push({ mod, rule });
+      }
+      return prev;
+    }, []);
+
+
+  const modRules = extractModRules(resolvedRules, collection, mods,
+                                   collectionAttributes, bundleTags);
 
   const res: ICollection = {
     info: collectionInfo,
-    mods: await rulesToCollectionMods(api, collection, mods, stagingPath, game,
+    mods: await rulesToCollectionMods(api, collection, resolvedRules, mods, stagingPath, game,
                                       collectionAttributes, bundleTags, onProgress, onError),
     modRules,
     ...extData,

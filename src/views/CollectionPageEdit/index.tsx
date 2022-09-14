@@ -8,6 +8,7 @@ import { NAMESPACE } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
+import FileOverrides from './FileOverrides';
 import ModRules from './ModRules';
 import ModsEditPage from './ModsEditPage';
 
@@ -64,6 +65,8 @@ const emptyCollectionInfo: ICollectionInfo = {
   description: '',
   gameVersions: [],
 };
+
+const emptyList = [];
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {
   private collectionRules = memoize(
@@ -127,6 +130,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
     const nextRev = collection.attributes?.revisionNumber;
 
+    const requiredModRules: ICollectionModRule[] =
+      this.collectionRules(collection.rules ?? emptyList, mods);
+
     return (
       <FlexLayout type='column'>
         <FlexLayout.Fixed className='collection-edit-header'>
@@ -189,7 +195,17 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   t={t}
                   collection={collection}
                   mods={mods}
-                  rules={this.collectionRules(collection.rules ?? [], mods)}
+                  rules={requiredModRules}
+                  onSetCollectionAttribute={this.setCollectionAttribute}
+                />
+              </Panel>
+            </Tab>
+            <Tab key='file-overrides' eventKey='file-overrides' title={t('File Overrides')}>
+              <Panel>
+                <FileOverrides
+                  t={t}
+                  collection={collection}
+                  mods={mods}
                   onSetCollectionAttribute={this.setCollectionAttribute}
                 />
               </Panel>
