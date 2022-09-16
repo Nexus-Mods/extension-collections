@@ -19,6 +19,8 @@ async function validatePatch(srcFilePath: string, patchFilePath: string) {
   }
 }
 
+const queue = util.makeQueue();
+
 export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
                                    modId: string, destPath: string,
                                    onProgress: (percent: number, text: string) => void)
@@ -37,9 +39,9 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
 
   const choices = mod.attributes?.installerChoices;
 
-  return new Promise<{ [filePath: string]: string }>((resolve, reject) => {
+  return queue(() => new Promise<{ [filePath: string]: string }>((resolve, reject) => {
     api.events.emit('simulate-installer', gameId, mod.archiveId, { choices },
-                    async (instRes: types.IInstallResult, tempPath: string) => {
+      async (instRes: types.IInstallResult, tempPath: string) => {
       try {
         const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
         const archivePath = path.join(dlPath, archive.localPath);
@@ -106,7 +108,7 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
         reject(err);
       }
     });
-  });
+  }), false);
 }
 
 export async function applyPatches(api: types.IExtensionApi,
