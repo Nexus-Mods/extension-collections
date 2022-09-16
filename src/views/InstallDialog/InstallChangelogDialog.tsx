@@ -10,6 +10,7 @@ import { IRevision } from '@nexusmods/nexus-api';
 import { useSelector } from 'react-redux';
 
 export interface IInstallChangelogDialogProps {
+  update: number;
   gameId: string;
   collection: types.IMod;
   revisionInfo: IRevision;
@@ -100,7 +101,7 @@ let job: IInstallChangelogDialogProps;
 let jobUpdated: () => void;
 
 export function InstallChangelogDialog(props: {}) {
-  const [_, setIteration] = React.useState(0);
+  const [iteration, setIteration] = React.useState(0);
 
   React.useEffect(() => {
     jobUpdated = () => setIteration(i => i + 1);
@@ -108,6 +109,7 @@ export function InstallChangelogDialog(props: {}) {
 
   return (
     <InstallChangelogDialogImpl
+      update={iteration}
       collection={job?.collection}
       gameId={job?.gameId}
       revisionInfo={job?.revisionInfo}
@@ -122,6 +124,7 @@ function showChangelog(collection: types.IMod, gameId: string, revisionInfo: IRe
 
   return new Promise((resolve: () => void, reject: (err: Error) => void) => {
     job = {
+      update: 0,
       collection,
       gameId,
       revisionInfo,
