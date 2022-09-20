@@ -1,15 +1,11 @@
 import { updateCollectionInfo, updateRevisionInfo } from '../actions/persistent';
-import { MOD_TYPE } from '../constants';
+import { CACHE_EXPIRE_MS, MOD_TYPE } from '../constants';
 import { ICollectionModRule } from '../types/ICollection';
 import { readCollection } from './importCollection';
 
 import { ICollection, IRevision } from '@nexusmods/nexus-api';
 import * as path from 'path';
 import { log, selectors, types, util } from 'vortex-api';
-
-// TODO: temporarily reducing expire time around switch to slugs identifying collections,
-// used to be once per day
-const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
 
 /**
  * manages caching of collection and revision info

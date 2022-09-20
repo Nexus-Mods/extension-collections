@@ -39,3 +39,6 @@ export const MAX_PATCH_SIZE = 0.2;
 // This is to prevent the patch size limit from making binary patches to very small files
 // impossible
 export const PATCH_OVERHEAD = 130;
+
+// how long we buffer collection/revision info from the api
+export const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
