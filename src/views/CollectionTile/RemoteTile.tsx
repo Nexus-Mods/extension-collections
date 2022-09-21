@@ -6,16 +6,57 @@ import { Icon, IconBar, Image, types } from 'vortex-api';
 
 export interface IRemoteTileProps {
   t: types.TFunction;
+  added?: types.IMod;
+  incomplete: boolean;
   revision: IRevision;
+  onCloneCollection: (modId: string) => Promise<void>;
+  onResumeCollection: (modId: string) => void;
   onInstallCollection: (revision: IRevision) => Promise<void>;
 }
 
 function HoverMenu(props: IRemoteTileProps) {
-  const { t, revision, onInstallCollection } = props;
+  const {
+    t, added, incomplete, revision,
+    onCloneCollection, onInstallCollection, onResumeCollection,
+  } = props;
 
   const installOwnCollection = React.useCallback(() => {
-    onInstallCollection(revision);
-  }, [onInstallCollection, revision]);
+    if (added !== undefined) {
+      onResumeCollection(added.id);
+    } else {
+      onInstallCollection(revision);
+    }
+  }, [added, revision, onInstallCollection, onResumeCollection]);
+
+  const cloneOwnCollection = React.useCallback(() => {
+    onCloneCollection(added.id);
+  }, [onCloneCollection, added]);
+
+  const staticElements = [];
+
+  if ((added !== undefined) && !incomplete) {
+    staticElements.push({
+      title: 'Edit (Requires clone)',
+      icon: 'edit',
+      action: () => cloneOwnCollection(),
+    });
+  } else {
+    staticElements.push({
+      title: 'Install',
+      icon: 'install',
+      action: () => installOwnCollection(),
+    }, {
+      title: 'Edit',
+      icon: 'edit',
+      condition: (instanceId: string | string[], data?: any) =>
+        t('Your collection must be installed first and then cloned to make edits.'),
+      action: () => {
+        // nop
+      },
+    });
+  }
+
+  staticElements.push();
 
   return (
     <div className='thumbnail-hover-menu'>
@@ -26,15 +67,7 @@ function HoverMenu(props: IRemoteTileProps) {
           className='buttons'
           group='collection-actions'
           instanceId={revision.collection.slug}
-          staticElements={[
-            {
-              title: 'Install',
-              icon: 'install',
-              action: () => {
-                installOwnCollection();
-              },
-            }
-          ]}
+          staticElements={staticElements}
           collapse={false}
           buttonType='both'
           orientation='vertical'
@@ -46,7 +79,7 @@ function HoverMenu(props: IRemoteTileProps) {
 }
 
 function RemoteTile(props: IRemoteTileProps) {
-  const {t, onInstallCollection, revision} = props;
+  const {t, revision, onCloneCollection, onInstallCollection, onResumeCollection} = props;
 
   const classes = ['collection-thumbnail', 'collection-remote'];
   const images: string[] = [];
@@ -94,7 +127,11 @@ function RemoteTile(props: IRemoteTileProps) {
         <HoverMenu
           t={t}
           revision={revision}
+          added={props.added}
+          incomplete={props.incomplete}
           onInstallCollection={onInstallCollection}
+          onCloneCollection={onCloneCollection}
+          onResumeCollection={onResumeCollection}
         />
       </Panel.Body>
     </Panel>

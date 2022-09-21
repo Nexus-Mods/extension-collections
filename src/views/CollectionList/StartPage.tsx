@@ -35,6 +35,7 @@ export interface IStartPageProps {
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
   onInstallCollection: (revision: IRevision) => Promise<void>;
+  onClone: (modId: string) => Promise<void>;
   onEdit: (modId: string) => void;
   onUpdate: (modId: string) => void;
   onUpload: (modId: string) => void;
@@ -58,6 +59,7 @@ interface IActionProps {
 
 interface ISortItem {
   mod: types.IMod;
+  added?: types.IMod;
   revision: IRevision;
 }
 
@@ -209,8 +211,8 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activeTab, installing, profile, matchedReferences, mods,
-      onEdit, onPause, onInstallCollection, onRemove, onResume, onUpdate, onUpload, onView,
-      sortAdded, sortWorkshop } = this.props;
+      onClone, onEdit, onPause, onInstallCollection, onRemove,
+      onResume, onUpdate, onUpload, onView, sortAdded, sortWorkshop } = this.props;
     const { imageTime, collectionsEx } = this.state;
 
     const { added, workshop } = collectionsEx;
@@ -326,7 +328,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
                       imageTime={imageTime}
                       mods={mods}
                       incomplete={(mod.mod === undefined)
-                        ?? matchedReferences[mod.mod.id]?.includes?.(null)}
+                        || matchedReferences[mod.mod.id]?.includes?.(null)}
                       onEdit={onEdit}
                       onRemove={onRemove}
                       onUpload={onUpload}
@@ -337,7 +339,12 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
                       t={t}
                       key={mod.revision.id}
                       revision={mod.revision}
+                      added={mod.added}
+                      incomplete={(mod.added === undefined)
+                        || matchedReferences[mod.added.id]?.includes?.(null)}
                       onInstallCollection={onInstallCollection}
+                      onCloneCollection={onClone}
+                      onResumeCollection={onResume}
                     />
                   ))}
               </div>
@@ -401,6 +408,8 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
           .filter(coll => !installed.has(coll.collection.slug))
           .map(coll => ({
             mod: undefined,
+            added: foreign.find(iter =>
+              iter.revision.collection.slug === coll.collection.slug)?.mod,
             revision: coll,
           })));
 

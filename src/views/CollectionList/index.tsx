@@ -143,6 +143,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             onRemove={this.remove}
             onUpdate={this.update}
             onUpload={this.upload}
+            onClone={this.clone}
             onCreateCollection={this.createCollection}
             onResume={this.resume}
             onPause={this.pause}

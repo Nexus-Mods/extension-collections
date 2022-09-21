@@ -134,7 +134,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
         icon: 'inspect',
       },
       {
-        title: 'Clone (Workshop)',
+        title: 'Edit (Workshop)',
         action: this.cloneCollection,
         condition: () => this.props.onClone !== undefined,
         icon: 'clone',

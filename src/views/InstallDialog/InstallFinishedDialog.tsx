@@ -154,7 +154,7 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
               tooltip={t('Clone the collection to the workshop for editing')}
               onClick={clone}
             >
-              {t('Clone')}
+              {t('Edit')}
             </tooltip.IconButton>
           </div>
         ) : null}
