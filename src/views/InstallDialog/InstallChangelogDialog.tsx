@@ -95,48 +95,61 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
   );
 }
 
-let job: IInstallChangelogDialogProps;
+const localState = util.makeReactive<{ job: IInstallChangelogDialogProps }>({
+  job: {
+    collection: undefined,
+    gameId: undefined,
+    onCancel: () => {
+      // nop
+    },
+    onContinue: () => {
+      // nop
+    },
+    revisionInfo: undefined,
+  },
+});
 
-let jobUpdated: () => void;
+export class InstallChangelogDialog extends React.Component<{}> {
+  public componentDidMount(): void {
+    localState['attach']?.(this);
+  }
 
-export function InstallChangelogDialog(props: {}) {
-  const [_, setIteration] = React.useState(0);
+  public componentWillUnmount(): void {
+    localState['detach']?.(this);
+  }
 
-  React.useEffect(() => {
-    jobUpdated = () => setIteration(i => i + 1);
-  }, []);
+  public render() {
+    const { job } = localState;
 
-  return (
-    <InstallChangelogDialogImpl
-      collection={job?.collection}
-      gameId={job?.gameId}
-      revisionInfo={job?.revisionInfo}
-      onContinue={job?.onContinue}
-      onCancel={job?.onCancel}
-    />
-  );
+    return (
+      <InstallChangelogDialogImpl
+        collection={job?.collection}
+        gameId={job?.gameId}
+        revisionInfo={job?.revisionInfo}
+        onContinue={job?.onContinue}
+        onCancel={job?.onCancel}
+      />
+    );
+  }
 }
 
 function showChangelog(collection: types.IMod, gameId: string, revisionInfo: IRevision)
   : Promise<void> {
 
   return new Promise((resolve: () => void, reject: (err: Error) => void) => {
-    job = {
+    localState.job = {
       collection,
       gameId,
       revisionInfo,
       onContinue: () => {
-        job = undefined;
+        localState.job = undefined;
         resolve();
-        jobUpdated();
       },
       onCancel: () => {
-        job = undefined;
+        localState.job = undefined;
         reject(new util.UserCanceled());
-        jobUpdated();
       },
     };
-    jobUpdated();
   });
 }
 

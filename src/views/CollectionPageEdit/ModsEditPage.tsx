@@ -46,6 +46,7 @@ type ProblemType = 'invalid-ids'
                  | 'no-version-set'
                  | 'local-edits-fuzzy-version'
                  | 'local-edits-bundle'
+                 | 'replicate-vs-binpatch';
 ;
 
 interface IProblem {
@@ -951,6 +952,16 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           message: t('The option to "bundle" already bundles the edited files, storing '
                      + 'the edits separately would not be useful as they can\'t and '
                      + 'don\'t have to be applied.'),
+        });
+      }
+
+      if (installMode === 'clone') {
+        res.push({
+          type: 'replicate-vs-binpatch',
+          summary: t('"Replicate" installation can\'t be combined with "Binary patching"'),
+          message: t('"Replicate" depends on files being unchanged '
+                    + 'from the originals in the archive. If you modified mod files '
+                    + '(as Binary Patching implies), "Replicate" will fail.'),
         });
       }
     }

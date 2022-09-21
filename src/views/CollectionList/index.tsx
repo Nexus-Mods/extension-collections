@@ -248,7 +248,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       return;
     }
 
-    const author = mods[modId].attributes['uploaderId'];
+    const author = mods[modId].attributes?.['uploaderId'];
 
     if ((author !== undefined) && (author !== userInfo?.userId)) {
       const result = await api.showDialog('question',

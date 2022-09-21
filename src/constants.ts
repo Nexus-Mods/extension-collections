@@ -34,3 +34,11 @@ export const TIME_BEFORE_VOTE = 48 * 60 * 60 * 1000;
 export const DELAY_FIRST_VOTE_REQUEST = 1 * 60 * 1000;
 
 export const MAX_PATCH_SIZE = 0.2;
+// the patch overhead depends on how many locations were changed, this very roughly accounts for
+// the overhead we would see for a diff containing a single change.
+// This is to prevent the patch size limit from making binary patches to very small files
+// impossible
+export const PATCH_OVERHEAD = 130;
+
+// how long we buffer collection/revision info from the api
+export const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
