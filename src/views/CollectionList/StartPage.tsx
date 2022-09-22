@@ -409,7 +409,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
           .map(coll => ({
             mod: undefined,
             added: foreign.find(iter =>
-              iter.revision.collection.slug === coll.collection.slug)?.mod,
+              iter.revision?.collection?.slug === coll.collection.slug)?.mod,
             revision: coll,
           })));
 
