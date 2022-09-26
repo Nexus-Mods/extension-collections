@@ -30,7 +30,7 @@ export interface IStartPageProps {
   infoCache: InfoCache;
   profile: types.IProfile;
   activeTab: string;
-  ownCollections: IRevision[];
+  localState: { ownCollections: IRevision[] };
   mods: { [modId: string]: types.IMod };
   matchedReferences: { [collectionId: string]: types.IMod[] };
   onCreateCollection: (name: string) => void;
@@ -204,7 +204,8 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
     if (!_.isEqual(collectionsPrev, collectionsNow)
         || (prevProps.sortAdded !== this.props.sortAdded)
-        || (prevProps.sortWorkshop !== this.props.sortWorkshop)) {
+        || (prevProps.sortWorkshop !== this.props.sortWorkshop)
+        || (prevProps.localState.ownCollections !== this.props.localState.ownCollections)) {
       this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop);
     }
   }
@@ -404,7 +405,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
         const installed = new Set(own.map(res => res.mod.attributes?.['collectionSlug']));
 
-        own.push(...this.props.ownCollections
+        own.push(...this.props.localState.ownCollections
           .filter(coll => !installed.has(coll.collection.slug))
           .map(coll => ({
             mod: undefined,

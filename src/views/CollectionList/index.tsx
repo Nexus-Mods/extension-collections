@@ -22,7 +22,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
 
-  ownCollections: IRevision[];
+  localState: { ownCollections: IRevision[] };
   driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
@@ -102,7 +102,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, driver, game, mods, notifications, ownCollections, profile } = this.props;
+    const { t, downloads, driver, game, localState, mods, notifications, profile } = this.props;
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     if (profile === undefined) {
@@ -131,7 +131,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           <StartPage
             t={t}
             game={game}
-            ownCollections={ownCollections}
+            localState={localState}
             installing={driver.installDone ? undefined : driver.collection}
             infoCache={driver.infoCache}
             profile={profile}

@@ -632,7 +632,7 @@ function register(context: types.IExtensionContext,
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
-      ownCollections: localState.ownCollections,
+      localState,
       onInstallCollection,
       onSetupCallbacks,
       onRemoveCollection,
@@ -1152,11 +1152,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   document.getElementById('content').style
     .setProperty('--collection-icon', `url(${pathToFileURL(iconPath).href})`);
 
-  api.events.on('gamemode-activated', (gameId: string) => {
+  const updateOwnCollectionsCB = (gameId: string) => {
     api.emitAndAwait('get-my-collections', gameId)
       .then(result => {
         localState.ownCollections = result[0] ?? [];
       })
+  };
+
+  api.events.on('gamemode-activated', updateOwnCollectionsCB);
+  api.onStateChange(['persistent', 'nexus', 'userInfo'], (prev, cur) => {
+    const gameMode = selectors.activeGameId(api.getState());
+    updateOwnCollectionsCB(gameMode);
   });
 }
 
