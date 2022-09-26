@@ -431,9 +431,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const downloadGame = util.getSafe(mod.attributes, ['downloadGame'], gameMode);
     const newestFileId = util.getSafe(mod.attributes, ['newestVersion'], undefined);
-    this.context.api.events.emit('collection-update',
+    await util.toPromise(cb => this.context.api.events.emit(
+      'collection-update',
       downloadGame, mod.attributes?.collectionSlug, newestFileId,
-      mod.attributes?.source, collectionId);
+      mod.attributes?.source, collectionId, cb));
   }
 
   private upload = async (collectionId: string) => {

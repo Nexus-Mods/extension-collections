@@ -5,7 +5,7 @@ import * as React from 'react';
 import { FormControl, FormGroup, Panel } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, Icon, IconBar, Image, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
+import { actions, ComponentEx, Icon, IconBar, Image, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import InfoCache from '../../util/InfoCache';
 import CollectionReleaseStatus from '../CollectionReleaseStatus';
@@ -29,7 +29,7 @@ export interface IBaseProps {
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
   onUpload?: (modId: string) => void;
-  onUpdate?: (moidId: string) => void;
+  onUpdate?: (moidId: string) => Promise<void>;
 }
 
 interface IConnectedProps {
@@ -113,10 +113,16 @@ function ModNameField(props: IModNameFieldProps) {
   );
 }
 
-class CollectionThumbnail extends PureComponentEx<IProps, {}> {
+class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
   private imageURLs = memoizeOne((collection: types.IMod) =>
     [collection.attributes?.pictureUrl, path.join(__dirname, 'fallback_tile.png')]
       .filter(iter => iter !== undefined));
+
+  public constructor(props: IProps) {
+    super(props);
+  
+    this.initState({ updating: false });
+  }
 
   public render(): JSX.Element {
     const { t, collection, details, infoCache,
@@ -162,7 +168,9 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     return (
       <Panel className={classes.join(' ')} bsStyle={active ? 'primary' : 'default'}>
         <Panel.Body className='collection-thumbnail-body'>
-          {(details === true) ? <NewRevisionMarker t={t} collection={collection} /> : null}
+          {(details === true)
+            ? <NewRevisionMarker t={t} collection={collection} updating={this.state.updating} />
+            : null}
           <Image
             className='thumbnail-img'
             srcs={this.imageURLs(collection)}
@@ -235,9 +243,9 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     );
   }
 
-  private invoke(action: (inst: string) => void, inst: string[]) {
+  private invoke<T>(action: (inst: string) => T, inst: string[]): T {
     if ((action !== undefined) && (inst !== undefined) && (inst.length > 0)) {
-      action(inst[0]);
+      return action(inst[0]);
     }
   }
 
@@ -258,7 +266,13 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
               && (parseInt(attributes.newestVersion, 10) > parseInt(attributes.version, 10));
         },
         action: (instanceIds: string[]) => {
-          this.invoke(onUpdate, instanceIds);
+          const prom = this.invoke(onUpdate, instanceIds);
+          if (prom !== undefined) {
+            this.nextState.updating = true;
+            prom.finally(() => {
+              this.nextState.updating = false;
+            });
+          }
         },
       } as any);
     }

@@ -37,7 +37,7 @@ export interface IStartPageProps {
   onInstallCollection: (revision: IRevision) => Promise<void>;
   onClone: (modId: string) => Promise<void>;
   onEdit: (modId: string) => void;
-  onUpdate: (modId: string) => void;
+  onUpdate: (modId: string) => Promise<void>;
   onUpload: (modId: string) => void;
   onView: (modId: string) => void;
   onRemove: (modId: string) => void;
