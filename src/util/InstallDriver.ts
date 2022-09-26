@@ -361,7 +361,8 @@ class InstallDriver {
     if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
       try {
         const collectionInfo: ICollection =
-          await readCollection(this.mApi,
+          await readCollection(
+            this.mApi,
             path.join(stagingPath, mod.installationPath, 'collection.json'));
         await postprocessCollection(this.mApi, gameId, mod, collectionInfo, mods);
       } catch (err) {

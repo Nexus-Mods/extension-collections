@@ -1,61 +1,61 @@
 import * as gamebryo from './gamebryo';
 
-import { log, types, util } from 'vortex-api';
+import { types } from 'vortex-api';
 import { ICollection } from '../../types/ICollection';
 import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 import { IGameSupportEntry } from '../../types/IGameSupportEntry';
 
-const gameSupport = {
-    skyrim: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    skyrimse: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    skyrimvr: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    fallout3: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    fallout4: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    fallout4vr: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    falloutnv: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    oblivion: {
-        generator: gamebryo.generate,
-        parser: gamebryo.parser,
-        interface: gamebryo.Interface,
-    },
-    enderal: {
-      generator: gamebryo.generate,
-      parser: gamebryo.parser,
-      interface: gamebryo.Interface,
-    },
-    enderalspecialedition: {
-      generator: gamebryo.generate,
-      parser: gamebryo.parser,
-      interface: gamebryo.Interface,
-    },
+const gameSupport: { [gameId: string]: IGameSupportEntry } = {
+  skyrim: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  skyrimse: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  skyrimvr: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  fallout3: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  fallout4: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  fallout4vr: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  falloutnv: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  oblivion: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  enderal: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
+  enderalspecialedition: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
 };
 
 export function generateGameSpecifics(state: types.IState,
@@ -74,10 +74,10 @@ export function generateGameSpecifics(state: types.IState,
 export function parseGameSpecifics(api: types.IExtensionApi,
                                    gameId: string,
                                    collection: ICollection,
-                                   mods: { [modId: string]: types.IMod })
+                                   collectionMod: types.IMod)
                                    : Promise<void> {
   if ((gameSupport[gameId] !== undefined) && (gameSupport[gameId].parser !== undefined)) {
-    return gameSupport[gameId].parser(api, gameId, collection, mods);
+    return gameSupport[gameId].parser(api, gameId, collection, collectionMod);
   } else {
     return Promise.resolve();
   }
