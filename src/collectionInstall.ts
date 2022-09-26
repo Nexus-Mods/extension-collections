@@ -165,5 +165,5 @@ export async function postprocessCollection(api: types.IExtensionApi,
     await ext.parse(gameId, collection, collectionMod);
   }
 
-  await parseGameSpecifics(api, gameId, collection, mods);
+  await parseGameSpecifics(api, gameId, collection, collectionMod);
 }

@@ -113,6 +113,10 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIdsIn: str
     .then((result: types.IDialogResult) => {
       if (result.action === 'Add') {
         const collectionId = Object.keys(result.input).find(target => result.input[target]);
+        if (mods[collectionId] === undefined) {
+          // not entirely sure how this could happen
+          return;
+        }
         const rules = mods[collectionId].rules ?? [];
         util.batchDispatch(api.store, filtered.reduce((prev: Redux.Action[], modId: string) => {
           if (!alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) {
