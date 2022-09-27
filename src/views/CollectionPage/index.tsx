@@ -393,10 +393,20 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     try {
       if (mods[modId]?.attributes?.editable) {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
-        return this.removeWorkshop(modId);
+        return this.removeWorkshop(modId)
+          .catch(err => {
+            api.showErrorNotification('Failed to remove collection', err, {
+              allowReport: !['EPERM'].includes(err.code),
+            });
+          });
       } else {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
-        return this.cancel(modId, false);
+        return this.cancel(modId, false)
+          .catch(err => {
+            api.showErrorNotification('Failed to remove collection', err, {
+              allowReport: !['EPERM'].includes(err.code),
+            });
+          });
       }
     } catch (err) {
       if (err instanceof util.UserCanceled) {
