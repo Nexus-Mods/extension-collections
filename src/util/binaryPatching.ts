@@ -51,7 +51,13 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
         await szip.list(archivePath, undefined, async entries => {
             for (const entry of entries) {
               if (entry.attr !== 'D') {
-                sourceChecksums[entry.name] = entry['crc'].toUpperCase();
+                try {
+                  sourceChecksums[entry.name] = entry['crc'].toUpperCase();
+                } catch (err) {
+                  api.showErrorNotification('Failed to determine checksum for file', err, {
+                    message: entry.name,
+                  });
+                }
               }
             }
           });
