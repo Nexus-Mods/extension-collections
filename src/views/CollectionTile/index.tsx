@@ -262,6 +262,9 @@ class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
         group: 'optional',
         condition: () => {
           const { attributes } = this.props.collection;
+          if (this.state.updating) {
+            return t('Already updating');
+          }
           return (attributes?.newestVersion !== undefined)
               && (parseInt(attributes.newestVersion, 10) > parseInt(attributes.version, 10));
         },
