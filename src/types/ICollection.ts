@@ -55,6 +55,7 @@ export interface ICollectionMod {
   author?: string;
   details?: ICollectionModDetails;
   phase?: number;
+  fileOverrides?: string[];
 }
 
 export type RuleType = 'before' | 'after' | 'requires' | 'conflicts' | 'recommends' | 'provides';
@@ -87,6 +88,7 @@ export interface ICollectionAttributes {
   source?: { [modId: string]: { type: SourceType, url?: string, instructions?: string } };
   installMode?: { [modId: string]: string };
   saveEdits?: { [modId: string]: boolean };
+  fileOverrides?: { [modId: string]: boolean };
 }
 
 export interface ICollectionModRuleEx extends ICollectionModRule {

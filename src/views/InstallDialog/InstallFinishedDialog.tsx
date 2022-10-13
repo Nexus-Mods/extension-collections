@@ -8,7 +8,7 @@ import { NAMESPACE } from '../../constants';
 import YouCuratedTag from './YouCuratedThisTag';
 
 import InstallDriver from '../../util/InstallDriver';
-import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+import CollectionThumbnail from '../CollectionTile';
 
 export interface IInstallFinishedDialogProps {
   api: types.IExtensionApi;
@@ -154,7 +154,7 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
               tooltip={t('Clone the collection to the workshop for editing')}
               onClick={clone}
             >
-              {t('Clone')}
+              {t('Edit')}
             </tooltip.IconButton>
           </div>
         ) : null}

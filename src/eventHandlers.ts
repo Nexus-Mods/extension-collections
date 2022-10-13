@@ -52,7 +52,8 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
     try {
       const fileName = util.sanitizeFilename(collection.name);
       dlId = await util.toPromise(cb =>
-        api.events.emit('start-download', downloadURLs.map(iter => iter.URI), modInfo,
+        api.events.emit(
+          'start-download', downloadURLs.map(iter => iter.URI), modInfo,
           fileName + `-rev${latest.revisionNumber}.7z`, cb, 'never', { allowInstall: false }));
     } catch (err) {
       if (err.name === 'AlreadyDownloaded') {
@@ -174,7 +175,8 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
 export function onCollectionUpdate(api: types.IExtensionApi,
                                    driver: InstallDriver): (...args: any[]) => void {
   return (gameId: string, collectionSlug: string,
-          revisionNumber: number | string, source: string, oldModId: string) => {
+          revisionNumber: number | string, source: string, oldModId: string,
+          cb: (err: Error) => void) => {
     if ((source !== 'nexus') || (collectionSlug === undefined) || (revisionNumber === undefined)) {
       return;
     }
@@ -182,8 +184,12 @@ export function onCollectionUpdate(api: types.IExtensionApi,
     driver.prepare(() =>
       Bluebird.resolve(collectionUpdate(api, gameId, collectionSlug,
                                         revisionNumber.toString(), oldModId))
+        .then(() => {
+          cb?.(null);
+        })
         .catch(err => {
           api.showErrorNotification('Failed to update collection', err);
+          cb?.(err);
         }));
   };
 }

@@ -1,17 +1,16 @@
-import { IRevision } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import memoizeOne from 'memoize-one';
 import * as path from 'path';
 import * as React from 'react';
 import { FormControl, FormGroup, Panel } from 'react-bootstrap';
-import { TFunction } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import { actions, Icon, IconBar, Image, log, PureComponentEx, selectors, tooltip, types, util } from 'vortex-api';
+import { actions, ComponentEx, Icon, IconBar, Image, selectors, tooltip, types, util } from 'vortex-api';
 import { AUTHOR_UNKNOWN, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH } from '../../constants';
 import InfoCache from '../../util/InfoCache';
-import CollectionReleaseStatus from './CollectionReleaseStatus';
+import CollectionReleaseStatus from '../CollectionReleaseStatus';
 import NewRevisionMarker from './NewRevisionMarker';
+import { SuccessRating } from './SuccessRating';
 
 export interface IBaseProps {
   t: I18next.TFunction;
@@ -30,7 +29,7 @@ export interface IBaseProps {
   onView?: (modId: string) => void;
   onRemove?: (modId: string) => void;
   onUpload?: (modId: string) => void;
-  onUpdate?: (moidId: string) => void;
+  onUpdate?: (moidId: string) => Promise<void>;
 }
 
 interface IConnectedProps {
@@ -114,65 +113,16 @@ function ModNameField(props: IModNameFieldProps) {
   );
 }
 
-interface ISuccessRatingProps {
-  t: TFunction;
-  infoCache: InfoCache;
-  collectionSlug: string;
-  revisionNumber: number;
-  revisionId: string;
-}
-
-function SuccessRating(props: ISuccessRatingProps) {
-  const { t, collectionSlug, infoCache, revisionNumber, revisionId } = props;
-
-  const [rating, setRating] = React.useState(undefined);
-
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const rev = await infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber);
-        if ((rev?.rating?.total ?? 0) < 3) {
-          setRating(undefined);
-        } else {
-          setRating(rev.rating.average);
-        }
-      } catch (err) {
-        log('error', 'failed to get remote info for revision', {
-          revisionId, collectionSlug, revisionNumber,
-          error: err.message,
-        });
-      }
-    })();
-  }, [revisionId]);
-
-  const classes = [
-    'collection-success-indicator',
-  ];
-
-  if (rating === undefined) {
-    classes.push('success-rating-insufficient');
-  } else if (rating < 50) {
-    classes.push('success-rating-bad');
-  } else if (rating < 75) {
-    classes.push('success-rating-dubious');
-  } else {
-    classes.push('success-rating-good');
-  }
-
-  return (
-    <div className={classes.join(' ')}>
-      <Icon name='health' />
-      {(rating === undefined)
-        ? t('Awaiting')
-        : t('{{rating}}%', { replace: { rating } })}
-    </div>
-  );
-}
-
-class CollectionThumbnail extends PureComponentEx<IProps, {}> {
+class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
   private imageURLs = memoizeOne((collection: types.IMod) =>
     [collection.attributes?.pictureUrl, path.join(__dirname, 'fallback_tile.png')]
       .filter(iter => iter !== undefined));
+
+  public constructor(props: IProps) {
+    super(props);
+  
+    this.initState({ updating: false });
+  }
 
   public render(): JSX.Element {
     const { t, collection, details, infoCache,
@@ -218,7 +168,9 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     return (
       <Panel className={classes.join(' ')} bsStyle={active ? 'primary' : 'default'}>
         <Panel.Body className='collection-thumbnail-body'>
-          {(details === true) ? <NewRevisionMarker t={t} collection={collection} /> : null}
+          {(details === true)
+            ? <NewRevisionMarker t={t} collection={collection} updating={this.state.updating} />
+            : null}
           <Image
             className='thumbnail-img'
             srcs={this.imageURLs(collection)}
@@ -291,9 +243,9 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
     );
   }
 
-  private invoke(action: (inst: string) => void, inst: string[]) {
+  private invoke<T>(action: (inst: string) => T, inst: string[]): T {
     if ((action !== undefined) && (inst !== undefined) && (inst.length > 0)) {
-      action(inst[0]);
+      return action(inst[0]);
     }
   }
 
@@ -310,11 +262,20 @@ class CollectionThumbnail extends PureComponentEx<IProps, {}> {
         group: 'optional',
         condition: () => {
           const { attributes } = this.props.collection;
+          if (this.state.updating) {
+            return t('Already updating');
+          }
           return (attributes?.newestVersion !== undefined)
               && (parseInt(attributes.newestVersion, 10) > parseInt(attributes.version, 10));
         },
         action: (instanceIds: string[]) => {
-          this.invoke(onUpdate, instanceIds);
+          const prom = this.invoke(onUpdate, instanceIds);
+          if (prom !== undefined) {
+            this.nextState.updating = true;
+            prom.finally(() => {
+              this.nextState.updating = false;
+            });
+          }
         },
       } as any);
     }

@@ -4,11 +4,11 @@ import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, TOS_URL} from '../../c
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
-import CollectionEdit from './CollectionEdit';
-import CollectionPage from './CollectionPage';
+import CollectionEdit from '../CollectionPageEdit';
+import CollectionPage from '../CollectionPageView';
 import StartPage from './StartPage';
 
-import { IRating } from '@nexusmods/nexus-api';
+import { IRating, IRevision } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
 import { WithTranslation, withTranslation } from 'react-i18next';
@@ -22,11 +22,13 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
 
+  localState: { ownCollections: IRevision[] };
   driver: InstallDriver;
   onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
   onRemoveCollection: (gameId: string, modId: string, cancel: boolean) => Promise<void>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
+  onInstallCollection: (revision: IRevision) => Promise<void>;
   onUpdateMeta: () => void;
 
   resetCB: (cb: () => void) => void;
@@ -100,7 +102,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, driver, game, mods, notifications, profile } = this.props;
+    const { t, downloads, driver, game, localState, mods, notifications, profile } = this.props;
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     if (profile === undefined) {
@@ -129,6 +131,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           <StartPage
             t={t}
             game={game}
+            localState={localState}
             installing={driver.installDone ? undefined : driver.collection}
             infoCache={driver.infoCache}
             profile={profile}
@@ -140,10 +143,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             onRemove={this.remove}
             onUpdate={this.update}
             onUpload={this.upload}
+            onClone={this.clone}
             onCreateCollection={this.createCollection}
             onResume={this.resume}
             onPause={this.pause}
             onSetActiveTab={this.setActiveTab}
+            onInstallCollection={this.props.onInstallCollection}
           />
         </>
       );
@@ -436,9 +441,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const downloadGame = util.getSafe(mod.attributes, ['downloadGame'], gameMode);
     const newestFileId = util.getSafe(mod.attributes, ['newestVersion'], undefined);
-    this.context.api.events.emit('collection-update',
+    await util.toPromise(cb => this.context.api.events.emit(
+      'collection-update',
       downloadGame, mod.attributes?.collectionSlug, newestFileId,
-      mod.attributes?.source, collectionId);
+      mod.attributes?.source, collectionId, cb));
   }
 
   private upload = async (collectionId: string) => {

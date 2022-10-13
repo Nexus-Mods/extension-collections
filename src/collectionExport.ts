@@ -100,7 +100,7 @@ function filterInfoModSource(source: ICollectionSourceInfo): ICollectionSourceIn
 }
 
 function filterInfoMod(mod: ICollectionMod): ICollectionMod {
-  const res = _.omit(mod, ['hashes', 'choices', 'patches', 'details', 'instructions', 'phase']);
+  const res = _.omit(mod, ['hashes', 'choices', 'patches', 'details', 'instructions', 'phase', 'fileOverrides']);
   res.source = filterInfoModSource(res.source);
   return res;
 }

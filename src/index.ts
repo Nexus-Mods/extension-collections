@@ -10,7 +10,7 @@ import InstallDriver from './util/InstallDriver';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
-import CollectionsMainPage from './views/CollectionPage';
+import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
@@ -37,6 +37,7 @@ import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, log, OptionsFilter, selectors, types, util } from 'vortex-api';
+import { IRevision } from '@nexusmods/nexus-api';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -207,6 +208,29 @@ async function createNewCollection(
       },
     ],
   });
+}
+
+async function installCollection(api: types.IExtensionApi, revision: IRevision) {
+  return api.showDialog('question', 'Collection not installed', {
+    text: 'You can only edit collections that are fully installed in this '
+      + 'setup. Please ensure you install the collection with all '
+      + 'optional items, then clone the collection into the Workshop.'
+  }, [
+    { label: 'Cancel' },
+    { label: 'Install' },
+  ])
+    .then(result => {
+      if (result.action === 'Install') {
+        const gameId = revision.collection.game.domainName;
+        api.events.emit(
+          'start-download', [`nxm://${gameId}/collections/${revision.collection.slug}/revisions/${revision.revisionNumber}`],
+          {}, undefined, (err) => {
+            if (err !== null) {
+              api.showErrorNotification('Failed to download collection', err);
+            }
+          }, undefined, { allowInstall: 'force' });
+      }
+    });
 }
 
 async function pauseCollection(api: types.IExtensionApi,
@@ -538,6 +562,12 @@ function onAddSelectionImpl(api: types.IExtensionApi, collectionId: string, modI
   }
 }
 
+const localState = util.makeReactive<{
+  ownCollections: IRevision[],
+}>({
+  ownCollections: [],
+});
+
 function register(context: types.IExtensionContext,
                   onSetCallbacks: (callbacks: ICallbackMap) => void) {
   let collectionsCB: ICallbackMap;
@@ -546,8 +576,22 @@ function register(context: types.IExtensionContext,
   context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
+  const onSwitchProfile = (profileId: string) => {
+    return new Promise<void>((resolve, reject) => {
+      context.api.events.once('profile-did-change', newProfileId => {
+        if (newProfileId === profileId) {
+          resolve();
+        } else {
+          reject(new Error('Failed to switch to profile'));
+        }
+      });
+      context.api.store.dispatch(actions.setNextProfile(profileId));
+    });
+  };
+
   context.registerDialog('collection-install', InstallStartDialog, () => ({
     driver,
+    onSwitchProfile,
   }));
 
   const onClone = (collectionId: string) => cloneInstalledCollection(context.api, collectionId);
@@ -557,6 +601,7 @@ function register(context: types.IExtensionContext,
     removeCollection(context.api, gameId, modId, cancel);
   const onUpdateMeta = () => updateMeta(context.api);
   const editCollection = (id: string) => collectionsCB.editCollection(id);
+  const onInstallCollection = (revision: IRevision) => installCollection(context.api, revision);
 
   context.registerDialog('collection-finish', InstallFinishDialog, () => ({
     api: context.api,
@@ -587,6 +632,8 @@ function register(context: types.IExtensionContext,
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
+      localState,
+      onInstallCollection,
       onSetupCallbacks,
       onRemoveCollection,
       onCloneCollection: onClone,
@@ -955,6 +1002,8 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
     if (mod.type === MOD_TYPE) {
       if (driver.collection === undefined) {
+        const awaitProfileSwitch = api.ext?.awaitProfileSwitch ?? (() => Promise.resolve());
+        await awaitProfileSwitch();
         driver.query(profile, mod);
       } else {
         api.sendNotification({
@@ -1040,22 +1089,31 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.events.on('view-collection', (collectionId: string) => {
+  api.events.on('view-collection', (modId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      collectionsCB().viewCollection?.(collectionId);
+      collectionsCB().viewCollection?.(modId);
     }, 100);
   });
 
-  api.events.on('edit-collection', (collectionId: string) => {
+  api.events.on('edit-collection', (modId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      collectionsCB().editCollection?.(collectionId);
+      collectionsCB().editCollection?.(modId);
     }, 100);
+  });
+
+  api.events.on('resume-collection', (gameId: string, modId: string) => {
+    const state = api.getState();
+    const profileId = selectors.lastActiveProfileForGame(state, gameId);
+    const profile = state.persistent.profiles[profileId];
+    const mod = state.persistent.mods[gameId]?.[modId];
+    log('info', 'resume collection', { gameId, modId, archiveId: mod?.archiveId });
+    driver.start(profile, mod);
   });
 
   api.onStateChange(['persistent', 'collections', 'collections'], (prev, cur) => {
@@ -1093,6 +1151,19 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const iconPath = path.join(__dirname, 'collectionicon.svg');
   document.getElementById('content').style
     .setProperty('--collection-icon', `url(${pathToFileURL(iconPath).href})`);
+
+  const updateOwnCollectionsCB = (gameId: string) => {
+    api.emitAndAwait('get-my-collections', gameId)
+      .then(result => {
+        localState.ownCollections = result[0] ?? [];
+      })
+  };
+
+  api.events.on('gamemode-activated', updateOwnCollectionsCB);
+  api.onStateChange(['persistent', 'nexus', 'userInfo'], (prev, cur) => {
+    const gameMode = selectors.activeGameId(api.getState());
+    updateOwnCollectionsCB(gameMode);
+  });
 }
 
 function init(context: types.IExtensionContext): boolean {

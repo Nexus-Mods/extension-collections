@@ -360,6 +360,12 @@ ul.collection-mods-page-attrib-tooltip {
   position: relative;
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.35);
 
+  &.collection-remote {
+    .thumbnail-img, .bottom {
+      filter: opacity(0.5);
+    }
+  }
+
   > .collection-thumbnail-body.panel-body {
     padding: 0;
     height: 100%;
@@ -1457,5 +1463,14 @@ ul.collection-mods-page-attrib-tooltip {
 
   > .Select {
     flex: 1 1 0;
+  }
+}
+
+#collection-file-overrides {
+  .table {
+    width: fit-content;
+    td {
+      border-top: unset;
+    }
   }
 }
