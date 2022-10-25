@@ -15,10 +15,6 @@ export interface IHealthIndicatorProps {
 function HealthIndicator(props: IHealthIndicatorProps) {
   const context = React.useContext(MainContext);
   const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed } = props;
-  if (value === undefined) {
-    return null;
-  }
-
   const voteSuccess = React.useCallback((evt: React.MouseEvent<any>) => {
     const { success } = evt.currentTarget.dataset;
     const isUpvote = success === 'true'
@@ -29,6 +25,10 @@ function HealthIndicator(props: IHealthIndicatorProps) {
       isUpvote ? 'Upvote Collection' : 'Downvote Collection'
     );
   }, []);
+
+  if (value === undefined) {
+    return null;
+  }
 
   const RadialProgressT: any = RadialProgress;
 
