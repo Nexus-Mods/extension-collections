@@ -406,11 +406,11 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
         const installed = new Set(own.map(res => res.mod.attributes?.['collectionSlug']));
 
         own.push(...this.props.localState.ownCollections
-          .filter(coll => !installed.has(coll.collection.slug))
+          .filter(coll => !installed.has(coll.collection?.slug))
           .map(coll => ({
             mod: undefined,
             added: foreign.find(iter =>
-              iter.revision?.collection?.slug === coll.collection.slug)?.mod,
+              iter.revision?.collection?.slug === coll.collection?.slug)?.mod,
             revision: coll,
           })));
 

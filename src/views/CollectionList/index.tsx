@@ -121,9 +121,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           <tooltip.IconButton
             className='collections-refresh-meta'
             icon='refresh'
-            tooltip={t('Download the latest meta information about the collections on '
-                       + 'your computer. This will reset local changes to names of '
-                       + 'collections in your workshop.')}
+            tooltip={t('Download the latest meta information about your installed and owned collections. '
+              + 'This will reset local changes to names of collections in your workshop.')}
             onClick={this.onUpdateMeta}
           >
             {t('Refresh')}
