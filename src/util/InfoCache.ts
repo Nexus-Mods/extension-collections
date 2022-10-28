@@ -50,16 +50,28 @@ class InfoCache {
     return collections[slug].info;
   }
 
+  /**
+   * get meta information about a revision, cached if possible
+   * @param revisionId globally unique id of the revision
+   * @param collectionSlug id of the collection
+   * @param revisionNumber number of the revision within this collection
+   * @param fetchBehavior if/how to update the cache:
+   *    "avoid" will update only if there is no data at all,
+   *    "allow" will also update if the cache is expired,
+   *    "force" will always update
+   * @returns 
+   */
   public async getRevisionInfo(revisionId: string,
                                collectionSlug: string, revisionNumber: number,
-                               forceFetch?: boolean)
+                               fetchBehavior: 'allow' | 'avoid' | 'force' = 'allow')
                                : Promise<IRevision> {
     const { store } = this.mApi;
     const revisions: { [id: string]: { info: IRevision, timestamp: number } } =
       store.getState().persistent.collections.revisions ?? {};
-    if (forceFetch
+    if ((fetchBehavior === 'force')
         || (revisions[revisionId]?.timestamp === undefined)
-        || ((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)) {
+        || (((Date.now() - revisions[revisionId].timestamp) > CACHE_EXPIRE_MS)
+            && (fetchBehavior === 'allow'))) {
       this.fetchRevisionInfo(revisions, revisionId, collectionSlug, revisionNumber);
       return this.mCacheRevRequests[revisionId];
     }

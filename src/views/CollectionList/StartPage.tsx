@@ -1,3 +1,4 @@
+import { setSortAdded, setSortWorkshop } from '../../actions/settings';
 import { initFromProfile } from '../../collectionCreate';
 import {
   MAX_COLLECTION_NAME_LENGTH,
@@ -17,8 +18,7 @@ import { Panel, Tab, Tabs } from 'react-bootstrap';
 import { Trans } from 'react-i18next';
 import { connect } from 'react-redux';
 import Select from 'react-select';
-import { ComponentEx, EmptyPlaceholder, Icon, IconBar, types, util } from 'vortex-api';
-import { setSortAdded, setSortWorkshop } from '../../actions/settings';
+import { ComponentEx, EmptyPlaceholder, Icon, IconBar, log, types, util } from 'vortex-api';
 
 const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSc3csy4ycVBECvHQDgri37Gqq1gOuTQ7LcpiIaOkGHpDsW4kA/viewform?usp=sf_link';
 const BUG_REPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdmDBdGjTQVRa7wRouN4yP6zMvqsxTT86R-DwmQXZq7SWGCSg/viewform?usp=sf_link';
@@ -195,7 +195,14 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
   public componentDidMount(): void {
     const collectionsNow = Object.values(this.props.mods).filter(mod => mod.type === MOD_TYPE);
-    this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop);
+    this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop, false)
+      .then(() =>
+        this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop, false))
+      .catch(err => {
+        log('error', 'failed to update list of collections', {
+          error: err.message,
+        });
+      });
   }
 
   public componentDidUpdate(prevProps: IProps, prevState: Readonly<IComponentState>): void {
@@ -206,7 +213,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
         || (prevProps.sortAdded !== this.props.sortAdded)
         || (prevProps.sortWorkshop !== this.props.sortWorkshop)
         || (prevProps.localState.ownCollections !== this.props.localState.ownCollections)) {
-      this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop);
+      this.updateSorted(collectionsNow, this.props.sortAdded, this.props.sortWorkshop, true);
     }
   }
 
@@ -383,12 +390,13 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
   private updateSorted(collections: types.IMod[],
                        sortAdded: string,
-                       sortWorkshop: string) {
-
-    Promise.all(collections.map(async mod => {
+                       sortWorkshop: string,
+                       allowMetaUpdate: boolean)
+                       : Promise<void> {
+    return Promise.all(collections.map(async mod => {
       const { revisionId, collectionSlug, revisionNumber } = mod.attributes ?? {};
       const revision = revisionNumber !== undefined
-        ? await this.props.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber)
+        ? await this.props.infoCache.getRevisionInfo(revisionId, collectionSlug, revisionNumber, allowMetaUpdate ? 'allow' : 'avoid')
         : undefined;
       return { mod, revision };
     }))

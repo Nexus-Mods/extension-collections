@@ -501,7 +501,7 @@ async function updateMeta(api: types.IExtensionApi) {
         progress(util.renderModName(mods[modId]), i);
 
         const info: nexusApi.IRevision = await driver.infoCache.getRevisionInfo(
-          revisionId, collectionSlug, revisionNumber, true);
+          revisionId, collectionSlug, revisionNumber, 'force');
         if (!!info) {
           const currentRevision = info.collection.revisions
             .filter(rev => rev.revisionStatus === 'published')
