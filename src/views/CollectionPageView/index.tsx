@@ -860,11 +860,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const { profile } = newProps;
     const { modsEx } = this.state;
-    const pendingDL = Object.keys(modsEx).filter(modId => modsEx[modId].state === null);
+    const pendingDL = Object.keys(modsEx).filter(modId => modsEx[modId]?.state === null);
     const pendingInstall = Object.keys(modsEx)
-      .filter(modId => ['downloading', 'downloaded', null].includes(modsEx[modId].state));
+      .filter(modId => ['downloading', 'downloaded', null].includes(modsEx[modId]?.state));
     const pendingFinish = Object.keys(modsEx)
-      .filter(modId => ['installing', 'installed'].includes(modsEx[modId].state));
+      .filter(modId => ['installing', 'installed'].includes(modsEx[modId]?.state));
 
     // now, also check every added download or mod whether they may be relevant for any unfulfilled
     // rule
