@@ -616,7 +616,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const mod = mods[modId];
     const modName = util.renderModName(mod);
-    if (overlays[modId]?.text !== undefined) {
+    if (overlays[modId]?.content !== undefined) {
       this.context.api.ext.dismissOverlay?.(modId);
     } else {
       this.context.api.ext.showOverlay?.(modId, modName, instructions,
