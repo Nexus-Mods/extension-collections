@@ -1159,11 +1159,20 @@ ul.collection-mods-page-attrib-tooltip {
     gap: 1em;
     .collection-health-rating-text {
       font-size: larger;
+      text-align: center;
     }
+  }
+
+  .collection-revition-rating-parent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .collection-revision-rating-container {
     fill: $brand-primary;
+    position: relative;
     width: 64px;
     height: 64px;
 
@@ -1180,17 +1189,27 @@ ul.collection-mods-page-attrib-tooltip {
   }
 
   .collection-voting-pill {
-    background-color: $brand-menu;
-    border-radius: 1.5em;
+    // background-color: $brand-menu;
+    // border-radius: 1.5em;
     display: flex;
-    align-items: center;
+    align-items: stretch;
 
     > * {
-      display: flex;
-      align-items: center;
+      // display: flex;
+      // align-items: center;
       padding: 0.5em;
+      flex: 50%;
     }
 
+    button {
+      border-radius: 45px;
+      border-color: $text-color-disabled;
+      padding: 0.5em;
+      color: $text-color;
+      width: 100%;
+    }
+
+    /*
     > :first-child {
       padding-left: 0.8em;
     }
@@ -1202,6 +1221,7 @@ ul.collection-mods-page-attrib-tooltip {
     > :not(:last-child) {
       border-right: 1px solid $border-color;
     }
+    */
   }
 }
 

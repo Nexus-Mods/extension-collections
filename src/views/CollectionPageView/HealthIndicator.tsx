@@ -49,7 +49,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
         {t('Revision {{number}}', { replace: { number: revisionNumber } })}
       </div>
       <FlexLayout type='row' className='collection-health-body'>
-        <FlexLayout.Fixed>
+        <FlexLayout.Fixed className='collection-revition-rating-parent'>
           <div className='collection-revision-rating-container'>
             <RadialProgressT
               data={[
@@ -63,40 +63,44 @@ function HealthIndicator(props: IHealthIndicatorProps) {
               {value.average}%
             </div>
           </div>
+          <div className='collection-revision-rating-numvotes'>
+            {t('{{numVotes}} votes', { replace: { numVotes: value.total } })}
+          </div>
         </FlexLayout.Fixed>
         <FlexLayout.Flex>
           <FlexLayout type='column'>
-            <FlexLayout.Flex className='collection-health-rating-text'>
-              {t('Success rating')}
-            </FlexLayout.Flex>
+            <FlexLayout.Fixed className='collection-health-rating-text'>
+              {t('Did this collection work successfully?')}
+            </FlexLayout.Fixed>
             <FlexLayout.Fixed>
               <FlexLayout type='row' className='collection-voting-pill'>
-                <FlexLayout.Flex>
-                  {t('{{numVotes}} votes', { replace: { numVotes: value.total } })}
-                </FlexLayout.Flex>
                 <FlexLayout.Fixed>
-                  <tooltip.IconButton
+                  <tooltip.Button
+                    bsStyle='ghost'
                     className={ownSuccess === 'positive' ? 'voted' : undefined}
-                    icon='vote-up'
                     tooltip={voteAllowed
                       ? t('Collection worked (mostly)')
                       : t('You must wait for 12 hours between downloading a collection revision and rating it')}
                     data-success={true}
                     onClick={voteSuccess}
                     disabled={!voteAllowed}
-                  />
+                  >
+                    {t('Yes')}
+                  </tooltip.Button>
                 </FlexLayout.Fixed>
                 <FlexLayout.Fixed>
-                  <tooltip.IconButton
+                  <tooltip.Button
+                    bsStyle='ghost'
                     className={ownSuccess === 'negative' ? 'voted' : undefined}
-                    icon='vote-down'
                     tooltip={voteAllowed
                       ? t('Collection didn\'t work (in a significant way)')
                       : t('You must wait for 12 hours between downloading a collection revision and rating it')}
                     data-success={false}
                     onClick={voteSuccess}
                     disabled={!voteAllowed}
-                  />
+                  >
+                    {t('No')}
+                  </tooltip.Button>
                 </FlexLayout.Fixed>
               </FlexLayout>
             </FlexLayout.Fixed>
