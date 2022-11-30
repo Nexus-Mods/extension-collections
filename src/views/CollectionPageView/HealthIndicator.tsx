@@ -76,8 +76,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
               <FlexLayout type='row' className='collection-voting-pill'>
                 <FlexLayout.Fixed>
                   <tooltip.Button
-                    bsStyle='ghost'
-                    className={ownSuccess === 'positive' ? 'voted' : undefined}
+                    className={'collection-ghost-button ' + (ownSuccess === 'positive' ? 'voted' : '')}
                     tooltip={voteAllowed
                       ? t('Collection worked (mostly)')
                       : t('You must wait for 12 hours between downloading a collection revision and rating it')}
@@ -90,8 +89,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
                 </FlexLayout.Fixed>
                 <FlexLayout.Fixed>
                   <tooltip.Button
-                    bsStyle='ghost'
-                    className={ownSuccess === 'negative' ? 'voted' : undefined}
+                    className={'collection-ghost-button ' + (ownSuccess === 'negative' ? 'voted' : '')}
                     tooltip={voteAllowed
                       ? t('Collection didn\'t work (in a significant way)')
                       : t('You must wait for 12 hours between downloading a collection revision and rating it')}

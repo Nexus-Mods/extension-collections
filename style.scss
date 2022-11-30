@@ -1207,6 +1207,10 @@ ul.collection-mods-page-attrib-tooltip {
       padding: 0.5em;
       color: $text-color;
       width: 100%;
+
+      &.voted {
+        background-color: $gray-light;
+      }
     }
 
     /*

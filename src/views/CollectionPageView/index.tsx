@@ -52,6 +52,7 @@ interface IConnectedProps {
   overlays: { [id: string]: types.IOverlay };
   collectionInfo: ICollection;
   revisionInfo: IRevision;
+  showVoteResponse: boolean;
 }
 
 interface IActionProps {
@@ -59,6 +60,7 @@ interface IActionProps {
   onSetAttributeFilter: (tableId: string, filterId: string, filterValue: any) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) => void;
+  onSuppressVoteResponse: () => void;
 }
 
 interface IComponentState {
@@ -399,7 +401,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activity, className, collection, collectionInfo, driver, downloads, language,
-            onVoteSuccess, profile, revisionInfo, userInfo, votedSuccess } = this.props;
+      onSuppressVoteResponse, onVoteSuccess, profile, revisionInfo,
+      showVoteResponse, userInfo, votedSuccess } = this.props;
     const { modSelection, modsEx } = this.state;
 
     if (collection === undefined) {
@@ -451,6 +454,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 profile={profile}
                 collection={collection}
                 totalSize={totalSize}
+                showVoteResponse={showVoteResponse}
                 revision={this.revisionMerged(collectionInfo, revisionInfo)}
                 votedSuccess={votedSuccess}
                 onSetEnabled={this.setEnabled}
@@ -459,6 +463,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 onClone={this.clone}
                 onRemove={this.remove}
                 onVoteSuccess={onVoteSuccess}
+                onSuppressVoteResponse={onSuppressVoteResponse}
                 incomplete={incomplete}
               />
             )}
@@ -491,8 +496,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             onResume={this.mInstalling
               ? undefined
               : (driver.collection !== undefined) && !driver.installDone
-              ? null // installing something else
-              : this.resume}
+                ? null // installing something else
+                : this.resume}
           />
         </FlexLayout.Fixed>
       </FlexLayout>
@@ -1088,6 +1093,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     overlays: state.session.overlays.overlays,
     collectionInfo,
     revisionInfo,
+    showVoteResponse: state.settings.interface.usage['collection-vote-response-dialog'] ?? true,
   };
 }
 
@@ -1101,6 +1107,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) =>
       util.showError(dispatch, message, details, { allowReport }),
+    onSuppressVoteResponse: () =>
+      dispatch(actions.showUsageInstruction('collection-vote-response-dialog', false)),
   };
 }
 
