@@ -357,7 +357,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     } else if (!success && showDownvoteResponse) {
       this.context.api.showDialog('question', 'Collection assistance - {{collectionName}}', {
         bbcode: 'We are sorry that this collection did not work correctly for you.<br/><br/>'
-          + 'Please [url="{{commentLink}}"]check the comments on Nexus Mods[/url] for installation advice and to reach out to the curator.<br/><br/>'
+          + 'Please [url="{{commentLink}}"]check the comments[/url] for installation advice and to reach out to the curator.<br/><br/>'
           + 'Alternatively, if you believe you have encountered a bug, [url="{{bugLink}}"]view bug reports on Nexus Mods[/url] to see if it has already been reported.'
           + 'If the bug isn\'t listed, please consider reporting it to help the curator and other users.',
         checkboxes: [
