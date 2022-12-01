@@ -52,7 +52,8 @@ interface IConnectedProps {
   overlays: { [id: string]: types.IOverlay };
   collectionInfo: ICollection;
   revisionInfo: IRevision;
-  showVoteResponse: boolean;
+  showUpvoteResponse: boolean;
+  showDownvoteResponse: boolean;
 }
 
 interface IActionProps {
@@ -60,7 +61,7 @@ interface IActionProps {
   onSetAttributeFilter: (tableId: string, filterId: string, filterValue: any) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) => void;
-  onSuppressVoteResponse: () => void;
+  onSuppressVoteResponse: (response: 'upvote' | 'downvote') => void;
 }
 
 interface IComponentState {
@@ -145,8 +146,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         title: 'Remove',
         action: this.removeSelected,
         condition: instanceId => (typeof(instanceId) === 'string')
-            ? (['downloaded', 'installed'].includes(this.state.modsEx[instanceId].state))
-            : true,
+          ? (['downloaded', 'installed'].includes(this.state.modsEx[instanceId].state))
+          : true,
         hotKey: { code: 46 },
       },
       {
@@ -392,6 +393,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || this.installingNotificationsChanged(this.props, newProps)
         || (this.props.activity.mods !== newProps.activity.mods)
         || (this.props.revisionInfo !== newProps.revisionInfo)
+        || (this.props.showUpvoteResponse !== newProps.showUpvoteResponse)
+        || (this.props.showDownvoteResponse !== newProps.showDownvoteResponse)
         || (this.state.modSelection !== newState.modSelection)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
@@ -402,7 +405,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   public render(): JSX.Element {
     const { t, activity, className, collection, collectionInfo, driver, downloads, language,
       onSuppressVoteResponse, onVoteSuccess, profile, revisionInfo,
-      showVoteResponse, userInfo, votedSuccess } = this.props;
+      showUpvoteResponse, showDownvoteResponse, userInfo, votedSuccess } = this.props;
     const { modSelection, modsEx } = this.state;
 
     if (collection === undefined) {
@@ -454,7 +457,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 profile={profile}
                 collection={collection}
                 totalSize={totalSize}
-                showVoteResponse={showVoteResponse}
+                showUpvoteResponse={showUpvoteResponse}
+                showDownvoteResponse={showDownvoteResponse}
                 revision={this.revisionMerged(collectionInfo, revisionInfo)}
                 votedSuccess={votedSuccess}
                 onSetEnabled={this.setEnabled}
@@ -1093,7 +1097,8 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     overlays: state.session.overlays.overlays,
     collectionInfo,
     revisionInfo,
-    showVoteResponse: state.settings.interface.usage['collection-vote-response-dialog'] ?? true,
+    showUpvoteResponse: state.settings.interface.usage['collection-upvote-response-dialog'] ?? true,
+    showDownvoteResponse: state.settings.interface.usage['collection-downvote-response-dialog'] ?? true,
   };
 }
 
@@ -1107,8 +1112,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) =>
       util.showError(dispatch, message, details, { allowReport }),
-    onSuppressVoteResponse: () =>
-      dispatch(actions.showUsageInstruction('collection-vote-response-dialog', false)),
+    onSuppressVoteResponse: (response: 'upvote' | 'downvote') =>
+      dispatch(actions.showUsageInstruction(`collection-${response}-response-dialog`, false)),
   };
 }
 

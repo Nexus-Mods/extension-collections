@@ -86,10 +86,11 @@ interface ICollectionOverviewProps {
   revision: IRevision;
   votedSuccess: RatingOptions;
   incomplete: boolean;
-  showVoteResponse: boolean;
+  showUpvoteResponse: boolean;
+  showDownvoteResponse: boolean;
   onSetEnabled: (enable: boolean) => void;
   onShowMods: () => void;
-  onSuppressVoteResponse: () => void;
+  onSuppressVoteResponse: (response: 'upvote' | 'downvote') => void;
   onClose?: () => void;
   onClone?: (collectionId: string) => void;
   onRemove?: (collectionId: string) => void;
@@ -326,65 +327,66 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
   private voteSuccess = (success: boolean) => {
     const {
-      collection, profile, revision, showVoteResponse,
+      collection, profile, revision, showDownvoteResponse, showUpvoteResponse,
       onSuppressVoteResponse, onVoteSuccess } = this.props;
 
     onVoteSuccess?.(collection.id, success);
 
-    if (showVoteResponse) {
-      if (success) {
-        this.context.api.showDialog('question', 'Collection was successful', {
-          text: 'Congratulations! Please consider endorsing this collection if you are enjoying it. '
-            + 'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
-          checkboxes: [
-            { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
-          ],
-        }, [
-          { label: 'Close' },
-          {
-            label: 'Endorse', action: () => {
-              this.context.api.events.emit('endorse-mod', profile.gameId, collection.id, 'endorse');
-              this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
-            }
-          },
-        ])
-          .then((result: types.IDialogResult) => {
-            if (result.input['dont_show_again']) {
-              onSuppressVoteResponse();
-            }
-          });
-      } else {
-        this.context.api.showDialog('question', 'Collection assistance - {{collectionName}}', {
-          bbcode: 'We are sorry that this collection did not work correctly for you.<br/><br/>'
-            + 'Please [url="https://next.nexusmods.com/skyrimspecialedition/collections/{{collectionSlug}}"]check the comments on Nexus Mods[/url] for installation advice and to reach out to the curator.<br/><br/>'
-            + 'Alternatively, if you believe you have encountered a bug, [url]view bug reports on Nexus Mods[/url] to see if it has already been reported.'
-            + 'If the bug isn\'t listed, please consider reporting it to help the curator and other users.',
-          checkboxes: [
-            { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
-          ],
-          parameters: {
-            collectionName: revision.collection.name,
-            collectionSlug: revision.collection.slug,
+    const bugLink = 'https://next.nexusmods.com/skyrimspecialedition/collections/ltbd8l?tab=Bugs';
+    if (success && showUpvoteResponse) {
+      this.context.api.showDialog('question', 'Collection was successful', {
+        text: 'Congratulations! Please consider endorsing this collection if you are enjoying it. '
+          + 'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
+        checkboxes: [
+          { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
+        ],
+      }, [
+        { label: 'Close' },
+        {
+          label: 'Endorse', action: () => {
+            this.context.api.events.emit('endorse-mod', profile.gameId, collection.id, 'endorse');
+            this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
           }
-        }, [
-          { label: 'Close' },
-          {
-            label: 'View comments', action: () => {
-              util.opn(revision.collection.commentLink).catch(() => null);
-            }
-          },
-          {
-            label: 'View bugs', action: () => {
-              util.opn('https://next.nexusmods.com/skyrimspecialedition/collections/ltbd8l?tab=Bugs').catch(() => null);
-            }
-          },
-        ])
-          .then((result: types.IDialogResult) => {
-            if (result.input['dont_show_again']) {
-              onSuppressVoteResponse();
-            }
-          });
-      }
+        },
+      ])
+        .then((result: types.IDialogResult) => {
+          if (result.input['dont_show_again']) {
+            onSuppressVoteResponse('upvote');
+          }
+        });
+    } else if (!success && showDownvoteResponse) {
+      this.context.api.showDialog('question', 'Collection assistance - {{collectionName}}', {
+        bbcode: 'We are sorry that this collection did not work correctly for you.<br/><br/>'
+          + 'Please [url="{{commentLink}}"]check the comments on Nexus Mods[/url] for installation advice and to reach out to the curator.<br/><br/>'
+          + 'Alternatively, if you believe you have encountered a bug, [url="{{bugLink}}"]view bug reports on Nexus Mods[/url] to see if it has already been reported.'
+          + 'If the bug isn\'t listed, please consider reporting it to help the curator and other users.',
+        checkboxes: [
+          { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
+        ],
+        parameters: {
+          collectionName: revision.collection.name,
+          collectionSlug: revision.collection.slug,
+          commentLink: revision.collection.commentLink,
+          bugLink,
+        }
+      }, [
+        { label: 'Close' },
+        {
+          label: 'View comments', action: () => {
+            util.opn(revision.collection.commentLink).catch(() => null);
+          }
+        },
+        {
+          label: 'View bugs', action: () => {
+            util.opn(bugLink).catch(() => null);
+          }
+        },
+      ])
+        .then((result: types.IDialogResult) => {
+          if (result.input['dont_show_again']) {
+            onSuppressVoteResponse('downvote');
+          }
+        });
     }
   }
 }
