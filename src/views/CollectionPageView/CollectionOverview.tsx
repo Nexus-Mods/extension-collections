@@ -332,7 +332,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     onVoteSuccess?.(collection.id, success);
 
-    const bugLink = 'https://next.nexusmods.com/skyrimspecialedition/collections/ltbd8l?tab=Bugs';
+    const bugLink = `https://next.nexusmods.com/${revision.collection.game.domainName}/collections/${revision.collection.slug}?tab=Bugs`;
     if (success && showUpvoteResponse) {
       this.context.api.showDialog('question', 'Collection was successful', {
         text: 'Congratulations! Please consider endorsing this collection if you are enjoying it. '
@@ -358,7 +358,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
       this.context.api.showDialog('question', 'Collection assistance - {{collectionName}}', {
         bbcode: 'We are sorry that this collection did not work correctly for you.<br/><br/>'
           + 'Please [url="{{commentLink}}"]check the comments[/url] for installation advice and to reach out to the curator.<br/><br/>'
-          + 'Alternatively, if you believe you have encountered a bug, [url="{{bugLink}}"]view bug reports on Nexus Mods[/url] to see if it has already been reported.'
+          + 'Alternatively, if you believe you have encountered a bug, [url="{{bugLink}}"]view bug reports on Nexus Mods[/url] to see if it has already been reported. '
           + 'If the bug isn\'t listed, please consider reporting it to help the curator and other users.',
         checkboxes: [
           { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
