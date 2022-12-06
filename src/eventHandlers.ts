@@ -75,6 +75,11 @@ async function collectionUpdate(api: types.IExtensionApi, downloadGameId: string
     // remove old revision and mods installed for the old revision that are no longer required
 
     const mods = api.getState().persistent.mods[gameMode];
+
+    if (mods[newModId] === undefined) {
+      throw new util.ProcessCanceled('Download failed, update archive not found');
+    }
+
     // candidates is any mod that is depended upon by the old revision that was installed
     // as a dependency
     const candidates = oldRules
