@@ -19,6 +19,7 @@ export type UpdateCB = () => void;
 class InstallDriver {
   private mApi: types.IExtensionApi;
   private mProfile: types.IProfile;
+  private mGameId: string;
   private mCollection: types.IMod;
   private mStep: Step = 'prepare';
   private mUpdateHandlers: UpdateCB[] = [];
@@ -57,7 +58,7 @@ class InstallDriver {
         this.mInstalledMods.push(mod);
         if ((this.mCollection?.installationPath !== undefined)
             && (required.reference.description !== undefined)) {
-          this.updateProgress(this.mProfile, this.mCollection);
+          this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
           applyPatches(api, this.mCollection.installationPath,
                        gameId, required.reference.description, modId, required.extra?.patches);
           api.store.dispatch(actions.setFileOverride(gameId, modId, required.extra?.fileOverrides));
@@ -69,18 +70,19 @@ class InstallDriver {
     api.events.on('did-finish-download', () => {
       // not checking whether the download is actually part of this collection because
       // that check may be more expensive than the ui update
-      this.updateProgress(this.mProfile, this.mCollection);
+      this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
     });
 
     api.events.on('will-install-dependencies',
       (profileId: string, modId: string, recommendations: boolean) => {
         const state = api.getState();
         const profile = this.profile || selectors.profileById(state, profileId);
-        if (profile?.gameId === undefined) {
+        const gameId = this.mGameId || profile?.gameId;
+        if (gameId === undefined) {
           // how?
           return;
         }
-        const mods = state.persistent.mods[profile.gameId];
+        const mods = state.persistent.mods[gameId];
         if ((this.mCollection === undefined)
             && (mods[modId]?.type === MOD_TYPE)
             && recommendations) {
@@ -121,6 +123,7 @@ class InstallDriver {
     }
     this.mProfile = profile;
     this.mCollection = collection;
+    this.mGameId = profile?.gameId ?? selectors.activeGameId(this.mApi.getState());
     this.mStep = 'query';
     await this.initCollectionInfo();
     this.triggerUpdate();
@@ -146,8 +149,9 @@ class InstallDriver {
 
     this.mProfile = profile;
     this.mCollection = collection;
+    this.mGameId = profile?.gameId ?? selectors.activeGameId(this.mApi.getState());
 
-    this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
+    this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, this.mGameId, collection));
 
     await this.startInstall();
     await this.initCollectionInfo();
@@ -164,6 +168,9 @@ class InstallDriver {
 
   public set profile(val: types.IProfile) {
     this.mProfile = val;
+    if (val !== undefined) {
+      this.mGameId = val?.gameId;
+    }
   }
 
   public get infoCache() {
@@ -380,12 +387,13 @@ class InstallDriver {
     }
     this.mCollection = undefined;
     this.mProfile = undefined;
+    this.mGameId = undefined;
     this.mInstalledMods = [];
     this.mStep = 'prepare';
     this.mOnStop?.();
   }
 
-  private getModsEx(profile: types.IProfile, collection: types.IMod)
+  private getModsEx(profile: types.IProfile, gameId: string, collection: types.IMod)
       : { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
     if (profile === undefined) {
       profile = this.mProfile;
@@ -394,10 +402,10 @@ class InstallDriver {
       return {};
     }
 
-    const mods = this.mApi.getState().persistent.mods[profile.gameId];
+    const mods = this.mApi.getState().persistent.mods[gameId];
 
     if (mods === undefined) {
-      log('error', 'no mods for game', { gameId: profile.gameId });
+      log('error', 'no mods for game', { gameId });
       return {};
     }
 
@@ -436,9 +444,10 @@ class InstallDriver {
 
     const collection = this.mCollection;
     const profile = this.mProfile;
+    const gameId = this.mGameId;
 
     const state: types.IState = this.mApi.store.getState();
-    const mods = state.persistent.mods[profile.gameId] ?? {};
+    const mods = state.persistent.mods[gameId] ?? {};
     const modInfo = state.persistent.downloads.files[collection.archiveId]?.modInfo;
     const nexusInfo = modInfo?.nexus;
 
@@ -462,7 +471,7 @@ class InstallDriver {
         setPendingVote(revisionId, slug, this.revisionNumber, Date.now()));
     }
 
-    const gameMode = profile.gameId;
+    const gameMode = gameId;
     const currentgame = util.getGame(gameMode);
     const discovery = selectors.discoveryByGame(state, gameMode);
     const gameVersion = await currentgame.getInstalledVersion(discovery);
@@ -489,13 +498,13 @@ class InstallDriver {
       }
     }
 
-    this.mApi.events.emit('will-install-collection', profile.gameId, collection.id);
+    this.mApi.events.emit('will-install-collection', gameId, collection.id);
 
     this.mApi.events.emit('view-collection', collection.id);
 
-    this.updateProgress(profile, collection);
+    this.updateProgress(profile, gameId, collection);
 
-    this.augmentRules(profile, collection);
+    this.augmentRules(gameId, collection);
 
     this.mApi.dismissNotification(getUnfulfilledNotificationId(collection.id));
     this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
@@ -532,7 +541,7 @@ class InstallDriver {
       && fileId.toString() === ref.fileId.toString();
   }
 
-  private augmentRules(profile: types.IProfile, collection: types.IMod) {
+  private augmentRules(gameId: string, collection: types.IMod) {
     util.batchDispatch(this.mApi.store, (collection.rules ?? []).map(rule => {
       if (rule.reference.repo === undefined) {
         return undefined;
@@ -541,7 +550,7 @@ class InstallDriver {
         iter => this.matchRepo(rule, iter.file));
       if (revMod?.file !== undefined) {
         const newRule = util.setSafe(rule, ['extra', 'fileName'], revMod.file.uri);
-        return actions.addModRule(profile.gameId, collection.id, newRule);
+        return actions.addModRule(gameId, collection.id, newRule);
       }
     })
     .filter(rule => rule !== undefined));
@@ -553,7 +562,7 @@ class InstallDriver {
     }
 
     this.mApi.events.emit('install-dependencies',
-      this.mProfile.id, this.mProfile.gameId, [this.mCollection.id], true);
+      this.mProfile.id, this.mGameId, [this.mCollection.id], true);
     // skipping disclaimer for now
     this.mStep = 'installing';
   }
@@ -567,7 +576,9 @@ class InstallDriver {
   }
 
   private close = () => {
-    this.mApi.events.emit('did-install-collection', this.mProfile.gameId, this.mCollection.id);
+    if (this.mGameId !== undefined) {
+      this.mApi.events.emit('did-install-collection', this.mGameId, this.mCollection.id);
+    }
     this.mCollection = undefined;
     this.mInstallDone = true;
     this.triggerUpdate();
@@ -579,8 +590,8 @@ class InstallDriver {
     });
   }
 
-  private installProgress(profile: types.IProfile, collection: types.IMod): number {
-    const mods = this.getModsEx(profile, collection);
+  private installProgress(profile: types.IProfile, gameId: string, collection: types.IMod): number {
+    const mods = this.getModsEx(profile, gameId, collection);
 
     const downloads = this.mApi.getState().persistent.downloads.files;
 
@@ -604,13 +615,13 @@ class InstallDriver {
     return (dlPerc + instPerc) * 50.0;
   }
 
-  private updateProgress(profile: types.IProfile, collection: types.IMod) {
+  private updateProgress(profile: types.IProfile, gameId: string, collection: types.IMod) {
     if (collection === undefined) {
       return;
     }
 
     if (this.mTotalSize === undefined) {
-      this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, collection));
+      this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, gameId, collection));
     }
 
     this.mApi.sendNotification({
@@ -618,7 +629,7 @@ class InstallDriver {
       type: 'activity',
       title: 'Installing Collection',
       message: util.renderModName(collection),
-      progress: this.installProgress(profile, collection),
+      progress: this.installProgress(profile, gameId, collection),
       actions: [
         {
           title: 'Show',
