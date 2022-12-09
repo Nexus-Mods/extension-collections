@@ -990,6 +990,53 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
+  api.events.on('did-dismiss-overlay', (overlayId: string, itemId: string) => {
+    const OVERLAY_ID = 'collection-instructions-overlay';
+    const state = api.getState();
+    const gameMode = selectors.activeGameId(state);
+    const mods = state.persistent.mods[gameMode];
+    // the itemId will be a reference tag if this was from a collection or an archiveId otherwise
+    if ((driver.lastCollection !== undefined)
+        && (mods[driver.lastCollection.id] !== undefined)
+        && (itemId !== undefined)
+        && (state.settings.notifications.suppress[OVERLAY_ID] !== true)) {
+      // have to update here because the reference tags may have been updated during installation
+      const collections = mods[driver.lastCollection.id];
+      const match = (collections.rules ?? [])
+        .find(rule => (rule.type === 'requires') && (rule.reference.tag === itemId));
+
+      if (match !== undefined) {
+        api.showDialog('info', 'Mod instructions', {
+          text: 'You can refer back to closed mod instructions at any time in the Instructions tab on '
+              + 'the Collections page.',
+          checkboxes: [
+            { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
+          ],
+        }, [
+          { label: 'Take me to instructions' },
+          { label: 'Close' },
+        ], OVERLAY_ID)
+          .then((result: types.IDialogResult) => {
+            if (result.input['dont_show_again']) {
+              api.store.dispatch(actions.suppressNotification(OVERLAY_ID, true))
+            }
+
+            if (result.action === 'Take me to instructions') {
+              api.events.emit('show-main-page', 'Collections');
+              // have to delay this a bit because the callbacks are only set up once the page
+              // is first opened
+              setTimeout(() => {
+                collectionsCB().viewCollection?.(driver.lastCollection.id);
+              }, 100);
+            }
+          })
+          .catch(err => {
+            log('warn', 'failed to show mod instructions suppress dialog', { error: err.message });
+          });
+      }
+    }
+  });
+
   api.events.on('did-install-mod', async (gameId: string, archiveId: string, modId: string) => {
     // automatically enable collections once they're installed
     const profileId = selectors.lastActiveProfileForGame(state(), gameId);
