@@ -6,6 +6,7 @@ export interface ICollectionInfo {
   authorUrl: string;
   name: string;
   description: string;
+  installInstructions: string;
   domainName: string;
   gameVersions?: string[];
 }

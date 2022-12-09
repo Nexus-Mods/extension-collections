@@ -7,6 +7,7 @@ import { IModEx } from '../../types/IModEx';
 import { IStateEx } from '../../types/IStateEx';
 import { modRuleId } from '../../util/util';
 
+import CollectionInstructions from './CollectionInstructions';
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
 import CollectionOverviewSelection from './CollectionOverviewSelection';
@@ -18,7 +19,7 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import memoizeOne from 'memoize-one';
 import * as React from 'react';
-import { Image, Panel } from 'react-bootstrap';
+import { Image, Panel, Tab, Tabs } from 'react-bootstrap';
 import ReactDOM = require('react-dom');
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
@@ -67,6 +68,7 @@ interface IActionProps {
 interface IComponentState {
   modsEx: { [modId: string]: IModEx };
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
+  currentTab: string;
 }
 
 const getCollator = (() => {
@@ -128,6 +130,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     this.initState({
       modsEx: {},
       modSelection: [],
+      currentTab: 'instructions',
     });
 
     this.mModActions = [
@@ -395,6 +398,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || (this.props.revisionInfo !== newProps.revisionInfo)
         || (this.props.showUpvoteResponse !== newProps.showUpvoteResponse)
         || (this.props.showDownvoteResponse !== newProps.showDownvoteResponse)
+        || (this.state.currentTab !== newState.currentTab)
         || (this.state.modSelection !== newState.modSelection)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
@@ -404,9 +408,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activity, className, collection, collectionInfo, driver, downloads, language,
-      onSuppressVoteResponse, onVoteSuccess, profile, revisionInfo,
+      mods, onSuppressVoteResponse, onVoteSuccess, profile, revisionInfo,
       showUpvoteResponse, showDownvoteResponse, userInfo, votedSuccess } = this.props;
-    const { modSelection, modsEx } = this.state;
+    const { currentTab, modSelection, modsEx } = this.state;
 
     if (collection === undefined) {
       return null;
@@ -473,18 +477,38 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             )}
         </FlexLayout.Fixed>
         <FlexLayout.Flex className='collection-mods-panel'>
-          <Panel ref={this.setTableContainerRef}>
-            <Panel.Body>
-              <Table
-                tableId='collection-mods'
-                showDetails={false}
-                data={modsEx}
-                staticElements={this.mAttributes}
-                actions={this.mModActions}
-                onChangeSelection={this.changeModSelection}
+          <Tabs id='collection-view-tabs' activeKey={currentTab} onSelect={this.selectTab}>
+            <Tab
+              key='instructions'
+              eventKey='instructions'
+              title={t('Instructions')}
+            >
+              <CollectionInstructions
+                t={t}
+                collection={collection}
+                mods={mods}
+                onToggleInstructions={this.toggleInstructions}
               />
-            </Panel.Body>
-          </Panel>
+            </Tab>
+            <Tab
+              key='mods'
+              eventKey='mods'
+              title={t('Mods')}
+            >
+              <Panel ref={this.setTableContainerRef}>
+                <Panel.Body>
+                  <Table
+                    tableId='collection-mods'
+                    showDetails={false}
+                    data={modsEx}
+                    staticElements={this.mAttributes}
+                    actions={this.mModActions}
+                    onChangeSelection={this.changeModSelection}
+                  />
+                </Panel.Body>
+              </Panel>
+            </Tab>
+          </Tabs>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
           <CollectionProgress
@@ -506,6 +530,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         </FlexLayout.Fixed>
       </FlexLayout>
     );
+  }
+
+  private selectTab = (tab: any) => {
+    this.context.api.events.emit('analytics-track-navigation', `collections/view/collection/${tab}`);
+    this.nextState.currentTab = tab;
   }
 
   private progress(props: ICollectionPageProps, mod: IModEx) {
@@ -628,8 +657,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     if (overlays[modId]?.content !== undefined) {
       this.context.api.ext.dismissOverlay?.(modId);
     } else {
-      this.context.api.ext.showOverlay?.(modId, modName, instructions,
-        { x: evt.pageX, y: evt.pageY });
+      this.context.api.ext.showOverlay?.(modId, modName, instructions, {
+        x: evt.pageX, y: evt.pageY });
     }
   }
 

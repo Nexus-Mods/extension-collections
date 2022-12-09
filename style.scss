@@ -1382,6 +1382,9 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 #collections-profile-select {
+  @extend .gutter-above;
+
+  place-items: center;
   gap: 0.5em;
 
   .layout-flex {
@@ -1494,6 +1497,83 @@ ul.collection-mods-page-attrib-tooltip {
     width: fit-content;
     td {
       border-top: unset;
+    }
+  }
+}
+
+#collection-instructions-area {
+  height: 100%;
+  resize: none;
+}
+
+.collection-instructions-buttons {
+  align-self: end;
+}
+
+.textarea-install-collection-instructions {
+  width: 100%;
+  height: 100%;
+  resize: none;
+}
+
+#collection-view-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  > .tab-content {
+    flex: 1 1 0;
+    overflow: hidden;
+  }
+}
+
+#collection-view-tabs-pane-mods {
+  height: 100%;
+}
+
+#collection-view-tabs-pane-instructions {
+  overflow: auto;
+  max-height: 100%;
+
+  .collection-instructions-text {
+    white-space: pre-wrap;
+  }
+
+  .collection-instructions-container {
+    padding: 0 $half-gutter;
+  }
+
+  table {
+    width: 100%;
+    padding: $half-gutter;
+
+    tr {
+      border-top: $border-width solid $border-color;
+      border-bottom: $border-width solid $border-color;
+
+      .collection-mod-instructions {
+        div {
+          display: -webkit-box;
+          overflow: hidden;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          max-width: 70%;
+          margin-left: auto;
+          margin-right: auto;
+        }
+      }
+
+      td {
+        padding: 0.5em 1em;
+
+        &:first-child {
+          white-space: nowrap;
+        }
+
+        &:last-child {
+          text-align: right;
+        }
+      }
     }
   }
 }

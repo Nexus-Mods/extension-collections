@@ -580,16 +580,17 @@ export async function modToCollection(
     ? [await game.getInstalledVersion(discovery)]
     : [];
 
+  const collectionAttributes = collection.attributes?.collection ?? {};
+
   const collectionInfo: ICollectionInfo = {
     author: collection.attributes?.uploader ?? 'Anonymous',
     authorUrl: collection.attributes?.authorURL ?? '',
     name: util.renderModName(collection),
     description: collection.attributes?.shortDescription ?? '',
+    installInstructions: collectionAttributes.installInstructions ?? '',
     domainName: util.nexusGameId(game),
     gameVersions,
   };
-
-  const collectionAttributes = collection.attributes?.collection ?? {};
 
   // we assign an id to each mod but we store them as tags in the collection only for bundled
   // mods atm because those are otherwise a bit unreliable to match rules to.

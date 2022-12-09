@@ -68,6 +68,11 @@ export function makeInstall(api: types.IExtensionApi) {
             : collection.info.name,
         },
         {
+          type: 'attribute',
+          key: 'installInstructions',
+          value: collection.info.installInstructions,
+        },
+        {
           type: 'setmodtype' as any,
           value: MOD_TYPE,
         },

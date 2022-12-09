@@ -1,4 +1,4 @@
-import { MAX_COLLECTION_NAME_LENGTH, NAMESPACE } from '../../constants';
+import { DEFAULT_INSTRUCTIONS, NAMESPACE } from '../../constants';
 import InstallDriver, { Step } from '../../util/InstallDriver';
 
 import CollectionThumbnail from '../CollectionTile';
@@ -71,10 +71,13 @@ function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
     .concat({ value: '__new', label: t('Create new profile') });
 
   return (
-    <>
-      <p>{t('has been added to your collections.')}</p>
-      <p className='gutter-above'>{t('Install this collection to profile') + ':'}</p>
       <FlexLayout type='row' id='collections-profile-select'>
+        <FlexLayout.Fixed>
+          {t('Install this collection to profile') + ':'}
+          <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
+            {util.getText('profile' as any, 'profiles', t)}
+          </More>
+        </FlexLayout.Fixed>
         <FlexLayout.Flex>
           <Select
             options={profileOptions}
@@ -83,13 +86,7 @@ function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
             clearable={false}
           />
         </FlexLayout.Flex>
-        <FlexLayout.Fixed>
-          <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
-            {util.getText('profile' as any, 'profiles', t)}
-          </More>
-        </FlexLayout.Fixed>
       </FlexLayout>
-    </>
   );
 }
 
@@ -172,36 +169,48 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     const collectionName = util.renderModName(driver.collection);
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
+        <Modal.Header>
+          <Modal.Title>
+            {t('{{gameName}} collection added', { replace: { gameName: game.name } })}
+          </Modal.Title>
+        </Modal.Header>
         <Modal.Body>
-          <Media.Left>
-            <CollectionThumbnail
+          <Media>
+            <Media.Left>
+              <CollectionThumbnail
+                t={t}
+                gameId={profile.gameId}
+                collection={driver.collection}
+                details={true}
+                imageTime={42}
+              />
+            </Media.Left>
+            <Media.Right style={{ width: '100%' }}>
+              {ownCollection ? <YouCuratedTag t={t} /> : null}
+              <textarea
+                className='textarea-install-collection-instructions'
+                value={driver.collection?.attributes?.installInstructions
+                  ?? t(DEFAULT_INSTRUCTIONS)}
+                readOnly={true}
+              />
+            </Media.Right>
+          </Media>
+
+          {(this.state.confirmProfile && (selectedProfile !== undefined)) ? (
+            <InstallDialogConfirmProfile
               t={t}
-              gameId={profile.gameId}
-              collection={driver.collection}
-              details={true}
-              imageTime={42}
+              collectionName={collectionName}
+              selectedProfile={selectedProfile === '__new' ? undefined : allProfiles[selectedProfile]}
             />
-          </Media.Left>
-          <Media.Right style={{ width: '100%' }}>
-            {ownCollection ? <YouCuratedTag t={t} /> : null}
-            <h5>{game.name}</h5>
-            <h3>{collectionName}</h3>
-            {(this.state.confirmProfile && (selectedProfile !== undefined)) ? (
-              <InstallDialogConfirmProfile
-                t={t}
-                collectionName={collectionName}
-                selectedProfile={selectedProfile === '__new' ? undefined : allProfiles[selectedProfile]}
-              />
-            ) : (
-              <InstallDialogSelectProfile
-                t={t}
-                allProfiles={allProfiles}
-                profile={profile}
-                selectedProfile={selectedProfile}
-                onSelectProfile={this.changeProfile}
-              />
-            )}
-          </Media.Right>
+          ) : (
+            <InstallDialogSelectProfile
+              t={t}
+              allProfiles={allProfiles}
+              profile={profile}
+              selectedProfile={selectedProfile}
+              onSelectProfile={this.changeProfile}
+            />
+          )}
         </Modal.Body>
         <Modal.Footer>
           {this.state.confirmProfile ? (

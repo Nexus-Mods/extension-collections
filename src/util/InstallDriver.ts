@@ -21,6 +21,7 @@ class InstallDriver {
   private mProfile: types.IProfile;
   private mGameId: string;
   private mCollection: types.IMod;
+  private mLastCollection: types.IMod;
   private mStep: Step = 'prepare';
   private mUpdateHandlers: UpdateCB[] = [];
   private mInstalledMods: types.IMod[] = [];
@@ -91,7 +92,7 @@ class InstallDriver {
           //  aware that it's installing mods that are part of the collection
           //  in order for us to apply any collection mod rules to the mods themselves
           //  upon successful installation.
-          this.mCollection = mods[modId];
+          this.mLastCollection = this.mCollection = mods[modId];
           this.mStep = 'installing';
         }
       });
@@ -122,7 +123,7 @@ class InstallDriver {
       return;
     }
     this.mProfile = profile;
-    this.mCollection = collection;
+    this.mLastCollection = this.mCollection = collection;
     this.mGameId = profile?.gameId ?? selectors.activeGameId(this.mApi.getState());
     this.mStep = 'query';
     await this.initCollectionInfo();
@@ -148,7 +149,7 @@ class InstallDriver {
     }
 
     this.mProfile = profile;
-    this.mCollection = collection;
+    this.mLastCollection = this.mCollection = collection;
     this.mGameId = profile?.gameId ?? selectors.activeGameId(this.mApi.getState());
 
     this.mTotalSize = calculateCollectionSize(this.getModsEx(profile, this.mGameId, collection));
@@ -195,6 +196,15 @@ class InstallDriver {
 
   public get collection(): types.IMod {
     return this.mCollection;
+  }
+
+  /**
+   * return last collection that was installed. Only difference to "collection" is that this
+   * does not get reset after the installation completes but please be aware that there is
+   * no guarantee this collection is still installed
+   */
+  public get lastCollection(): types.IMod {
+    return this.mLastCollection;
   }
 
   public get collectionId(): string {
@@ -324,7 +334,7 @@ class InstallDriver {
     if ((this.mCollection !== undefined) && (modId === this.mCollection.id)) {
       // update the stored collection because it might have been updated as part of the
       // dependency installation
-      this.mCollection = mods[modId];
+      this.mLastCollection = this.mCollection = mods[modId];
 
       if (this.mCollection !== undefined) {
         if (!recommendations) {
