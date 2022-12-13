@@ -1215,9 +1215,10 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     const value = collection.attributes?.collection?.instructions?.[modId] ?? '';
 
     this.context.api.showDialog('info', 'Instructions', {
-      text: 'These instructions will be shown before installing the mod. '
-          + 'This will interrupt the installation process so please use it '
-          + 'only if you have to',
+      md: 'Instructions added to **required mods** will display alongside the mod as it installs.  \n'
+        + 'Instructions added to **optional mods** will display before the mod installs, the user '
+        + 'will be given the option to either install or skip the mod.  \n'
+        + 'All added instructions will be available in the "Instructions" tab on the Collections page.',
       input: [ { label: 'Instructions', id: 'instructions', type: 'multiline' as any, value } ],
     }, [
       { label: 'Cancel' },

@@ -40,22 +40,21 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
     });
   }, [driver, forceUpdate]);
 
-  const skip = React.useCallback(() => {
-    (async () => {
-      if (driver.collection !== undefined) {
-        await driver.continue();
-      }
-      forceUpdate(i => i + 1);
-    })();
+  const skip = React.useCallback(async () => {
+    if (driver.collection !== undefined) {
+      await driver.continue();
+    }
+    forceUpdate(i => i + 1);
   }, [driver]);
 
-  const showOptionals = React.useCallback(() => {
+  const showOptionals = React.useCallback(async () => {
     if (driver.collection !== undefined) {
-      api.events.emit('view-collection', driver.collection.id);
+      api.events.emit('view-collection', driver.collection.id, 'mods');
       api.store.dispatch(actions.setAttributeFilter('collection-mods', undefined, undefined));
       api.store.dispatch(actions.setAttributeFilter('collection-mods', 'required', false));
-      driver.continue();
+      await driver.continue();
     }
+    forceUpdate(i => i + 1);
   }, [driver]);
 
   const installAllOptionals = React.useCallback(() => {
@@ -63,6 +62,7 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
     if ((driver.step === 'review') && (driver.collection !== undefined)) {
       driver.installRecommended();
     }
+    forceUpdate(i => i + 1);
   }, []);
 
   const clone = React.useCallback(async () => {
@@ -133,15 +133,14 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
             </div>
             <p>
               {t('This collection has {{count}} optional mods which are not required to '
-                 + 'complete the installation but have been recommended by the curator. '
-                 + 'To view these mods, click the button below.', {
+                 + 'complete the installation but may provide additional features or options. '
+                 + 'You can view these mods before installing as they may change the default '
+                 + 'behavior of the collection or have additional requirements.', {
                 count: optionals.length,
                 ns: NAMESPACE,
               })}
             </p>
             <div className='collection-finished-optional-buttons'>
-              <Button onClick={showOptionals}>{t('Show optional mods')}</Button>
-              <Button onClick={installAllOptionals}>{t('Install all optional mods')}</Button>
             </div>
           </div>
         ) : ownCollection ? (
@@ -159,11 +158,21 @@ function InstallFinishedDialog(props: IInstallFinishedDialogProps) {
           </div>
         ) : null}
       </Modal.Body>
-      <Modal.Footer>
-        <Button onClick={skip}>
-          {(optionals.length > 0) ? t('No Thanks') : t('Done')}
-        </Button>
-      </Modal.Footer>
+      {(optionals.length > 0) ? (
+        <Modal.Footer>
+          <Button onClick={skip}>
+            {t('No Thanks')}
+          </Button>
+          <Button onClick={showOptionals}>{t('View optional mods')}</Button>
+          <Button onClick={installAllOptionals}>{t('Install optional mods')}</Button>
+        </Modal.Footer>
+      ) : (
+        <Modal.Footer>
+          <Button onClick={skip}>
+            {t('Done')}
+          </Button>
+        </Modal.Footer>
+      )}
     </Modal>
   );
 }

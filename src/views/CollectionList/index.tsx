@@ -24,7 +24,7 @@ export interface ICollectionsMainPageBaseProps extends WithTranslation {
 
   localState: { ownCollections: IRevision[] };
   driver: InstallDriver;
-  onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
+  onAddCallback: (cbName: string, cb: (...args: any[]) => void) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
   onRemoveCollection: (gameId: string, modId: string, cancel: boolean) => Promise<void>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
@@ -72,14 +72,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       activeTab: 'active-collections',
     });
 
-    if (props.onSetupCallbacks !== undefined) {
-      props.onSetupCallbacks({
-        viewCollection: (collectionId: string) => {
-          this.showPage('view', collectionId);
-        },
-        editCollection: (collectionId: string) => {
-          this.showPage('edit', collectionId);
-        },
+    if (props.onAddCallback !== undefined) {
+      props.onAddCallback('viewCollection', (collectionId: string) => {
+        this.showPage('view', collectionId);
+      });
+
+      props.onAddCallback('editCollection', () => (collectionId: string) => {
+        this.showPage('edit', collectionId);
       });
     }
 
@@ -175,6 +174,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 mods={mods}
                 downloads={downloads}
                 notifications={notifications}
+                onAddCallback={this.props.onAddCallback}
                 onView={this.view}
                 onPause={this.pause}
                 onCancel={this.cancel}

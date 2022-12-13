@@ -20,7 +20,7 @@ function Instructions(props: IInstructionsProps) {
   const { t, collection, mods, onToggleInstructions } = props;
   
   const { required, optional } = React.useMemo(() => {
-    return collection.rules.reduce((prev, rule) => {
+    return (collection.rules ?? []).reduce((prev, rule) => {
       if ((rule.extra?.instructions === undefined)
           || !['requires', 'recommends'].includes(rule.type)) {
         return prev;

@@ -571,9 +571,7 @@ const localState = util.makeReactive<{
 });
 
 function register(context: types.IExtensionContext,
-                  onSetCallbacks: (callbacks: ICallbackMap) => void) {
-  let collectionsCB: ICallbackMap;
-
+                  collectionsCB: ICallbackMap) {
   context.registerReducer(['session', 'collections'], sessionReducer);
   context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
@@ -623,10 +621,9 @@ function register(context: types.IExtensionContext,
 
   let resetPageCB: () => void;
   const resetCB = (cb) => resetPageCB = cb;
-  const onSetupCallbacks = (callbacks: ICallbackMap) => {
-    collectionsCB = callbacks;
-    onSetCallbacks(callbacks);
-  }
+  const onAddCallback = (cbName: string, cb: (...args: any[]) => void) => {
+    collectionsCB[cbName] = cb;
+  };
 
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
@@ -636,7 +633,7 @@ function register(context: types.IExtensionContext,
       driver,
       localState,
       onInstallCollection,
-      onSetupCallbacks,
+      onAddCallback,
       onRemoveCollection,
       onCloneCollection: onClone,
       onCreateCollection,
@@ -1138,12 +1135,13 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.events.on('view-collection', (modId: string) => {
+  api.events.on('view-collection', (modId: string, tabId?: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
       collectionsCB().viewCollection?.(modId);
+      collectionsCB().viewCollectionTab?.(tabId);
     }, 100);
   });
 
@@ -1215,15 +1213,15 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
 }
 
 function init(context: types.IExtensionContext): boolean {
-  let collectionsCB: ICallbackMap;
+  const collectionsCB: ICallbackMap = {};
 
-  register(context, (callbacks: ICallbackMap) => collectionsCB = callbacks);
+  register(context, collectionsCB);
 
   initIniTweaks(context);
   initTools(context);
 
   context.once(() => {
-    once(context.api, () => collectionsCB ?? {});
+    once(context.api, () => collectionsCB);
   });
   return true;
 }

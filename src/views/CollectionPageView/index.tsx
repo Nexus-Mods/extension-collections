@@ -36,6 +36,7 @@ export interface ICollectionPageProps {
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
+  onAddCallback: (cbName: string, cb: (...args: any[]) => void) => void;
   onView: (modId: string) => void;
   onPause: (collectionId: string) => void;
   onCancel: (collectionId: string) => void;
@@ -246,8 +247,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         edit: {},
         filter: new OptionsFilter([
           { value: false, label: 'Recommended'},
-          { value: true, label: 'Required'}],
-          false, false),
+          { value: true, label: 'Required' },
+        ], false, false),
       },
       {
         id: 'name',
@@ -339,6 +340,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         edit: {},
       },
     ];
+
+    props.onAddCallback('viewCollectionTab', (tab: string) => {
+      if (['instructions', 'mods'].includes(tab)) {
+        this.nextState.currentTab = tab;
+      }
+    });
   }
 
   public async componentDidMount() {
