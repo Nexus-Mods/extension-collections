@@ -1,7 +1,7 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
-import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { actions, log, selectors, types, util } from 'vortex-api';
 import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
@@ -586,7 +586,7 @@ class InstallDriver {
   }
 
   private close = () => {
-    if (this.mGameId !== undefined) {
+    if ((this.mGameId !== undefined) && (this.mCollection !== undefined)) {
       this.mApi.events.emit('did-install-collection', this.mGameId, this.mCollection.id);
     }
     this.mCollection = undefined;
