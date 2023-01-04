@@ -74,8 +74,9 @@ class InstallDriver {
       this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
     });
 
-    api.events.on('will-install-dependencies',
-      (profileId: string, modId: string, recommendations: boolean) => {
+    api.events.on(
+      'will-install-dependencies',
+      (profileId: string, modId: string, recommendations: boolean, onCancel: () => void) => {
         const state = api.getState();
         const profile = this.profile || selectors.profileById(state, profileId);
         const gameId = this.mGameId || profile?.gameId;
@@ -95,9 +96,18 @@ class InstallDriver {
           this.mLastCollection = this.mCollection = mods[modId];
           this.mStep = 'installing';
         }
+        
+        const isCollectionMod = rule => util.findModByRef(rule.reference, mods)?.id === modId;
+        
+        if ((this.mCollection !== undefined)
+            && recommendations
+            && this.mCollection.rules.find(isCollectionMod)) {
+          onCancel();
+        }
       });
 
-    api.events.on('did-install-dependencies',
+    api.events.on(
+      'did-install-dependencies',
       (gameId: string, modId: string, recommendations: boolean) => {
         this.onDidInstallDependencies(gameId, modId, recommendations);
       });
@@ -432,13 +442,16 @@ class InstallDriver {
   }
 
   private startInstall = async () => {
+    // suppress plugins-changed event to avoid constantly running expensive callbacks
+    // until onStop gets called
     this.mApi.ext.withSuppressedTests?.(['plugins-changed'], () =>
-      new Promise((resolve, reject) => {
+      new Promise(resolve => {
         this.mOnStop = () => {
           resolve();
           this.mOnStop = undefined;
         };
       }));
+
     return this.startImpl();
   }
 
