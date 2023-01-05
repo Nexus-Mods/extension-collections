@@ -105,8 +105,15 @@ function filterInfoMod(mod: ICollectionMod): ICollectionMod {
   return res;
 }
 
-function filterInfo(input: ICollection): Partial<ICollection> {
-  const info = input.info;
+type RecursivePartial<T> = {
+  [P in keyof T]?:
+    T[P] extends (infer U)[] ? RecursivePartial<U>[] :
+    T[P] extends object ? RecursivePartial<T[P]> :
+    T[P];
+};
+
+function filterInfo(input: ICollection): RecursivePartial<ICollection> {
+  const info = _.omit(input.info, ['installInstructions']);
   return {
     info,
     mods: input.mods.map(mod => filterInfoMod(mod)),
