@@ -6,21 +6,22 @@
   "license": "GPL-3.0",
   "author": "Black Tree Gaming Ltd.",
   "scripts": {
-    "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --progress --profile --color",
+    "webpack": "webpack --config webpack.config.js --progress --profile --color",
     "copy_assets": "copyfiles -f src/language.json dist && copyfiles -f src/icons.svg dist && copyfiles -f src/collectionicon.svg dist && copyfiles -f style.scss dist && copyfiles -f src/assets/fallback_tile.png dist && copyfiles -f node_modules/bsdiff-node/build/Release/bsdiff.node dist",
     "bundle7z": "7z a -t7z collections.7z .\\dist\\index.js .\\dist\\info.json .\\dist\\language.json .\\dist\\*.svg .\\dist\\style.scss",
-    "update_validation": "generate-validation .",
-    "_postinstall": "npm run update_validation",
+    "update_validation": "generate-validation -t .",
+    "postinstall": "npm run update_validation",
     "build": "npm run webpack && npm run copy_assets && extractInfo"
   },
   "devDependencies": {
     "7z-bin": "Nexus-Mods/7z-bin",
+    "@types/bluebird": "^3.5.38",
     "@types/node": "^14.14.37",
     "@types/react": "^17.0.20",
     "@types/react-bootstrap": "^0.32.16",
     "@types/react-redux": "^7.1.16",
     "@types/redux": "3.6.0",
-    "bluebird": "^3.5.3",
+    "bluebird": "^3.7.2",
     "bsdiff-node": "TanninOne/bsdiff-node",
     "copyfiles": "^2.1.0",
     "crc-32": "^1.2.1",
@@ -36,11 +37,11 @@
     "semver": "^5.6.0",
     "shortid": "^2.2.16",
     "tmp": "^0.2.1",
-    "ts-loader": "^9.2.6",
-    "ts-v-gen": "^1.0.1",
+    "ts-loader": "^9.4.2",
+    "ts-v-gen": "^1.0.3",
     "typescript": "^4.4.3",
     "vortex-api": "Nexus-Mods/vortex-api",
-    "webpack": "^5.66.0",
-    "webpack-cli": "^4.9.1"
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
   }
 }
