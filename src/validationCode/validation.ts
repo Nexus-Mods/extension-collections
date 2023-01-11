@@ -1,4 +1,4 @@
-import validateNNKdqh from "./ICollection.validate";export function validateICollection(data): any[] {
-    var res = validateNNKdqh(data);
-    return (res === false) ? validateNNKdqh.prototype.constructor.errors : [];
+import validateKfvCANcB from "./ICollection.validate";export function validateICollection(data): any[] {
+    var res = validateKfvCANcB(data);
+    return (res === false) ? validateKfvCANcB.prototype.constructor.errors : [];
 }
