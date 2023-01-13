@@ -719,6 +719,7 @@ function register(context: types.IExtensionContext,
       }, 100);
     }, (modIds: string[]) => isEditableCollection(context.api.getState(), modIds));
 
+  /*
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
       const profile: types.IProfile = selectors.activeProfile(stateFunc());
@@ -734,6 +735,7 @@ function register(context: types.IExtensionContext,
       }
       return (mod.type === MOD_TYPE);
     });
+  */
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
