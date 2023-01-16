@@ -160,6 +160,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
       Date.now() - (new Date(collection.attributes?.installTime ?? 0)).getTime();
 
     const voteAllowed = (timeSinceInstall >= ENDORSE_DELAY_MS);
+    
+    const rating = {
+      average: parseFloat(revision.collection.overallRating),
+      total: revision.collection.overallRatingCount,
+    };
 
     return (
       <Panel className={classes.join(' ')}>
@@ -256,7 +261,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                     <HealthIndicator
                       t={t}
                       revisionNumber={revision?.revisionNumber ?? 0}
-                      value={revision?.rating}
+                      value={rating}
                       onVoteSuccess={this.voteSuccess}
                       ownSuccess={votedSuccess}
                       voteAllowed={voteAllowed}
