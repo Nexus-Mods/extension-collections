@@ -124,7 +124,7 @@ class InfoCache {
     } catch (err) {
       if (err.code !== 'ENOENT') {
         this.mApi.showErrorNotification('Failed to cache collection mod rules', err, {
-          allowReport: !(err instanceof util.ProcessCanceled),
+          allowReport: false,
         });
       }
       return [];
