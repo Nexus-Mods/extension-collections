@@ -161,9 +161,9 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const voteAllowed = (timeSinceInstall >= ENDORSE_DELAY_MS);
     
-    const rating = {
-      average: parseFloat(revision.collection.overallRating),
-      total: revision.collection.overallRatingCount,
+    const rating =  {
+      average: parseFloat(revision.collection?.overallRating ?? '100'),
+      total: revision.collection?.overallRatingCount ?? 0,
     };
 
     return (
