@@ -395,6 +395,7 @@ function extractModRules(collectionRules: IResolvedRule[],
   return collectionRules.reduce((prev: ICollectionModRule[], resolvedRule: IResolvedRule) => {
     const { mod } = resolvedRule;
     const source: types.IModReference = util.makeModReference(mod);
+    const sourceOrig = JSON.parse(JSON.stringify(source));
 
     // ok, this gets a bit complex now. If the referenced mod gets updated, also make sure
     // the rules referencing it apply to newer versions
@@ -411,7 +412,19 @@ function extractModRules(collectionRules: IResolvedRule[],
       source.tag = bundleTags[mod.id];
     }
 
-    return [].concat(prev, (mod.rules || []).map((input: types.IModRule): ICollectionModRule => {
+    // we're not including requires/recommends rules under the logic that if they were
+    // required or recommended, the collection should be including them. Plus, based on (sensible)
+    // user request, we're ignoring these during collection installation or else we'd be getting
+    // tons of notifications during the installation.
+    const includedRules = (mod.rules || [])
+      .filter(rule => !['requires', 'recommends'].includes(rule.type))
+
+    return [].concat(prev, includedRules.map((input: types.IModRule): ICollectionModRule => {
+      if (input.extra?.['automatic'] === true) {
+        // don't add rules introduced from a remote source, the assumption being that they would be
+        // added on the client system as well and might get updated
+        return undefined;
+      }
       const target: types.IModRule = JSON.parse(JSON.stringify(input));
 
       const targetRef = util.findModByRef(target.reference, mods);
@@ -425,11 +438,17 @@ function extractModRules(collectionRules: IResolvedRule[],
         }
       }
 
+      // for the purpose of finding out if the rule is enabled in the collection we have
+      // to compare the references as they are locally. Yes, this is super awkward code...
+      if (!ruleEnabled(makeBiDirRule(sourceOrig, targetRule), mods, collection)) {
+        return undefined;
+      }
+
       return makeBiDirRule(source, targetRule);
     }));
   }, [])
   // throw out rules that couldn't be converted
-  .filter(rule => (rule !== undefined) && ruleEnabled(rule, mods, collection));
+    .filter(rule => rule !== undefined);
 }
 
 /**

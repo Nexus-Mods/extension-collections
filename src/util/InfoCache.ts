@@ -23,12 +23,13 @@ class InfoCache {
     this.mApi = api;
   }
 
-  public async getCollectionModRules(revisionId: string) {
-    if (this.mCacheColRules[revisionId] === undefined) {
-      this.mCacheColRules[revisionId] = this.cacheCollectionModRules(revisionId);
+  public async getCollectionModRules(revisionId: string, collection: types.IMod) {
+    const cacheId = revisionId ?? collection.id;
+    if (this.mCacheColRules[cacheId] === undefined) {
+      this.mCacheColRules[cacheId] = this.cacheCollectionModRules(revisionId, collection);
     }
 
-    return this.mCacheColRules[revisionId];
+    return this.mCacheColRules[cacheId];
   }
 
   public async getCollectionInfo(slug: string, forceFetch?: boolean): Promise<ICollection> {
@@ -105,22 +106,24 @@ class InfoCache {
     }
   }
 
-  private async cacheCollectionModRules(revisionId: string): Promise<ICollectionModRule[]> {
+  private async cacheCollectionModRules(revisionId: string,
+                                        collection: types.IMod)
+                                        : Promise<ICollectionModRule[]> {
     const store = this.mApi.store;
     const state = store.getState();
     const gameId = selectors.activeGameId(state);
     const mods: { [modId: string]: types.IMod } =
       util.getSafe(state, ['persistent', 'mods', gameId], {});
-    const colMod = Object.values(mods).find(iter =>
-      (iter.type === MOD_TYPE) && (iter.attributes?.revisionId === revisionId));
+    const colMod = collection ?? (Object.values(mods).find(iter =>
+      (iter.type === MOD_TYPE) && (iter.attributes?.revisionId === revisionId)));
     if (colMod?.installationPath === undefined) {
       return [];
     }
     const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
     try {
-      const collection = await readCollection(
+      const collectionInfo = await readCollection(
         this.mApi, path.join(stagingPath, colMod.installationPath, 'collection.json'));
-      return collection.modRules;
+      return collectionInfo.modRules;
     } catch (err) {
       if (err.code !== 'ENOENT') {
         this.mApi.showErrorNotification('Failed to cache collection mod rules', err, {

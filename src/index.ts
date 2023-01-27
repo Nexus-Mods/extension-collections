@@ -716,6 +716,7 @@ function register(context: types.IExtensionContext,
       }, 100);
     }, (modIds: string[]) => isEditableCollection(context.api.getState(), modIds));
 
+  /*
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
       const profile: types.IProfile = selectors.activeProfile(stateFunc());
@@ -731,6 +732,7 @@ function register(context: types.IExtensionContext,
       }
       return (mod.type === MOD_TYPE);
     });
+  */
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
@@ -1067,10 +1069,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
         return matchedRule;
       }) !== undefined;
       if (isDependency) {
-        const modRules = await driver.infoCache.getCollectionModRules(driver.revisionId);
+        const modRules =
+          await driver.infoCache.getCollectionModRules(driver.revisionId, driver.collection);
         util.batchDispatch(api.store, (modRules ?? []).reduce((prev, rule) => {
           if (util.testModReference(mod, rule.source)) {
-            prev.push(actions.addModRule(gameId, modId, rule));
+            prev.push(actions.addModRule(gameId, modId, {
+              type: rule.type,
+              reference: rule.reference,
+              extra: {
+                fromCollection: driver.collection.id,
+              },
+            }));
           }
           return prev;
         }, []));

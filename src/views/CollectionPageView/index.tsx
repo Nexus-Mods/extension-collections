@@ -235,6 +235,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           { value: 'Installing', label: 'Installing' },
           { value: 'Downloading', label: 'Downloading' },
           { value: 'Pending', label: 'Pending' },
+          { value: 'Recommended', label: 'Not installed' },
           { value: 'Ignored', label: 'Ignored' },
         ], true, false),
       },

@@ -2,7 +2,7 @@ import I18next from 'i18next';
 import memoize from 'memoize-one';
 import * as React from 'react';
 import { ControlLabel, ListGroup, ListGroupItem } from 'react-bootstrap';
-import { ComponentEx, log, Toggle, types, util } from 'vortex-api';
+import { ComponentEx, Toggle, types, util } from 'vortex-api';
 import { ICollectionModRule, ICollectionModRuleEx } from '../../types/ICollection';
 import { renderReference, ruleId } from '../../util/util';
 
@@ -19,6 +19,8 @@ type IProps = IModsPageProps;
 class ModRulesPage extends ComponentEx<IProps, {}> {
   private mAugmentedRules = memoize((rules: ICollectionModRule[]) =>
     rules.map(rule => this.augmentRule(rule)));
+  private mFilteredRules = memoize((collection: types.IMod, rules: ICollectionModRuleEx[]) =>
+    rules.filter(rule => !util.testModReference(collection, rule.source)));
 
   public shouldComponentUpdate(nextProps: IProps) {
     return (this.props.t !== nextProps.t)
@@ -32,8 +34,7 @@ class ModRulesPage extends ComponentEx<IProps, {}> {
     const { t, collection } = this.props;
 
     const rules = this.mAugmentedRules(this.props.rules);
-
-    const filtered = rules.filter(rule => !util.testModReference(collection, rule.source));
+    const filtered = this.mFilteredRules(collection, rules);
 
     let lastSourceName: string;
 
@@ -48,6 +49,11 @@ class ModRulesPage extends ComponentEx<IProps, {}> {
                + 'that the user has to resolve.')}
           </p>
         </ControlLabel>
+        <div>
+          <a onClick={this.enableAllRules}>{t('Enable all')}</a>
+          &nbsp;
+          <a onClick={this.disableAllRules}>{t('Disable all')}</a>
+        </div>
         <ListGroup>
           {filtered
             .sort(this.ruleSort)
@@ -69,6 +75,23 @@ class ModRulesPage extends ComponentEx<IProps, {}> {
     };
   }
 
+  private setRulesEnabled(enable: boolean) {
+    const { collection, onSetCollectionAttribute } = this.props;
+    const rules = this.mAugmentedRules(this.props.rules);
+    const filtered = this.mFilteredRules(collection, rules);
+    filtered.forEach(rule =>  {
+      onSetCollectionAttribute(['rule', ruleId(rule)], enable);
+    });
+  }
+
+  private enableAllRules = () => {
+    this.setRulesEnabled(true);
+  }
+
+  private disableAllRules = () => {
+    this.setRulesEnabled(false);
+  }
+
   private ruleSort = (lhs: ICollectionModRuleEx, rhs: ICollectionModRuleEx) => {
     return lhs.sourceName.localeCompare(rhs.sourceName);
   }
@@ -76,8 +99,6 @@ class ModRulesPage extends ComponentEx<IProps, {}> {
   private renderRule(rule: ICollectionModRuleEx, idx: number, separator: boolean): JSX.Element {
     const { collection } = this.props;
 
-    // md5-hashing to prevent excessive id names and special characters as a key
-    // in application state
     const id = ruleId(rule);
 
     const checked = collection.attributes?.collection?.rule?.[id] ?? true;

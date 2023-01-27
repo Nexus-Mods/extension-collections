@@ -1,4 +1,4 @@
-import validatejZRdDVzy from "./ICollection.validate";export function validateICollection(data): any[] {
-    var res = validatejZRdDVzy(data);
-    return (res === false) ? validatejZRdDVzy.prototype.constructor.errors : [];
+import validateAFJBaqeO from "./ICollection.validate";export function validateICollection(data): any[] {
+    var res = validateAFJBaqeO(data);
+    return (res === false) ? validateAFJBaqeO.prototype.constructor.errors : [];
 }
