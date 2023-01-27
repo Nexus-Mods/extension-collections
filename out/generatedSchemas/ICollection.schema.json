@@ -117,9 +117,6 @@
         "description": {
           "type": "string"
         },
-        "installInstructions": {
-          "type": "string"
-        },
         "domainName": {
           "type": "string"
         },
@@ -135,7 +132,6 @@
         "authorUrl",
         "name",
         "description",
-        "installInstructions",
         "domainName"
       ]
     },

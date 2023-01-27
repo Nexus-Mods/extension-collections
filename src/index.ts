@@ -1028,7 +1028,13 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
         const modRules = await driver.infoCache.getCollectionModRules(driver.revisionId);
         util.batchDispatch(api.store, (modRules ?? []).reduce((prev, rule) => {
           if (util.testModReference(mod, rule.source)) {
-            prev.push(actions.addModRule(gameId, modId, rule));
+            prev.push(actions.addModRule(gameId, modId, {
+              type: rule.type,
+              reference: rule.reference,
+              extra: {
+                fromCollection: driver.collection.id,
+              },
+            }));
           }
           return prev;
         }, []));
