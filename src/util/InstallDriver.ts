@@ -97,7 +97,7 @@ class InstallDriver {
         }
         
         const isCollectionMod = rule => util.findModByRef(rule.reference, mods)?.id === modId;
-        
+
         if ((this.mCollection !== undefined)
             && recommendations
             && this.mCollection.rules.find(isCollectionMod)) {

@@ -56,7 +56,7 @@ function FileOverrides(props: IFileOverridesProps) {
 
   const mod = mods[showOverlay];
   const popover = showOverlay === undefined ? <Popover/> : (
-    <Popover>
+    <Popover id='file-overrides-popover'>
       <ListGroup>
         {(mod.fileOverrides ?? []).map(override => (
           <div key={override}>{override}</div>
