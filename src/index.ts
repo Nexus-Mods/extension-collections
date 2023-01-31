@@ -1219,6 +1219,8 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     const gameMode = selectors.activeGameId(api.getState());
     updateOwnCollectionsCB(gameMode);
   });
+
+  driver.infoCache.clearCache();
 }
 
 function init(context: types.IExtensionContext): boolean {

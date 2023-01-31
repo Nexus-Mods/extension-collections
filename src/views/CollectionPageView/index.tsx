@@ -2,7 +2,6 @@ import { AUTHOR_UNKNOWN, AVATAR_FALLBACK, INSTALLING_NOTIFICATION_ID } from '../
 import { testDownloadReference } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
 
-import { ICollection } from '../../types/ICollection';
 import { IModEx } from '../../types/IModEx';
 import { IStateEx } from '../../types/IStateEx';
 import { modRuleId } from '../../util/util';
@@ -13,7 +12,7 @@ import CollectionOverview from './CollectionOverview';
 import CollectionOverviewSelection from './CollectionOverviewSelection';
 import CollectionProgress from './CollectionProgress';
 
-import { ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nexusmods/nexus-api';
+import { ICollection, ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
