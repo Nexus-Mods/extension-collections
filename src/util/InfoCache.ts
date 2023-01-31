@@ -1,6 +1,7 @@
 import { updateCollectionInfo, updateRevisionInfo } from '../actions/persistent';
-import { CACHE_EXPIRE_MS, MOD_TYPE } from '../constants';
+import { CACHE_EXPIRE_MS, CACHE_LRU_COUNT, MOD_TYPE } from '../constants';
 import { ICollectionModRule } from '../types/ICollection';
+import { IStateEx } from '../types/IStateEx';
 import { readCollection } from './importCollection';
 
 import { ICollection, IRevision } from '@nexusmods/nexus-api';
@@ -49,6 +50,49 @@ class InfoCache {
     }
 
     return collections[slug].info;
+  }
+
+  public async clearCache() {
+    const { store } = this.mApi;
+    const state = this.mApi.getState<IStateEx>();
+
+    const cutOffTime = Date.now() - CACHE_EXPIRE_MS;
+
+    // remove collection infos
+    {
+      const { collections } = state.persistent.collections;
+      const collectionsToDrop: string[] = Object.keys(collections)
+        .sort((lhs, rhs) => collections[rhs].timestamp - collections[lhs].timestamp)
+        .reduce((prev, iter, idx) => {
+          if ((idx >= CACHE_LRU_COUNT) || (collections[iter].timestamp < cutOffTime)) {
+            prev.push(iter);
+          }
+          return prev;
+        }, []);
+      if (collectionsToDrop.length > 0) {
+        log('debug', 'dropping outdated collections cache', { ids: collectionsToDrop });
+        util.batchDispatch(store, collectionsToDrop
+          .map(coll => updateCollectionInfo(coll, undefined, undefined)));
+      }
+    }
+
+    // remove revision infos
+    {
+      const { revisions } = state.persistent.collections;
+      const revisionsToDrop: string[] = Object.keys(revisions)
+        .sort((lhs, rhs) => revisions[rhs].timestamp - revisions[lhs].timestamp)
+        .reduce((prev, iter, idx) => {
+          if ((idx >= CACHE_LRU_COUNT) || (revisions[iter].timestamp < cutOffTime)) {
+            prev.push(iter);
+          }
+          return prev;
+        }, []);
+      if (revisionsToDrop.length > 0) {
+        log('debug', 'dropping outdated revision cache', { ids: revisionsToDrop });
+        util.batchDispatch(store, revisionsToDrop
+          .map(rev => updateRevisionInfo(rev, undefined, undefined)));
+      }
+    }
   }
 
   /**

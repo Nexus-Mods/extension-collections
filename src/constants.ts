@@ -42,3 +42,8 @@ export const PATCH_OVERHEAD = 130;
 
 // how long we buffer collection/revision info from the api
 export const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
+
+// number of revision (and collection) info items we keep at most
+export const CACHE_LRU_COUNT = 50;
+
+export const DEFAULT_INSTRUCTIONS = 'Select the profile you would like to install this collection to and click Install.';
