@@ -1016,7 +1016,9 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
         });
       }
     } else {
-      const isDependency = (driver.collection?.rules ?? []).find(rule => {
+      const { collection, revisionId } = driver;
+
+      const isDependency = (collection?.rules ?? []).find(rule => {
         const validType = ['requires', 'recommends'].includes(rule.type);
         if (!validType) {
           return false;
@@ -1026,14 +1028,14 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       }) !== undefined;
       if (isDependency) {
         const modRules =
-          await driver.infoCache.getCollectionModRules(driver.revisionId, driver.collection);
+          await driver.infoCache.getCollectionModRules(revisionId, collection);
         util.batchDispatch(api.store, (modRules ?? []).reduce((prev, rule) => {
           if (util.testModReference(mod, rule.source)) {
             prev.push(actions.addModRule(gameId, modId, {
               type: rule.type,
               reference: rule.reference,
               extra: {
-                fromCollection: driver.collection.id,
+                fromCollection: collection.id,
               },
             }));
           }
