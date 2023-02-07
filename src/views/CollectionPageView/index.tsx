@@ -1084,7 +1084,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
       state.persistent.collections.revisions?.[collection.attributes.revisionId]?.info;
     if (revisionInfo?.collection !== undefined) {
       collectionInfo =
-        state.persistent.collections.collections?.[revisionInfo.collection.id].info;
+        state.persistent.collections.collections?.[revisionInfo.collection.id]?.info;
     }
     votedSuccess = revisionInfo?.metadata?.ratingValue ?? 'abstained';
   }
