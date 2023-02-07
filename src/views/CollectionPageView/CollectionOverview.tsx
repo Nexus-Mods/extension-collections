@@ -11,7 +11,7 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Media, Panel } from 'react-bootstrap';
-import { ActionDropdown, ComponentEx, FlexLayout, Image, MainContext, tooltip, types, util } from 'vortex-api';
+import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, tooltip, types, util } from 'vortex-api';
 
 const ENDORSE_DELAY_MS = 12 * 60 * 60 * 1000;
 
@@ -336,6 +336,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
       onSuppressVoteResponse, onVoteSuccess } = this.props;
 
     onVoteSuccess?.(collection.id, success);
+
+    if (revision.collection === undefined) {
+      log('error', 'failed to show vote response dialog, missing collection info');
+      return;
+    }
 
     const bugLink = `https://next.nexusmods.com/${revision.collection.game.domainName}/collections/${revision.collection.slug}?tab=Bugs`;
     if (success && showUpvoteResponse) {
