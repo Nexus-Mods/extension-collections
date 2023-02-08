@@ -374,6 +374,10 @@ function makeTransferrable(mods: { [modId: string]: types.IMod },
 function ruleEnabled(rule: ICollectionModRule,
                      mods: { [modId: string]: types.IMod },
                      collection: types.IMod) {
+  if (rule === undefined) {
+    return false;
+  }
+
   const ruleEx: ICollectionModRuleEx = {
     ...rule,
     sourceName: renderReference(rule.source, mods),
@@ -440,7 +444,8 @@ function extractModRules(collectionRules: IResolvedRule[],
 
       // for the purpose of finding out if the rule is enabled in the collection we have
       // to compare the references as they are locally. Yes, this is super awkward code...
-      if (!ruleEnabled(makeBiDirRule(sourceOrig, targetRule), mods, collection)) {
+      if ((targetRule === undefined)
+          || !ruleEnabled(makeBiDirRule(sourceOrig, targetRule), mods, collection)) {
         return undefined;
       }
 
