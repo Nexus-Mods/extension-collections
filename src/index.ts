@@ -1015,7 +1015,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
           message: 'Collection can\'t be installed as another one is being installed already',
         });
       }
-    } else {
+    } else if (driver.collection !== undefined) {
       const { collection, revisionId } = driver;
 
       const isDependency = (collection?.rules ?? []).find(rule => {

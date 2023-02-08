@@ -209,7 +209,9 @@ class InstallDriver {
 
   public get collectionId(): string {
     const state: types.IState = this.mApi.store.getState();
-    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const modInfo = (this.mCollection !== undefined)
+      ? state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo
+      : undefined;
     const nexusInfo = modInfo?.nexus;
 
     return nexusInfo?.ids?.collectionId || modInfo?.ids?.collectionId;
@@ -217,7 +219,9 @@ class InstallDriver {
 
   public get collectionSlug(): string {
     const state: types.IState = this.mApi.store.getState();
-    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const modInfo = (this.mCollection !== undefined)
+      ? state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo
+      : undefined;
     const nexusInfo = modInfo?.nexus;
 
     return nexusInfo?.ids?.collectionSlug || modInfo?.ids?.collectionSlug;
@@ -225,7 +229,9 @@ class InstallDriver {
 
   public get revisionNumber(): number {
     const state: types.IState = this.mApi.store.getState();
-    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const modInfo = (this.mCollection !== undefined)
+      ? state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo
+      : undefined;
     const nexusInfo = modInfo?.nexus;
 
     return nexusInfo?.ids?.revisionNumber || modInfo?.ids?.revisionNumber;
@@ -233,7 +239,9 @@ class InstallDriver {
 
   public get revisionId(): string {
     const state: types.IState = this.mApi.store.getState();
-    const modInfo = state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo;
+    const modInfo = (this.mCollection !== undefined)
+      ? state.persistent.downloads.files[this.mCollection.archiveId]?.modInfo
+      : undefined;
     const nexusInfo = modInfo?.nexus;
 
     return nexusInfo?.ids?.revisionId || modInfo?.ids?.revisionId;
