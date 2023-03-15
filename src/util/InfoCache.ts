@@ -24,10 +24,10 @@ class InfoCache {
     this.mApi = api;
   }
 
-  public async getCollectionModRules(revisionId: string, collection: types.IMod) {
+  public async getCollectionModRules(revisionId: string, collection: types.IMod, gameId: string) {
     const cacheId = revisionId ?? collection.id;
     if (this.mCacheColRules[cacheId] === undefined) {
-      this.mCacheColRules[cacheId] = this.cacheCollectionModRules(revisionId, collection);
+      this.mCacheColRules[cacheId] = this.cacheCollectionModRules(revisionId, collection, gameId);
     }
 
     return this.mCacheColRules[cacheId];
@@ -151,11 +151,12 @@ class InfoCache {
   }
 
   private async cacheCollectionModRules(revisionId: string,
-                                        collection: types.IMod)
+                                        collection: types.IMod,
+                                        gameId: string)
                                         : Promise<ICollectionModRule[]> {
     const store = this.mApi.store;
     const state = store.getState();
-    const gameId = selectors.activeGameId(state);
+
     const mods: { [modId: string]: types.IMod } =
       util.getSafe(state, ['persistent', 'mods', gameId], {});
     const colMod = collection ?? (Object.values(mods).find(iter =>
@@ -163,7 +164,7 @@ class InfoCache {
     if (colMod?.installationPath === undefined) {
       return [];
     }
-    const stagingPath = selectors.installPathForGame(state, selectors.activeGameId(state));
+    const stagingPath = selectors.installPathForGame(state, gameId);
     try {
       const collectionInfo = await readCollection(
         this.mApi, path.join(stagingPath, colMod.installationPath, 'collection.json'));
