@@ -101,7 +101,7 @@ class InstallDriver {
 
         if ((this.mCollection !== undefined)
             && recommendations
-            && this.mCollection.rules.find(isCollectionMod)) {
+            && (this.mCollection.rules ?? []).find(isCollectionMod)) {
           onCancel();
         }
       });
