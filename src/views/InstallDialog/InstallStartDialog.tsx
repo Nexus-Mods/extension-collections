@@ -190,7 +190,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
               <textarea
                 className='textarea-install-collection-instructions'
                 value={driver.collection?.attributes?.installInstructions
-                  ?? t(DEFAULT_INSTRUCTIONS)}
+                  || t(DEFAULT_INSTRUCTIONS)}
                 readOnly={true}
               />
             </Media.Right>

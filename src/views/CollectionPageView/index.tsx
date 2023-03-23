@@ -490,12 +490,16 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
               eventKey='instructions'
               title={t('Instructions')}
             >
-              <CollectionInstructions
-                t={t}
-                collection={collection}
-                mods={mods}
-                onToggleInstructions={this.toggleInstructions}
-              />
+              <Panel>
+                <Panel.Body>
+                  <CollectionInstructions
+                    t={t}
+                    collection={collection}
+                    mods={mods}
+                    onToggleInstructions={this.toggleInstructions}
+                  />
+                </Panel.Body>
+              </Panel>
             </Tab>
             <Tab
               key='mods'

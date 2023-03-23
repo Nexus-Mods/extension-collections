@@ -1542,6 +1542,10 @@ ul.collection-mods-page-attrib-tooltip {
   .collection-instructions-container {
     padding: 0 $half-gutter;
   }
+  
+  .panel-body {
+    overflow: auto;
+  }
 
   table {
     width: 100%;

@@ -33,7 +33,7 @@ function Instructions(props: IInstructionProps) {
           <p>
             {t('Provide collection instructions or requirements here. '
               + 'For example, steps required before or after the collection installs. '
-              + 'This will be shown before installation starts and can be reviewed in the Instructions tab. '
+              + 'This will be shown before the install starts and can be reviewed by the user in the Collection instructions tab. '
               + 'You can also add individual mod instructions in the Mods tab.')}
           </p>
         </ControlLabel>
@@ -42,9 +42,9 @@ function Instructions(props: IInstructionProps) {
         <FormControl
           id='collection-instructions-area'
           componentClass='textarea'
-          value={input ?? t(DEFAULT_INSTRUCTIONS)}
+          value={input}
           onChange={assignInstructions}
-          placeholder={t('Please provide some basic instructions')}
+          placeholder={t(DEFAULT_INSTRUCTIONS)}
           rows={8}
         />
       </FlexLayout.Flex>
