@@ -511,7 +511,6 @@ async function updateMeta(api: types.IExtensionApi) {
           // revision (i.e. the users own draft revision)
 
           api.store.dispatch(actions.setModAttributes(gameMode, modId, {
-            customFileName: info.collection.name,
             collectionSlug: info.collection.slug,
             revisionNumber: info.revisionNumber,
             author: info.collection.user?.name,
