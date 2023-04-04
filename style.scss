@@ -1556,6 +1556,14 @@ ul.collection-mods-page-attrib-tooltip {
       border-top: $border-width solid $border-color;
       border-bottom: $border-width solid $border-color;
 
+      .collection-mod-name {
+        width: 20%;
+      }
+
+      .collection-mod-actions {
+        width: 10%;
+      }
+
       .collection-mod-instructions {
         div {
           display: -webkit-box;
@@ -1570,10 +1578,6 @@ ul.collection-mods-page-attrib-tooltip {
 
       td {
         padding: 0.5em 1em;
-
-        &:first-child {
-          white-space: nowrap;
-        }
 
         &:last-child {
           text-align: right;
