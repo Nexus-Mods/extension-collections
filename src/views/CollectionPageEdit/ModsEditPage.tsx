@@ -5,6 +5,7 @@ import * as _ from 'lodash';
 import * as path from 'path';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
+import * as semver from 'semver';
 
 import InstallModeRenderer from './InstallModeRenderer';
 
@@ -109,6 +110,14 @@ function sortCategories(lhs: types.IMod, rhs: types.IMod,
   return (lhsCat === rhsCat)
     ? modNameSort(lhs, rhs, collator, sortDir)
     : collator.compare(lhsCat, rhsCat);
+}
+
+const coerceableRE = /^v?[0-9.]+$/;
+
+function safeCoerce(input: string): string {
+  return coerceableRE.test(input)
+    ? semver.coerce(input)?.raw ?? input
+    : input;
 }
 
 class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
@@ -832,7 +841,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
     return Object.values(collection.rules)
       .filter(rule => ['requires', 'recommends'].indexOf(rule.type) !== -1)
       .reduce((prev, rule) => {
-        const mod = util.findModByRef(rule.reference, mods);
+        const mod = util.findModByRef(_.omit(rule.reference, ['versionMatch']), mods);
         const id = mod?.id ?? rule.reference.id ?? rule.reference.idHint;
         if (id !== undefined) {
           prev[id] = { rule, mod };
@@ -1056,7 +1065,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
   private setPreferVersion(entry: IModEntry) {
     this.props.onRemoveRule(entry.rule);
     const newRule = _.cloneDeep(entry.rule);
-    newRule.reference.versionMatch = '>=' + entry.mod.attributes['version'] + '+prefer';
+    newRule.reference.versionMatch = '>=' + safeCoerce(entry.mod.attributes['version']) + '+prefer';
     this.props.onAddRule(newRule);
   }
 
