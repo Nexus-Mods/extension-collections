@@ -798,6 +798,7 @@ export async function cloneCollection(api: types.IExtensionApi,
         archiveId: referencedMod.archiveId,
         id: referencedMod.id,
         idHint: referencedMod.id,
+        versionMatch: rule.reference.versionMatch,
       },
     });
   };
