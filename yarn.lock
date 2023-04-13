@@ -372,8 +372,8 @@ browserslist@^4.14.5:
     picocolors "^1.0.0"
 
 bsdiff-node@TanninOne/bsdiff-node:
-  version "2.5.1"
-  resolved "https://codeload.github.com/TanninOne/bsdiff-node/tar.gz/caeb964674d1f3c6db423b8bb6904774826d4356"
+  version "2.5.2"
+  resolved "https://codeload.github.com/TanninOne/bsdiff-node/tar.gz/709189a3fc1d673a3b56d9a3c047e0883001b437"
   dependencies:
     node-addon-api "4.3.0"
 
