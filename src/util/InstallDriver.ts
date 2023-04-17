@@ -25,7 +25,7 @@ class InstallDriver {
   private mStep: Step = 'prepare';
   private mUpdateHandlers: UpdateCB[] = [];
   private mInstalledMods: types.IMod[] = [];
-  private mRequiredMods: types.IModRule[] = [];
+  private mDependentMods: types.IModRule[] = [];
   private mInstallingMod: string;
   private mInstallDone: boolean = false;
   private mCollectionInfo: nexusApi.ICollection;
@@ -34,6 +34,10 @@ class InstallDriver {
   private mTotalSize: number;
   private mOnStop: () => void;
   private mPrepare: Promise<void> = Promise.resolve();
+
+  private get requiredMods() {
+    return this.mDependentMods.filter(_ => _.type === 'requires');
+  }
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -53,16 +57,21 @@ class InstallDriver {
       const state: types.IState = api.store.getState();
       const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
       // verify the mod installed is actually one required by this collection
-      const required = this.mRequiredMods.find(iter =>
+      const dependent = this.mDependentMods.find(iter =>
         util.testModReference(mod, iter.reference));
-      if ((mod !== undefined) && (required !== undefined)) {
-        this.mInstalledMods.push(mod);
+      if ((mod !== undefined) && (dependent !== undefined)) {
+        if (dependent.type === 'requires') {
+          this.mInstalledMods.push(mod);
+        }
         if ((this.mCollection?.installationPath !== undefined)
-            && (required.reference.description !== undefined)) {
-          this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
-          applyPatches(api, this.mCollection.installationPath,
-                       gameId, required.reference.description, modId, required.extra?.patches);
-          api.store.dispatch(actions.setFileOverride(gameId, modId, required.extra?.fileOverrides));
+            && (dependent.reference.description !== undefined)) {
+          if (dependent.type === 'requires') {
+            this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
+          }
+          applyPatches(api, this.mCollection,
+                       gameId, dependent.reference.description, modId, dependent.extra?.patches);
+          api.store.dispatch(
+            actions.setFileOverride(gameId, modId, dependent.extra?.fileOverrides));
         }
       }
       this.triggerUpdate();
@@ -197,7 +206,7 @@ class InstallDriver {
   }
 
   public get numRequired(): number {
-    return this.mRequiredMods.length;
+    return this.requiredMods.length;
   }
 
   public get installingMod(): string {
@@ -541,17 +550,17 @@ class InstallDriver {
     this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
 
     const required = (collection?.rules ?? [])
-      .filter(rule => rule.type === 'requires');
-    this.mRequiredMods = required
+      .filter(rule => ['requires', 'recommends'].includes(rule.type));
+    this.mDependentMods = required
       .filter(rule => util.findModByRef(rule.reference, mods) === undefined);
 
-    if (this.mRequiredMods.length === 0) {
+    if (this.requiredMods.length === 0) {
       this.mInstallDone = false;
     }
 
     log('info', 'starting install of collection', {
       totalMods: required.length,
-      missing: this.mRequiredMods.length,
+      missing: this.requiredMods.length,
     });
   }
 

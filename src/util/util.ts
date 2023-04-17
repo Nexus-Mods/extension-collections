@@ -106,7 +106,7 @@ export function isRelevant(mod: IModEx) {
   if (mod.collectionRule['ignored']) {
     return false;
   }
-  if (mod.collectionRule.type === 'recommends') {
+  if (mod.collectionRule.type !== 'requires') {
     return false;
   }
 

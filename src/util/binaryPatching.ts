@@ -118,7 +118,7 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
 }
 
 export async function applyPatches(api: types.IExtensionApi,
-                                   collectionPath: string, gameId: string,
+                                   collection: types.IMod, gameId: string,
                                    modName: string, modId: string,
                                    patches: { [filePath: string]: string }) {
 
@@ -126,7 +126,7 @@ export async function applyPatches(api: types.IExtensionApi,
   const installPath = selectors.installPathForGame(state, gameId);
   const mod = state.persistent.mods[gameId][modId];
   const modPath = path.join(installPath, mod.installationPath);
-  const patchesPath = path.join(installPath, collectionPath, PATCHES_PATH, modName);
+  const patchesPath = path.join(installPath, collection.installationPath, PATCHES_PATH, modName);
 
   for (const filePath of Object.keys(patches ?? {})) {
     try {
@@ -146,6 +146,7 @@ export async function applyPatches(api: types.IExtensionApi,
         log('warn', 'patch not applied because reference CRC differs', { filePath, srcCRC });
       }
     } catch (err) {
+      err['Collection'] = util.renderModName(collection);
       api.showErrorNotification('failed to patch', err, {
         message: filePath,
       });
