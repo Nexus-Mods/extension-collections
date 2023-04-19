@@ -991,8 +991,8 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   api.events.on('did-dismiss-overlay', (overlayId: string, itemId: string) => {
     const OVERLAY_ID = 'collection-instructions-overlay';
     const state = api.getState();
-    const gameMode = selectors.activeGameId(state);
-    const mods = state.persistent.mods[gameMode];
+    const { gameId } = driver.profile ?? {};
+    const mods = state.persistent.mods[gameId] ?? {};
     // the itemId will be a reference tag if this was from a collection or an archiveId otherwise
     if ((driver.lastCollection !== undefined)
         && (mods[driver.lastCollection.id] !== undefined)
