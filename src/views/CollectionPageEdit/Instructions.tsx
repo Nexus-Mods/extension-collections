@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ControlLabel, FormControl } from 'react-bootstrap';
 import { FlexLayout, tooltip, types } from 'vortex-api';
-import { DEFAULT_INSTRUCTIONS } from '../../constants';
+import { INSTRUCTIONS_PLACEHOLDER } from '../../constants';
 
 export interface IInstructionProps {
   t: types.TFunction;
@@ -13,6 +13,8 @@ function Instructions(props: IInstructionProps) {
   const { t, collection, onSetCollectionAttribute } = props;
 
   const [input, setInput] = React.useState(collection.attributes?.['collection']?.['installInstructions']);
+  const [placeholder, setPlaceholder] = React.useState(t(INSTRUCTIONS_PLACEHOLDER) as string);
+  const [hasChanged, setHasChanged] = React.useState(false);
 
   React.useEffect(() => {
     setInput(collection.attributes?.['collection']?.['installInstructions']);
@@ -20,10 +22,12 @@ function Instructions(props: IInstructionProps) {
 
   const assignInstructions = React.useCallback((evt: React.FormEvent<any>) => {
     setInput(evt.currentTarget.value);
+    setHasChanged(true);
   }, [setInput]);
 
   const saveInstructions = React.useCallback(() => {
     onSetCollectionAttribute(['installInstructions'], input);
+    setHasChanged(false);
   }, [input]);
 
   return (
@@ -31,10 +35,7 @@ function Instructions(props: IInstructionProps) {
       <FlexLayout.Fixed>
         <ControlLabel target='collection-instructions-area'>
           <p>
-            {t('Provide collection instructions or requirements here. '
-              + 'For example, steps required before or after the collection installs. '
-              + 'This will be shown before the install starts and can be reviewed by the user in the Collection instructions tab. '
-              + 'You can also add individual mod instructions in the Mods tab.')}
+            {t('Instructions will be shown to the user before installation starts and can be reviewed in the Instructions tab. You can also add individual mod instructions in the Mods tab.')}
           </p>
         </ControlLabel>
       </FlexLayout.Fixed>
@@ -44,13 +45,15 @@ function Instructions(props: IInstructionProps) {
           componentClass='textarea'
           value={input}
           onChange={assignInstructions}
-          placeholder={t(DEFAULT_INSTRUCTIONS)}
+          placeholder={placeholder}
+          onFocus={(e) => setPlaceholder('')} 
+          onBlur={(e) => setPlaceholder(t(INSTRUCTIONS_PLACEHOLDER))} 
           rows={8}
         />
       </FlexLayout.Flex>
       <FlexLayout.Fixed className='collection-instructions-buttons'>
         <tooltip.Button
-          disabled={input === undefined}
+          disabled={!hasChanged}
           tooltip={t('Save Instructions')}
           onClick={saveInstructions}
         >

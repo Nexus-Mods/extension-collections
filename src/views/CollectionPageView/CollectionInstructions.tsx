@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import { types, util } from 'vortex-api';
+import { DEFAULT_INSTRUCTIONS } from '../../constants';
 
 export interface IInstructionsProps {
   t: types.TFunction;
@@ -47,10 +48,19 @@ function Instructions(props: IInstructionsProps) {
     }, { required: [] as IInstructionsEntry[], optional: [] as IInstructionsEntry[] });
   }, [mods, collection]);
 
+
+
   return (
     <>
-      <div className='collection-instructions-text'>
-        {collection.attributes?.installInstructions}
+      <div className='collection-instructions-text'>      
+
+      {(collection.attributes?.installInstructions === undefined || 
+        collection.attributes?.installInstructions === '') && 
+        (required.length === 0) &&
+        (optional.length === 0) ? 
+        t(DEFAULT_INSTRUCTIONS) :
+         collection.attributes?.installInstructions}
+        
       </div>
       {(required.length > 0) ? (
         <>

@@ -185,14 +185,18 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
                 imageTime={42}
               />
             </Media.Left>
-            <Media.Right style={{ width: '100%' }}>
-              {ownCollection ? <YouCuratedTag t={t} /> : null}
-              <textarea
-                className='textarea-install-collection-instructions'
-                value={driver.collection?.attributes?.installInstructions
-                  || t(DEFAULT_INSTRUCTIONS)}
-                readOnly={true}
-              />
+            <Media.Right style={{ width: '100%', display: 'flex' }}>
+              <Media.Body>
+                <Media.Heading>Collection instructions</Media.Heading>
+                <p className='collections-instructions-canbereviewed'>Instructions can be reviewed during installation.</p>
+                {ownCollection ? <YouCuratedTag t={t} /> : null}
+                <textarea
+                  className='textarea-install-collection-instructions'
+                  value={driver.collection?.attributes?.installInstructions
+                    || t(DEFAULT_INSTRUCTIONS)}
+                  readOnly={true}
+                />
+              </Media.Body>
             </Media.Right>
           </Media>
 
