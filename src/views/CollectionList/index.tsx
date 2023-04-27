@@ -399,9 +399,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
         return this.removeWorkshop(modId)
           .catch(err => {
-            api.showErrorNotification('Failed to remove collection', err, {
-              allowReport: !['EPERM'].includes(err.code),
-            });
+            const allowReport = !['EPERM'].includes(err.code)
+                              && !(err instanceof util.ProcessCanceled)
+                              && !(err instanceof util.UserCanceled);
+            api.showErrorNotification('Failed to remove collection', err, { allowReport });
           });
       } else {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
