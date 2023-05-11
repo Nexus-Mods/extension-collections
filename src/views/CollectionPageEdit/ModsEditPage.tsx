@@ -12,7 +12,7 @@ import InstallModeRenderer from './InstallModeRenderer';
 import {
   ComponentEx, EmptyPlaceholder, fs, Icon, ITableRowAction, OptionsFilter, selectors,
   Table, TableTextFilter, tooltip, types, Usage, util } from 'vortex-api';
-import { ADULT_CONTENT_URL } from '../../constants';
+import { ADULT_CONTENT_URL, INSTRUCTIONS_PLACEHOLDER } from '../../constants';
 
 export interface IModsPageProps {
   t: I18next.TFunction;
@@ -1228,7 +1228,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         + 'Instructions added to **optional mods** will display before the mod installs, the user '
         + 'will be given the option to either install or skip the mod.  \n'
         + 'All added instructions will be available in the "Instructions" tab on the Collections page.',
-      input: [ { label: 'Instructions', id: 'instructions', type: 'multiline' as any, value } ],
+      input: [ { label: 'Instructions', id: 'instructions', type: 'multiline' as any, value, placeholder: INSTRUCTIONS_PLACEHOLDER } ],
     }, [
       { label: 'Cancel' },
       { label: 'Save' },

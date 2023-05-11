@@ -51,4 +51,4 @@ export const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
 export const CACHE_LRU_COUNT = 50;
 
 export const DEFAULT_INSTRUCTIONS = 'No additional instructions.';
-export const INSTRUCTIONS_PLACEHOLDER = 'Enter instructions for your collection here (plain text only)';
+export const INSTRUCTIONS_PLACEHOLDER = 'Enter instructions here (Markdown supported - Links, Strong, Emphasis)';
