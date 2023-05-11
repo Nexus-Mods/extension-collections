@@ -13,6 +13,7 @@ import Select from 'react-select';
 import * as Redux from 'redux';
 import { generate as shortid} from 'shortid';
 import { actions, ComponentEx, FlexLayout, log, Modal, More, selectors, types, util } from 'vortex-api';
+import * as ReactMarkdown from 'react-markdown';
 
 interface IInstallDialogProps {
   onHide: () => void;
@@ -160,7 +161,12 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 
     if (nextProfileId !== profile.id) {
       return null;
-    }
+    }    
+
+    let installInstructions = driver.collection?.attributes?.installInstructions|| t(DEFAULT_INSTRUCTIONS)
+
+    // used to convert a \n into something that react-markdown can use to detect paragraphs properly
+    installInstructions = installInstructions.replace(/\r?\n/g, "  \r\n");
 
     const game = util.getGame(profile.gameId);
 
@@ -190,12 +196,9 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
                 <Media.Heading>Collection instructions</Media.Heading>
                 <p className='collections-instructions-canbereviewed'>Instructions can be reviewed during installation.</p>
                 {ownCollection ? <YouCuratedTag t={t} /> : null}
-                <textarea
-                  className='textarea-install-collection-instructions'
-                  value={driver.collection?.attributes?.installInstructions
-                    || t(DEFAULT_INSTRUCTIONS)}
-                  readOnly={true}
-                />
+                <ReactMarkdown className='textarea-install-collection-instructions' allowedElements={['p', 'br', 'a', 'em', 'strong']} unwrapDisallowed={true}>
+                  {installInstructions}
+                </ReactMarkdown>
               </Media.Body>
             </Media.Right>
           </Media>
