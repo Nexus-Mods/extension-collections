@@ -25,6 +25,7 @@ export const INSTALLING_NOTIFICATION_ID = 'installing-collection-';
 export const MIN_COLLECTION_NAME_LENGTH = 3;
 export const MAX_COLLECTION_NAME_LENGTH = 36;
 
+
 export const INI_TWEAKS_PATH = 'Ini Tweaks';
 
 // Although the required property has been removed,
@@ -51,4 +52,4 @@ export const CACHE_EXPIRE_MS = 1 * 60 * 60 * 1000;
 export const CACHE_LRU_COUNT = 50;
 
 export const DEFAULT_INSTRUCTIONS = 'No additional instructions.';
-export const INSTRUCTIONS_PLACEHOLDER = 'Enter instructions here (Markdown supported - Links, Strong, Emphasis)';
+export const INSTRUCTIONS_PLACEHOLDER = 'Enter instructions here (Markdown supported - Links, Bold, Italics)';

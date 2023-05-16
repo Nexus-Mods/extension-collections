@@ -1582,14 +1582,12 @@ ul.collection-mods-page-attrib-tooltip {
       }
 
       .collection-mod-instructions {
-        div {
           display: -webkit-box;
           overflow: hidden;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           margin-left: auto;
           margin-right: auto;
-        }
       }
 
       td {
