@@ -225,7 +225,7 @@ async function installCollection(api: types.IExtensionApi, revision: IRevision) 
         api.events.emit(
           'start-download', [`nxm://${gameId}/collections/${revision.collection.slug}/revisions/${revision.revisionNumber}`],
           {}, undefined, (err) => {
-            if (err !== null) {
+            if ((err !== null) && !(err instanceof util.UserCanceled)) {
               api.showErrorNotification('Failed to download collection', err);
             }
           }, undefined, { allowInstall: 'force' });

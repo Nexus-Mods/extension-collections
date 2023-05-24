@@ -272,9 +272,15 @@ class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
           const prom = this.invoke(onUpdate, instanceIds);
           if (prom !== undefined) {
             this.nextState.updating = true;
-            prom.finally(() => {
-              this.nextState.updating = false;
-            });
+            prom
+              .catch(err => {
+                if (!(err instanceof util.UserCanceled)) {
+                  this.context.api.showErrorNotification('Failed to update collection', err);
+                }
+              })
+              .finally(() => {
+                this.nextState.updating = false;
+              });
           }
         },
       } as any);
