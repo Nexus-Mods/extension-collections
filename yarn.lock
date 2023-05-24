@@ -1582,8 +1582,8 @@ void-elements@3.1.0:
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
 
 vortex-api@Nexus-Mods/vortex-api:
-  version "1.8.5"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/6722710717fbe06c6349304ac91b1bd9cf668632"
+  version "1.8.5-r5"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/7dd27a10b80e6ab74910195dbaf2dafa8d39c18e"
 
 warning@^3.0.0:
   version "3.0.0"
