@@ -331,7 +331,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
         [collection.game.domainName,
           'collections', collection.slug,
           'revisions', revision.revisionNumber.toString()], {
-        campaign: util.Campaign.ViewCollection,
+        campaign: util.Campaign.ViewCollectionAsCurator,
         section: util.Section.Collections,
       }));
     }
