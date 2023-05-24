@@ -333,6 +333,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
           'revisions', revision.revisionNumber.toString()], {
         campaign: util.Campaign.ViewCollectionAsCurator,
         section: util.Section.Collections,
+        source: util.Source.CollectionsAd
       }));
     }
   }

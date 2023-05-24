@@ -1583,7 +1583,7 @@ void-elements@3.1.0:
 
 vortex-api@Nexus-Mods/vortex-api:
   version "1.8.5"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/805d368c17db76cf3381a5f22ccec7fa26f22bc0"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/6722710717fbe06c6349304ac91b1bd9cf668632"
 
 warning@^3.0.0:
   version "3.0.0"
