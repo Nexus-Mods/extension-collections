@@ -659,6 +659,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       // This shouldn't be possible
       const err = new util.ProcessCanceled('No instructions found', modId);
       err['attachLogOnReport'] = true;
+      err['Collection'] = this.props.collection?.attributes?.collectionSlug;
+      err['Revision'] = this.props.collection?.attributes?.revisionNumber;
       onShowError('Failed to display instructions', err, true);
       return;
     }
