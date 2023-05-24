@@ -193,7 +193,9 @@ export function onCollectionUpdate(api: types.IExtensionApi,
           cb?.(null);
         })
         .catch(err => {
-          api.showErrorNotification('Failed to update collection', err);
+          if (!(err instanceof util.UserCanceled)) {
+            api.showErrorNotification('Failed to update collection', err);
+          }
           cb?.(err);
         }));
   };
