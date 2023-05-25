@@ -454,6 +454,10 @@ function collectionListEqual(lArgs: IModTable[], rArgs: IModTable[]): boolean {
   const lhs = lArgs[0];
   const rhs = rArgs[0];
 
+  if (lhs === rhs) {
+    return true;
+  }
+
   const keys = Object.keys(lhs);
 
   if (!_.isEqual(keys, Object.keys(rhs))) {
