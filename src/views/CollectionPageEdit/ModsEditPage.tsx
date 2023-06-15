@@ -799,8 +799,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
           <p>{t('Here you can configure which mods to install and how.')}</p>
           <p>{t('Version: Choose whether the collection will install exactly the version you '
             + 'have yourself or whatever is current on Nexus Mods.')}</p>
-          <p>{t('Required: Select whether the user has to install the mod or whether it\'s just '
-            + 'a recommendation.')}</p>
+          <p>{t('Required: Select whether the user has to install the mod or whether it\'s an optional recommendation, recommended mods are presented last and the user is given the choice to install them or not.')}</p>
           <p>{t('Install: "Fresh Install" will install the mod as Vortex would usually do, '
             + 'installer dialog and everything. "Replicate" will extract only the files you have '
             + 'extracted yourself, in exactly the same location. This basically ensures the user '
