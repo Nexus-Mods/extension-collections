@@ -66,6 +66,7 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
             collection={collection}
             details='some'
             imageTime={42}
+            forceRevisionDisplay={revisionInfo.revisionNumber}
           />
         </Media.Left>
         <Media.Right>

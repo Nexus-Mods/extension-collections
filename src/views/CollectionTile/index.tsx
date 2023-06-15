@@ -22,6 +22,7 @@ export interface IBaseProps {
   mods?: { [modId: string]: types.IMod };
   incomplete?: boolean;
   details: boolean | 'some';
+  forceRevisionDisplay?: number;
   imageTime: number;
   onResume?: (modId: string) => void;
   onPause?: (modId: string) => void;
@@ -121,12 +122,14 @@ class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
   public constructor(props: IProps) {
     super(props);
   
-    this.initState({ updating: false });
+    this.initState({ 
+      updating: false
+    });
   }
 
   public render(): JSX.Element {
     const { t, collection, details, infoCache,
-            incomplete, mods, onEdit, profile } = this.props;
+            incomplete, mods, onEdit, profile, forceRevisionDisplay } = this.props;
 
     if (collection === undefined) {
       return null;
@@ -190,9 +193,10 @@ class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
             <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
               <div className='collection-revision-and-rating'>
                 <div className='revision-number'>
-                  {t('Revision {{number}}', { replace: {
+                  {t('Revision {{number}}{{forceRevision}}', { replace: {
                     number: collection.attributes?.version ?? '0',
-                  } })}
+                    forceRevision: forceRevisionDisplay === undefined ? '' : ' ➔ ' + forceRevisionDisplay,
+                  }})}
                 </div>
                 {(infoCache !== undefined) && validRemote
                   ? <SuccessRating
