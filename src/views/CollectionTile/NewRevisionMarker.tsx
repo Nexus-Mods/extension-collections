@@ -18,7 +18,7 @@ function NewRevisionMarker(props: INewRevisionMarkerProps) {
 
   return (
     <div className='collections-new-revision'>
-      <Icon name={updating ? 'spinner' : 'details'} />
+      <Icon name={updating ? 'spinner_new' : 'details'} />
       {t('Update')}
     </div>
   );
