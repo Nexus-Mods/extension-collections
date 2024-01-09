@@ -34,7 +34,6 @@ class InstallDriver {
   private mTotalSize: number;
   private mOnStop: () => void;
   private mPrepare: Promise<void> = Promise.resolve();
-
   private get requiredMods() {
     return this.mDependentMods.filter(_ => _.type === 'requires');
   }
@@ -519,11 +518,17 @@ class InstallDriver {
     const revGameVersions = this.mRevisionInfo?.gameVersions ?? [];
     if ((revGameVersions.length ?? 0 !== 0)
         && (revGameVersions.find(gvMatch) === undefined)) {
-      const choice = await this.mApi.showDialog('question', 'Different version', {
-        text: 'The collection was created with a different version of the game '
-            + 'than you have installed ("{{actual}}" vs "{{intended}}").\n'
-            + 'Whether this is a problem depends on the game but you may want to '
-            + 'check if the collection is compatible before continuing.',
+      const choice = await this.mApi.showDialog('question', 'Game version mismatch', {
+        bbcode: 'The version of the game you have installed is different to the one the curator used when creating this collection.'
+            + '[br][/br][br][/br]'
+            + 'Your game version: [color=red]{{actual}}[/color][br][/br]'
+            + 'Recommended game version: [color=green]{{intended}}[/color]'            
+            + '[br][/br][br][/br]'
+            + 'If you choose to continue, some or all of the mods included in the collection may not work properly for you. This will '
+            + 'require manual troubleshooting to correct. For users who are not familiar with modding, we do not recommend continuing with installation.'
+            + '[br][/br][br][/br]'
+            + 'You can also check the description, comments and bug reports on the Collection page to see if others have been successful'
+            + 'while playing with the game version you have installed or to request advice from the curator.',
         parameters: {
           actual: gameVersion,
           intended: revGameVersions.map(gv => gv.reference).join(' or '),
@@ -612,7 +617,10 @@ class InstallDriver {
   }
 
   private finishInstalling = () => {
-    this.mStep = 'review';
+    this.mStep = 'review';   
+        
+    const mods = this.getModsEx(this.mProfile, this.mGameId, this.mCollection);
+
   }
 
   private close = () => {

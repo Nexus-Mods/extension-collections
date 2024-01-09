@@ -1,11 +1,17 @@
 import { RatingOptions } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
-import { FlexLayout, Icon, RadialProgress, tooltip, MainContext } from 'vortex-api';
+import {
+  FlexLayout,
+  Icon,
+  RadialProgress,
+  tooltip,
+  MainContext,
+} from 'vortex-api';
 
 export interface IHealthIndicatorProps {
   t: I18next.TFunction;
-  value: { average: number, total: number };
+  value: { average: number; total: number };
   ownSuccess: RatingOptions;
   revisionNumber: number;
   onVoteSuccess: (success: boolean) => void;
@@ -13,18 +19,34 @@ export interface IHealthIndicatorProps {
 }
 
 function HealthIndicator(props: IHealthIndicatorProps) {
+
   const context = React.useContext(MainContext);
-  const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed } = props;
+
+  const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed } =
+    props;
+
   const voteSuccess = React.useCallback((evt: React.MouseEvent<any>) => {
     const { success } = evt.currentTarget.dataset;
-    const isUpvote = success === 'true'
+    const isUpvote = success === 'true';
+
+    // are we trying to reclick the already clicked button?
+    if(ownSuccess) {
+      if(ownSuccess === 'positive' && isUpvote) {
+        return;
+      }
+      if(ownSuccess === 'negative' && !isUpvote) {
+        return;
+      }
+    }
+
     onVoteSuccess(isUpvote);
+
     context.api.events.emit(
       'analytics-track-click-event',
       'Collections',
-      isUpvote ? 'Upvote Collection' : 'Downvote Collection'
+      isUpvote ? 'Upvote Collection' : 'Downvote Collection',
     );
-  }, []);
+  }, [ownSuccess]);
 
   if (value === undefined) {
     return null;
@@ -59,9 +81,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
               innerGap={10}
               restOverlap={false}
             />
-            <div className='centered-overlay'>
-              {value.average}%
-            </div>
+            <div className='centered-overlay'>{value.average}%</div>
           </div>
           <div className='collection-revision-rating-numvotes'>
             {t('{{numVotes}} votes', { replace: { numVotes: value.total } })}
@@ -69,6 +89,12 @@ function HealthIndicator(props: IHealthIndicatorProps) {
         </FlexLayout.Fixed>
         <FlexLayout.Flex>
           <FlexLayout type='column'>
+            {(!voteAllowed) ? (
+            <FlexLayout.Fixed className='collection-health-rating-text'>
+              {t('Collection Success Rating')}
+            </FlexLayout.Fixed>
+            ) : (
+            <>
             <FlexLayout.Fixed className='collection-health-rating-text'>
               {t('Did this collection work successfully?')}
             </FlexLayout.Fixed>
@@ -76,10 +102,17 @@ function HealthIndicator(props: IHealthIndicatorProps) {
               <FlexLayout type='row' className='collection-voting-pill'>
                 <FlexLayout.Fixed>
                   <tooltip.Button
-                    className={'collection-ghost-button ' + (ownSuccess === 'positive' ? 'voted' : '')}
-                    tooltip={voteAllowed
-                      ? t('Collection worked (mostly)')
-                      : t('You must wait for 12 hours between downloading a collection revision and rating it')}
+                    className={
+                      'collection-ghost-button ' +
+                      (ownSuccess === 'positive' ? 'voted' : '')
+                    }
+                    tooltip={
+                      voteAllowed
+                        ? t('Collection worked (mostly)')
+                        : t(
+                            'You must wait for 12 hours between downloading a collection revision and rating it',
+                          )
+                    }
                     data-success={true}
                     onClick={voteSuccess}
                     disabled={!voteAllowed}
@@ -89,10 +122,15 @@ function HealthIndicator(props: IHealthIndicatorProps) {
                 </FlexLayout.Fixed>
                 <FlexLayout.Fixed>
                   <tooltip.Button
-                    className={'collection-ghost-button ' + (ownSuccess === 'negative' ? 'voted' : '')}
-                    tooltip={voteAllowed
-                      ? t('Collection didn\'t work (in a significant way)')
-                      : t('You must wait for 12 hours between downloading a collection revision and rating it')}
+                    className={
+                      'collection-ghost-button ' +
+                      (ownSuccess === 'negative' ? 'voted' : '')
+                    }
+                    tooltip={
+                      voteAllowed
+                        ? t("Collection didn't work (in a significant way)")
+                        : t('You must wait for 12 hours between downloading a collection revision and rating it')
+                    }
                     data-success={false}
                     onClick={voteSuccess}
                     disabled={!voteAllowed}
@@ -102,6 +140,7 @@ function HealthIndicator(props: IHealthIndicatorProps) {
                 </FlexLayout.Fixed>
               </FlexLayout>
             </FlexLayout.Fixed>
+            </>)}
           </FlexLayout>
         </FlexLayout.Flex>
       </FlexLayout>

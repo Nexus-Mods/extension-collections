@@ -4,6 +4,7 @@ import CollectionThumbnail from '../CollectionTile';
 import HealthIndicator from './HealthIndicator';
 
 import {
+  EndorsedStatus,
   ICollection,
   IRevision, RatingOptions,
 } from '@nexusmods/nexus-api';
@@ -11,9 +12,11 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Media, Panel } from 'react-bootstrap';
-import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, tooltip, types, util } from 'vortex-api';
+import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, selectors, tooltip, types, util } from 'vortex-api';
+import { updateCollectionInfo } from '../../actions/persistent';
 
-const ENDORSE_DELAY_MS = 12 * 60 * 60 * 1000;
+//const ENDORSE_DELAY_MS = 43200000; // 12 hours
+const ENDORSE_DELAY_MS = 60000; // 1 minute
 
 interface IEndorseButtonProps {
   t: types.TFunction;
@@ -24,26 +27,51 @@ interface IEndorseButtonProps {
 }
 
 function EndorseButton(props: IEndorseButtonProps) {
+
   const { t, collection, gameId, mod, voteAllowed } = props;
 
   const context = React.useContext(MainContext);
 
-  const endorse = React.useCallback(() => {
-    context.api.events.emit('endorse-mod', gameId, mod.id, 'endorse');
-    context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
-  }, []);
+  const endorse = React.useCallback(async () => {
+
+    context.api.events.emit('endorse-mod', gameId, mod.id, endorsedStatus);
+    context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);       
+
+    setTimeout(async () => {
+      const result: ICollection = (await context.api.emitAndAwait('get-nexus-collection', collection.slug))[0];
+      console.log(`get-nexus-collection ${result.endorsements}`, result);          
+      context.api.store.dispatch(updateCollectionInfo(collection.id.toString(), result, Date.now()));
+    }, 200);
+
+    //const newEndorsementCount = (endorsedStatus === 'Endorsed') ? collection.endorsements - 1 : collection.endorsements + 1;
+
+
+    
+  }, [mod, collection]);
+
+  const endorsedStatus:EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
+  const endorsed:boolean = (mod.attributes?.endorsed === 'Endorsed');
+ 
+  const classes = `collection-ghost-button ${endorsed ? 'endorse-yes' : 'endorse-maybe'}`;
+
+  const { icon, toolTip } = {
+    undecided: { icon: 'endorse-maybe', toolTip: t('Undecided') },
+    abstained: { icon: 'endorse-maybe', toolTip: t('Abstained') },
+    endorsed: { icon: 'endorse-yes', toolTip: t('Endorsed') },
+    disabled: { icon: 'endorse-disabled', toolTip: t('Endorsement disabled by author') },
+    pending: { icon: 'spinner_new', toolTip: t('Pending')}
+  }[endorsedStatus.toLowerCase()] || { icon: 'like-maybe', toolTip: t('Undecided') };
 
   return (
     <tooltip.IconButton
-      icon='endorse-yes'
-      tooltip={voteAllowed
-        ? t('Endorse collection')
-        : t('You must wait for 12 hours between downloading a collection and endorsing it')}
-      className='collection-ghost-button'
+      icon={icon}
+      tooltip={toolTip}
+      className={classes}
       onClick={endorse}
-      disabled={!voteAllowed || (collection?.endorsements === undefined)}
+      disabled={!voteAllowed || (collection?.endorsements === undefined)} 
+      spin={endorsedStatus.toLowerCase() === 'pending'}     
     >
-      {collection?.endorsements ?? '?'}
+       { collection?.endorsements ?? '?'  }
     </tooltip.IconButton>
   );
 }
@@ -156,8 +184,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const classes = ['collection-overview'];
 
-    const timeSinceInstall =
-      Date.now() - (new Date(collection.attributes?.installTime ?? 0)).getTime();
+    const timeSinceInstall = Date.now() - (new Date(collection.attributes?.installCompleted ?? 0)).getTime();
 
     const voteAllowed = (timeSinceInstall >= ENDORSE_DELAY_MS);
     
@@ -343,7 +370,13 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     }
 
     const bugLink = `https://next.nexusmods.com/${revision.collection.game.domainName}/collections/${revision.collection.slug}?tab=Bugs`;
-    if (success && showUpvoteResponse) {
+
+    const state = this.context.api.getState();
+    const gameId = selectors.activeGameId(state);
+    const mods = state.persistent.mods[gameId];
+    const endorsedStatus:EndorsedStatus = mods[collection.id].attributes?.endorsed ?? 'Undecided';
+
+    if (success && showUpvoteResponse && endorsedStatus !== 'Endorsed') {
       this.context.api.showDialog('question', 'Collection was successful', {
         text: 'Congratulations! Please consider endorsing this collection if you are enjoying it. '
           + 'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
@@ -354,8 +387,8 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
         { label: 'Close' },
         {
           label: 'Endorse', action: () => {
-            this.context.api.events.emit('endorse-mod', profile.gameId, collection.id, 'endorse');
-            this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
+            this.context.api.events.emit('endorse-mod', profile.gameId, collection.id, endorsedStatus);
+            this.context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);
           }
         },
       ])
