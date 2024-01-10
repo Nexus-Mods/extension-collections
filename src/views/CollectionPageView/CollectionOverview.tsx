@@ -34,6 +34,8 @@ function EndorseButton(props: IEndorseButtonProps) {
 
   const endorse = React.useCallback(async () => {
 
+    const endorsedStatus: EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
+
     context.api.events.emit('endorse-mod', gameId, mod.id, endorsedStatus);
     context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);
 
