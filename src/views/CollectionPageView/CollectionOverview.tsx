@@ -4,6 +4,7 @@ import CollectionThumbnail from '../CollectionTile';
 import HealthIndicator from './HealthIndicator';
 
 import {
+  EndorsedStatus,
   ICollection,
   IRevision, RatingOptions,
 } from '@nexusmods/nexus-api';
@@ -11,9 +12,11 @@ import i18next from 'i18next';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Media, Panel } from 'react-bootstrap';
-import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, tooltip, types, util } from 'vortex-api';
+import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, selectors, tooltip, types, util } from 'vortex-api';
+import { updateCollectionInfo } from '../../actions/persistent';
 
-const ENDORSE_DELAY_MS = 12 * 60 * 60 * 1000;
+const ENDORSE_DELAY_MS = 43200000; // 12 hours
+//const ENDORSE_DELAY_MS = 60000; // 1 minute
 
 interface IEndorseButtonProps {
   t: types.TFunction;
@@ -24,24 +27,47 @@ interface IEndorseButtonProps {
 }
 
 function EndorseButton(props: IEndorseButtonProps) {
+
   const { t, collection, gameId, mod, voteAllowed } = props;
 
   const context = React.useContext(MainContext);
 
-  const endorse = React.useCallback(() => {
-    context.api.events.emit('endorse-mod', gameId, mod.id, 'endorse');
-    context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
-  }, []);
+  const endorse = React.useCallback(async () => {
+
+    const endorsedStatus: EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
+
+    context.api.events.emit('endorse-mod', gameId, mod.id, endorsedStatus);
+    context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);
+
+    setTimeout(async () => {
+      refreshCollection(context.api, collection);
+    }, 500);
+
+    //const newEndorsementCount = (endorsedStatus === 'Endorsed') ? collection.endorsements - 1 : collection.endorsements + 1;
+
+  }, [mod, collection]);
+
+  const endorsedStatus: EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
+  const endorsed: boolean = (mod.attributes?.endorsed === 'Endorsed');
+
+  const classes = `collection-ghost-button ${endorsed ? 'endorse-yes' : 'endorse-maybe'}`;
+
+  const { icon, toolTip } = {
+    undecided: { icon: 'endorse-maybe', toolTip: t('Undecided') },
+    abstained: { icon: 'endorse-maybe', toolTip: t('Abstained') },
+    endorsed: { icon: 'endorse-yes', toolTip: t('Endorsed') },
+    disabled: { icon: 'endorse-disabled', toolTip: t('Endorsement disabled by author') },
+    pending: { icon: 'spinner_new', toolTip: t('Pending') }
+  }[endorsedStatus.toLowerCase()] || { icon: 'like-maybe', toolTip: t('Undecided') };
 
   return (
     <tooltip.IconButton
-      icon='endorse-yes'
-      tooltip={voteAllowed
-        ? t('Endorse collection')
-        : t('You must wait for 12 hours between downloading a collection and endorsing it')}
-      className='collection-ghost-button'
+      icon={icon}
+      tooltip={toolTip}
+      className={classes}
       onClick={endorse}
       disabled={!voteAllowed || (collection?.endorsements === undefined)}
+      spin={endorsedStatus.toLowerCase() === 'pending'}
     >
       {collection?.endorsements ?? '?'}
     </tooltip.IconButton>
@@ -77,6 +103,20 @@ function CommentButton(props: ICommentButtonProps) {
   );
 }
 
+
+async function refreshCollection(api: types.IExtensionApi, collection: ICollection) {
+
+  if (collection === undefined) return;
+
+  log('info', `refreshCollection ${collection.slug}`, collection);
+
+  // get collection info from nexus api
+  const result: ICollection = (await api.emitAndAwait('get-nexus-collection', collection.slug,))[0];
+
+  // update local state with new collection info
+  api.store.dispatch(updateCollectionInfo(collection.id.toString(), result, Date.now()),);
+}
+
 interface ICollectionOverviewProps {
   t: i18next.TFunction;
   language: string;
@@ -98,6 +138,7 @@ interface ICollectionOverviewProps {
 }
 
 class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx: number }> {
+
   private mWorkshopActions: types.IActionDefinition[];
 
   constructor(props: ICollectionOverviewProps) {
@@ -111,15 +152,18 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
         action: this.enable,
         condition: () => {
           const { collection, incomplete, profile } = this.props;
-          return !incomplete && (profile.modState?.[collection.id]?.enabled !== true);
+          return (
+            !incomplete && profile.modState?.[collection.id]?.enabled !== true
+          );
         },
         icon: 'toggle-enabled',
       },
       {
         title: 'View on Nexus Mods',
         action: this.openUrl,
-        condition: () => (this.props.collection.attributes?.collectionSlug !== undefined)
-                      && (this.props.revision !== undefined),
+        condition: () =>
+          this.props.collection.attributes?.collectionSlug !== undefined &&
+          this.props.revision !== undefined,
         icon: 'open-in-browser',
       },
       {
@@ -127,7 +171,9 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
         action: this.disable,
         condition: () => {
           const { collection, incomplete, profile } = this.props;
-          return !incomplete && (profile.modState?.[collection.id]?.enabled === true);
+          return (
+            !incomplete && profile.modState?.[collection.id]?.enabled === true
+          );
         },
         icon: 'toggle-disabled',
       },
@@ -151,17 +197,24 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
     ];
   }
 
+  componentDidMount(): void {
+
+    const { revision } = this.props;
+
+    refreshCollection(this.context.api, revision.collection);
+  }
+
   public render(): JSX.Element {
-    const { t, collection, incomplete, profile, revision, votedSuccess } = this.props;
+    const { t, collection, incomplete, profile, revision, votedSuccess } =
+      this.props;
 
     const classes = ['collection-overview'];
 
-    const timeSinceInstall =
-      Date.now() - (new Date(collection.attributes?.installTime ?? 0)).getTime();
+    const timeSinceInstall = Date.now() - new Date(collection.attributes?.installCompleted ? collection.attributes?.installCompleted : collection.attributes?.installTime ?? 0).getTime();
 
-    const voteAllowed = (timeSinceInstall >= ENDORSE_DELAY_MS);
-    
-    const rating =  {
+    const voteAllowed = timeSinceInstall >= ENDORSE_DELAY_MS;
+
+    const rating = {
       average: parseFloat(revision.collection?.overallRating ?? '100'),
       total: revision.collection?.overallRatingCount ?? 0,
     };
@@ -188,16 +241,19 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                   <CollectionReleaseStatus
                     t={t}
                     active={true}
-                    enabled={profile.modState?.[collection.id]?.enabled ?? false}
+                    enabled={
+                      profile.modState?.[collection.id]?.enabled ?? false
+                    }
                     collection={collection}
                     incomplete={incomplete}
                   />
-                  <div className='flex-filler'/>
+                  <div className='flex-filler' />
                 </div>
               </FlexLayout.Fixed>
               <FlexLayout.Flex className='collection-description-container'>
                 <div className='collection-description'>
-                  {collection.attributes?.shortDescription ?? t('No description')}
+                  {collection.attributes?.shortDescription ??
+                    t('No description')}
                 </div>
               </FlexLayout.Flex>
               <FlexLayout.Fixed className='collection-page-detail-bar'>
@@ -206,7 +262,8 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                     <FlexLayout type='row'>
                       <Image
                         srcs={[
-                          collection.attributes?.uploaderAvatar ?? 'assets/images/noavatar.png',
+                          collection.attributes?.uploaderAvatar ??
+                          'assets/images/noavatar.png',
                         ]}
                         circle
                       />
@@ -222,11 +279,17 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell'>
                     <div className='title'>{t('Last updated')}</div>
-                    <div>{this.renderTime(collection.attributes?.updatedTimestamp)}</div>
+                    <div>
+                      {this.renderTime(collection.attributes?.updatedTimestamp)}
+                    </div>
                   </FlexLayout.Fixed>
                   <FlexLayout.Fixed className='collection-detail-cell hideable'>
                     <div className='title'>{t('Uploaded')}</div>
-                    <div>{this.renderTime(collection.attributes?.uploadedTimestamp)}</div>
+                    <div>
+                      {this.renderTime(
+                        collection.attributes?.uploadedTimestamp,
+                      )}
+                    </div>
                   </FlexLayout.Fixed>
                   {/*
                   <FlexLayout.Fixed className='collection-detail-cell'>
@@ -257,7 +320,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
             <div className='collection-health-container'>
               <FlexLayout type='column'>
                 <FlexLayout.Fixed>
-                  {(revision?.revisionStatus !== 'is_private') ? (
+                  {revision?.revisionStatus !== 'is_private' ? (
                     <HealthIndicator
                       t={t}
                       revisionNumber={revision?.revisionNumber ?? 0}
@@ -287,118 +350,177 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
   private enable = () => {
     this.props.onSetEnabled(true);
-  }
+  };
 
   private disable = () => {
     this.props.onSetEnabled(false);
-  }
+  };
 
   private openUrl = () => {
     const { revision } = this.props;
     const { collection } = revision;
-    if ((collection !== undefined) && (revision?.revisionNumber !== undefined)) {
-      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Added Collection');
-      util.opn(util.nexusModsURL([collection.game.domainName,
-        'collections', collection.slug,
-        'revisions', revision.revisionNumber.toString()], {
-        campaign: util.Campaign.ViewCollection,
-        section: util.Section.Collections,
-      }));
+    if (collection !== undefined && revision?.revisionNumber !== undefined) {
+      this.context.api.events.emit(
+        'analytics-track-click-event',
+        'Collections',
+        'View on site Added Collection',
+      );
+      util.opn(
+        util.nexusModsURL(
+          [
+            collection.game.domainName,
+            'collections',
+            collection.slug,
+            'revisions',
+            revision.revisionNumber.toString(),
+          ],
+          {
+            campaign: util.Campaign.ViewCollection,
+            section: util.Section.Collections,
+          },
+        ),
+      );
     }
-  }
+  };
 
   private cloneCollection = () => {
     const { onClone, collection } = this.props;
-    if ((onClone !== undefined) && (collection !== undefined)) {
+    if (onClone !== undefined && collection !== undefined) {
       onClone(collection.id);
-      this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Clone');
+      this.context.api.events.emit(
+        'analytics-track-click-event',
+        'Collections',
+        'Clone',
+      );
     }
-  }
+  };
 
   private remove = () => {
     const { onRemove, collection } = this.props;
-    if ((onRemove !== undefined) && (collection !== undefined)) {
+    if (onRemove !== undefined && collection !== undefined) {
       onRemove(collection.id);
     }
-  }
+  };
 
   private renderTime(timestamp: number): string {
     const { t, language } = this.props;
     if (timestamp === undefined) {
       return t('Never');
     }
-    return (new Date(timestamp)).toLocaleDateString(language);
+    return new Date(timestamp).toLocaleDateString(language);
   }
 
   private voteSuccess = (success: boolean) => {
     const {
-      collection, profile, revision, showDownvoteResponse, showUpvoteResponse,
-      onSuppressVoteResponse, onVoteSuccess } = this.props;
+      collection,
+      profile,
+      revision,
+      showDownvoteResponse,
+      showUpvoteResponse,
+      onSuppressVoteResponse,
+      onVoteSuccess,
+    } = this.props;
 
     onVoteSuccess?.(collection.id, success);
 
     if (revision.collection === undefined) {
-      log('error', 'failed to show vote response dialog, missing collection info');
+      log(
+        'error',
+        'failed to show vote response dialog, missing collection info',
+      );
       return;
     }
 
     const bugLink = `https://next.nexusmods.com/${revision.collection.game.domainName}/collections/${revision.collection.slug}?tab=Bugs`;
-    if (success && showUpvoteResponse) {
-      this.context.api.showDialog('question', 'Collection was successful', {
-        text: 'Congratulations! Please consider endorsing this collection if you are enjoying it. '
-          + 'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
-        checkboxes: [
-          { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
-        ],
-      }, [
-        { label: 'Close' },
-        {
-          label: 'Endorse', action: () => {
-            this.context.api.events.emit('endorse-mod', profile.gameId, collection.id, 'endorse');
-            this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Endorse');
-          }
-        },
-      ])
+
+    //const state = this.context.api.getState();
+    //const gameId = selectors.activeGameId(state);
+    //const mods = state.persistent.mods[gameId];
+
+    const endorsedStatus: EndorsedStatus = collection.attributes?.endorsed ?? 'Undecided';
+
+    if (success && showUpvoteResponse && endorsedStatus !== 'Endorsed') {
+      this.context.api
+        .showDialog(
+          'question',
+          'Collection was successful',
+          {
+            text:
+              'Congratulations! Please consider endorsing this collection if you are enjoying it. ' +
+              'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
+            checkboxes: [
+              { id: 'dont_show_again', value: false, text: "Don't show again" },
+            ],
+          },
+          [
+            { label: 'Close' },
+            {
+              label: 'Endorse',
+              action: () => {
+                this.context.api.events.emit(
+                  'endorse-mod',
+                  profile.gameId,
+                  collection.id,
+                  endorsedStatus,
+                );
+                this.context.api.events.emit(
+                  'analytics-track-click-event',
+                  'Collections',
+                  endorsedStatus,
+                );
+              },
+            },
+          ],
+        )
         .then((result: types.IDialogResult) => {
           if (result.input['dont_show_again']) {
             onSuppressVoteResponse('upvote');
           }
         });
     } else if (!success && showDownvoteResponse) {
-      this.context.api.showDialog('question', 'Collection assistance - {{collectionName}}', {
-        bbcode: 'We are sorry that this collection did not work correctly for you.<br/><br/>'
-          + 'Please [url="{{commentLink}}"]check the comments[/url] for installation advice and to reach out to the curator.<br/><br/>'
-          + 'Alternatively, if you believe you have encountered a bug, [url="{{bugLink}}"]view bug reports on Nexus Mods[/url] to see if it has already been reported. '
-          + 'If the bug isn\'t listed, please consider reporting it to help the curator and other users.',
-        checkboxes: [
-          { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
-        ],
-        parameters: {
-          collectionName: revision.collection.name,
-          collectionSlug: revision.collection.slug,
-          commentLink: revision.collection.commentLink,
-          bugLink,
-        }
-      }, [
-        { label: 'Close' },
-        {
-          label: 'View comments', action: () => {
-            util.opn(revision.collection.commentLink).catch(() => null);
-          }
-        },
-        {
-          label: 'View bugs', action: () => {
-            util.opn(bugLink).catch(() => null);
-          }
-        },
-      ])
+      this.context.api
+        .showDialog(
+          'question',
+          'Collection assistance - {{collectionName}}',
+          {
+            bbcode:
+              'We are sorry that this collection did not work correctly for you.<br/><br/>' +
+              'Please [url="{{commentLink}}"]check the comments[/url] for installation advice and to reach out to the curator.<br/><br/>' +
+              'Alternatively, if you believe you have encountered a bug, [url="{{bugLink}}"]view bug reports on Nexus Mods[/url] to see if it has already been reported. ' +
+              "If the bug isn't listed, please consider reporting it to help the curator and other users.",
+            checkboxes: [
+              { id: 'dont_show_again', value: false, text: "Don't show again" },
+            ],
+            parameters: {
+              collectionName: revision.collection.name,
+              collectionSlug: revision.collection.slug,
+              commentLink: revision.collection.commentLink,
+              bugLink,
+            },
+          },
+          [
+            { label: 'Close' },
+            {
+              label: 'View comments',
+              action: () => {
+                util.opn(revision.collection.commentLink).catch(() => null);
+              },
+            },
+            {
+              label: 'View bugs',
+              action: () => {
+                util.opn(bugLink).catch(() => null);
+              },
+            },
+          ],
+        )
         .then((result: types.IDialogResult) => {
           if (result.input['dont_show_again']) {
             onSuppressVoteResponse('downvote');
           }
         });
     }
-  }
+  };
 }
 
 export default CollectionOverview;

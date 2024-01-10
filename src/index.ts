@@ -940,6 +940,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     if (driver.step === 'start') {
       driver.continue();
     }
+
+    if (driver.step === 'review') {  
+
+      // this is called a few times so we need to check if collection is undefined or not so we only write timestamp once 
+      if(driver.collection === undefined) return;
+
+      const gameId = driver.profile.gameId;
+      const modId = driver.collection.id;
+
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'installCompleted', Date.now()));
+    }
   });
 
   const doCheckVoteRequest = () => {
