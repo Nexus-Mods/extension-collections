@@ -15,8 +15,8 @@ import { Media, Panel } from 'react-bootstrap';
 import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, selectors, tooltip, types, util } from 'vortex-api';
 import { updateCollectionInfo } from '../../actions/persistent';
 
-//const ENDORSE_DELAY_MS = 43200000; // 12 hours
-const ENDORSE_DELAY_MS = 60000; // 1 minute
+const ENDORSE_DELAY_MS = 43200000; // 12 hours
+//const ENDORSE_DELAY_MS = 60000; // 1 minute
 
 interface IEndorseButtonProps {
   t: types.TFunction;
@@ -39,7 +39,7 @@ function EndorseButton(props: IEndorseButtonProps) {
 
     setTimeout(async () => {
       refreshCollection(context.api, collection);
-    }, 200);
+    }, 500);
 
     //const newEndorsementCount = (endorsedStatus === 'Endorsed') ? collection.endorsements - 1 : collection.endorsements + 1;
 
