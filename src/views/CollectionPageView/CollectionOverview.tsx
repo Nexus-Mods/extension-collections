@@ -35,19 +35,19 @@ function EndorseButton(props: IEndorseButtonProps) {
   const endorse = React.useCallback(async () => {
 
     context.api.events.emit('endorse-mod', gameId, mod.id, endorsedStatus);
-    context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);       
+    context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);
 
-    setTimeout(async () => { 
+    setTimeout(async () => {
       refreshCollection(context.api, collection);
     }, 200);
 
     //const newEndorsementCount = (endorsedStatus === 'Endorsed') ? collection.endorsements - 1 : collection.endorsements + 1;
-    
+
   }, [mod, collection]);
 
-  const endorsedStatus:EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
-  const endorsed:boolean = (mod.attributes?.endorsed === 'Endorsed');
- 
+  const endorsedStatus: EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
+  const endorsed: boolean = (mod.attributes?.endorsed === 'Endorsed');
+
   const classes = `collection-ghost-button ${endorsed ? 'endorse-yes' : 'endorse-maybe'}`;
 
   const { icon, toolTip } = {
@@ -55,7 +55,7 @@ function EndorseButton(props: IEndorseButtonProps) {
     abstained: { icon: 'endorse-maybe', toolTip: t('Abstained') },
     endorsed: { icon: 'endorse-yes', toolTip: t('Endorsed') },
     disabled: { icon: 'endorse-disabled', toolTip: t('Endorsement disabled by author') },
-    pending: { icon: 'spinner_new', toolTip: t('Pending')}
+    pending: { icon: 'spinner_new', toolTip: t('Pending') }
   }[endorsedStatus.toLowerCase()] || { icon: 'like-maybe', toolTip: t('Undecided') };
 
   return (
@@ -64,10 +64,10 @@ function EndorseButton(props: IEndorseButtonProps) {
       tooltip={toolTip}
       className={classes}
       onClick={endorse}
-      disabled={!voteAllowed || (collection?.endorsements === undefined)} 
-      spin={endorsedStatus.toLowerCase() === 'pending'}     
+      disabled={!voteAllowed || (collection?.endorsements === undefined)}
+      spin={endorsedStatus.toLowerCase() === 'pending'}
     >
-       { collection?.endorsements ?? '?'  }
+      {collection?.endorsements ?? '?'}
     </tooltip.IconButton>
   );
 }
@@ -107,12 +107,12 @@ async function refreshCollection(api: types.IExtensionApi, collection: ICollecti
   if (collection === undefined) return;
 
   log('info', `refreshCollection ${collection.slug}`, collection);
-  
+
   // get collection info from nexus api
-  const result: ICollection = ( await api.emitAndAwait('get-nexus-collection',collection.slug,))[0];
-  
+  const result: ICollection = (await api.emitAndAwait('get-nexus-collection', collection.slug,))[0];
+
   // update local state with new collection info
-  api.store.dispatch(  updateCollectionInfo(collection.id.toString(), result, Date.now()), );
+  api.store.dispatch(updateCollectionInfo(collection.id.toString(), result, Date.now()),);
 }
 
 interface ICollectionOverviewProps {
@@ -135,7 +135,7 @@ interface ICollectionOverviewProps {
   onVoteSuccess?: (collectionId: string, success: boolean) => void;
 }
 
-class CollectionOverview extends ComponentEx<  ICollectionOverviewProps,  { selIdx: number }> {
+class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx: number }> {
 
   private mWorkshopActions: types.IActionDefinition[];
 
@@ -197,7 +197,7 @@ class CollectionOverview extends ComponentEx<  ICollectionOverviewProps,  { selI
 
   componentDidMount(): void {
 
-    const {revision } = this.props;
+    const { revision } = this.props;
 
     refreshCollection(this.context.api, revision.collection);
   }
@@ -263,7 +263,7 @@ class CollectionOverview extends ComponentEx<  ICollectionOverviewProps,  { selI
                       <Image
                         srcs={[
                           collection.attributes?.uploaderAvatar ??
-                            'assets/images/noavatar.png',
+                          'assets/images/noavatar.png',
                         ]}
                         circle
                       />
