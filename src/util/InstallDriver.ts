@@ -617,10 +617,7 @@ class InstallDriver {
   }
 
   private finishInstalling = () => {
-    this.mStep = 'review';   
-        
-    const mods = this.getModsEx(this.mProfile, this.mGameId, this.mCollection);
-
+    this.mStep = 'review';
   }
 
   private close = () => {
