@@ -210,9 +210,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const classes = ['collection-overview'];
 
-    const timeSinceInstall =
-      Date.now() -
-      new Date(collection.attributes?.installCompleted ?? 0).getTime();
+    const timeSinceInstall = Date.now() - new Date(collection.attributes?.installCompleted ? collection.attributes?.installCompleted : collection.attributes?.installTime ?? 0).getTime();
 
     const voteAllowed = timeSinceInstall >= ENDORSE_DELAY_MS;
 
