@@ -435,11 +435,11 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const bugLink = `https://next.nexusmods.com/${revision.collection.game.domainName}/collections/${revision.collection.slug}?tab=Bugs`;
 
-    const state = this.context.api.getState();
-    const gameId = selectors.activeGameId(state);
-    const mods = state.persistent.mods[gameId];
-    const endorsedStatus: EndorsedStatus =
-      mods[collection.id].attributes?.endorsed ?? 'Undecided';
+    //const state = this.context.api.getState();
+    //const gameId = selectors.activeGameId(state);
+    //const mods = state.persistent.mods[gameId];
+
+    const endorsedStatus: EndorsedStatus = collection.attributes?.endorsed ?? 'Undecided';
 
     if (success && showUpvoteResponse && endorsedStatus !== 'Endorsed') {
       this.context.api
