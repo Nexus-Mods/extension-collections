@@ -188,6 +188,41 @@ $collection-mod-image-height: 122px;
   flex-direction: column;
 }
 
+#collection-health-downvote-dialog {
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    h5 {
+      margin: 0;
+      font-family: $font-family-base;
+    }
+
+    ol {
+      padding-left: 24px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .radio label, .checkbox label {
+        display: flex;
+        align-items: center;
+
+        input[type=radio], input[type=checkbox] {
+          margin: 0 0 0 -20px;
+        }      
+
+      }
+    }
+
+  }
+}
+
 #collection-install-dialog {
   .modal-dialog {
     width: 80vw;
@@ -711,6 +746,15 @@ ul.collection-mods-page-attrib-tooltip {
     &:hover {
       color: $text-color;
       background-color: darken($btn-default-bg, 12%);
+    }
+
+    &[disabled] {
+      opacity: 0.4;
+  
+      &:hover {
+        background-color: transparent;
+        border-color: rgba(255, 255, 255, 0.1);
+      }
     }
   }
 }
@@ -1253,6 +1297,14 @@ ul.collection-mods-page-attrib-tooltip {
         }
       }
 
+      // hover color
+      &:hover,
+      &:hover:focus {
+        color: $text-color;
+        background-color: $link-hover-color;
+        border-color: $link-hover-color;
+      }
+
       /*
       &:focus {
         color: $text-color;
@@ -1280,6 +1332,13 @@ ul.collection-mods-page-attrib-tooltip {
         color: $brand-clickable;
         background-color: transparent;
         border-color: $brand-clickable;
+
+        &:hover,
+        &:hover:focus {
+          color: $brand-clickable;
+          background-color: transparent;
+          border-color: $brand-clickable;  
+        }
 
         // selected button so we need to strip out any 'mouse down' states
         &:active:focus {          
