@@ -12,10 +12,15 @@ const sessionReducer: types.IReducerSpec = {
       const { collectionId } = payload;
       return util.setSafe(state, ['addModsId'], collectionId);
     },
+    [actions.healthDownvoteDialog as any]: (state, payload) => {
+      const { collectionModId } = payload;
+      return util.setSafe(state, ['healthDownvoteDialog'], collectionModId);
+    }
   },
   defaults: {
     editCollectionId: undefined,
     addModsId: undefined,
+    healthDownvoteDialog: undefined,
   },
 };
 

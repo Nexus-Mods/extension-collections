@@ -10,6 +10,7 @@ import InstallDriver from './util/InstallDriver';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
+import HealthDownvoteDialog from './views/CollectionPageView/HealthDownvoteDialog';
 import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
@@ -622,6 +623,8 @@ function register(context: types.IExtensionContext,
     onAddSelection,
   }));
 
+  context.registerDialog('collection-health-downvote', HealthDownvoteDialog, () => ({}));
+
   let resetPageCB: () => void;
   const resetCB = (cb) => resetPageCB = cb;
   const onAddCallback = (cbName: string, cb: (...args: any[]) => void) => {
@@ -829,6 +832,7 @@ async function triggerVoteNotification(api: types.IExtensionApi,
     // no info about that revision? This might be a temporary network issue but if we don't
     // resolve here and the revision actually doesn't exist any more we'd never get rid of
     // the vote request
+    
     return Promise.resolve();
   }
 

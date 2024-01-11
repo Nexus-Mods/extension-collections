@@ -250,7 +250,7 @@ class ModsEditPage extends ComponentEx<IProps, IModsPageState> {
         const filteredIds = instanceIds.filter(id => entries[id] !== undefined);
 
         this.context.api.showDialog('question', 'Confirm removal', {
-          text: 'Really remove these mods from this collection? (They are not removed from Vortex)',
+          text: 'Are you sure you want to remove these mods from this collection? Removing the mods from the collection will not remove them from Vortex.',
           message: filteredIds.map(id => entries[id].mod !== undefined
             ? util.renderModName(entries[id].mod)
             : util.renderModReference(entries[id].rule.reference)).join('\n'),

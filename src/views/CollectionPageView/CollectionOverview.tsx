@@ -14,6 +14,7 @@ import * as React from 'react';
 import { Media, Panel } from 'react-bootstrap';
 import { ActionDropdown, ComponentEx, FlexLayout, Image, log, MainContext, selectors, tooltip, types, util } from 'vortex-api';
 import { updateCollectionInfo } from '../../actions/persistent';
+import { healthDownvoteDialog } from '../../actions/session';
 
 const ENDORSE_DELAY_MS = 43200000; // 12 hours
 //const ENDORSE_DELAY_MS = 60000; // 1 minute
@@ -108,7 +109,7 @@ async function refreshCollection(api: types.IExtensionApi, collection: ICollecti
 
   if (collection === undefined) return;
 
-  log('info', `refreshCollection ${collection.slug}`, collection);
+  log('info', `refreshCollection ${collection.slug}`);
 
   // get collection info from nexus api
   const result: ICollection = (await api.emitAndAwait('get-nexus-collection', collection.slug,))[0];
@@ -421,8 +422,6 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
       onVoteSuccess,
     } = this.props;
 
-    onVoteSuccess?.(collection.id, success);
-
     if (revision.collection === undefined) {
       log(
         'error',
@@ -439,45 +438,55 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const endorsedStatus: EndorsedStatus = collection.attributes?.endorsed ?? 'Undecided';
 
-    if (success && showUpvoteResponse && endorsedStatus !== 'Endorsed') {
-      this.context.api
-        .showDialog(
-          'question',
-          'Collection was successful',
-          {
-            text:
-              'Congratulations! Please consider endorsing this collection if you are enjoying it. ' +
-              'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
-            checkboxes: [
-              { id: 'dont_show_again', value: false, text: "Don't show again" },
-            ],
-          },
-          [
-            { label: 'Close' },
-            {
-              label: 'Endorse',
-              action: () => {
-                this.context.api.events.emit(
-                  'endorse-mod',
-                  profile.gameId,
-                  collection.id,
-                  endorsedStatus,
-                );
-                this.context.api.events.emit(
-                  'analytics-track-click-event',
-                  'Collections',
-                  endorsedStatus,
-                );
-              },
-            },
+    if (success && showUpvoteResponse) {
+
+      onVoteSuccess?.(collection.id, success);
+
+      // if we've already endorsed then we don't need to show the dialog
+      if (endorsedStatus === 'Endorsed') return;
+
+      this.context.api.showDialog(
+        'question',
+        'Collection was successful',
+        {
+          text:
+            'Congratulations! Please consider endorsing this collection if you are enjoying it. ' +
+            'Endorsing helps others discover this collection and lets the curator know you enjoyed it.',
+          checkboxes: [
+            { id: 'dont_show_again', value: false, text: "Don't show again" },
           ],
-        )
+        },
+        [
+          { label: 'Close' },
+          {
+            label: 'Endorse',
+            action: () => {
+              this.context.api.events.emit(
+                'endorse-mod',
+                profile.gameId,
+                collection.id,
+                endorsedStatus,
+              );
+              this.context.api.events.emit(
+                'analytics-track-click-event',
+                'Collections',
+                endorsedStatus,
+              );
+            },
+          },
+        ],
+      )
         .then((result: types.IDialogResult) => {
           if (result.input['dont_show_again']) {
             onSuppressVoteResponse('upvote');
           }
         });
+
     } else if (!success && showDownvoteResponse) {
+
+      this.context.api.store.dispatch(healthDownvoteDialog(collection.id));
+
+      /*
       this.context.api
         .showDialog(
           'question',
@@ -518,7 +527,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
           if (result.input['dont_show_again']) {
             onSuppressVoteResponse('downvote');
           }
-        });
+        });*/
     }
   };
 }
