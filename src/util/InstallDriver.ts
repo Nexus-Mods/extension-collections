@@ -521,8 +521,8 @@ class InstallDriver {
       const choice = await this.mApi.showDialog('question', 'Game version mismatch', {
         bbcode: 'The version of the game you have installed is different to the one the curator used when creating this collection.'
             + '[br][/br][br][/br]'
-            + 'Your game version: [color=red]{{actual}}[/color][br][/br]'
-            + 'Recommended game version: [color=green]{{intended}}[/color]'            
+            + 'Your game version: [style=dialog-success-text]{{actual}}[/style][br][/br]'
+            + 'Recommended game version: [style=dialog-danger-text]{{intended}}[/style]'            
             + '[br][/br][br][/br]'
             + 'If you choose to continue, some or all of the mods included in the collection may not work properly for you. This will '
             + 'require manual troubleshooting to correct. For users who are not familiar with modding, we do not recommend continuing with installation.'

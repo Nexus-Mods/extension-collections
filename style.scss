@@ -6,6 +6,14 @@ $collection-thumbnail-compact-height: 206px;
 $collection-mod-image-width: 360px;
 $collection-mod-image-height: 122px;
 
+.dialog-danger-text {
+  color: $brand-danger-lighter;
+}
+
+.dialog-success-text {
+  color: $brand-success-lighter;
+}
+
 #table-collection-mods .header-name {
   p {
     white-space: nowrap;
