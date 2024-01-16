@@ -92,8 +92,14 @@ $collection-mod-image-height: 122px;
         gap: 16px;
 
         #collection-instructions-edit {
-          gap: 8px; 
+          gap: 8px;        
         }  
+
+        #collection-settings-edit {
+          padding: $panel-body-padding;
+          border-radius: $panel-border-radius;
+          border: 1px solid $panel-default-border;
+        }
 
         h4,
         p {

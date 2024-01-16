@@ -33,7 +33,7 @@ const settings = (props: IInstructionProps) => {
   return (
     <FlexLayout type='column' id='collection-settings-edit' className='collection-settings-edit'>
       <h4>{t('Settings')}</h4>
-      <p>{t('Optional settings that a curator can use to customize their collection.')}</p>
+      <p>{t('The below settings can optionally be changed to customize this collection')}</p>
 
         <Toggle
           id={'settings-recommend-new-profile'}
@@ -41,8 +41,10 @@ const settings = (props: IInstructionProps) => {
           checked={recommendNewProfile}
         >
           {t('Recommend new profile')}
+          <More id='collection-settings-recommendnewprofile' name={t('Recommend new profile')} >
+              {t('If enabled, Vortex will recommend creating a new profile when installing this collection. If disabled, the collection will be installed into the currently active profile.')}
+          </More>
         </Toggle>
-
     </FlexLayout>
   );
 }
