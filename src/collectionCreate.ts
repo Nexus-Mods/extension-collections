@@ -91,15 +91,20 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIdsIn: str
       return filtered.find(modId => !alreadyIncluded(rules, modId)) !== undefined;
     });
 
-  return api.showDialog('question', 'Add Mods to Collection', {
-    text: 'Please select the collection to add the mods to',
-    message: filtered.map(modId =>
-      util.renderModName(mods[modId], { version: true, variant: true })).join('\n'),
-    choices: collections.sort((a, b) => {
+  const sortAlphabetically = (modIds: string[]) => {
+    const temp = [...modIds];
+    temp.sort((a, b) => {
       const modA = util.renderModName(mods[a]).toLowerCase();
       const modB = util.renderModName(mods[b]).toLowerCase();
       return modA.localeCompare(modB);
-    }).map((modId, idx) => ({
+    });
+    return temp;
+  };
+  return api.showDialog('question', 'Add Mods to Collection', {
+    text: 'Please select the collection to add the mods to',
+    message: sortAlphabetically(filtered).map(modId =>
+      util.renderModName(mods[modId], { version: true, variant: true })).join('\n'),
+    choices: sortAlphabetically(collections).map((modId, idx) => ({
       id: modId,
       text: util.renderModName(mods[modId]),
       value: idx === 0,
