@@ -1,16 +1,60 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ControlLabel, FormControl } from 'react-bootstrap';
-import { FlexLayout, tooltip, types } from 'vortex-api';
-import { INSTRUCTIONS_PLACEHOLDER } from '../../constants';
+import { FlexLayout, More, Toggle, tooltip, types } from 'vortex-api';
+import { INSTRUCTIONS_PLACEHOLDER, NAMESPACE } from '../../constants';
 
 export interface IInstructionProps {
-  t: types.TFunction;
   collection: types.IMod;
   onSetCollectionAttribute: (path: string[], value: any) => void;
 }
 
-function Instructions(props: IInstructionProps) {
-  const { t, collection, onSetCollectionAttribute } = props;
+function CollectionGeneralInfo(props: IInstructionProps) {
+  return (
+    <FlexLayout type='row'>
+      {instructions(props)}
+      {settings(props)}
+    </FlexLayout>
+  );
+}
+
+const settings = (props: IInstructionProps) => {
+  const [t] = useTranslation([NAMESPACE, 'common']);
+  const { onSetCollectionAttribute, collection } = props;
+  const [recommendNewProfile, setRecommendNewProfile] =
+    React.useState(collection.attributes?.collection?.collectionConfig?.recommendNewProfile);
+
+  const toggleRecommendNewProfile = React.useCallback(() => {
+    const newValue = !recommendNewProfile;
+    setRecommendNewProfile(newValue);
+    onSetCollectionAttribute(['collectionConfig', 'recommendNewProfile'], newValue);
+  }, [onSetCollectionAttribute, recommendNewProfile, setRecommendNewProfile])
+
+  return (
+    <FlexLayout type='column' id='collection-settings-edit' className='collection-settings-edit'>
+      <h4>{t('Settings')}</h4>
+      <FlexLayout type='row'>
+        <Toggle
+          id={'settings-recommend-new-profile'}
+          onToggle={toggleRecommendNewProfile}
+          checked={recommendNewProfile}
+        >
+          {t('Recommend new profile')}
+        </Toggle>
+        <More
+          id='settings-new-profile-more'
+          name='Recommend new profile'
+        >
+          {t('Enabling this toggle will recommend a new profile to be created when installing this collection.')}
+        </More>
+      </FlexLayout>
+    </FlexLayout>
+  );
+}
+
+const instructions = (props: IInstructionProps) => {
+  const [t] = useTranslation([NAMESPACE, 'common']);
+  const { collection, onSetCollectionAttribute } = props;
 
   const [input, setInput] = React.useState(collection.attributes?.['collection']?.['installInstructions']);
   const [placeholder, setPlaceholder] = React.useState(t(INSTRUCTIONS_PLACEHOLDER) as string);
@@ -32,6 +76,7 @@ function Instructions(props: IInstructionProps) {
 
   return (
     <FlexLayout type='column' id='collection-instructions-edit' className='collection-instructions-edit'>
+      <h4>{t('Instructions')}</h4>
       <FlexLayout.Fixed>
         <ControlLabel target='collection-instructions-area'>
           <p>
@@ -64,4 +109,4 @@ function Instructions(props: IInstructionProps) {
   );
 }
 
-export default Instructions;
+export default CollectionGeneralInfo;

@@ -9,7 +9,7 @@ import { NAMESPACE } from '../../constants';
 import { startAddModsToCollection } from '../../actions/session';
 
 import FileOverrides from './FileOverrides';
-import Instructions from './Instructions';
+import CollectionGeneralPage from './Instructions';
 import ModRules from './ModRules';
 import ModsEditPage from './ModsEditPage';
 
@@ -223,8 +223,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
             </Tab>
             <Tab key='collection-instructions' eventKey='collection-instructions' title={t('Collection Instructions')}>
               <Panel>
-                <Instructions
-                  t={t}
+                <CollectionGeneralPage
                   collection={collection}
                   onSetCollectionAttribute={this.setCollectionAttribute}
                 />

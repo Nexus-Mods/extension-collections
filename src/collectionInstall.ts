@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { ICollection, ICollectionTool } from './types/ICollection';
 
 import { findExtensions, IExtensionFeature } from './util/extension';
@@ -10,6 +11,8 @@ import * as _ from 'lodash';
 import * as path from 'path';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
 import { readCollection } from './util/importCollection';
+import { ICollectionConfig } from './types/ICollectionConfig';
+import { parseConfig } from './util/collectionConfig';
 
 /**
  * supported test for use in registerInstaller
@@ -35,6 +38,12 @@ export function makeInstall(api: types.IExtensionApi) {
     const collection: ICollection =
       await readCollection(api, path.join(destinationPath, 'collection.json'));
 
+    const config: ICollectionConfig = await parseConfig({ collection, gameId });
+    const configInstructions: types.IInstruction[] = Object.entries(config).reduce((accum, [key, value]) => {
+      const instr: types.IInstruction = { type: 'attribute', key, value, };
+      accum.push(instr)
+      return accum;
+    }, []);
     const filesToCopy = files
       .filter(filePath => !filePath.endsWith(path.sep)
         && (filePath.split(path.sep)[0] !== BUNDLED_PATH));
@@ -72,6 +81,7 @@ export function makeInstall(api: types.IExtensionApi) {
           key: 'installInstructions',
           value: collection.info.installInstructions,
         },
+        ...configInstructions,
         {
           type: 'setmodtype' as any,
           value: MOD_TYPE,

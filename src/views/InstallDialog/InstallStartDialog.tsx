@@ -1,5 +1,5 @@
 import { DEFAULT_INSTRUCTIONS, NAMESPACE } from '../../constants';
-import InstallDriver, { Step } from '../../util/InstallDriver';
+import InstallDriver from '../../util/InstallDriver';
 
 import CollectionThumbnail from '../CollectionTile';
 
@@ -12,7 +12,7 @@ import { connect } from 'react-redux';
 import Select from 'react-select';
 import * as Redux from 'redux';
 import { generate as shortid} from 'shortid';
-import { actions, ComponentEx, FlexLayout, log, Modal, More, selectors, types, util } from 'vortex-api';
+import { actions, ComponentEx, FlexLayout, Modal, More, types, util } from 'vortex-api';
 import * as ReactMarkdown from 'react-markdown';
 
 interface IInstallDialogProps {
@@ -44,6 +44,7 @@ type IProps = IInstallDialogProps & IConnectedProps & IActionProps;
 interface IInstallDialogState {
   selectedProfile: string;
   confirmProfile: boolean;
+  recommendedNewProfile: boolean;
 }
 
 function nop() {
@@ -54,12 +55,13 @@ interface IInstallDialogSelectProfileProps {
   t: types.TFunction;
   profile: types.IProfile;
   selectedProfile: string;
+  recommendedNewProfile: boolean;
   allProfiles: { [profileId: string]: types.IProfile };
   onSelectProfile: (value: { value: string, label: string }) => void;
 }
 
 function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
-  const { t, allProfiles, onSelectProfile, profile, selectedProfile } = props;
+  const { t, allProfiles, onSelectProfile, profile, selectedProfile, recommendedNewProfile } = props;
 
   const profileOptions = Object.keys(allProfiles)
     .filter(profId => allProfiles[profId].gameId === profile.gameId)
@@ -69,25 +71,23 @@ function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
         ? t('{{name}} (Current)', { replace: { name: profile.name } })
         : allProfiles[profId].name,
     }))
-    .concat({ value: '__new', label: t('Create new profile') });
+    .concat({ value: '__new', label: t('Create new profile{{recommended}}',
+      { replace: { recommended: recommendedNewProfile ? t(' (Recommended by curator)') : '' } }) });
 
   return (
-      <FlexLayout type='row' id='collections-profile-select'>
-        <FlexLayout.Fixed>
-          {t('Install this collection to profile') + ':'}
-          <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
-            {util.getText('profile' as any, 'profiles', t)}
-          </More>
-        </FlexLayout.Fixed>
-        <FlexLayout.Flex>
-          <Select
-            options={profileOptions}
-            value={selectedProfile ?? profile.id}
-            onChange={onSelectProfile}
-            clearable={false}
-          />
-        </FlexLayout.Flex>
-      </FlexLayout>
+    <FlexLayout type='row' id='collections-profile-select'>
+      <FlexLayout.Fixed>
+        {t('Install this collection to profile') + ':'}
+      </FlexLayout.Fixed>
+      <FlexLayout.Flex>
+        <Select
+          options={profileOptions}
+          value={selectedProfile ?? profile.id}
+          onChange={onSelectProfile}
+          clearable={false}
+        />
+      </FlexLayout.Flex>
+    </FlexLayout>
   );
 }
 
@@ -127,11 +127,22 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     this.initState({
       selectedProfile: undefined,
       confirmProfile: false,
+      recommendedNewProfile: false,
     });
 
     if (props.driver !== undefined) {
       this.props.driver.onUpdate(() => this.forceUpdate());
     }
+  }
+
+  static getDerivedStateFromProps(props: IProps, state: IInstallDialogState) {
+    if(!state.selectedProfile && !!props.driver?.collection?.attributes?.recommendNewProfile) {
+      return{
+        recommendedNewProfile: true,
+        selectedProfile: '__new',
+      };
+    }
+    return null;
   }
 
   public componentDidUpdate(prevProps: IProps) {
@@ -151,7 +162,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 
   public render(): React.ReactNode {
     const { t, driver, allProfiles, nextProfileId, userInfo } = this.props;
-    const { selectedProfile } = this.state;
+    const { selectedProfile, recommendedNewProfile } = this.state;
 
     if (driver?.profile === undefined) {
       return null;
@@ -163,7 +174,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
       return null;
     }    
 
-    let installInstructions = driver.collection?.attributes?.installInstructions|| t(DEFAULT_INSTRUCTIONS)
+    let installInstructions = driver.collection?.attributes?.installInstructions || t(DEFAULT_INSTRUCTIONS)
 
     // used to convert a \n into something that react-markdown can use to detect paragraphs properly
     installInstructions = installInstructions.replace(/\r?\n/g, "  \r\n");
@@ -202,7 +213,12 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
               </Media.Body>
             </Media.Right>
           </Media>
-
+          <FlexLayout type='row'>
+            <p>{t('Profiles allow you to have multiple mod set-ups for a game at once and quickly switch between them.')}</p>
+            <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
+              {util.getText('profile' as any, 'profiles', t)}
+            </More>
+          </FlexLayout>
           {(this.state.confirmProfile && (selectedProfile !== undefined)) ? (
             <InstallDialogConfirmProfile
               t={t}
@@ -216,6 +232,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
               profile={profile}
               selectedProfile={selectedProfile}
               onSelectProfile={this.changeProfile}
+              recommendedNewProfile={recommendedNewProfile}
             />
           )}
         </Modal.Body>
