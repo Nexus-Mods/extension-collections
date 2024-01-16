@@ -33,7 +33,8 @@ const settings = (props: IInstructionProps) => {
   return (
     <FlexLayout type='column' id='collection-settings-edit' className='collection-settings-edit'>
       <h4>{t('Settings')}</h4>
-      <FlexLayout type='row'>
+      <p>{t('Enabling this toggle will recommend a new profile to be created when installing this collection.')}</p>
+
         <Toggle
           id={'settings-recommend-new-profile'}
           onToggle={toggleRecommendNewProfile}
@@ -41,13 +42,7 @@ const settings = (props: IInstructionProps) => {
         >
           {t('Recommend new profile')}
         </Toggle>
-        <More
-          id='settings-new-profile-more'
-          name='Recommend new profile'
-        >
-          {t('Enabling this toggle will recommend a new profile to be created when installing this collection.')}
-        </More>
-      </FlexLayout>
+
     </FlexLayout>
   );
 }
@@ -76,26 +71,23 @@ const instructions = (props: IInstructionProps) => {
 
   return (
     <FlexLayout type='column' id='collection-instructions-edit' className='collection-instructions-edit'>
-      <h4>{t('Instructions')}</h4>
-      <FlexLayout.Fixed>
-        <ControlLabel target='collection-instructions-area'>
-          <p>
-            {t('Instructions will be shown to the user before installation starts and can be reviewed in the Instructions tab. You can also add individual mod instructions in the Mods tab.')}
-          </p>
-        </ControlLabel>
-      </FlexLayout.Fixed>
       <FlexLayout.Flex>
+        <h4>{t('Instructions')}</h4>
+        <p>
+          {t('Instructions will be shown to the user before installation starts and can be reviewed in the Instructions tab. You can also add individual mod instructions in the Mods tab.')}
+        </p>
         <FormControl
           id='collection-instructions-area'
           componentClass='textarea'
           value={input}
           onChange={assignInstructions}
           placeholder={placeholder}
-          onFocus={(e) => setPlaceholder('')} 
-          onBlur={(e) => setPlaceholder(t(INSTRUCTIONS_PLACEHOLDER))} 
+          onFocus={(e) => setPlaceholder('')}
+          onBlur={(e) => setPlaceholder(t(INSTRUCTIONS_PLACEHOLDER))}
           rows={8}
         />
       </FlexLayout.Flex>
+
       <FlexLayout.Fixed className='collection-instructions-buttons'>
         <tooltip.Button
           disabled={!hasChanged}
