@@ -1609,7 +1609,7 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 #collections-profile-select {
-  @extend .gutter-above;
+  //@extend .gutter-above;
 
   place-items: center;
   gap: 0.5em;
@@ -1660,12 +1660,17 @@ ul.collection-mods-page-attrib-tooltip {
   background-color: $white;
   color: $black;
   text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  padding: 0 0.5em;
-  gap: 0.5em;
+  padding: 2px 8px;
   width: fit-content;
   margin: 0 0 7px 0;
+  font-family: 'Roboto';
+  font-weight: 600;
+  font-size: smaller;
+  height: fit-content;
+  
+  .icon {
+    margin-right: 0.5em;
+  }
 }
 
 .collection-revision-and-rating {
@@ -1759,6 +1764,7 @@ ul.collection-mods-page-attrib-tooltip {
   background-color: $brand-bg;
   border: 1px solid $border-color;
   overflow: auto;
+  border-radius: $border-radius-base;
 }
 
 .textarea-install-collection-instructions p {

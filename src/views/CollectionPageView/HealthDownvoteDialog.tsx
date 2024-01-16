@@ -96,7 +96,7 @@ function HealthDownvoteDialog(props: IHealthDownvoteDialogProps) {
         <Modal.Title>{t('Downvote Success Rating')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>{t(`Sorry to hear that ${util.renderModName(collection)} isn't working for you. Here are some steps that could help:`)}</p>
+        <p>{t(`Sorry to hear that the collection \"${util.renderModName(collection)}\" isn't working for you. Here are some steps that could help:`)}</p>
         <ol>
           <li>Make sure your game version matches the game version the collection was created for.</li>
           <li>Read the collection instructions and check if you've missed any steps.</li>

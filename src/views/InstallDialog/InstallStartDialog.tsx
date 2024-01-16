@@ -11,7 +11,7 @@ import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import * as Redux from 'redux';
-import { generate as shortid} from 'shortid';
+import { generate as shortid } from 'shortid';
 import { actions, ComponentEx, FlexLayout, Modal, More, types, util } from 'vortex-api';
 import * as ReactMarkdown from 'react-markdown';
 
@@ -71,8 +71,10 @@ function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
         ? t('{{name}} (Current)', { replace: { name: profile.name } })
         : allProfiles[profId].name,
     }))
-    .concat({ value: '__new', label: t('Create new profile{{recommended}}',
-      { replace: { recommended: recommendedNewProfile ? t(' (Recommended by curator)') : '' } }) });
+    .concat({
+      value: '__new', label: t('Create new profile{{recommended}}',
+        { replace: { recommended: recommendedNewProfile ? t(' (Recommended by curator)') : '' } })
+    });
 
   return (
     <FlexLayout type='row' id='collections-profile-select'>
@@ -101,11 +103,11 @@ function InstallDialogConfirmProfile(props: IInstallDialogConfirmProfileProps) {
   const { t, collectionName, selectedProfile } = props;
 
   const profileName = selectedProfile?.name
-                    ?? collectionName;
+    ?? collectionName;
 
   return (
     <>
-      <p>{t('is installing to profile: {{profileName}}', {
+      <p>{t('Currently installing to profile: {{profileName}}', {
         replace: {
           profileName,
         },
@@ -136,8 +138,8 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   static getDerivedStateFromProps(props: IProps, state: IInstallDialogState) {
-    if(!state.selectedProfile && !!props.driver?.collection?.attributes?.recommendNewProfile) {
-      return{
+    if (!state.selectedProfile && !!props.driver?.collection?.attributes?.recommendNewProfile) {
+      return {
         recommendedNewProfile: true,
         selectedProfile: '__new',
       };
@@ -172,7 +174,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 
     if (nextProfileId !== profile.id) {
       return null;
-    }    
+    }
 
     let installInstructions = driver.collection?.attributes?.installInstructions || t(DEFAULT_INSTRUCTIONS)
 
@@ -182,7 +184,7 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     const game = util.getGame(profile.gameId);
 
     const ownCollection: boolean = (userInfo?.userId !== undefined)
-                                && (driver.collectionInfo?.user?.memberId === userInfo?.userId);
+      && (driver.collectionInfo?.user?.memberId === userInfo?.userId);
     const collectionName = util.renderModName(driver.collection);
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
@@ -214,10 +216,13 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
             </Media.Right>
           </Media>
           <FlexLayout type='row'>
-            <p>{t('Profiles allow you to have multiple mod set-ups for a game at once and quickly switch between them.')}</p>
+            <p>
+              {t('Profiles allow you to have multiple mod set-ups for a game at once and quickly switch between them.')}
             <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
               {util.getText('profile' as any, 'profiles', t)}
             </More>
+            </p>
+
           </FlexLayout>
           {(this.state.confirmProfile && (selectedProfile !== undefined)) ? (
             <InstallDialogConfirmProfile
@@ -265,8 +270,8 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
 
   private next = () => {
     if (!this.state.confirmProfile
-        && (this.state.selectedProfile !== undefined)
-        && (this.state.selectedProfile !== this.props.driver?.profile?.id)) {
+      && (this.state.selectedProfile !== undefined)
+      && (this.state.selectedProfile !== this.props.driver?.profile?.id)) {
       if (this.state.selectedProfile === '__new') {
         const { driver, onAddProfile, onSetProfilesVisible } = this.props;
         const { profile } = driver;
