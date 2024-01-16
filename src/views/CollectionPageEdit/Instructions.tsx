@@ -33,7 +33,7 @@ const settings = (props: IInstructionProps) => {
   return (
     <FlexLayout type='column' id='collection-settings-edit' className='collection-settings-edit'>
       <h4>{t('Settings')}</h4>
-      <p>{t('Enabling this toggle will recommend a new profile to be created when installing this collection.')}</p>
+      <p>{t('Optional settings that a curator can use to customize their collection.')}</p>
 
         <Toggle
           id={'settings-recommend-new-profile'}
@@ -71,7 +71,8 @@ const instructions = (props: IInstructionProps) => {
 
   return (
     <FlexLayout type='column' id='collection-instructions-edit' className='collection-instructions-edit'>
-      <FlexLayout.Flex>
+
+      <FlexLayout.Fixed>
         <h4>{t('Instructions')}</h4>
         <p>
           {t('Instructions will be shown to the user before installation starts and can be reviewed in the Instructions tab. You can also add individual mod instructions in the Mods tab.')}
@@ -86,7 +87,7 @@ const instructions = (props: IInstructionProps) => {
           onBlur={(e) => setPlaceholder(t(INSTRUCTIONS_PLACEHOLDER))}
           rows={8}
         />
-      </FlexLayout.Flex>
+      </FlexLayout.Fixed>
 
       <FlexLayout.Fixed className='collection-instructions-buttons'>
         <tooltip.Button
@@ -97,6 +98,7 @@ const instructions = (props: IInstructionProps) => {
           {t('Save')}
         </tooltip.Button>
       </FlexLayout.Fixed>
+      
     </FlexLayout>
   );
 }

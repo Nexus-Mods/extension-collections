@@ -89,21 +89,23 @@ $collection-mod-image-height: 122px;
       padding: $half-gutter;
 
       >.layout-container {
-        gap: 8px;
-        background-color: red;
+        gap: 16px;
+
+        #collection-instructions-edit {
+          gap: 8px; 
+        }  
+
+        h4,
+        p {
+          margin: 0 0 0.6em 0;
+        }
       }
 
     }
+
+  
   }
 
-  #collection-instructions-edit {
-    gap: 8px;
-
-    h4,
-    p {
-      margin: 0 0 0.6em 0;
-    }
-  }
 
 
   #collection-edit-tabs-pane-info {
@@ -225,35 +227,46 @@ $collection-mod-image-height: 122px;
   .modal-body {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 16px;
 
     h5 {
       margin: 0;
       font-family: $font-family-base;
     }
+    
+    p {
+      margin: 0;
+    }
 
     ol {
       padding-left: 24px;
-    }
+      margin: 0;
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .radio label,
-      .checkbox label {
-        display: flex;
-        align-items: center;
-
-        input[type=radio],
-        input[type=checkbox] {
-          margin: 0 0 0 -20px;
-        }
-
+      li {
+        margin-top: 4px;
       }
     }
 
+    
+
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .radio label,
+    .checkbox label {
+      display: flex;
+      align-items: center;
+
+      input[type=radio],
+      input[type=checkbox] {
+        margin: 0 0 0 -20px;
+      }
+
+    }
   }
 }
 
@@ -1734,7 +1747,9 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 .collection-instructions-buttons {
-  align-self: end;
+    /* align-self: end; */
+    display: flex;
+    justify-content: flex-end;
 }
 
 .textarea-install-collection-instructions {
