@@ -95,7 +95,11 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIdsIn: str
     text: 'Please select the collection to add the mods to',
     message: filtered.map(modId =>
       util.renderModName(mods[modId], { version: true, variant: true })).join('\n'),
-    choices: collections.map((modId, idx) => ({
+    choices: collections.sort((a, b) => {
+      const modA = util.renderModName(mods[a]).toLowerCase();
+      const modB = util.renderModName(mods[b]).toLowerCase();
+      return modA.localeCompare(modB);
+    }).map((modId, idx) => ({
       id: modId,
       text: util.renderModName(mods[modId]),
       value: idx === 0,
