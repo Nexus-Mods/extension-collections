@@ -93,21 +93,22 @@ function HealthDownvoteDialog(props: IHealthDownvoteDialogProps) {
       onHide={hide}
     >
       <Modal.Header>
-        <Modal.Title>{t('Collection assistance - ') + util.renderModName(collection)}</Modal.Title>
+        <Modal.Title>{t('Downvote Success Rating')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <h5>{t('We\'re sorry to hear that, here are some steps that could help:')}</h5>
+        <p>{t(`Sorry to hear that the collection \"${util.renderModName(collection)}\" isn't working for you. Here are some steps that could help:`)}</p>
         <ol>
-          <li>Make sure your game version matches the version that the collection was created with.</li>
-          <li>Read the collection instructions to see if the curator has added any additional steps.</li>
-          <li>Check <a href={commentLink}>comments</a> on Nexus Mods for advice and to reach out to the collection curator and other users.</li>
-          <li>If you’ve found a bug, view <a href={bugLink}>bug reports</a> on Nexus Mods, or report a new bug to help the curator fix the issue.</li>
-        </ol>        
+          <li>Make sure your game version matches the game version the collection was created for.</li>
+          <li>Read the collection instructions and check if you've missed any steps.</li>
+          <li><a href={commentLink}>Check comments on Nexus Mods</a> for advice and to reach out to the collection curator.</li>
+          <li><a href={bugLink}>View bug reports on Nexus Mods</a> or report a new bug to help the curator fix the issue.</li>
+        </ol>  
+        <h5>{t(`Success ratings help others know if a collection installs and runs correctly. They are not a vote on whether you liked the collection or not.`)}</h5>      
         <FormGroup>
-          <Checkbox onChange={onChecked}>I have tried the above steps and it's still not working</Checkbox>
+          <Checkbox onChange={onChecked}>{t('I have tried the above steps and confirm this collection does not work.')}</Checkbox>
         </FormGroup>
       </Modal.Body>
-      <Modal.Footer>
+      <Modal.Footer>      
         <Button onClick={hide}>{t('Cancel')}</Button>
         <Button onClick={downvote} disabled={!confirmationCheck}>{t('Submit')}</Button>
       </Modal.Footer>

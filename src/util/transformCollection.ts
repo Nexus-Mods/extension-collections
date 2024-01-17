@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { BUNDLED_PATH, MAX_COLLECTION_NAME_LENGTH, MIN_COLLECTION_NAME_LENGTH,
          MOD_TYPE, PATCHES_PATH } from '../constants';
 import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
@@ -6,6 +7,7 @@ import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
 import { scanForDiffs } from './binaryPatching';
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
+import { generateConfig, parseConfig } from './collectionConfig';
 import { renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
@@ -605,6 +607,7 @@ export async function modToCollection(
     : [];
 
   const collectionAttributes = collection.attributes?.collection ?? {};
+  const collectionConfig = await generateConfig({ gameId, collectionMod: collection });
 
   const collectionInfo: ICollectionInfo = {
     author: collection.attributes?.uploader ?? 'Anonymous',
@@ -659,6 +662,7 @@ export async function modToCollection(
     modRules,
     ...extData,
     ...gameSpecific,
+    collectionConfig: {...collectionConfig},
   };
 
   return res;
@@ -898,6 +902,7 @@ export async function createCollection(api: types.IExtensionApi,
       uploaderId: state.persistent['nexus']?.userInfo?.user_id,
       editable: true,
       source: 'user-generated',
+      recommendNewProfile: false,
     },
     installationPath: id,
     rules,

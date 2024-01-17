@@ -1,4 +1,4 @@
-$border-radius: 4px;
+$border-radius: 8px;
 $collection-thumbnail-width: 230px;
 $collection-thumbnail-height: 288px;
 $collection-thumbnail-compact-width: 165px;
@@ -45,7 +45,8 @@ $collection-mod-image-height: 122px;
 #table-collection-mods .cell-highlight {
   display: flex !important;
   align-items: center;
-  > * {
+
+  >* {
     margin: 0 0.5em;
   }
 }
@@ -67,6 +68,9 @@ $collection-mod-image-height: 122px;
   height: 2.5em;
 }
 
+
+
+
 #collection-edit-tabs {
   height: 100%;
   overflow-y: hidden;
@@ -76,18 +80,43 @@ $collection-mod-image-height: 122px;
   .tab-content {
     overflow-y: hidden;
     flex: 1 1 0;
-    > div {
+
+    >div {
       height: 100%;
     }
 
     .panel {
       padding: $half-gutter;
+
+      >.layout-container {
+        gap: 16px;
+
+        #collection-instructions-edit {
+          gap: 8px;        
+        }  
+
+        #collection-settings-edit {
+          padding: $panel-body-padding;
+          border-radius: $panel-border-radius;
+          border: 1px solid $panel-default-border;
+        }
+
+        h4,
+        p {
+          margin: 0 0 0.6em 0;
+        }
+      }
+
     }
+
+  
   }
 
+
+
   #collection-edit-tabs-pane-info {
-    > .panel {
-      > form {
+    >.panel {
+      >form {
         max-width: 40em;
       }
     }
@@ -101,6 +130,7 @@ $collection-mod-image-height: 122px;
     padding-right: 2rem;
     border-right: $border-width solid $border-color;
   }
+
   .btn {
     margin: auto 1em;
 
@@ -117,18 +147,19 @@ $collection-mod-image-height: 122px;
   bottom: 0;
   background: rgba($gray-lighter, 0.7);
   padding: 1em 0;
+
   svg {
     margin-right: 0.5em;
   }
 }
 
-#collection-edit-tabs-pane-mod-rules > div {
+#collection-edit-tabs-pane-mod-rules>div {
   height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
 
-  > .list-group {
+  >.list-group {
     height: 100%;
     overflow-y: scroll;
   }
@@ -137,6 +168,7 @@ $collection-mod-image-height: 122px;
 #collection-edit-tabs-pane-ini-tweaks {
   .table {
     max-width: 40em;
+
     td {
       border-top: 0;
     }
@@ -201,39 +233,53 @@ $collection-mod-image-height: 122px;
   .modal-body {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 16px;
 
     h5 {
       margin: 0;
       font-family: $font-family-base;
     }
+    
+    p {
+      margin: 0;
+    }
 
     ol {
       padding-left: 24px;
-    }
+      margin: 0;
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .radio label, .checkbox label {
-        display: flex;
-        align-items: center;
-
-        input[type=radio], input[type=checkbox] {
-          margin: 0 0 0 -20px;
-        }      
-
+      li {
+        margin-top: 4px;
       }
     }
 
+    
+
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .radio label,
+    .checkbox label {
+      display: flex;
+      align-items: center;
+
+      input[type=radio],
+      input[type=checkbox] {
+        margin: 0 0 0 -20px;
+      }
+
+    }
   }
 }
 
 #collection-install-dialog {
   .modal-dialog {
     width: 80vw;
+
     .modal-body {
       height: 60vh;
     }
@@ -278,7 +324,7 @@ $collection-mod-image-height: 122px;
       }
     }
 
-    .carousel-inner > .item > img {
+    .carousel-inner>.item>img {
       height: 55vh;
       margin-left: auto;
       margin-right: auto;
@@ -298,13 +344,16 @@ $collection-mod-image-height: 122px;
   .collection-finished-body {
     margin-bottom: $half-gutter;
   }
+
   .collection-finished-optionals {
     border-top: $border-width solid $border-color;
     padding-top: $half-gutter;
+
     .collection-finished-optionals-text {
       font-size: larger;
       font-weight: bold;
     }
+
     .collection-finished-optional-buttons {
       display: flex;
       gap: 1em;
@@ -314,6 +363,7 @@ $collection-mod-image-height: 122px;
 
 .collection-mods-page-attribute-renderer {
   align-items: center;
+
   .collection-mods-page-attr-addendum {
     border-color: $text-color;
     border-radius: 4px;
@@ -338,6 +388,7 @@ ul.collection-mods-page-attrib-tooltip {
 .collection-description-popover {
   min-width: 60vw;
   max-width: 60vw;
+
   .popover-content {
     height: 50vh;
     overflow: auto;
@@ -361,7 +412,7 @@ ul.collection-mods-page-attrib-tooltip {
     }
   }
 
-  > .panel-body {
+  >.panel-body {
     padding: 0;
     margin-bottom: 0;
 
@@ -370,7 +421,7 @@ ul.collection-mods-page-attrib-tooltip {
     align-items: center;
     justify-content: center;
 
-    > .icon {
+    >.icon {
       width: 32px;
       height: 32px;
 
@@ -386,13 +437,14 @@ ul.collection-mods-page-attrib-tooltip {
     border-radius: $border-radius;
     display: flex;
 
-    > .btn-group-vertical {
+    >.btn-group-vertical {
       width: 128px;
       align-items: center;
       margin-left: auto;
       margin-right: auto;
       margin-top: 5em;
-      > .btn {
+
+      >.btn {
         justify-content: center;
       }
     }
@@ -401,19 +453,22 @@ ul.collection-mods-page-attrib-tooltip {
 
 .collection-thumbnail {
   position: relative;
-  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.35);
+  transition: 100ms ease-out;
 
   &.collection-remote {
-    .thumbnail-img, .bottom {
+
+    .thumbnail-img,
+    .bottom {
       filter: opacity(0.5);
     }
   }
 
-  > .collection-thumbnail-body.panel-body {
+  >.collection-thumbnail-body.panel-body {
     padding: 0;
     height: 100%;
 
-    > img {
+    >img {
       width: 100%;
       height: 100%;
       object-position: center;
@@ -478,7 +533,7 @@ ul.collection-mods-page-attrib-tooltip {
       display: flex;
       justify-content: space-between;
 
-      > *:not(:first-child) {
+      >*:not(:first-child) {
         margin-left: 1em;
       }
 
@@ -489,6 +544,9 @@ ul.collection-mods-page-attrib-tooltip {
   }
 
   &:hover {
+
+    transform: scale(1.05);
+
     .bottom {
       &.editable {
         .no-hover {
@@ -510,6 +568,7 @@ ul.collection-mods-page-attrib-tooltip {
         display: none;
       }
     }
+
     .thumbnail-hover-menu {
       .hover-content {
         opacity: 0;
@@ -599,6 +658,7 @@ ul.collection-mods-page-attrib-tooltip {
   .collection-name {
     display: flex;
     justify-content: space-between;
+
     .form-control {
       font-family: $font-family-base;
       font-size: medium;
@@ -616,17 +676,19 @@ ul.collection-mods-page-attrib-tooltip {
     display: flex;
     background-color: unset !important;
 
-    > .btn-group-vertical {
+    >.btn-group-vertical {
       width: 128px;
       align-items: center;
       margin-left: auto;
       margin-right: auto;
       margin-top: 5em;
+
       // justify-content: center;
       .btn {
         justify-content: center;
         align-items: center;
-        > .icon {
+
+        >.icon {
           margin-right: 0.5em;
         }
       }
@@ -639,6 +701,7 @@ ul.collection-mods-page-attrib-tooltip {
   background-color: $gray-light;
   text-transform: uppercase;
   padding: 0 0.5em;
+
   &.enabled {
     background-color: $brand-success;
   }
@@ -648,7 +711,7 @@ ul.collection-mods-page-attrib-tooltip {
   display: flex;
   flex-wrap: wrap;
 
-  > .placeholder {
+  >.placeholder {
     margin: auto;
   }
 
@@ -684,10 +747,10 @@ ul.collection-mods-page-attrib-tooltip {
     }
   }
 
-  > .panel {
+  >.panel {
     border: 0;
 
-    > .panel-body {
+    >.panel-body {
       border-top-color: $gray-dark;
     }
   }
@@ -720,6 +783,7 @@ ul.collection-mods-page-attrib-tooltip {
       display: none;
     }
   }
+
   .collection-description {
     width: 30em;
   }
@@ -749,8 +813,8 @@ ul.collection-mods-page-attrib-tooltip {
   &.endorse-yes {
     color: $brand-clickable;
     background-color: transparent;
-    border-color: $brand-clickable;  
-    
+    border-color: $brand-clickable;
+
     &:hover {
       color: $text-color;
       background-color: darken($btn-default-bg, 12%);
@@ -758,7 +822,7 @@ ul.collection-mods-page-attrib-tooltip {
 
     &[disabled] {
       opacity: 0.4;
-  
+
       &:hover {
         background-color: transparent;
         border-color: rgba(255, 255, 255, 0.1);
@@ -802,9 +866,10 @@ ul.collection-mods-page-attrib-tooltip {
   &.collection-mod-selection {
     height: calc(#{$collection-thumbnail-compact-height} + #{$gutter-width} + 2 * #{$border-width});
 
-   .collection-thumbnail {
+    .collection-thumbnail {
       max-width: calc(#{$collection-thumbnail-width} / 2) !important;
       max-height: calc(#{$collection-thumbnail-height} / 2) !important;
+
       .thumbnail-img {
         max-width: calc(#{$collection-thumbnail-width} / 2) !important;
         max-height: calc(#{$collection-thumbnail-height} / 2) !important;
@@ -827,7 +892,8 @@ ul.collection-mods-page-attrib-tooltip {
   .collection-overview-title {
     display: flex;
     align-items: center;
-    > .collection-status {
+
+    >.collection-status {
       margin-left: 1em;
     }
   }
@@ -844,7 +910,7 @@ ul.collection-mods-page-attrib-tooltip {
 .installing-mod-overview {
   height: 100%;
 
-  > .layout-container {
+  >.layout-container {
     gap: 1em;
   }
 
@@ -888,7 +954,7 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
-.collection-page-detail-bar > .layout-container {
+.collection-page-detail-bar>.layout-container {
   align-items: center;
   gap: 1em;
 }
@@ -901,6 +967,7 @@ ul.collection-mods-page-attrib-tooltip {
 
     .table-main-pane .cell-uploader {
       white-space: nowrap;
+
       .img-circle {
         width: 24px;
         height: 24px;
@@ -956,6 +1023,7 @@ ul.collection-mods-page-attrib-tooltip {
   &.cell-required {
     text-align: center;
   }
+
   &.cell-tags {
     text-align: center;
   }
@@ -981,13 +1049,15 @@ ul.collection-mods-page-attrib-tooltip {
 .collection-pause-cancel-flex {
   justify-content: center;
   padding: 0 $half-gutter;
-  > .btn {
+
+  >.btn {
     margin: 0 $half-gutter;
     padding: 0.5em;
     display: flex;
     justify-content: center;
     align-items: center;
     border: 2px solid $border-color;
+
     &:hover {
       border: 2px solid $brand-primary;
     }
@@ -1015,7 +1085,7 @@ ul.collection-mods-page-attrib-tooltip {
   width: 20em;
   height: 100%;
 
-  > .layout-container {
+  >.layout-container {
     align-items: center;
   }
 
@@ -1024,7 +1094,7 @@ ul.collection-mods-page-attrib-tooltip {
     background-size: cover;
     padding: $half-gutter;
 
-    > table {
+    >table {
       background: transparent;
     }
   }
@@ -1033,7 +1103,8 @@ ul.collection-mods-page-attrib-tooltip {
     font-size: x-large;
   }
 
-  th, td {
+  th,
+  td {
     border: 0 !important;
     padding: 4px 30px !important;
   }
@@ -1055,10 +1126,11 @@ ul.collection-mods-page-attrib-tooltip {
 
 #collection-start-page {
   .collection-tab {
-    > a {
+    >a {
       display: flex;
       align-items: center;
-      > svg {
+
+      >svg {
         margin-right: 0.5em;
       }
     }
@@ -1066,6 +1138,7 @@ ul.collection-mods-page-attrib-tooltip {
 
   .my-collections-page-link {
     color: $link-color;
+
     &:hover {
       color: $link-color;
     }
@@ -1095,7 +1168,7 @@ ul.collection-mods-page-attrib-tooltip {
   overflow-y: auto;
   width: fit-content;
 
-  > .btn {
+  >.btn {
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -1106,14 +1179,17 @@ ul.collection-mods-page-attrib-tooltip {
   .header-requirement {
     min-width: 15em;
   }
+
   .cell-status {
     .dropdown {
       display: flex;
     }
+
     .toggle-container {
       margin-top: 0;
     }
   }
+
   .cell-edit {
     text-align: center;
   }
@@ -1126,6 +1202,7 @@ ul.collection-mods-page-attrib-tooltip {
     .toggle-container .toggle-children {
       display: flex;
     }
+
     .rule-name {
       color: $text-color-disabled;
     }
@@ -1150,12 +1227,15 @@ ul.collection-mods-page-attrib-tooltip {
   display: flex;
   flex-direction: column;
   height: 100%;
+
   .list-group {
     flex: 1 1 0;
     overflow: auto;
   }
+
   .collection-rule-separator {
     margin-top: $half-gutter;
+
     &::before {
       content: '';
       border-top: $border-width solid $border-color;
@@ -1216,11 +1296,12 @@ ul.collection-mods-page-attrib-tooltip {
   border-radius: 4px;
   overflow: hidden;
 
-  .icon-revision, .icon-health {
+  .icon-revision,
+  .icon-health {
     margin-right: 0.5em;
   }
 
-  > * {
+  >* {
     padding: 0 1em;
   }
 
@@ -1280,7 +1361,7 @@ ul.collection-mods-page-attrib-tooltip {
     display: flex;
     align-items: stretch;
 
-    > * {
+    >* {
       // display: flex;
       // align-items: center;
       padding: 0.5em;
@@ -1345,14 +1426,14 @@ ul.collection-mods-page-attrib-tooltip {
         &:hover:focus {
           color: $brand-clickable;
           background-color: transparent;
-          border-color: $brand-clickable;  
+          border-color: $brand-clickable;
         }
 
         // selected button so we need to strip out any 'mouse down' states
-        &:active:focus {          
+        &:active:focus {
           color: $brand-clickable;
           background-color: transparent;
-          border-color: $brand-clickable;        
+          border-color: $brand-clickable;
         }
       }
     }
@@ -1421,6 +1502,7 @@ ul.collection-mods-page-attrib-tooltip {
   .header-name {
     white-space: nowrap;
   }
+
   .cell-selected {
     text-align: center;
   }
@@ -1429,6 +1511,7 @@ ul.collection-mods-page-attrib-tooltip {
 .slideshow-controls {
   margin: 0 4em;
   display: flex;
+
   .btn {
     @extend .btn-embed;
   }
@@ -1487,7 +1570,7 @@ ul.collection-mods-page-attrib-tooltip {
   color: black;
   font-weight: bold;
   font-size: larger;
-  
+
   &__text {
     margin-left: 8px
   }
@@ -1496,7 +1579,8 @@ ul.collection-mods-page-attrib-tooltip {
     display: flex;
     flex-direction: row;
     flex: 1 1 auto;
-    & > button {
+
+    &>button {
       background: white;
       color: black;
       border-color: white;
@@ -1506,16 +1590,20 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 .collections-new-revision {
+
   // border: $border-width solid $brand-primary;
   background: $brand-info;
-  padding: 3px 4px;
   width: fit-content;
-  border-radius: 4px;
   text-transform: uppercase;
   position: absolute;
   top: $half-gutter;
   right: $half-gutter;
   font-weight: bold;
+
+  padding: 4px 8px 4px 6px;
+  box-shadow: 0px 2px 6px 1px rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  font-size: smaller;
 
   .icon {
     margin-right: 0.5em;
@@ -1527,7 +1615,7 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 #collections-profile-select {
-  @extend .gutter-above;
+  //@extend .gutter-above;
 
   place-items: center;
   gap: 0.5em;
@@ -1545,6 +1633,7 @@ ul.collection-mods-page-attrib-tooltip {
 
   .media-right {
     width: 100%;
+
     .layout-container-row {
       justify-content: space-between;
     }
@@ -1568,7 +1657,7 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 
-.collections-instructions-canbereviewed {  
+.collections-instructions-canbereviewed {
   margin: 0 0 7px 0;
 }
 
@@ -1577,12 +1666,17 @@ ul.collection-mods-page-attrib-tooltip {
   background-color: $white;
   color: $black;
   text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  padding: 0 0.5em;
-  gap: 0.5em;
+  padding: 2px 8px;
   width: fit-content;
   margin: 0 0 7px 0;
+  font-family: 'Roboto';
+  font-weight: 600;
+  font-size: smaller;
+  height: fit-content;
+  
+  .icon {
+    margin-right: 0.5em;
+  }
 }
 
 .collection-revision-and-rating {
@@ -1611,21 +1705,26 @@ ul.collection-mods-page-attrib-tooltip {
   svg {
     margin-right: 0.5em;
   }
+
   &.success-rating-insufficient {
     color: $text-color-disabled;
   }
+
   &.success-rating-bad {
     color: $brand-danger;
   }
+
   &.success-rating-dubious {
     color: $brand-warning;
   }
+
   &.success-rating-good {
     color: $brand-success;
   }
 }
 
 #collection-start-page .tab-pane {
+
   .panel-heading {
     display: flex;
     align-items: center;
@@ -1638,7 +1737,7 @@ ul.collection-mods-page-attrib-tooltip {
   align-items: center;
   gap: 1em;
 
-  > .Select {
+  >.Select {
     flex: 1 1 0;
   }
 }
@@ -1646,6 +1745,7 @@ ul.collection-mods-page-attrib-tooltip {
 #collection-file-overrides {
   .table {
     width: fit-content;
+
     td {
       border-top: unset;
     }
@@ -1653,21 +1753,24 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 #collection-instructions-area {
-  height: 100%;
+  //height: 100%;
   resize: none;
 }
 
 .collection-instructions-buttons {
-  align-self: end;
+    /* align-self: end; */
+    display: flex;
+    justify-content: flex-end;
 }
 
 .textarea-install-collection-instructions {
   flex: 1 1 0;
-  resize: none;    
+  resize: none;
   padding: 5px 8px;
   background-color: $brand-bg;
   border: 1px solid $border-color;
   overflow: auto;
+  border-radius: $border-radius-base;
 }
 
 .textarea-install-collection-instructions p {
@@ -1679,7 +1782,7 @@ ul.collection-mods-page-attrib-tooltip {
   display: flex;
   flex-direction: column;
 
-  > .tab-content {
+  >.tab-content {
     flex: 1 1 0;
     overflow: hidden;
   }
@@ -1701,11 +1804,11 @@ ul.collection-mods-page-attrib-tooltip {
   .collection-instructions-text p {
     margin: 0 0 7px 0;
   }
-  
+
   .collection-instructions-container {
     padding: 0 $half-gutter;
   }
-  
+
   .panel-body {
     overflow: auto;
   }
@@ -1727,12 +1830,12 @@ ul.collection-mods-page-attrib-tooltip {
       }
 
       .collection-mod-instructions {
-          display: -webkit-box;
-          overflow: hidden;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          margin-left: auto;
-          margin-right: auto;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        margin-left: auto;
+        margin-right: auto;
       }
 
       td {
