@@ -2,8 +2,8 @@ import * as path from 'path';
 import React = require('react');
 import { ControlLabel, ListGroup, ListGroupItem, Panel } from 'react-bootstrap';
 import { useSelector, useStore } from 'react-redux';
-import { fs, Icon, log, selectors, Spinner, Toggle, tooltip, types, util } from 'vortex-api';
-import { ICollectionMod } from '../../types/ICollection';
+import { fs, log, selectors, Spinner, tooltip, types, util } from 'vortex-api';
+import { ICollection } from '../../types/ICollection';
 import { IExtendedInterfaceProps } from '../../types/IExtendedInterfaceProps';
 
 interface IGamebryoLO {
@@ -62,7 +62,7 @@ async function getIncludedPlugins(gameId: string,
                                   mods: { [modId: string]: types.IMod },
                                   modIds: string[])
                                   : Promise<string[]> {
-  const extensions = ['fallout4', 'skyrimse'].indexOf(gameId) === -1
+  const extensions = ['fallout4', 'skyrimse'].includes(gameId)
     ? new Set(['.esp', '.esm', '.esl'])
     : new Set(['.esp', '.esm']);
 
@@ -120,8 +120,8 @@ function refName(iter: string | { name: string }): string {
 
 export async function parser(api: types.IExtensionApi,
                              gameId: string,
-                             collection: ICollectionGamebryo,
-                             mods: { [modId: string]: types.IMod }) {
+                             collection: ICollection,
+                             collectionMod: types.IMod) {
   const state: types.IState = api.getState();
 
   if ((state as any).userlist === undefined) {
@@ -129,6 +129,8 @@ export async function parser(api: types.IExtensionApi,
     // if so, that may be intentional so can't report an error.
     return;
   }
+
+  const mods = state.persistent.mods[gameId];
 
   // set up groups and their rules
   util.batchDispatch(api.store, (collection.pluginRules.groups ?? []).reduce((prev, group) => {
@@ -150,8 +152,14 @@ export async function parser(api: types.IExtensionApi,
     return prev;
   }, []));
 
+  const collectionModIds = collectionMod.rules
+    .filter(rule => ['requires', 'recommends'].includes(rule.type))
+    .map(rule => util.findModByRef(rule.reference, mods))
+    .filter(mod => !!mod)
+    .map(mod => mod.id);
+
   const stagingPath = selectors.installPathForGame(state, gameId);
-  const includedPlugins = await getIncludedPlugins(gameId, stagingPath, mods, Object.keys(mods));
+  const includedPlugins = await getIncludedPlugins(gameId, stagingPath, mods, collectionModIds);
   const isEnabled = (pluginName: string) => collection.plugins.find(plugin =>
     ((plugin.name === pluginName) && (plugin.enabled))) !== undefined;
 

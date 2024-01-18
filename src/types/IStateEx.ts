@@ -14,15 +14,17 @@ export interface IStateEx extends types.IState {
   };
   persistent: typeof dummy.persistent & {
     collections: {
-      [collectionId: string]: {
-        timestamp: number,
-        info: ICollection,
+      collections: {
+        [collectionId: string]: {
+          timestamp: number,
+          info: ICollection,
+        },
       },
-    },
-    revisions: {
-      [revisionId: string]: {
-        timestamp: number,
-        info: IRevision,
+      revisions: {
+        [revisionId: string]: {
+          timestamp: number,
+          info: IRevision,
+        },
       },
     },
   };

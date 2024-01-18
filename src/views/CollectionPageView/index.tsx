@@ -2,23 +2,23 @@ import { AUTHOR_UNKNOWN, AVATAR_FALLBACK, INSTALLING_NOTIFICATION_ID } from '../
 import { testDownloadReference } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
 
-import { ICollection } from '../../types/ICollection';
 import { IModEx } from '../../types/IModEx';
 import { IStateEx } from '../../types/IStateEx';
 import { modRuleId } from '../../util/util';
 
+import CollectionInstructions from './CollectionInstructions';
 import CollectionItemStatus from './CollectionItemStatus';
 import CollectionOverview from './CollectionOverview';
 import CollectionOverviewSelection from './CollectionOverviewSelection';
 import CollectionProgress from './CollectionProgress';
 
-import { ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nexusmods/nexus-api';
+import { ICollection, ICollectionRevisionMod, IModFile, IRevision, RatingOptions } from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import memoizeOne from 'memoize-one';
 import * as React from 'react';
-import { Image, Panel } from 'react-bootstrap';
+import { Image, Panel, Tab, Tabs } from 'react-bootstrap';
 import ReactDOM = require('react-dom');
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
@@ -35,6 +35,7 @@ export interface ICollectionPageProps {
   mods: { [modId: string]: types.IMod };
   downloads: { [dlId: string]: types.IDownload };
   notifications: types.INotification[];
+  onAddCallback: (cbName: string, cb: (...args: any[]) => void) => void;
   onView: (modId: string) => void;
   onPause: (collectionId: string) => void;
   onCancel: (collectionId: string) => void;
@@ -52,6 +53,8 @@ interface IConnectedProps {
   overlays: { [id: string]: types.IOverlay };
   collectionInfo: ICollection;
   revisionInfo: IRevision;
+  showUpvoteResponse: boolean;
+  showDownvoteResponse: boolean;
 }
 
 interface IActionProps {
@@ -59,11 +62,13 @@ interface IActionProps {
   onSetAttributeFilter: (tableId: string, filterId: string, filterValue: any) => void;
   onRemoveRule: (gameId: string, modId: string, rule: types.IModRule) => void;
   onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) => void;
+  onSuppressVoteResponse: (response: 'upvote' | 'downvote') => void;
 }
 
 interface IComponentState {
   modsEx: { [modId: string]: IModEx };
   modSelection: Array<{ local: IModEx, remote: ICollectionRevisionMod }>;
+  currentTab: string;
 }
 
 const getCollator = (() => {
@@ -125,6 +130,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     this.initState({
       modsEx: {},
       modSelection: [],
+      currentTab: 'instructions',
     });
 
     this.mModActions = [
@@ -143,8 +149,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         title: 'Remove',
         action: this.removeSelected,
         condition: instanceId => (typeof(instanceId) === 'string')
-            ? (['downloaded', 'installed'].includes(this.state.modsEx[instanceId].state))
-            : true,
+          ? (['downloaded', 'installed'].includes(this.state.modsEx[instanceId].state))
+          : true,
         hotKey: { code: 46 },
       },
       {
@@ -228,6 +234,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
           { value: 'Installing', label: 'Installing' },
           { value: 'Downloading', label: 'Downloading' },
           { value: 'Pending', label: 'Pending' },
+          { value: 'Recommended', label: 'Not installed' },
           { value: 'Ignored', label: 'Ignored' },
         ], true, false),
       },
@@ -240,8 +247,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         edit: {},
         filter: new OptionsFilter([
           { value: false, label: 'Recommended'},
-          { value: true, label: 'Required'}],
-          false, false),
+          { value: true, label: 'Required' },
+        ], false, false),
       },
       {
         id: 'name',
@@ -333,6 +340,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         edit: {},
       },
     ];
+
+    props.onAddCallback('viewCollectionTab', (tab: string) => {
+      if (['instructions', 'mods'].includes(tab)) {
+        this.nextState.currentTab = tab;
+      }
+    });
   }
 
   public async componentDidMount() {
@@ -390,6 +403,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         || this.installingNotificationsChanged(this.props, newProps)
         || (this.props.activity.mods !== newProps.activity.mods)
         || (this.props.revisionInfo !== newProps.revisionInfo)
+        || (this.props.showUpvoteResponse !== newProps.showUpvoteResponse)
+        || (this.props.showDownvoteResponse !== newProps.showDownvoteResponse)
+        || (this.state.currentTab !== newState.currentTab)
         || (this.state.modSelection !== newState.modSelection)
         || (this.state.modsEx !== newState.modsEx)) {
       return true;
@@ -399,8 +415,9 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t, activity, className, collection, collectionInfo, driver, downloads, language,
-            onVoteSuccess, profile, revisionInfo, userInfo, votedSuccess } = this.props;
-    const { modSelection, modsEx } = this.state;
+      mods, onSuppressVoteResponse, onVoteSuccess, profile, revisionInfo,
+      showUpvoteResponse, showDownvoteResponse, userInfo, votedSuccess } = this.props;
+    const { currentTab, modSelection, modsEx } = this.state;
 
     if (collection === undefined) {
       return null;
@@ -451,6 +468,8 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 profile={profile}
                 collection={collection}
                 totalSize={totalSize}
+                showUpvoteResponse={showUpvoteResponse}
+                showDownvoteResponse={showDownvoteResponse}
                 revision={this.revisionMerged(collectionInfo, revisionInfo)}
                 votedSuccess={votedSuccess}
                 onSetEnabled={this.setEnabled}
@@ -459,23 +478,48 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
                 onClone={this.clone}
                 onRemove={this.remove}
                 onVoteSuccess={onVoteSuccess}
+                onSuppressVoteResponse={onSuppressVoteResponse}
                 incomplete={incomplete}
               />
             )}
         </FlexLayout.Fixed>
         <FlexLayout.Flex className='collection-mods-panel'>
-          <Panel ref={this.setTableContainerRef}>
-            <Panel.Body>
-              <Table
-                tableId='collection-mods'
-                showDetails={false}
-                data={modsEx}
-                staticElements={this.mAttributes}
-                actions={this.mModActions}
-                onChangeSelection={this.changeModSelection}
-              />
-            </Panel.Body>
-          </Panel>
+          <Tabs id='collection-view-tabs' activeKey={currentTab} onSelect={this.selectTab}>
+            <Tab
+              key='instructions'
+              eventKey='instructions'
+              title={t('Instructions')}
+            >
+              <Panel>
+                <Panel.Body>
+                  <CollectionInstructions
+                    t={t}
+                    collection={collection}
+                    mods={mods}
+                    onToggleInstructions={this.toggleInstructions}
+                  />
+                </Panel.Body>
+              </Panel>
+            </Tab>
+            <Tab
+              key='mods'
+              eventKey='mods'
+              title={t('Mods')}
+            >
+              <Panel ref={this.setTableContainerRef}>
+                <Panel.Body>
+                  <Table
+                    tableId='collection-mods'
+                    showDetails={false}
+                    data={modsEx}
+                    staticElements={this.mAttributes}
+                    actions={this.mModActions}
+                    onChangeSelection={this.changeModSelection}
+                  />
+                </Panel.Body>
+              </Panel>
+            </Tab>
+          </Tabs>
         </FlexLayout.Flex>
         <FlexLayout.Fixed>
           <CollectionProgress
@@ -491,12 +535,17 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             onResume={this.mInstalling
               ? undefined
               : (driver.collection !== undefined) && !driver.installDone
-              ? null // installing something else
-              : this.resume}
+                ? null // installing something else
+                : this.resume}
           />
         </FlexLayout.Fixed>
       </FlexLayout>
     );
+  }
+
+  private selectTab = (tab: any) => {
+    this.context.api.events.emit('analytics-track-navigation', `collections/view/collection/${tab}`);
+    this.nextState.currentTab = tab;
   }
 
   private progress(props: ICollectionPageProps, mod: IModEx) {
@@ -610,17 +659,19 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
       // This shouldn't be possible
       const err = new util.ProcessCanceled('No instructions found', modId);
       err['attachLogOnReport'] = true;
+      err['Collection'] = this.props.collection?.attributes?.collectionSlug;
+      err['Revision'] = this.props.collection?.attributes?.revisionNumber;
       onShowError('Failed to display instructions', err, true);
       return;
     }
 
     const mod = mods[modId];
     const modName = util.renderModName(mod);
-    if (overlays[modId]?.text !== undefined) {
+    if (overlays[modId]?.content !== undefined) {
       this.context.api.ext.dismissOverlay?.(modId);
     } else {
-      this.context.api.ext.showOverlay?.(modId, modName, instructions,
-        { x: evt.pageX, y: evt.pageY });
+      this.context.api.ext.showOverlay?.(modId, modName, instructions, {
+        x: evt.pageX, y: evt.pageY });
     }
   }
 
@@ -860,11 +911,11 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const { profile } = newProps;
     const { modsEx } = this.state;
-    const pendingDL = Object.keys(modsEx).filter(modId => modsEx[modId].state === null);
+    const pendingDL = Object.keys(modsEx).filter(modId => modsEx[modId]?.state === null);
     const pendingInstall = Object.keys(modsEx)
-      .filter(modId => ['downloading', 'downloaded', null].includes(modsEx[modId].state));
+      .filter(modId => ['downloading', 'downloaded', null].includes(modsEx[modId]?.state));
     const pendingFinish = Object.keys(modsEx)
-      .filter(modId => ['installing', 'installed'].includes(modsEx[modId].state));
+      .filter(modId => ['installing', 'installed'].includes(modsEx[modId]?.state));
 
     // now, also check every added download or mod whether they may be relevant for any unfulfilled
     // rule
@@ -1051,7 +1102,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   private initModsEx(props: ICollectionPageProps): { [modId: string]: IModEx } {
     const { collection } = props;
 
-    return (collection.rules || [])
+    return (collection?.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .reduce<{ [modId: string]: IModEx }> ((prev, rule) => {
         const id = modRuleId(rule);
@@ -1075,7 +1126,7 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
       state.persistent.collections.revisions?.[collection.attributes.revisionId]?.info;
     if (revisionInfo?.collection !== undefined) {
       collectionInfo =
-        state.persistent.collections.collections?.[revisionInfo.collection.id].info;
+        state.persistent.collections.collections?.[revisionInfo.collection.id]?.info;
     }
     votedSuccess = revisionInfo?.metadata?.ratingValue ?? 'abstained';
   }
@@ -1088,6 +1139,8 @@ function mapStateToProps(state: IStateEx, ownProps: ICollectionPageProps): IConn
     overlays: state.session.overlays.overlays,
     collectionInfo,
     revisionInfo,
+    showUpvoteResponse: state.settings.interface.usage['collection-upvote-response-dialog'] ?? true,
+    showDownvoteResponse: state.settings.interface.usage['collection-downvote-response-dialog'] ?? true,
   };
 }
 
@@ -1101,6 +1154,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.removeModRule(gameId, modId, rule)),
     onShowError: (message: string, details?: string | Error | any, allowReport?: boolean) =>
       util.showError(dispatch, message, details, { allowReport }),
+    onSuppressVoteResponse: (response: 'upvote' | 'downvote') =>
+      dispatch(actions.showUsageInstruction(`collection-${response}-response-dialog`, false)),
   };
 }
 

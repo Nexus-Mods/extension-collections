@@ -19,7 +19,7 @@ function CollectionReleaseStatus(props: ICollectionReleaseStatusProps) {
                && util.getSafe(collection.attributes, ['editable'], false)) {
       return <div className='collection-status'>{t('Published')}</div>;
     } else if (enabled) {
-      return <div className='collection-status'>{t('Enabled')}</div>;
+      return <div className='collection-status enabled'>{t('Enabled')}</div>;
     } else {
       return <div className='collection-status'>{t('Disabled')}</div>;
     }

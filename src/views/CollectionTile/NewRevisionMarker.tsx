@@ -4,10 +4,11 @@ import { Icon, types } from 'vortex-api';
 interface INewRevisionMarkerProps {
   t: types.TFunction;
   collection: types.IMod;
+  updating: boolean;
 }
 
 function NewRevisionMarker(props: INewRevisionMarkerProps) {
-  const { t, collection } = props;
+  const { t, collection, updating } = props;
 
   if ((collection.attributes?.['newestVersion'] === undefined)
       || (parseInt(collection.attributes?.['newestVersion'], 10)
@@ -17,7 +18,7 @@ function NewRevisionMarker(props: INewRevisionMarkerProps) {
 
   return (
     <div className='collections-new-revision'>
-      <Icon name='details'/>
+      <Icon name={updating ? 'spinner_new' : 'details'} />
       {t('Update')}
     </div>
   );

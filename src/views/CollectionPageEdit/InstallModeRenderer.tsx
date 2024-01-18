@@ -4,7 +4,7 @@ import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import { ComponentEx, FlexLayout, selectors, tooltip, types, util } from 'vortex-api';
 
-import { NAMESPACE } from '../constants';
+import { NAMESPACE } from '../../constants';
 
 interface IBaseProps {
   modId: string;

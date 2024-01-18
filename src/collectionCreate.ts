@@ -1,3 +1,4 @@
+import memoizeOne from 'memoize-one';
 import { MOD_TYPE } from './constants';
 import { createCollectionFromProfile } from './util/transformCollection';
 
@@ -31,41 +32,34 @@ export async function initFromProfile(api: types.IExtensionApi, profileId: strin
   }
 }
 
+const collections = memoizeOne((mods: { [modId: string]: types.IMod }) => {
+  const isWorkshopCollection = mod => (mod.type === MOD_TYPE)
+          && (mod.attributes?.editable === true);
+  return Object.values(mods)
+    .filter(isWorkshopCollection)
+    .map(coll => new Set((coll.rules ?? []).map(rule => rule.reference.id)));
+});
+
 export function addCollectionCondition(api: types.IExtensionApi, instanceIds: string[]) {
   const state = api.getState();
   const gameId = selectors.activeGameId(state);
   const mods = state.persistent.mods[gameId];
-  return Object.keys(mods)
-    .find(collectionId => {
-      if ((mods[collectionId].type !== MOD_TYPE)
-          || (mods[collectionId].attributes?.editable !== true)) {
-        return false;
-      }
 
-      const rules = mods[collectionId].rules ?? [];
-
-      // only offer the option if there is at least one mod assigned to a collection
-      return instanceIds.find(modId =>
-        !alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) !== undefined;
-    }) !== undefined;
+  return collections(mods).find(ruleSet => {
+    // only offer the option if there is at least one mod not assigned to a collection
+    return instanceIds.find(modId =>
+      (mods[modId].type !== MOD_TYPE) && !ruleSet.has(modId)) !== undefined;
+  }) !== undefined;
 }
 
 export function removeCollectionCondition(api: types.IExtensionApi, instanceIds: string[]) {
   const state = api.getState();
   const gameId = selectors.activeGameId(state);
   const mods = state.persistent.mods[gameId];
-  return Object.keys(mods)
-    .find(collectionId => {
-      if ((mods[collectionId].type !== MOD_TYPE)
-          || (mods[collectionId].attributes?.editable !== true)) {
-        return false;
-      }
-
-      const rules = mods[collectionId].rules ?? [];
-
-      // only offer the option if there is at least one mod assigned to a collection
-      return instanceIds.find(modId => alreadyIncluded(rules, modId)) !== undefined;
-    }) !== undefined;
+  return collections(mods).find(ruleSet => {
+    // only offer the option if there is at least one mod assigned to a collection
+    return instanceIds.find(modId => ruleSet.has(modId)) !== undefined;
+  }) !== undefined;
 }
 
 export function alreadyIncluded(rules, modId): boolean {
@@ -97,11 +91,20 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIdsIn: str
       return filtered.find(modId => !alreadyIncluded(rules, modId)) !== undefined;
     });
 
+  const sortAlphabetically = (modIds: string[]) => {
+    const temp = [...modIds];
+    temp.sort((a, b) => {
+      const modA = util.renderModName(mods[a]).toLowerCase();
+      const modB = util.renderModName(mods[b]).toLowerCase();
+      return modA.localeCompare(modB);
+    });
+    return temp;
+  };
   return api.showDialog('question', 'Add Mods to Collection', {
-    text: 'Please select the collection to add the mods to',
-    message: filtered.map(modId =>
+    text: 'Choose which collection you want the selected mods to be added',
+    message: sortAlphabetically(filtered).map(modId =>
       util.renderModName(mods[modId], { version: true, variant: true })).join('\n'),
-    choices: collections.map((modId, idx) => ({
+        choices: sortAlphabetically(collections).map((modId, idx) => ({
       id: modId,
       text: util.renderModName(mods[modId]),
       value: idx === 0,
@@ -113,6 +116,10 @@ export function addCollectionAction(api: types.IExtensionApi, instanceIdsIn: str
     .then((result: types.IDialogResult) => {
       if (result.action === 'Add') {
         const collectionId = Object.keys(result.input).find(target => result.input[target]);
+        if (mods[collectionId] === undefined) {
+          // not entirely sure how this could happen
+          return;
+        }
         const rules = mods[collectionId].rules ?? [];
         util.batchDispatch(api.store, filtered.reduce((prev: Redux.Action[], modId: string) => {
           if (!alreadyIncluded(rules, modId) && (mods[modId].type !== MOD_TYPE)) {
