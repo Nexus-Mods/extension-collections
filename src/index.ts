@@ -10,7 +10,8 @@ import InstallDriver from './util/InstallDriver';
 import { cloneCollection, createCollection, makeCollectionId } from './util/transformCollection';
 import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
-import CollectionsMainPage from './views/CollectionPage';
+import HealthDownvoteDialog from './views/CollectionPageView/HealthDownvoteDialog';
+import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
@@ -22,7 +23,7 @@ import {
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
 import { makeInstall, testSupported } from './collectionInstall';
-import { DELAY_FIRST_VOTE_REQUEST, MOD_TYPE, TIME_BEFORE_VOTE } from './constants';
+import { DELAY_FIRST_VOTE_REQUEST, INSTALLING_NOTIFICATION_ID, MOD_TYPE, TIME_BEFORE_VOTE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
 import initTools from './tools';
@@ -36,7 +37,8 @@ import * as React from 'react';
 import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
-import { actions, fs, log, OptionsFilter, selectors, types, util } from 'vortex-api';
+import { actions, log, OptionsFilter, selectors, types, util } from 'vortex-api';
+import { IRevision } from '@nexusmods/nexus-api';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -62,6 +64,26 @@ function onlyLocalRules(rule: types.IModRule) {
     && (rule.reference.repo === undefined);
 }
 
+const modsBeingRemoved = new Set<string>();
+
+function makeModKey(gameId: string, modId: string): string {
+  return `${gameId}_${modId}`;
+}
+
+function makeWillRemoveMods() {
+  return (gameId: string, modIds: string[]) => {
+    modIds.forEach(modId => modsBeingRemoved.add(makeModKey(gameId, modId)));
+    return Promise.resolve();
+  };
+}
+
+function makeDidRemoveMods() {
+  return (gameId: string, modIds: string[]) => {
+    modIds.forEach(modId => modsBeingRemoved.delete(makeModKey(gameId, modId)));
+    return Promise.resolve();
+  };
+}
+
 function makeOnUnfulfilledRules(api: types.IExtensionApi) {
   const reported = new Set<string>();
 
@@ -70,6 +92,10 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
     const profile = selectors.profileById(state, profileId);
     const gameId = profile.gameId;
+
+    if (modsBeingRemoved.has(makeModKey(gameId, modId))) {
+      return PromiseBB.resolve(false);
+    }
 
     const collection: types.IMod =
       util.getSafe(state.persistent.mods, [gameId, modId], undefined);
@@ -185,6 +211,202 @@ async function createNewCollection(
   });
 }
 
+async function installCollection(api: types.IExtensionApi, revision: IRevision) {
+  return api.showDialog('question', 'Collection not installed', {
+    text: 'You can only edit collections that are fully installed in this '
+      + 'setup. Please ensure you install the collection with all '
+      + 'optional items, then clone the collection into the Workshop.'
+  }, [
+    { label: 'Cancel' },
+    { label: 'Install' },
+  ])
+    .then(result => {
+      if (result.action === 'Install') {
+        const gameId = revision.collection.game.domainName;
+        api.events.emit(
+          'start-download', [`nxm://${gameId}/collections/${revision.collection.slug}/revisions/${revision.revisionNumber}`],
+          {}, undefined, (err) => {
+            if ((err !== null) && !(err instanceof util.UserCanceled)) {
+              api.showErrorNotification('Failed to download collection', err);
+            }
+          }, undefined, { allowInstall: 'force' });
+      }
+    });
+}
+
+async function pauseCollection(api: types.IExtensionApi,
+                               gameId: string,
+                               modId: string,
+                               silent?: boolean) {
+  const state = api.getState();
+  const mods = state.persistent.mods[gameId];
+  const downloads = state.persistent.downloads.files;
+
+  const collection = mods[modId];
+  if (collection === undefined) {
+    return;
+  }
+
+  (collection?.rules ?? []).forEach(rule => {
+    const dlId = util.findDownloadByRef(rule.reference, downloads);
+    if (dlId !== undefined) {
+      api.events.emit('pause-download', dlId);
+    }
+  });
+  await api.emitAndAwait('cancel-dependency-install', modId);
+
+  driver.cancel();
+
+  api.dismissNotification(INSTALLING_NOTIFICATION_ID + modId);
+  if (silent !== true) {
+    api.sendNotification({
+      id: 'collection-pausing',
+      type: 'success',
+      title: 'Collection pausing',
+      message: 'Already queued mod installations will still finish',
+    });
+  }
+}
+
+async function removeCollection(api: types.IExtensionApi,
+                                gameId: string,
+                                modId: string,
+                                cancel: boolean) {
+  const state = api.getState();
+  const mods = state.persistent.mods[gameId];
+
+  const t = api.translate;
+
+  const collection = mods[modId];
+  if (collection === undefined) {
+    return;
+  }
+
+  const filter = rule =>
+    (rule.type === 'requires')
+    && (rule['ignored'] !== true)
+    && (util.findModByRef(rule.reference, mods) === undefined);
+
+  const incomplete = (collection.rules ?? []).find(filter);
+
+  const message: string = cancel && incomplete
+    ? 'Are you sure you want to cancel the installation?'
+    : 'Are you sure you want to remove the collection?';
+
+  const result = await api.showDialog(
+    'question',
+    message, {
+      text: 'This collection will be removed from Vortex and unlinked from any associated mods. '
+        + 'You can also choose to uninstall mods related to this collection and delete the '
+        + 'downloaded archives.\n'
+        + '\nPlease note, some mods may be required by multiple collections.\n'
+        + '\nAre you sure you want to remove "{{collectionName}}" from your collections?',
+      parameters: {
+        collectionName: util.renderModName(collection),
+      },
+      checkboxes: [
+        { id: 'delete_mods', text: t('Remove mods'), value: false },
+        { id: 'delete_archives', text: t('Delete mod archives'), value: false },
+      ],
+    }, [
+      { label: 'Cancel' },
+      { label: 'Remove Collection' },
+    ]);
+
+  // apparently one can't cancel out of the cancellation...
+  if (result.action === 'Cancel') {
+    return;
+  }
+
+  const deleteArchives = result.input.delete_archives;
+  const deleteMods = result.input.delete_mods;
+
+  modsBeingRemoved.add(makeModKey(gameId, modId));
+
+  await pauseCollection(api, gameId, modId, true);
+
+  let progress = 0;
+  const notiId = shortid();
+  const modName = util.renderModName(collection);
+  const doProgress = (step: string, value: number) => {
+    if (value <= progress) {
+      return;
+    }
+    progress = value;
+    api.sendNotification({
+      id: notiId,
+      type: 'activity',
+      title: 'Removing {{name}}',
+      message: step,
+      progress,
+      replace: {
+        name: modName,
+      },
+    });
+  };
+
+  try {
+    doProgress('Removing downloads', 0);
+    const downloads = state.persistent.downloads.files;
+
+    // either way, all running downloads are canceled. If selected, so are finished downloads
+    let completed = 0;
+    await Promise.all((collection.rules ?? []).map(async rule => {
+      const dlId = util.findDownloadByRef(rule.reference, downloads);
+
+      if (dlId !== undefined) {
+        const download = state.persistent.downloads.files[dlId];
+        if ((download !== undefined)
+          && (deleteArchives || (download.state !== 'finished'))) {
+          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+        }
+      }
+      doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
+    }));
+
+    doProgress('Removing mods', 50);
+    completed = 0;
+    // if selected, remove mods
+    if (deleteMods) {
+      const removeMods: string[] = (collection.rules ?? [])
+        .map(rule => util.findModByRef(rule.reference, mods))
+        .filter(mod => mod !== undefined)
+        .map(mod => mod.id);
+
+      await util.toPromise(cb =>
+        api.events.emit('remove-mods', gameId, removeMods, cb, {
+          progressCB: (idx: number, length: number, name: string) => {
+            doProgress(name, 50 + (50 * idx) / length);
+          },
+        }));
+    }
+
+    { // finally remove the collection itself
+      doProgress('Removing collection', 0.99);
+      const download = state.persistent.downloads.files[collection.archiveId];
+      if (download !== undefined) {
+        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+      }
+      await util.toPromise(cb => api.events.emit('remove-mod', gameId, modId, cb, {
+        incomplete: true,
+      }));
+    }
+  } catch (err) {
+    if (!(err instanceof util.UserCanceled)) {
+      // possible reason for ProcessCanceled is that (un-)deployment may
+      // not be possible atm, we definitively should report that
+      api.showErrorNotification('Failed to remove mods', err, {
+        message: modName,
+        allowReport: !(err instanceof util.ProcessCanceled),
+        warning: (err instanceof util.ProcessCanceled),
+      } as any);
+    }
+  } finally {
+    modsBeingRemoved.delete(makeModKey(gameId, modId));
+    api.dismissNotification(notiId);
+  }
+}
+
 function genAttributeExtractor(api: types.IExtensionApi) {
   // tslint:disable-next-line:no-shadowed-variable
   return (modInfo: any, modPath: string): PromiseBB<{ [key: string]: any }> => {
@@ -233,6 +455,10 @@ function collectionListEqual(lArgs: IModTable[], rArgs: IModTable[]): boolean {
   const lhs = lArgs[0];
   const rhs = rArgs[0];
 
+  if (lhs === rhs) {
+    return true;
+  }
+
   const keys = Object.keys(lhs);
 
   if (!_.isEqual(keys, Object.keys(rhs))) {
@@ -280,7 +506,7 @@ async function updateMeta(api: types.IExtensionApi) {
         progress(util.renderModName(mods[modId]), i);
 
         const info: nexusApi.IRevision = await driver.infoCache.getRevisionInfo(
-          revisionId, collectionSlug, revisionNumber, true);
+          revisionId, collectionSlug, revisionNumber, 'force');
         if (!!info) {
           const currentRevision = info.collection.revisions
             .filter(rev => rev.revisionStatus === 'published')
@@ -290,7 +516,6 @@ async function updateMeta(api: types.IExtensionApi) {
           // revision (i.e. the users own draft revision)
 
           api.store.dispatch(actions.setModAttributes(gameMode, modId, {
-            customFileName: info.collection.name,
             collectionSlug: info.collection.slug,
             revisionNumber: info.revisionNumber,
             author: info.collection.user?.name,
@@ -311,6 +536,8 @@ async function updateMeta(api: types.IExtensionApi) {
       api.showErrorNotification('Failed to check collection for update', err);
     }
   }
+
+  localState.ownCollections = (await api.emitAndAwait('get-my-collections', gameMode))[0] || [];
 
   api.dismissNotification(notiId);
 }
@@ -341,20 +568,44 @@ function onAddSelectionImpl(api: types.IExtensionApi, collectionId: string, modI
   }
 }
 
-function register(context: types.IExtensionContext,
-                  onSetCallbacks: (callbacks: ICallbackMap) => void) {
-  let collectionsCB: ICallbackMap;
+const localState = util.makeReactive<{
+  ownCollections: IRevision[],
+}>({
+  ownCollections: [],
+});
 
+function register(context: types.IExtensionContext,
+                  collectionsCB: ICallbackMap) {
   context.registerReducer(['session', 'collections'], sessionReducer);
   context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
+  const onSwitchProfile = (profileId: string) => {
+    return new Promise<void>((resolve, reject) => {
+      context.api.events.once('profile-did-change', newProfileId => {
+        if (newProfileId === profileId) {
+          resolve();
+        } else {
+          reject(new Error('Failed to switch to profile'));
+        }
+      });
+      context.api.store.dispatch(actions.setNextProfile(profileId));
+    });
+  };
+
   context.registerDialog('collection-install', InstallStartDialog, () => ({
     driver,
+    onSwitchProfile,
   }));
 
   const onClone = (collectionId: string) => cloneInstalledCollection(context.api, collectionId);
+  const onCreateCollection = (profile: types.IProfile, name: string) =>
+    createNewCollection(context.api, profile, name);
+  const onRemoveCollection = (gameId: string, modId: string, cancel: boolean) => 
+    removeCollection(context.api, gameId, modId, cancel);
+  const onUpdateMeta = () => updateMeta(context.api);
   const editCollection = (id: string) => collectionsCB.editCollection(id);
+  const onInstallCollection = (revision: IRevision) => installCollection(context.api, revision);
 
   context.registerDialog('collection-finish', InstallFinishDialog, () => ({
     api: context.api,
@@ -372,7 +623,13 @@ function register(context: types.IExtensionContext,
     onAddSelection,
   }));
 
+  context.registerDialog('collection-health-downvote', HealthDownvoteDialog, () => ({}));
+
   let resetPageCB: () => void;
+  const resetCB = (cb) => resetPageCB = cb;
+  const onAddCallback = (cbName: string, cb: (...args: any[]) => void) => {
+    collectionsCB[cbName] = cb;
+  };
 
   context.registerMainPage('collection', 'Collections', CollectionsMainPage, {
     hotkey: 'C',
@@ -380,16 +637,14 @@ function register(context: types.IExtensionContext,
     visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
     props: () => ({
       driver,
-      onSetupCallbacks: (callbacks: ICallbackMap) => {
-        collectionsCB = callbacks;
-        onSetCallbacks(callbacks);
-      },
-      onCloneCollection: (collectionId: string) =>
-        cloneInstalledCollection(context.api, collectionId),
-      onCreateCollection: (profile: types.IProfile, name: string) =>
-        createNewCollection(context.api, profile, name),
-      onUpdateMeta: () => updateMeta(context.api),
-      resetCB: (cb) => resetPageCB = cb,
+      localState,
+      onInstallCollection,
+      onAddCallback,
+      onRemoveCollection,
+      onCloneCollection: onClone,
+      onCreateCollection,
+      onUpdateMeta,
+      resetCB,
     }),
     onReset: () => resetPageCB?.(),
     priority: 90,
@@ -467,6 +722,7 @@ function register(context: types.IExtensionContext,
       }, 100);
     }, (modIds: string[]) => isEditableCollection(context.api.getState(), modIds));
 
+  /*
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
       const profile: types.IProfile = selectors.activeProfile(stateFunc());
@@ -482,6 +738,7 @@ function register(context: types.IExtensionContext,
       }
       return (mod.type === MOD_TYPE);
     });
+  */
 
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
@@ -575,6 +832,7 @@ async function triggerVoteNotification(api: types.IExtensionApi,
     // no info about that revision? This might be a temporary network issue but if we don't
     // resolve here and the revision actually doesn't exist any more we'd never get rid of
     // the vote request
+    
     return Promise.resolve();
   }
 
@@ -686,6 +944,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     if (driver.step === 'start') {
       driver.continue();
     }
+
+    if (driver.step === 'review') {  
+
+      // this is called a few times so we need to check if collection is undefined or not so we only write timestamp once 
+      if(driver.collection === undefined) return;
+
+      const gameId = driver.profile.gameId;
+      const modId = driver.collection.id;
+
+      api.store.dispatch(actions.setModAttribute(gameId, modId, 'installCompleted', Date.now()));
+    }
   });
 
   const doCheckVoteRequest = () => {
@@ -738,6 +1007,53 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
+  api.events.on('did-dismiss-overlay', (overlayId: string, itemId: string) => {
+    const OVERLAY_ID = 'collection-instructions-overlay';
+    const state = api.getState();
+    const { gameId } = driver.profile ?? {};
+    const mods = state.persistent.mods[gameId] ?? {};
+    // the itemId will be a reference tag if this was from a collection or an archiveId otherwise
+    if ((driver.lastCollection !== undefined)
+        && (mods[driver.lastCollection.id] !== undefined)
+        && (itemId !== undefined)
+        && (state.settings.notifications.suppress[OVERLAY_ID] !== true)) {
+      // have to update here because the reference tags may have been updated during installation
+      const collections = mods[driver.lastCollection.id];
+      const match = (collections.rules ?? [])
+        .find(rule => (rule.type === 'requires') && (rule.reference.tag === itemId));
+
+      if (match !== undefined) {
+        api.showDialog('info', 'Mod instructions', {
+          text: 'You can refer back to closed mod instructions at any time in the Instructions tab on '
+              + 'the Collections page.',
+          checkboxes: [
+            { id: 'dont_show_again', value: false, text: 'Don\'t show again' },
+          ],
+        }, [
+          { label: 'Take me to instructions' },
+          { label: 'Close' },
+        ], OVERLAY_ID)
+          .then((result: types.IDialogResult) => {
+            if (result.input['dont_show_again']) {
+              api.store.dispatch(actions.suppressNotification(OVERLAY_ID, true))
+            }
+
+            if (result.action === 'Take me to instructions') {
+              api.events.emit('show-main-page', 'Collections');
+              // have to delay this a bit because the callbacks are only set up once the page
+              // is first opened
+              setTimeout(() => {
+                collectionsCB().viewCollection?.(driver.lastCollection.id);
+              }, 100);
+            }
+          })
+          .catch(err => {
+            log('warn', 'failed to show mod instructions suppress dialog', { error: err.message });
+          });
+      }
+    }
+  });
+
   api.events.on('did-install-mod', async (gameId: string, archiveId: string, modId: string) => {
     // automatically enable collections once they're installed
     const profileId = selectors.lastActiveProfileForGame(state(), gameId);
@@ -752,6 +1068,8 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
     if (mod.type === MOD_TYPE) {
       if (driver.collection === undefined) {
+        const awaitProfileSwitch = api.ext?.awaitProfileSwitch ?? (() => Promise.resolve());
+        await awaitProfileSwitch();
         driver.query(profile, mod);
       } else {
         api.sendNotification({
@@ -759,8 +1077,10 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
           message: 'Collection can\'t be installed as another one is being installed already',
         });
       }
-    } else {
-      const isDependency = (driver.collection?.rules ?? []).find(rule => {
+    } else if (driver.collection !== undefined) {
+      const { collection, revisionId } = driver;
+
+      const isDependency = (collection?.rules ?? []).find(rule => {
         const validType = ['requires', 'recommends'].includes(rule.type);
         if (!validType) {
           return false;
@@ -769,16 +1089,27 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
         return matchedRule;
       }) !== undefined;
       if (isDependency) {
-        const modRules = await driver.infoCache.getCollectionModRules(driver.revisionId);
+        const modRules =
+          await driver.infoCache.getCollectionModRules(
+            revisionId, collection, gameId);
         util.batchDispatch(api.store, (modRules ?? []).reduce((prev, rule) => {
           if (util.testModReference(mod, rule.source)) {
-            prev.push(actions.addModRule(gameId, modId, rule));
+            prev.push(actions.addModRule(gameId, modId, {
+              type: rule.type,
+              reference: rule.reference,
+              extra: {
+                fromCollection: collection.id,
+              },
+            }));
           }
           return prev;
         }, []));
       }
     }
   });
+
+  api.onAsync('will-remove-mods', makeWillRemoveMods());
+  api.onAsync('did-remove-mods', makeDidRemoveMods());
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
   api.events.on('collection-update', onCollectionUpdate(api, driver));
@@ -834,22 +1165,32 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.events.on('view-collection', (collectionId: string) => {
+  api.events.on('view-collection', (modId: string, tabId?: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      collectionsCB().viewCollection?.(collectionId);
+      collectionsCB().viewCollection?.(modId);
+      collectionsCB().viewCollectionTab?.(tabId);
     }, 100);
   });
 
-  api.events.on('edit-collection', (collectionId: string) => {
+  api.events.on('edit-collection', (modId: string) => {
     api.events.emit('show-main-page', 'Collections');
     // have to delay this a bit because the callbacks are only set up once the page
     // is first opened
     setTimeout(() => {
-      collectionsCB().editCollection?.(collectionId);
+      collectionsCB().editCollection?.(modId);
     }, 100);
+  });
+
+  api.events.on('resume-collection', (gameId: string, modId: string) => {
+    const state = api.getState();
+    const profileId = selectors.lastActiveProfileForGame(state, gameId);
+    const profile = state.persistent.profiles[profileId];
+    const mod = state.persistent.mods[gameId]?.[modId];
+    log('info', 'resume collection', { gameId, modId, archiveId: mod?.archiveId });
+    driver.start(profile, mod);
   });
 
   api.onStateChange(['persistent', 'collections', 'collections'], (prev, cur) => {
@@ -887,18 +1228,32 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   const iconPath = path.join(__dirname, 'collectionicon.svg');
   document.getElementById('content').style
     .setProperty('--collection-icon', `url(${pathToFileURL(iconPath).href})`);
+
+  const updateOwnCollectionsCB = (gameId: string) =>
+    api.emitAndAwait('get-my-collections', gameId)
+      .then(result => {
+        localState.ownCollections = result[0] ?? [];
+      });
+
+  api.events.on('gamemode-activated', updateOwnCollectionsCB);
+  api.onStateChange(['persistent', 'nexus', 'userInfo'], (prev, cur) => {
+    const gameMode = selectors.activeGameId(api.getState());
+    updateOwnCollectionsCB(gameMode);
+  });
+
+  driver.infoCache.clearCache();
 }
 
 function init(context: types.IExtensionContext): boolean {
-  let collectionsCB: ICallbackMap;
+  const collectionsCB: ICallbackMap = {};
 
-  register(context, (callbacks: ICallbackMap) => collectionsCB = callbacks);
+  register(context, collectionsCB);
 
   initIniTweaks(context);
   initTools(context);
 
   context.once(() => {
-    once(context.api, () => collectionsCB ?? {});
+    once(context.api, () => collectionsCB);
   });
   return true;
 }

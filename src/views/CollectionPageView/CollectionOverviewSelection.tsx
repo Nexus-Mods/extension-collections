@@ -1,6 +1,6 @@
 import { IModEx } from '../../types/IModEx';
 import CollectionModDetails from './CollectionModDetails';
-import CollectionReleaseStatus from './CollectionReleaseStatus';
+import CollectionReleaseStatus from '../CollectionReleaseStatus';
 import SlideshowControls from './SlideshowControls';
 
 import { ICollectionRevisionMod } from '@nexusmods/nexus-api';

@@ -1,7 +1,7 @@
-import { NAMESPACE } from '../../constants';
-import InstallDriver, { Step } from '../../util/InstallDriver';
+import { DEFAULT_INSTRUCTIONS, NAMESPACE } from '../../constants';
+import InstallDriver from '../../util/InstallDriver';
 
-import CollectionThumbnail from '../CollectionPage/CollectionThumbnail';
+import CollectionThumbnail from '../CollectionTile';
 
 import YouCuratedTag from './YouCuratedThisTag';
 
@@ -11,21 +11,23 @@ import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import * as Redux from 'redux';
-import { generate as shortid} from 'shortid';
-import { actions, ComponentEx, FlexLayout, Modal, More, selectors, types, util } from 'vortex-api';
+import { generate as shortid } from 'shortid';
+import { actions, ComponentEx, FlexLayout, Modal, More, types, util } from 'vortex-api';
+import * as ReactMarkdown from 'react-markdown';
 
 interface IInstallDialogProps {
   onHide: () => void;
   visible: boolean;
   driver: InstallDriver;
+  onSwitchProfile: (profileId: string) => Promise<void>;
 }
 
 interface IConnectedProps {
-  profile: types.IProfile;
   allProfiles: { [profileId: string]: types.IProfile };
   mods: { [modId: string]: types.IMod };
   isPremium: boolean;
   userInfo: { userId: number };
+  nextProfileId: string;
 }
 
 interface IActionProps {
@@ -41,21 +43,93 @@ type IProps = IInstallDialogProps & IConnectedProps & IActionProps;
 
 interface IInstallDialogState {
   selectedProfile: string;
+  confirmProfile: boolean;
+  recommendedNewProfile: boolean;
 }
 
 function nop() {
   // nop
 }
 
+interface IInstallDialogSelectProfileProps {
+  t: types.TFunction;
+  profile: types.IProfile;
+  selectedProfile: string;
+  recommendedNewProfile: boolean;
+  allProfiles: { [profileId: string]: types.IProfile };
+  onSelectProfile: (value: { value: string, label: string }) => void;
+}
+
+function InstallDialogSelectProfile(props: IInstallDialogSelectProfileProps) {
+  const { t, allProfiles, onSelectProfile, profile, selectedProfile, recommendedNewProfile } = props;
+
+  const profileOptions = Object.keys(allProfiles)
+    .filter(profId => allProfiles[profId].gameId === profile.gameId)
+    .map(profId => ({
+      value: profId,
+      label: profId === profile.id
+        ? t('{{name}} (Current)', { replace: { name: profile.name } })
+        : allProfiles[profId].name,
+    }))
+    .concat({
+      value: '__new', label: t('Create new profile{{recommended}}',
+        { replace: { recommended: recommendedNewProfile ? t(' (Recommended by curator)') : '' } })
+    });
+
+  return (
+    <FlexLayout type='row' id='collections-profile-select'>
+      <FlexLayout.Fixed>
+        {t('Install this collection to profile') + ':'}
+      </FlexLayout.Fixed>
+      <FlexLayout.Flex>
+        <Select
+          options={profileOptions}
+          value={selectedProfile ?? profile.id}
+          onChange={onSelectProfile}
+          clearable={false}
+        />
+      </FlexLayout.Flex>
+    </FlexLayout>
+  );
+}
+
+interface IInstallDialogConfirmProfileProps {
+  t: types.TFunction;
+  collectionName: string;
+  selectedProfile: types.IProfile;
+}
+
+function InstallDialogConfirmProfile(props: IInstallDialogConfirmProfileProps) {
+  const { t, collectionName, selectedProfile } = props;
+
+  const profileName = selectedProfile?.name
+    ?? collectionName;
+
+  return (
+    <>
+      <p>{t('Currently installing to profile: {{profileName}}', {
+        replace: {
+          profileName,
+        },
+      })}</p>
+      <p>{t('Do you want to switch to this profile?')}</p>
+    </>
+  );
+}
+
+
 /**
  * Installation prompt that shows up when the user imports a collection
  */
 class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
+  private mLastCollection: types.IMod;
   constructor(props: IProps) {
     super(props);
 
     this.initState({
-      selectedProfile: props.profile?.id,
+      selectedProfile: undefined,
+      confirmProfile: false,
+      recommendedNewProfile: false,
     });
 
     if (props.driver !== undefined) {
@@ -63,78 +137,122 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
     }
   }
 
-  public componentDidUpdate(prevProps: IProps) {
-    if ((this.props.driver !== undefined) && (this.props.driver !== prevProps.driver))  {
-      this.props.driver.onUpdate(() => this.forceUpdate());
+  static getDerivedStateFromProps(props: IProps, state: IInstallDialogState) {
+    if (!state.selectedProfile && !!props.driver?.collection?.attributes?.recommendNewProfile) {
+      return {
+        recommendedNewProfile: true,
+        selectedProfile: '__new',
+      };
     }
-    if ((prevProps.profile !== undefined)
-        && (this.props.profile !== undefined)
-        && (prevProps.profile.id !== this.props.profile.id)) {
-      this.nextState.selectedProfile = this.props.profile.id;
+    return null;
+  }
+
+  public componentDidUpdate(prevProps: IProps) {
+    const { driver } = this.props;
+    if (driver !== undefined) {
+      if (driver !== prevProps.driver) {
+        driver.onUpdate(() => this.forceUpdate());
+      }
+
+      if (driver.collection !== this.mLastCollection) {
+        this.nextState.confirmProfile = false;
+        this.nextState.selectedProfile = undefined;
+        this.mLastCollection = driver.collection;
+      }
     }
   }
 
   public render(): React.ReactNode {
-    const { t, driver,  allProfiles, profile, userInfo } = this.props;
-    const { selectedProfile } = this.state;
+    const { t, driver, allProfiles, nextProfileId, userInfo } = this.props;
+    const { selectedProfile, recommendedNewProfile } = this.state;
 
-    if ((driver === undefined) || (profile === undefined)) {
+    if (driver?.profile === undefined) {
       return null;
     }
 
+    const { profile } = driver;
+
+    if (nextProfileId !== profile.id) {
+      return null;
+    }
+
+    let installInstructions = driver.collection?.attributes?.installInstructions || t(DEFAULT_INSTRUCTIONS)
+
+    // used to convert a \n into something that react-markdown can use to detect paragraphs properly
+    installInstructions = installInstructions.replace(/\r?\n/g, "  \r\n");
+
     const game = util.getGame(profile.gameId);
 
-    const profileOptions = Object.keys(allProfiles)
-      .filter(profId => allProfiles[profId].gameId === profile.gameId)
-      .map(profId => ({
-        value: profId,
-        label: profId === profile.id
-          ? t('{{name}} (Current)', { replace: { name: profile.name } })
-          : allProfiles[profId].name,
-      }))
-      .concat({ value: '__new', label: t('Create new profile') });
-
     const ownCollection: boolean = (userInfo?.userId !== undefined)
-                                && (driver.collectionInfo?.user?.memberId === userInfo?.userId);
-
+      && (driver.collectionInfo?.user?.memberId === userInfo?.userId);
+    const collectionName = util.renderModName(driver.collection);
     return (
       <Modal show={(driver.collection !== undefined) && (driver.step === 'query')} onHide={nop}>
+        <Modal.Header>
+          <Modal.Title>
+            {t('{{gameName}} collection added', { replace: { gameName: game.name } })}
+          </Modal.Title>
+        </Modal.Header>
         <Modal.Body>
-          <Media.Left>
-            <CollectionThumbnail
+          <Media>
+            <Media.Left>
+              <CollectionThumbnail
+                t={t}
+                gameId={profile.gameId}
+                collection={driver.collection}
+                details={true}
+                imageTime={42}
+              />
+            </Media.Left>
+            <Media.Right style={{ width: '100%', display: 'flex' }}>
+              <Media.Body>
+                <Media.Heading>Collection instructions</Media.Heading>
+                <p className='collections-instructions-canbereviewed'>Instructions can be reviewed during installation.</p>
+                {ownCollection ? <YouCuratedTag t={t} /> : null}
+                <ReactMarkdown className='textarea-install-collection-instructions' allowedElements={['p', 'br', 'a', 'em', 'strong']} unwrapDisallowed={true}>
+                  {installInstructions}
+                </ReactMarkdown>
+              </Media.Body>
+            </Media.Right>
+          </Media>
+          <FlexLayout type='row'>
+            <p>
+              {t('Profiles allow you to have multiple mod set-ups for a game at once and quickly switch between them.')}
+            <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
+              {util.getText('profile' as any, 'profiles', t)}
+            </More>
+            </p>
+
+          </FlexLayout>
+          {(this.state.confirmProfile && (selectedProfile !== undefined)) ? (
+            <InstallDialogConfirmProfile
               t={t}
-              gameId={profile.gameId}
-              collection={driver.collection}
-              details={true}
-              imageTime={42}
+              collectionName={collectionName}
+              selectedProfile={selectedProfile === '__new' ? undefined : allProfiles[selectedProfile]}
             />
-          </Media.Left>
-          <Media.Right style={{ width: '100%' }}>
-            {ownCollection ? <YouCuratedTag t={t} /> : null}
-            <h5>{game.name}</h5>
-            <h3>{util.renderModName(driver.collection)}</h3>
-            <p>{t('has been added to your collections.')}</p>
-            <p className='gutter-above'>{t('Install this collection to profile') + ':'}</p>
-            <FlexLayout type='row' id='collections-profile-select'>
-              <FlexLayout.Flex>
-                <Select
-                  options={profileOptions}
-                  value={selectedProfile}
-                  onChange={this.changeProfile}
-                  clearable={false}
-                />
-              </FlexLayout.Flex>
-              <FlexLayout.Fixed>
-                <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
-                  {util.getText('profile' as any, 'profiles', t)}
-                </More>
-              </FlexLayout.Fixed>
-            </FlexLayout>
-          </Media.Right>
+          ) : (
+            <InstallDialogSelectProfile
+              t={t}
+              allProfiles={allProfiles}
+              profile={profile}
+              selectedProfile={selectedProfile}
+              onSelectProfile={this.changeProfile}
+              recommendedNewProfile={recommendedNewProfile}
+            />
+          )}
         </Modal.Body>
         <Modal.Footer>
-          <Button onClick={this.cancel}>{t('Later')}</Button>
-          <Button onClick={this.next}>{t('Install Now')}</Button>
+          {this.state.confirmProfile ? (
+            <>
+              <Button onClick={this.next}>{t('No')}</Button>
+              <Button onClick={this.switchProfile}>{t('Yes')}</Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={this.cancel}>{t('Later')}</Button>
+              <Button onClick={this.next}>{t('Install Now')}</Button>
+            </>
+          )}
         </Modal.Footer>
       </Modal>
     );
@@ -151,56 +269,75 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   }
 
   private next = () => {
-    const { allProfiles, driver, onAddProfile, onSetProfilesVisible, profile } = this.props;
-    const { selectedProfile } = this.state;
-    let profileId = this.state.selectedProfile;
+    if (!this.state.confirmProfile
+      && (this.state.selectedProfile !== undefined)
+      && (this.state.selectedProfile !== this.props.driver?.profile?.id)) {
+      if (this.state.selectedProfile === '__new') {
+        const { driver, onAddProfile, onSetProfilesVisible } = this.props;
+        const { profile } = driver;
 
-    if (this.state.selectedProfile === '__new') {
-      profileId = shortid();
-      const name = util.renderModName(driver.collection);
-      const newProfile = {
-        id: profileId,
-        gameId: profile.gameId,
-        name,
-        modState: {},
-        lastActivated: 0,
-      };
-      onAddProfile(newProfile);
-      onSetProfilesVisible();
-      driver.profile = newProfile;
-    } else if (selectedProfile !== profile.id) {
+        const profileId = shortid();
+        const name = util.renderModName(driver.collection);
+        const newProfile = {
+          id: profileId,
+          gameId: profile.gameId,
+          name,
+          modState: {},
+          lastActivated: 0,
+        };
+        onAddProfile(newProfile);
+        onSetProfilesVisible();
+        this.nextState.selectedProfile = profileId;
+      }
+      this.nextState.confirmProfile = true;
+    } else {
+      this.startInstall();
+    }
+  }
+
+  private switchProfile = async () => {
+    const { selectedProfile } = this.state;
+    await this.props.onSwitchProfile(selectedProfile);
+    this.startInstall();
+  }
+
+  private startInstall() {
+    const { allProfiles, driver } = this.props;
+    const { selectedProfile } = this.state;
+
+    const { profile } = driver;
+
+    if ((selectedProfile !== undefined) && (selectedProfile !== profile.id)) {
       driver.profile = allProfiles[selectedProfile];
     }
+
     driver.continue();
   }
 }
 
 const emptyObject = {};
 
-function mapStateToProps(state: types.IState): IConnectedProps {
+function mapStateToProps(state: types.IState, ownProps: IInstallDialogProps): IConnectedProps {
   const { editCollectionId } = (state.session as any).collections;
-  const profile = selectors.activeProfile(state);
-  const gameMode = profile !== undefined
-    ? profile.gameId
-    : undefined;
+  const gameMode = ownProps.driver?.profile?.gameId;
 
   const { userInfo } = state.persistent['nexus'] ?? {};
 
   if (editCollectionId !== undefined) {
     return {
-      profile,
       allProfiles: state.persistent.profiles,
       mods: state.persistent.mods[gameMode],
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
       userInfo,
+      nextProfileId: state.settings.profiles.nextProfileId,
     };
   } else {
     return {
-      profile,
       allProfiles: state.persistent.profiles,
       mods: emptyObject,
       isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
       userInfo,
+      nextProfileId: state.settings.profiles.nextProfileId,
     };
   }
 }

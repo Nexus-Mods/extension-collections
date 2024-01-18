@@ -100,13 +100,20 @@ function filterInfoModSource(source: ICollectionSourceInfo): ICollectionSourceIn
 }
 
 function filterInfoMod(mod: ICollectionMod): ICollectionMod {
-  const res = _.omit(mod, ['hashes', 'choices', 'patches', 'details', 'instructions', 'phase']);
+  const res = _.omit(mod, ['hashes', 'choices', 'patches', 'details', 'instructions', 'phase', 'fileOverrides']);
   res.source = filterInfoModSource(res.source);
   return res;
 }
 
-function filterInfo(input: ICollection): Partial<ICollection> {
-  const info = input.info;
+type RecursivePartial<T> = {
+  [P in keyof T]?:
+    T[P] extends (infer U)[] ? RecursivePartial<U>[] :
+    T[P] extends object ? RecursivePartial<T[P]> :
+    T[P];
+};
+
+function filterInfo(input: ICollection): RecursivePartial<ICollection> {
+  const info = _.omit(input.info, ['installInstructions']);
   return {
     info,
     mods: input.mods.map(mod => filterInfoMod(mod)),

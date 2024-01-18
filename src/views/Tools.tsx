@@ -92,7 +92,7 @@ function Tools(props: IToolsProps) {
             + 'you should include instructions for the user on how to get the tool.')}
         </p>
       </ControlLabel>
-      <Table id='collection-initweaks-table'>
+      <Table id='collection-tools-table'>
         <thead>
           <tr>
             <th className='header-status'>{t('Status')}</th>

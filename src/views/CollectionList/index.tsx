@@ -1,32 +1,34 @@
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
-import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL, TOS_URL} from '../../constants';
+import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, TOS_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
-import CollectionEdit from './CollectionEdit';
-import CollectionPage from './CollectionPage';
+import CollectionEdit from '../CollectionPageEdit';
+import CollectionPage from '../CollectionPageView';
 import StartPage from './StartPage';
 
-import { IRating } from '@nexusmods/nexus-api';
+import { IRating, IRevision } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
 import { WithTranslation, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { generate as shortid } from 'shortid';
 import { actions, ComponentEx, FlexLayout, log, MainPage, selectors, tooltip,
-          types, util } from 'vortex-api';
+         types, util } from 'vortex-api';
 
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
 
+  localState: { ownCollections: IRevision[] };
   driver: InstallDriver;
-  onSetupCallbacks?: (callbacks: { [cbName: string]: (...args: any[]) => void }) => void;
+  onAddCallback: (cbName: string, cb: (...args: any[]) => void) => void;
   onCloneCollection: (collectionId: string) => Promise<string>;
+  onRemoveCollection: (gameId: string, modId: string, cancel: boolean) => Promise<void>;
   onCreateCollection: (profile: types.IProfile, name: string) => void;
+  onInstallCollection: (revision: IRevision) => Promise<void>;
   onUpdateMeta: () => void;
 
   resetCB: (cb: () => void) => void;
@@ -70,14 +72,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       activeTab: 'active-collections',
     });
 
-    if (props.onSetupCallbacks !== undefined) {
-      props.onSetupCallbacks({
-        viewCollection: (collectionId: string) => {
-          this.showPage('view', collectionId);
-        },
-        editCollection: (collectionId: string) => {
-          this.showPage('edit', collectionId);
-        },
+    if (props.onAddCallback !== undefined) {
+      props.onAddCallback('viewCollection', (collectionId: string) => {
+        this.showPage('view', collectionId);
+      });
+
+      props.onAddCallback('editCollection', () => (collectionId: string) => {
+        this.showPage('edit', collectionId);
       });
     }
 
@@ -100,7 +101,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, driver, game, mods, notifications, profile } = this.props;
+    const { t, downloads, driver, game, localState, mods, notifications, profile } = this.props;
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     if (profile === undefined) {
@@ -119,9 +120,8 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           <tooltip.IconButton
             className='collections-refresh-meta'
             icon='refresh'
-            tooltip={t('Download the latest meta information about the collections on '
-                       + 'your computer. This will reset local changes to names of '
-                       + 'collections in your workshop.')}
+            tooltip={t('Download the latest meta information about your installed and owned collections. '
+              + 'This will reset local changes to names of collections in your workshop.')}
             onClick={this.onUpdateMeta}
           >
             {t('Refresh')}
@@ -129,6 +129,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
           <StartPage
             t={t}
             game={game}
+            localState={localState}
             installing={driver.installDone ? undefined : driver.collection}
             infoCache={driver.infoCache}
             profile={profile}
@@ -140,10 +141,12 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
             onRemove={this.remove}
             onUpdate={this.update}
             onUpload={this.upload}
+            onClone={this.clone}
             onCreateCollection={this.createCollection}
             onResume={this.resume}
             onPause={this.pause}
             onSetActiveTab={this.setActiveTab}
+            onInstallCollection={this.props.onInstallCollection}
           />
         </>
       );
@@ -171,6 +174,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                 mods={mods}
                 downloads={downloads}
                 notifications={notifications}
+                onAddCallback={this.props.onAddCallback}
                 onView={this.view}
                 onPause={this.pause}
                 onCancel={this.cancel}
@@ -244,7 +248,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
       return;
     }
 
-    const author = mods[modId].attributes['uploaderId'];
+    const author = mods[modId].attributes?.['uploaderId'];
 
     if ((author !== undefined) && (author !== userInfo?.userId)) {
       const result = await api.showDialog('question',
@@ -302,12 +306,13 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     const { mods, profile } = this.props;
     const { api } = this.context;
 
-    const result = await api.showDialog('question',
+    const result = await api.showDialog(
+      'question',
       'Remove Collection (Workshop)', {
         text: 'Deleting a collection will not remove the mods that have been added to it.\n\n'
-            + 'Any changes made to this collection since the last upload to Nexus Mods will '
-            + 'be lost.\n\n'
-            + 'Are you sure you want to remove "{{collectionName}}" from your Workshop?',
+          + 'Any changes made to this collection since the last upload to Nexus Mods will '
+          + 'be lost.\n\n'
+          + 'Are you sure you want to remove "{{collectionName}}" from your Workshop?',
         parameters: {
           collectionName: util.renderModName(mods[modId]),
         },
@@ -331,126 +336,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     }
   }
 
-  private cancel = async (modId: string, message?: string) => {
-    const { t, downloads, mods, profile } = this.props;
-    const { api } = this.context;
+  private cancel = async (modId: string, cancel?: boolean) => {
+    const { profile } = this.props;
 
-    const collection = mods[modId];
-    if (collection === undefined) {
-      return;
-    }
-
-    if (message === undefined) {
-      message = 'Are you sure you want to cancel the installation?';
-    }
-
-    const result = await api.showDialog(
-      'question',
-      message, {
-      text: 'This collection will be removed from Vortex and unlinked from any associated mods. '
-          + 'You can also choose to uninstall mods related to this collection and delete the '
-          + 'downloaded archives.\n'
-          + '\nPlease note, some mods may be required by multiple collections.\n'
-          + '\nAre you sure you want to remove "{{collectionName}}" from your collections?',
-      parameters: {
-        collectionName: util.renderModName(collection),
-      },
-      checkboxes: [
-        { id: 'delete_mods', text: t('Remove mods'), value: false },
-        { id: 'delete_archives', text: t('Delete mod archives'), value: false },
-      ],
-    }, [
-      { label: 'Cancel' },
-      { label: 'Remove Collection' },
-    ]);
-
-    // apparently one can't cancel out of the cancellation...
-    if (result.action === 'Cancel') {
-      return;
-    }
-
-    await this.pause(modId, true);
-
-    const state: types.IState = api.store.getState();
-
-    let progress = 0;
-    const notiId = shortid();
-    const modName = util.renderModName(collection);
-    const doProgress = (step: string, value: number) => {
-      if (value <= progress) {
-        return;
-      }
-      progress = value;
-      api.sendNotification({
-        id: notiId,
-        type: 'activity',
-        title: 'Removing {{name}}',
-        message: step,
-        progress,
-        replace: {
-          name: modName,
-        },
-      });
-    };
-
-    try {
-      doProgress('Removing downloads', 0);
-
-      // either way, all running downloads are canceled. If selected, so are finished downloads
-      let completed = 0;
-      await Promise.all((collection.rules ?? []).map(async rule => {
-        const dlId = util.findDownloadByRef(rule.reference, downloads);
-
-        if (dlId !== undefined) {
-          const download = state.persistent.downloads.files[dlId];
-          if ((download !== undefined)
-              && (result.input.delete_archives || (download.state !== 'finished'))) {
-            await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
-          }
-        }
-        doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
-      }));
-
-      doProgress('Removing mods', 50);
-      completed = 0;
-      // if selected, remove mods
-      if (result.input.delete_mods) {
-        const removeMods: string[] = (collection.rules ?? [])
-          .map(rule => util.findModByRef(rule.reference, mods))
-          .filter(mod => mod !== undefined)
-          .map(mod => mod.id);
-
-        await util.toPromise(cb =>
-          api.events.emit('remove-mods', profile.gameId, removeMods, cb, {
-            progressCB: (idx: number, length: number, name: string) => {
-              doProgress(name, 50 + (50 * idx) / length);
-            },
-          }));
-      }
-
-      { // finally remove the collection itself
-        doProgress('Removing collection', 0.99);
-        const download = state.persistent.downloads.files[collection.archiveId];
-        if (download !== undefined) {
-          await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
-        }
-        await util.toPromise(cb => api.events.emit('remove-mod', profile.gameId, modId, cb, {
-          incomplete: true,
-        }));
-      }
-    } catch (err) {
-      if (!(err instanceof util.UserCanceled)) {
-        // possible reason for ProcessCanceled is that (un-)deployment may
-        // not be possible atm, we definitively should report that
-        api.showErrorNotification('Failed to remove mods', err, {
-          message: modName,
-          allowReport: !(err instanceof util.ProcessCanceled),
-          warning: (err instanceof util.ProcessCanceled),
-        } as any);
-      }
-    } finally {
-      api.dismissNotification(notiId);
-    }
+    return this.props.onRemoveCollection(profile.gameId, modId, cancel ?? true);
   }
 
   private voteSuccess = async (modId: string, success: boolean) => {
@@ -508,10 +397,21 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
     try {
       if (mods[modId]?.attributes?.editable) {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Workshop Collection');
-        return this.removeWorkshop(modId);
+        return this.removeWorkshop(modId)
+          .catch(err => {
+            const allowReport = !['EPERM'].includes(err.code)
+                              && !(err instanceof util.ProcessCanceled)
+                              && !(err instanceof util.UserCanceled);
+            api.showErrorNotification('Failed to remove collection', err, { allowReport });
+          });
       } else {
         api.events.emit('analytics-track-click-event', 'Collections', 'Remove Added Collection');
-        return this.cancel(modId, 'Remove collection');
+        return this.cancel(modId, false)
+          .catch(err => {
+            api.showErrorNotification('Failed to remove collection', err, {
+              allowReport: !['EPERM'].includes(err.code),
+            });
+          });
       }
     } catch (err) {
       if (err instanceof util.UserCanceled) {
@@ -541,9 +441,10 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
 
     const downloadGame = util.getSafe(mod.attributes, ['downloadGame'], gameMode);
     const newestFileId = util.getSafe(mod.attributes, ['newestVersion'], undefined);
-    this.context.api.events.emit('collection-update',
+    await util.toPromise(cb => this.context.api.events.emit(
+      'collection-update',
       downloadGame, mod.attributes?.collectionSlug, newestFileId,
-      mod.attributes?.source, collectionId);
+      mod.attributes?.source, collectionId, cb));
   }
 
   private upload = async (collectionId: string) => {

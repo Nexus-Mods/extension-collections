@@ -83,6 +83,8 @@ export function renderReference(ref: types.IModReference,
 }
 
 export function ruleId(rule: ICollectionModRuleEx): string {
+  // md5-hashing to prevent excessive id names and special characters as a key
+  // in application state
   return md5sum(`${rule.sourceName}-${rule.type}-${rule.referenceName}`);
 }
 
@@ -104,7 +106,7 @@ export function isRelevant(mod: IModEx) {
   if (mod.collectionRule['ignored']) {
     return false;
   }
-  if (mod.collectionRule.type === 'recommends') {
+  if (mod.collectionRule.type !== 'requires') {
     return false;
   }
 

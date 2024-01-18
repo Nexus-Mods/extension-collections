@@ -4,12 +4,14 @@ import { getInterface } from '../../util/gameSupport';
 import InstallDriver from '../../util/InstallDriver';
 import { makeBiDirRule } from '../../util/transformCollection';
 
-import { NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
+import { NAMESPACE } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
-import ModRules from '../ModRules';
-import ModsEditPage from '../ModsEditPage';
+import FileOverrides from './FileOverrides';
+import CollectionGeneralPage from './Instructions';
+import ModRules from './ModRules';
+import ModsEditPage from './ModsEditPage';
 
 import { IRevision } from '@nexusmods/nexus-api';
 import memoize from 'memoize-one';
@@ -62,14 +64,17 @@ const emptyCollectionInfo: ICollectionInfo = {
   authorUrl: '',
   name: '',
   description: '',
+  installInstructions: '',
   gameVersions: [],
 };
+
+const emptyList = [];
 
 class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditState> {
   private collectionRules = memoize(
       (rules: types.IModRule[], mods: { [modId: string]: types.IMod }): ICollectionModRule[] => {
     const includedMods = rules
-      .filter(rule => rule.type === 'requires')
+      .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .reduce((prev, rule) => {
         const mod = util.findModByRef(rule.reference, mods);
         if (mod !== undefined) {
@@ -81,10 +86,18 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     return Object.values(includedMods)
         .reduce<ICollectionModRule[]>((prev, mod: types.IMod) => {
           const source = util.makeModReference(mod);
-          prev = [].concat(prev, (mod.rules || []).map(rule => makeBiDirRule(source, rule)));
+          prev = [].concat(prev, (mod.rules || [])
+            .filter(rule =>
+              !['requires', 'recommends'].includes(rule.type)
+              && (rule.extra?.['automatic'] !== true))
+            .map(rule => makeBiDirRule(source, rule)));
+
           return prev;
         }, []);
   });
+
+  // used in case we do multiple attribute changes in a single frame
+  private mAttributes: types.IMod['attributes'];
 
   constructor(props: ICollectionEditProps) {
     super(props);
@@ -101,6 +114,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   }
 
   public UNSAFE_componentWillReceiveProps(newProps: ICollectionEditProps) {
+    this.mAttributes = newProps.collection?.attributes;
     if (util.getSafe(newProps.collection, ['id'], undefined)
         !== util.getSafe(this.props.collection, ['id'], undefined)) {
       this.updateState(newProps);
@@ -126,6 +140,9 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     const Interface = getInterface(profile.gameId);
 
     const nextRev = collection.attributes?.revisionNumber;
+
+    const requiredModRules: ICollectionModRule[] =
+      this.collectionRules(collection.rules ?? emptyList, mods);
 
     return (
       <FlexLayout type='column'>
@@ -189,7 +206,25 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   t={t}
                   collection={collection}
                   mods={mods}
-                  rules={this.collectionRules(collection.rules ?? [], mods)}
+                  rules={requiredModRules}
+                  onSetCollectionAttribute={this.setCollectionAttribute}
+                />
+              </Panel>
+            </Tab>
+            <Tab key='file-overrides' eventKey='file-overrides' title={t('File Overrides')}>
+              <Panel>
+                <FileOverrides
+                  t={t}
+                  collection={collection}
+                  mods={mods}
+                  onSetCollectionAttribute={this.setCollectionAttribute}
+                />
+              </Panel>
+            </Tab>
+            <Tab key='collection-instructions' eventKey='collection-instructions' title={t('Collection Instructions')}>
+              <Panel>
+                <CollectionGeneralPage
+                  collection={collection}
                   onSetCollectionAttribute={this.setCollectionAttribute}
                 />
               </Panel>
@@ -289,14 +324,14 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
     const { revision } = this.state;
     const { collection } = revision;
 
-    if ((collection !== undefined) && (revision?.revisionNumber !== undefined)) {
+    if ((collection?.game !== undefined) && (revision?.revisionNumber !== undefined)) {
       this.context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Workshop Collection');
       util.opn(util.nexusModsURL(
         [collection.game.domainName,
           'collections', collection.slug,
           'revisions', revision.revisionNumber.toString()], {
-        campaign: util.Campaign.ViewCollection,
-        section: util.Section.Collections,
+        campaign: util.Campaign.ViewCollectionAsCurator,
+        section: util.Section.Collections
       }));
     }
   }
@@ -313,9 +348,13 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
 
   private setCollectionAttribute = (attrPath: string[], value: any) => {
     const { profile, collection } = this.props;
-    const attr = util.getSafe(collection.attributes, ['collection'], {});
-    this.props.onSetModAttribute(profile.gameId, collection.id, 'collection',
-      util.setSafe(attr, attrPath, value));
+    if (this.mAttributes === undefined) {
+      this.mAttributes = collection.attributes;
+    }
+    const attr = util.getSafe(this.mAttributes, ['collection'], {});
+    const updated = util.setSafe(attr, attrPath, value);
+    this.mAttributes = util.setSafe(this.mAttributes, ['collection'], updated);
+    this.props.onSetModAttribute(profile.gameId, collection.id, 'collection', updated);
   }
 
   private addModsDialog = (collectionId: string) => {
