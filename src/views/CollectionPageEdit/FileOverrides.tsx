@@ -1,17 +1,28 @@
+/* eslint-disable */
+import { useSelector } from 'react-redux';
 import * as React from 'react';
 import { ControlLabel, ListGroup, Popover, Table } from 'react-bootstrap';
-import { Overlay, Toggle, types, util } from 'vortex-api';
+import { Overlay, Toggle, selectors, types, util } from 'vortex-api';
 
+export interface IPathTools {
+  relative(lhs: string, rhs: string): string;
+}
 export interface IFileOverridesProps {
   t: types.TFunction;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
   onSetCollectionAttribute: (path: string[], value: any) => void;
+  pathTool: IPathTools;
+}
+
+interface IConnectedProps {
+  gameId: string;
+  discovery: types.IDiscoveryResult;
 }
 
 function FileOverrides(props: IFileOverridesProps) {
-  const { t, collection, mods, onSetCollectionAttribute } = props;
-
+  const { t, collection, mods, onSetCollectionAttribute, pathTool } = props;
+  const { discovery } = useSelector(mapStateToProps);
   const [showOverlay, setShowOverlay] = React.useState(undefined);
 
   const target = React.useRef<HTMLElement>();
@@ -55,18 +66,18 @@ function FileOverrides(props: IFileOverridesProps) {
   }, [container.current]);
 
   const mod = mods[showOverlay];
+  const toRelPath = (filePath: string) => pathTool.relative(discovery.path, filePath);
   const popover = showOverlay === undefined ? <Popover/> : (
     <Popover id='file-overrides-popover'>
       <ListGroup>
         {(mod.fileOverrides ?? []).map(override => (
-          <div key={override}>{override}</div>
+          <div key={override}>{toRelPath(override)}</div>
         ))}
       </ListGroup>
     </Popover>
   );
 
   const isEnabled = (id: string) => collection.attributes?.collection?.fileOverrides?.[id] ?? false;
-
   return (
     <div ref={container} id='collection-file-overrides' className='collection-file-overrides'>
       <ControlLabel>
@@ -117,6 +128,14 @@ function FileOverrides(props: IFileOverridesProps) {
       </Table>
     </div>
   );
+}
+
+function mapStateToProps(state: types.IState): IConnectedProps {
+  const gameId = selectors.activeGameId(state);
+  return {
+    gameId,
+    discovery: selectors.discoveryByGame(state, gameId),
+  };
 }
 
 export default FileOverrides;
