@@ -92,13 +92,14 @@ $collection-mod-image-height: 122px;
         gap: 16px;
 
         #collection-instructions-edit {
-          gap: 8px;        
+          gap: 8px;      
         }  
 
         #collection-settings-edit {
           padding: $panel-body-padding;
           border-radius: $panel-border-radius;
           border: 1px solid $panel-default-border;
+          flex: 1 2 100%;  
         }
 
         h4,
@@ -792,7 +793,7 @@ ul.collection-mods-page-attrib-tooltip {
 .collection-ghost-button {
   border: 1px solid $border-color;
   border-radius: 26px;
-  padding: 0.5em 1em;
+  padding: 6px 10px;
   background-color: transparent;
 
   &[disabled] {
@@ -1308,8 +1309,22 @@ ul.collection-mods-page-attrib-tooltip {
   .collection-health-header {
     background-color: $brand-menu;
     padding: 1em;
-    font-weight: bold;
-    font-size: larger;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .collection-health-header-title {
+      font-weight: bold;
+      font-size: larger;
+    }
+
+    .collection-health-header-gameversion {
+      display: flex;
+      gap: 4px;
+      align-items: baseline;
+
+      //color: $gray-dark;
+    }
   }
 
   .collection-health-body {
@@ -1317,11 +1332,12 @@ ul.collection-mods-page-attrib-tooltip {
     gap: 1em;
 
     .collection-health-rating-text {
-      font-size: larger;
+      //font-size: larger;
       text-align: center;
       height: 100%;
       display: flex;
       align-items: center;
+      line-height: 1.4;
     }
 
     .collection-health-rating-placeholder {
@@ -1371,7 +1387,7 @@ ul.collection-mods-page-attrib-tooltip {
     button {
       border-radius: 45px;
       //border-color: $text-color-disabled;
-      padding: 0.5em;
+      //padding: 0.5em;
       color: $text-color;
       width: 100%;
 

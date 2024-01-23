@@ -1,4 +1,4 @@
-import { RatingOptions } from '@nexusmods/nexus-api';
+import { IGameVersion, RatingOptions } from '@nexusmods/nexus-api';
 import I18next from 'i18next';
 import * as React from 'react';
 import {
@@ -7,6 +7,7 @@ import {
   RadialProgress,
   tooltip,
   MainContext,
+  More,
 } from 'vortex-api';
 
 export interface IHealthIndicatorProps {
@@ -16,13 +17,15 @@ export interface IHealthIndicatorProps {
   revisionNumber: number;
   onVoteSuccess: (success: boolean) => void;
   voteAllowed: boolean;
+  gameVersion: string;
+  collectionGameVersion: string;
 }
 
 function HealthIndicator(props: IHealthIndicatorProps) {
 
   const context = React.useContext(MainContext);
 
-  const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed } =
+  const { t, onVoteSuccess, ownSuccess, revisionNumber, value, voteAllowed, gameVersion, collectionGameVersion } =
     props;
 
   const voteSuccess = React.useCallback((evt: React.MouseEvent<any>) => {
@@ -65,11 +68,26 @@ function HealthIndicator(props: IHealthIndicatorProps) {
     cssClass = 'success-rating-dubious';
   }
 
+  const versionMismatch = gameVersion !== collectionGameVersion;
+  const gameVersionClassName = versionMismatch ? 'dialog-danger-text' : '';
+
   return (
     <FlexLayout type='column' className='collection-health-indicator'>
-      <div className='collection-health-header'>
-        <Icon name='revision' />
+      <div className='collection-health-header'>        
+        <div className='collection-health-header-title'>
+          <Icon name='revision' />
         {t('Revision {{number}}', { replace: { number: revisionNumber } })}
+        </div>
+        <div className='collection-health-header-gameversion'>{t('Game Version: ')}
+          <span className={gameVersionClassName}>{collectionGameVersion}</span>  
+          {(versionMismatch) ? (
+            <More id='collection-health-version-mismatch' name={t('Version Mismatch')}>
+              {t('This collection was created using a different version of the game than you have and is the most common reason why a collection doesn\'t work correctly.\n\n'
+              + 'Your version: {{gameVersion}}\n\n'
+              + 'Collection version: {{collectionGameVersion}}', { replace: { collectionGameVersion: collectionGameVersion, gameVersion: gameVersion } })}
+            </More>
+          ) : null}         
+          </div>
       </div>
       <FlexLayout type='row' className='collection-health-body'>
         <FlexLayout.Fixed className='collection-revition-rating-parent'>

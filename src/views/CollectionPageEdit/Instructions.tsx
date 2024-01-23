@@ -32,7 +32,7 @@ const settings = (props: IInstructionProps) => {
 
   return (
     <FlexLayout type='column' id='collection-settings-edit' className='collection-settings-edit'>
-      <h4>{t('Settings')}</h4>
+      <h4>{t('Options')}</h4>
       <p>{t('The below settings can optionally be changed to customize this collection')}</p>
 
         <Toggle
