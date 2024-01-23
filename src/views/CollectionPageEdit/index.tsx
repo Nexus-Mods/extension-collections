@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { ICollectionInfo, ICollectionModRule } from '../../types/ICollection';
 import { IExtensionFeature } from '../../util/extension';
 import { getInterface } from '../../util/gameSupport';
@@ -9,7 +8,7 @@ import { NAMESPACE } from '../../constants';
 
 import { startAddModsToCollection } from '../../actions/session';
 
-import FileOverrides, { IPathTools } from './FileOverrides';
+import FileOverrides from './FileOverrides';
 import CollectionGeneralPage from './Instructions';
 import ModRules from './ModRules';
 import ModsEditPage from './ModsEditPage';
@@ -26,7 +25,6 @@ import { actions, ComponentEx, FlexLayout, log, tooltip, types, util } from 'vor
 const INIT_PAGE = 'mods';
 
 export interface ICollectionEditBaseProps {
-  pathTool: IPathTools;
   profile: types.IProfile;
   collection: types.IMod;
   mods: { [modId: string]: types.IMod };
@@ -126,7 +124,7 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
   public render(): React.ReactNode {
     const { t, mods, collection, showBinpatchWarning, exts,
             onDismissBinpatchWarning, onDismissPhaseUsage,
-            profile, showPhaseUsage, pathTool } = this.props;
+            profile, showPhaseUsage } = this.props;
     const { page, revision } = this.state;
 
     if (profile === undefined) {
@@ -220,7 +218,6 @@ class CollectionEdit extends ComponentEx<ICollectionEditProps, ICollectionEditSt
                   collection={collection}
                   mods={mods}
                   onSetCollectionAttribute={this.setCollectionAttribute}
-                  pathTool={pathTool}
                 />
               </Panel>
             </Tab>
