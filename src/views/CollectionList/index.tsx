@@ -1,9 +1,11 @@
+/* eslint-disable */
 import { updateSuccessRate } from '../../actions/persistent';
 import { doExportToAPI } from '../../collectionExport';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE, NAMESPACE, TOS_URL} from '../../constants';
 import { findExtensions, IExtensionFeature } from '../../util/extension';
 import InstallDriver from '../../util/InstallDriver';
 
+import { IPathTools } from '../CollectionPageEdit/FileOverrides';
 import CollectionEdit from '../CollectionPageEdit';
 import CollectionPage from '../CollectionPageView';
 import StartPage from './StartPage';
@@ -21,7 +23,7 @@ import { actions, ComponentEx, FlexLayout, log, MainPage, selectors, tooltip,
 export interface ICollectionsMainPageBaseProps extends WithTranslation {
   active: boolean;
   secondary: boolean;
-
+  pathTool: IPathTools
   localState: { ownCollections: IRevision[] };
   driver: InstallDriver;
   onAddCallback: (cbName: string, cb: (...args: any[]) => void) => void;
@@ -101,7 +103,11 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
   }
 
   public render(): JSX.Element {
-    const { t, downloads, driver, game, localState, mods, notifications, profile } = this.props;
+    const {
+      t, downloads, driver, game, localState,
+      mods, notifications, profile, pathTool
+    } = this.props;
+
     const { activeTab, matchedReferences, selectedCollection, viewMode } = this.state;
 
     if (profile === undefined) {
@@ -193,6 +199,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
                   onRemove={this.remove}
                   onUpload={this.upload}
                   exts={this.props.exts}
+                  pathTool={pathTool}
                 />
               )}
           </FlexLayout.Flex>
