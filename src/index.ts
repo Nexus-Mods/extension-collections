@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { clearPendingVote, updateSuccessRate } from './actions/persistent';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
@@ -13,6 +14,8 @@ import AddModsDialog from './views/AddModsDialog';
 import HealthDownvoteDialog from './views/CollectionPageView/HealthDownvoteDialog';
 import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
+
+import { IPathTools } from './views/CollectionPageEdit/FileOverrides';
 
 import CollectionAttributeRenderer from './views/CollectionModsPageAttributeRenderer';
 
@@ -645,6 +648,7 @@ function register(context: types.IExtensionContext,
       onCreateCollection,
       onUpdateMeta,
       resetCB,
+      pathTool,
     }),
     onReset: () => resetPageCB?.(),
     priority: 90,
@@ -1242,6 +1246,10 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
   });
 
   driver.infoCache.clearCache();
+}
+
+const pathTool: IPathTools = {
+  relative: path.relative,
 }
 
 function init(context: types.IExtensionContext): boolean {
