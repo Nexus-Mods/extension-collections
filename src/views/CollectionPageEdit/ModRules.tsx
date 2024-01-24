@@ -50,7 +50,7 @@ class ModRulesPage extends ComponentEx<IProps, {}> {
           </p>
         </ControlLabel>
         <div>
-          <a onClick={this.enableAllRules}>{t('Enable all')}</a>&nbsp; | &nbsp;<a onClick={this.disableAllRules}>{t('Disable all')}</a>
+          <a onClick={this.enableAllRules}>{t('Enable all')}</a><span className='link-action-seperator'>&nbsp; | &nbsp;</span><a onClick={this.disableAllRules}>{t('Disable all')}</a>
         </div>
         <ListGroup>
           {filtered
