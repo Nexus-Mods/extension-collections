@@ -1205,11 +1205,11 @@ ul.collection-mods-page-attrib-tooltip {
     }
 
     .rule-name {
-      color: $text-color-disabled;
+      color: $text-color;
     }
 
     .rule-type {
-      color: $text-color;
+      color: $brand-info-lighter;
       font-style: italic;
       margin: 0 0.5em;
     }
