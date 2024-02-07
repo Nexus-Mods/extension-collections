@@ -1,3 +1,4 @@
+/* eslint-disable */
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
@@ -10,7 +11,11 @@ import { IRevisionEx } from '../types/IRevisionEx';
 import { applyPatches } from './binaryPatching';
 import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
-import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId } from './util';
+import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
+
+import * as _ from 'lodash';
+import turbowalk, { IEntry } from 'turbowalk';
+import { IFileListItem, IModReference } from 'vortex-api/lib/extensions/mod_management/types/IMod';
 
 export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'recommendations' | 'review';
 
@@ -36,6 +41,9 @@ class InstallDriver {
   private mPrepare: Promise<void> = Promise.resolve();
   private get requiredMods() {
     return this.mDependentMods.filter(_ => _.type === 'requires');
+  }
+  private get recommendedMods() {
+    return this.mDependentMods.filter(_ => _.type === 'recommends');
   }
 
   constructor(api: types.IExtensionApi) {
@@ -69,8 +77,11 @@ class InstallDriver {
           }
           applyPatches(api, this.mCollection,
                        gameId, dependent.reference.description, modId, dependent.extra?.patches);
-          api.store.dispatch(
-            actions.setFileOverride(gameId, modId, dependent.extra?.fileOverrides));
+          util.batchDispatch(api.store, [
+            actions.setFileOverride(gameId, modId, dependent.extra?.fileOverrides),
+            actions.setModAttribute(gameId, modId, 'patches', dependent.extra?.patches),
+            actions.setModAttribute(gameId, modId, 'fileList', dependent.fileList),
+          ]);
         }
       }
       this.triggerUpdate();
@@ -463,7 +474,7 @@ class InstallDriver {
     this.mApi.ext.withSuppressedTests?.(['plugins-changed'], () =>
       new Promise(resolve => {
         this.mOnStop = () => {
-          resolve();
+          resolve(undefined);
           this.mOnStop = undefined;
         };
       }));
@@ -556,8 +567,21 @@ class InstallDriver {
 
     const required = (collection?.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
-    this.mDependentMods = required
-      .filter(rule => util.findModByRef(rule.reference, mods) === undefined);
+    const dependencies: types.IModRule[] = required
+      .reduce((accum, rule) => {
+        const modRef: any = {
+          ...rule.reference,
+          patches: { ...rule?.extra?.patches } ?? undefined,
+          fileList: rule?.fileList,
+        }
+        const mod = util.findModByRef(modRef, mods);
+        if (mod === undefined) {
+          accum.push(rule);
+        }
+        return accum;
+      }, []);
+    this.mDependentMods = dependencies;
+    log('debug', 'dependent mods', JSON.stringify(dependencies));
 
     if (this.requiredMods.length === 0) {
       this.mInstallDone = false;
