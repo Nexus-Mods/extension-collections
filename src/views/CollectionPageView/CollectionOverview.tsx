@@ -330,7 +330,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
                       ownSuccess={votedSuccess}
                       voteAllowed={voteAllowed}
                       gameVersion={ (this.context.api.getState().persistent?.gameMode as any)?.versions[profile.gameId] ?? '?'}
-                      collectionGameVersion={revision?.gameVersions[0]?.reference ?? '?'}
+                      collectionGameVersion={revision?.gameVersions?.[0]?.reference ?? '?'}
                     />
                   ) : null}
                 </FlexLayout.Fixed>

@@ -6,7 +6,7 @@ import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { IINITweak, TweakArray } from './types/IINITweak';
 import TweakList from './views/IniTweaks';
 
-import { INI_TWEAKS_PATH, MOD_TYPE, OPTIONAL_TWEAK_PREFIX } from './constants';
+import { INI_TWEAKS_PATH, OPTIONAL_TWEAK_PREFIX } from './constants';
 
 const gameSupport = {
     skyrim: {

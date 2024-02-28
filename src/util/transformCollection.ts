@@ -18,8 +18,9 @@ import * as semver from 'semver';
 import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
-import { fileMD5 } from 'vortexmt';
 import { IINITweak } from '../types/IINITweak';
+
+import { fileMD5Async } from './util';
 
 import { importTweaks } from '../initweaks';
 
@@ -27,16 +28,6 @@ interface IResolvedRule {
   mod: types.IMod;
   rule: types.IModRule;
 }
-
-function nop() {
-  // nop
-}
-
-const fileMD5Async = (fileName: string) => new Promise((resolve, reject) => {
-  fileMD5(fileName,
-          (err: Error, result: string) => (err !== null) ? reject(err) : resolve(result),
-          nop);
-});
 
 function sanitizeExpression(fileName: string): string {
   // drop extension and anything like ".1" or " (1)" at the end which probaby
