@@ -1642,13 +1642,11 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 #install-changelog-dialog {
-  h4 {
-    margin-top: 0;
-    margin-bottom: 0;
-  }
+
+  
 
   .media-right {
-    width: 100%;
+    max-width: 320px;
 
     .layout-container-row {
       justify-content: space-between;
@@ -1657,6 +1655,32 @@ ul.collection-mods-page-attrib-tooltip {
     .changelog-scroll {
       max-height: 30vh;
       overflow: auto;
+
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+    
+      h1 {
+        font-size: 1.5em;
+      }
+    
+      h2 {
+        font-size: 1.4em;
+      }
+    
+      h3 {
+        font-size: 1.3em;
+      }
+    
+      h4 {
+        font-size: 1.2em;
+      }
+
+      img {
+        width: 100%;
+      }
+
     }
   }
 
