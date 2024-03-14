@@ -4,6 +4,8 @@ import { types, util } from 'vortex-api';
 import { DEFAULT_INSTRUCTIONS } from '../../constants';
 import * as ReactMarkdown from 'react-markdown';
 
+import { isEmpty } from '../../util/util';
+
 export interface IInstructionsProps {
   t: types.TFunction;
   collection: types.IMod;
@@ -23,7 +25,7 @@ function Instructions(props: IInstructionsProps) {
   
   const { required, optional } = React.useMemo(() => {
     return (collection.rules ?? []).reduce((prev, rule) => {
-      if ((rule.extra?.instructions === undefined)
+      if ((isEmpty(rule.extra?.instructions))
           || !['requires', 'recommends'].includes(rule.type)) {
         return prev;
       }
