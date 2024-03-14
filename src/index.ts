@@ -585,11 +585,11 @@ function register(context: types.IExtensionContext,
 
   const onSwitchProfile = (profileId: string) => {
     return new Promise<void>((resolve, reject) => {
-      context.api.events.once('profile-did-change', newProfileId => {
+      context.api.events.once('profile-did-change', (newProfileId: string) => {
         if (newProfileId === profileId) {
           resolve();
         } else {
-          reject(new Error('Failed to switch to profile'));
+          reject(new Error(`Failed to switch to profile ${profileId}; got ${newProfileId}`));
         }
       });
       context.api.store.dispatch(actions.setNextProfile(profileId));
