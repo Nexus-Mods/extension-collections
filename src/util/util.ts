@@ -152,3 +152,9 @@ export async function walkPath(dirPath: string, walkOptions?: IWalkOptions): Pro
     return resolve(walkResults);
   });
 }
+
+export function isEmpty(value: any) {
+  return (!value)
+    || (value.hasOwnProperty('length') && value.length === 0)
+    || (value.constructor === Object && Object.keys(value).length === 0);
+}
