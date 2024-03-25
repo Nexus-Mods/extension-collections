@@ -74,7 +74,7 @@ const instructions = (props: IInstructionProps) => {
   return (
     <FlexLayout type='column' id='collection-instructions-edit' className='collection-instructions-edit'>
 
-      <FlexLayout.Fixed>
+      <FlexLayout.Fixed className='collection-instructions-container'>
         <h4>{t('Instructions')}</h4>
         <p>
           {t('Instructions will be shown to the user before installation starts and can be reviewed in the Instructions tab. You can also add individual mod instructions in the Mods tab.')}
