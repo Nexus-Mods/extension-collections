@@ -1791,6 +1791,7 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 #collection-file-overrides {
+  overflow-y: auto;
   .table {
     width: fit-content;
 
