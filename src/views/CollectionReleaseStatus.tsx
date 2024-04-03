@@ -14,14 +14,14 @@ function CollectionReleaseStatus(props: ICollectionReleaseStatusProps) {
   const { t, active, collection, enabled, incomplete } = props;
   if (active) {
     if (incomplete) {
-      return <div className='collection-status'>{t('Incomplete')}</div>;
+      return <div className='collection-status incomplete'>{t('Incomplete')}</div>;
     } else if ((util.getSafe(collection.attributes, ['collectionId'], undefined) !== undefined)
                && util.getSafe(collection.attributes, ['editable'], false)) {
-      return <div className='collection-status'>{t('Published')}</div>;
+      return <div className='collection-status published'>{t('Published')}</div>;
     } else if (enabled) {
       return <div className='collection-status enabled'>{t('Enabled')}</div>;
     } else {
-      return <div className='collection-status'>{t('Disabled')}</div>;
+      return <div className='collection-status disabled'>{t('Disabled')}</div>;
     }
   } else {
     return null;

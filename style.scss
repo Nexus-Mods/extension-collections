@@ -521,11 +521,15 @@ ul.collection-mods-page-attrib-tooltip {
 
     flex-direction: column;
 
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
     .name {
       // @extend .h4;
       // width: 8em;
       font-size: 1.175em;
-      margin: 0.5em 0;
+      margin: 0;
       font-weight: bold;
       overflow: hidden;
     }
@@ -702,11 +706,28 @@ ul.collection-mods-page-attrib-tooltip {
 .collection-status {
   color: $white;
   background-color: $gray-light;
+
+  padding: 2px 12px;
+  border-radius: 20px;
+  width: fit-content;
   text-transform: uppercase;
-  padding: 0 0.5em;
+  font-size: smaller;
+  //margin-bottom: 8px;
 
   &.enabled {
     background-color: $brand-success;
+  }
+
+  &.disabled {
+    background-color: $gray-light;
+  }
+
+  &.incomplete {
+    background-color: $brand-danger;
+  }
+
+  &.published {
+    background-color: $brand-info;
   }
 }
 
