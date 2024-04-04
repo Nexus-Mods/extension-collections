@@ -180,17 +180,16 @@ class CollectionThumbnail extends ComponentEx<IProps, { updating: boolean }> {
             circle={false}
           />
           {(details !== false) ? <div className='gradient' /> : null}
-          {(details === true) ? (
-            <CollectionReleaseStatus
+          
+          {(details !== false) ? (
+            <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
+              <CollectionReleaseStatus
               t={t}
               active={active}
               enabled={profile?.modState?.[collection.id]?.enabled ?? false}
               collection={collection}
               incomplete={incomplete}
             />
-          ) : null}
-          {(details !== false) ? (
-            <div className={`bottom ${onEdit !== undefined ? 'editable' : ''}`}>
               <div className='collection-revision-and-rating'>
                 <div className='revision-number'>
                   {t('Revision {{number}}{{forceRevision}}', { replace: {
