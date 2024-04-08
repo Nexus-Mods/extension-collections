@@ -184,7 +184,7 @@ class InfoCache {
 
     const collectionInfo: ICollection =
       (await this.mApi.emitAndAwait('get-nexus-collection', collectionSlug))[0];
-    if (!!collectionInfo) {
+    if (!!collectionInfo?.id) {
       store.dispatch(updateCollectionInfo(
         collectionInfo.id.toString(), collectionInfo, Date.now()));
       delete this.mCacheColRequests[collectionInfo.id.toString()];
