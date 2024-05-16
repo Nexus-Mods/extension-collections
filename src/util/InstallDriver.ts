@@ -14,8 +14,6 @@ import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
 
 import * as _ from 'lodash';
-import turbowalk, { IEntry } from 'turbowalk';
-import { IFileListItem, IModReference } from 'vortex-api/lib/extensions/mod_management/types/IMod';
 
 export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'recommendations' | 'review';
 
