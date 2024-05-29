@@ -107,7 +107,9 @@ function CommentButton(props: ICommentButtonProps) {
 
 async function refreshCollection(api: types.IExtensionApi, collection: ICollection) {
 
-  if (collection === undefined) return;
+  if (!collection?.slug) {
+    return;
+  }
 
   log('info', `refreshCollection ${collection.slug}`);
 
