@@ -41,6 +41,11 @@ const gameSupport: { [gameId: string]: IGameSupportEntry } = {
     parser: gamebryo.parser,
     interface: gamebryo.Interface,
   },
+  starfield: {
+    generator: gamebryo.generate,
+    parser: gamebryo.parser,
+    interface: gamebryo.Interface,
+  },
   oblivion: {
     generator: gamebryo.generate,
     parser: gamebryo.parser,
