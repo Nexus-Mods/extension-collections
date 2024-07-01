@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { AUTHOR_UNKNOWN, AVATAR_FALLBACK, INSTALLING_NOTIFICATION_ID } from '../../constants';
 import { testDownloadReference } from '../../util/findModByRef';
 import InstallDriver from '../../util/InstallDriver';
@@ -868,13 +869,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     Object.keys(modifiedDownloads)
       .filter(dlId => dlId.startsWith('-'))
       .forEach(dlId => {
-        const refId = Object.keys(result).find(iter => result[iter].archiveId === dlId.slice(1));
+        const refId = Object.keys(result).find(iter => result[iter]?.archiveId === dlId.slice(1));
         delete result[refId];
       });
 
     const invalidateMod = modId => {
       const realId = modId.slice(1);
-      const refId = Object.keys(result).find(iter => result[iter].id === realId);
+      const refId = Object.keys(result).find(iter => result[iter]?.id === realId);
       delete result[refId];
     };
 
@@ -984,13 +985,13 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     Object.keys(modifiedDownloads)
       .filter(dlId => !dlId.startsWith('-') && !dlId.startsWith('+'))
       .forEach(dlId => {
-        let ruleId = Object.keys(result).find(modId => result[modId].archiveId === dlId);
+        let ruleId = Object.keys(result).find(modId => result[modId]?.archiveId === dlId);
         if ((ruleId === undefined)
-            && (newProps.downloads[dlId].modInfo?.referenceTag !== undefined)) {
+            && (newProps.downloads[dlId]?.modInfo?.referenceTag !== undefined)) {
           ruleId = Object.keys(result).find(id =>
-            (result[id].archiveId === undefined)
+            (result[id]?.archiveId === undefined)
             && testDownloadReference(newProps.downloads[dlId],
-                                     result[id].collectionRule.reference));
+                                     result[id]?.collectionRule.reference));
           if (ruleId !== undefined) {
             result[ruleId] = {
               ...result[ruleId],
@@ -1006,7 +1007,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             progress: this.progress(newProps, result[ruleId]),
           };
 
-          const dl = newProps.downloads[result[ruleId].archiveId];
+          const dl = newProps.downloads[result[ruleId]?.archiveId];
           if (['finished', 'failed'].includes(dl.state) && !pendingFinish.includes(ruleId)) {
             result[ruleId].state = 'downloaded';
           }
@@ -1016,7 +1017,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     newProps.notifications.forEach(noti => {
       if ((noti.id !== undefined) && (noti.id.startsWith('install_'))) {
         const modId = noti.id.slice(8);
-        const ruleId = Object.keys(result).find(iter => result[iter].id === modId);
+        const ruleId = Object.keys(result).find(iter => result[iter]?.id === modId);
         if (ruleId !== undefined) {
           result[ruleId] = {
             ...result[ruleId],
