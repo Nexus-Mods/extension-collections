@@ -1,3 +1,4 @@
+/* eslint-disable */
 import path = require('path');
 import * as React from 'react';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
@@ -9,36 +10,39 @@ import TweakList from './views/IniTweaks';
 import { INI_TWEAKS_PATH, OPTIONAL_TWEAK_PREFIX } from './constants';
 
 const gameSupport = {
-    skyrim: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
-    },
-    skyrimse: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini', 'SkyrimCustom.ini'],
-    },
-    skyrimvr: {
-        gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
-    },
-    fallout3: {
-        gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini', 'FalloutCustom.ini'],
-    },
-    fallout4: {
-        gameSettingsFiles: ['Fallout4.ini', 'Fallout4Prefs.ini', 'Fallout4Custom.ini'],
-    },
-    fallout4vr: {
-        gameSettingsFiles: ['Fallout4Custom.ini', 'Fallout4Prefs.ini'],
-    },
-    falloutnv: {
-        gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini'],
-    },
-    oblivion: {
-        gameSettingsFiles: ['Oblivion.ini'],
-    },
-    enderal: {
-        gameSettingsFiles: ['Enderal.ini', 'EnderalPrefs.ini'],
-    },
-    enderalspecialedition: {
-        gameSettingsFiles: ['Enderal.ini', 'EnderalPrefs.ini'],
-    },
+  skyrim: {
+    gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
+  },
+  skyrimse: {
+    gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini', 'SkyrimCustom.ini'],
+  },
+  skyrimvr: {
+    gameSettingsFiles: ['Skyrim.ini', 'SkyrimPrefs.ini'],
+  },
+  fallout3: {
+    gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini', 'FalloutCustom.ini'],
+  },
+  fallout4: {
+    gameSettingsFiles: ['Fallout4.ini', 'Fallout4Prefs.ini', 'Fallout4Custom.ini'],
+  },
+  fallout4vr: {
+    gameSettingsFiles: ['Fallout4Custom.ini', 'Fallout4Prefs.ini'],
+  },
+  falloutnv: {
+    gameSettingsFiles: ['Fallout.ini', 'FalloutPrefs.ini'],
+  },
+  starfield: {
+    gameSettingsFiles: ['StarfieldCustom.ini', 'StarfieldPrefs.ini'],
+  },
+  oblivion: {
+    gameSettingsFiles: ['Oblivion.ini'],
+  },
+  enderal: {
+    gameSettingsFiles: ['Enderal.ini', 'EnderalPrefs.ini'],
+  },
+  enderalspecialedition: {
+    gameSettingsFiles: ['Enderal.ini', 'EnderalPrefs.ini'],
+  },
 };
 
 function isSupported(gameId: string) {
