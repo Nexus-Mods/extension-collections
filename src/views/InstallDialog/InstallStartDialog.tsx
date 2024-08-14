@@ -298,6 +298,9 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
   private switchProfile = async () => {
     const { selectedProfile } = this.state;
     await this.props.onSwitchProfile(selectedProfile);
+
+    // Make sure the profiles are visible.
+    this.props.onSetProfilesVisible();
     this.startInstall();
   }
 
