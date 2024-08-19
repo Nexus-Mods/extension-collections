@@ -589,7 +589,21 @@ function register(context: types.IExtensionContext,
         if (newProfileId === profileId) {
           resolve();
         } else {
-          reject(new Error(`Failed to switch to profile ${profileId}; got ${newProfileId}`));
+          log('warn', `Failed to switch to profile ${profileId}; got ${newProfileId}`);
+          const profile = selectors.profileById(context.api.getState(), profileId);
+          if (profile === undefined) {
+            reject(new Error(`Failed to switch to profile ${profileId}; got ${newProfileId}`));
+          }
+
+          // The profile exists - this is a memoization issue, lets just switch to
+          //  it rather crashing the app. The installDriver has a fallback mechanism
+          //  to ensure it uses the correct profile anyway.
+          //
+          // P.S. previously the fallback mechanism was being executed in the background
+          //  for each switch anyway. (so even if we crash the app, the profile was still
+          //  being activated)
+          context.api.store.dispatch(actions.setNextProfile(profileId));
+          resolve();
         }
       });
       context.api.store.dispatch(actions.setNextProfile(profileId));
