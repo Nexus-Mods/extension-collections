@@ -116,7 +116,7 @@ const coerceableRE = /^v?[0-9.]+$/;
 
 function safeCoerce(input: string): string {
   return coerceableRE.test(input)
-    ? semver.coerce(input)?.raw ?? input
+    ? util.coerceToSemver(input) ?? input
     : input;
 }
 
