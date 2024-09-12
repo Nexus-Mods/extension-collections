@@ -462,18 +462,18 @@ export function collectionModToRule(knownGames: types.IGameStored[],
     }
     : undefined;
 
-  const coerced = semver.coerce(mod.version);
+  const coerced = util.coerceToSemver(mod.version);
 
   let versionMatch = !!coerced
-    ? `>=${coerced.version ?? '0.0.0'}+prefer`
-    : mod.version;
+    ? `>=${coerced ?? '0.0.0'}+prefer`
+    : util.coerceToSemver(mod.version);
 
   const { updatePolicy } = mod.source;
 
   if ((updatePolicy === 'exact')
       || (mod.source.type === 'bundle')
       || (mod.hashes !== undefined)) {
-    versionMatch = !!coerced ? coerced.version : mod.version;
+    versionMatch = !!coerced ? coerced : util.coerceToSemver(mod.version);
   } else if (updatePolicy === 'latest') {
     versionMatch = '*';
   }
