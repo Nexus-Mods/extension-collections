@@ -740,6 +740,20 @@ function register(context: types.IExtensionContext,
       }, 100);
     }, (modIds: string[]) => isEditableCollection(context.api.getState(), modIds));
 
+  context.registerAction('mods-action-icons', 50, 'conflict', {}, 'Apply Collection Rules',
+    (modIds: string[]) => {
+      const state = context.api.getState();
+      const gameId = selectors.activeGameId(state);
+      context.api.events.emit('did-install-dependencies', gameId, modIds[0], false);
+    }, (modIds: string[]) => {
+      const state = context.api.getState();
+      const gameId = selectors.activeGameId(state);
+      const mod = state.persistent.mods[gameId][modIds[0]];
+      if (mod === undefined) {
+        return false;
+      }
+      return (mod.type === MOD_TYPE);
+    });
   /*
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',
     (modIds: string[]) => {
