@@ -271,11 +271,25 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         id: 'version',
         name: 'Version',
         calc: mod => {
-          let verString = (mod.state !== null)
-            ? mod.attributes.version ?? mod.collectionRule.reference.versionMatch ?? '0.0.0'
-            : mod.collectionRule.reference.versionMatch;
-          if (verString.endsWith('+prefer')) {
-            const sv = semver.minVersion(verString);
+          const prefer = '+prefer';
+          let verString = ((mod.state !== null)
+            ? mod.attributes.version ?? mod.collectionRule.reference.versionMatch
+            : mod.collectionRule.reference.versionMatch) ?? '0.0.0';
+          if (verString.endsWith(prefer)) {
+            let sv: { version: string };
+            try {
+              sv = semver.minVersion(verString);
+            } catch (e) {
+              const { version, comparator } = this.extractAndRemoveComparators(verString);
+              const coerced = util.coerceToSemver(version.slice(0, -(prefer.length)));
+              const range = (comparator ?? '') + coerced + prefer;
+              try {
+                sv = semver.minVersion(range);
+              } catch (e2) {
+                sv = { version: coerced }
+              }
+            }
+
             verString = sv.version;
           }
           return verString;
@@ -485,7 +499,12 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
             )}
         </FlexLayout.Fixed>
         <FlexLayout.Flex className='collection-mods-panel'>
-          <Tabs id='collection-view-tabs' activeKey={currentTab} onSelect={this.selectTab}>
+          <Tabs id='collection-view-tabs'
+            activeKey={currentTab}
+            onSelect={this.selectTab}
+            unmountOnExit={true}
+            mountOnEnter={true}
+          >
             <Tab
               key='instructions'
               eventKey='instructions'
@@ -548,6 +567,15 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     this.context.api.events.emit('analytics-track-navigation', `collections/view/collection/${tab}`);
     this.nextState.currentTab = tab;
   }
+
+  private extractAndRemoveComparators = (versionString: string): { version: string, comparator: string | null } => {
+    const comparatorPattern = /[\~\^><=]+/;
+    const match = versionString.match(comparatorPattern);
+    const comparator = match ? match[0] : null;
+    const cleanedVersion = versionString.replace(comparatorPattern, '').trim();
+    return { version: cleanedVersion, comparator: comparator };
+}
+
 
   private progress(props: ICollectionPageProps, mod: IModEx) {
     const { downloads, notifications } = props;
