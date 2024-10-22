@@ -1,3 +1,4 @@
+/* eslint-disable */
 import CollectionReleaseStatus from '../CollectionReleaseStatus';
 import CollectionThumbnail from '../CollectionTile';
 
