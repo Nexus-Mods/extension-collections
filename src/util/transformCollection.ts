@@ -670,14 +670,16 @@ async function createTweaksFromProfile(api: types.IExtensionApi,
 function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
                                 existingRules: types.IModRule[],
-                                existingId: string): types.IModRule[] {
+                                existingId: string,
+                                filterFunc: (mod: types.IMod) => boolean): types.IModRule[] {
   return Object.keys(profile.modState ?? {})
     .filter(modId => profile.modState?.[modId]?.enabled
                   && (mods[modId] !== undefined)
                   && (modId !== existingId)
                   // no nested collections allowed
                   && (mods[modId].type !== MOD_TYPE)
-                  && (mods[modId].attributes?.['generated'] !== true))
+                  && (mods[modId].attributes?.['generated'] !== true)
+                  && filterFunc(mods[modId]))
     .map(modId => {
       // don't forget what we set up regarding version matching
       let versionMatch: string;
@@ -1004,8 +1006,10 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
 
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
+  const isNexusSourced = (m: types.IMod) => (m?.attributes?.source === 'nexus');
+  const filterFunc = forceName ? isNexusSourced : () => true;
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
-                                       mod?.rules ?? [], mod?.id);
+                                       mod?.rules ?? [], mod?.id, filterFunc);
 
   let name: string = forceName ?? profile.name;
 
