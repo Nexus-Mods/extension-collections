@@ -960,21 +960,57 @@ export function validateName(t: types.TFunction,
   }
 }
 
+export async function showQuickCollectionRestrictionsDialog(api: types.IExtensionApi) {
+  const t = api.translate;
+  const state: types.IState = api.store.getState();
+  const profileId = selectors.activeProfile(state)?.id;
+  if (!profileId) {
+    return;
+  }
+  const restrictionsDialog = await api.showDialog('info', 'Quick Collection', {
+    bbcode: t('Quick collections are meant to be used as temporary back ups of your mod list but there are a few restrictions:[br][/br][br][/br]'
+      + '[list]'
+      + '[*] Only mods that are enabled AND deployed in the active profile will be included in the collection.'
+      + '[*] Only mods that are sourced from the Nexus Mods site will be included in the collection.'
+      + '[*] The collection will look for the exact version of your currently installed mods.'
+      + '[*] Any fomod mods you have in your setup will be exported with the same options you\'ve selected.'
+      + '[/list][br][/br][br][/br]'),
+  },[
+    {  label: 'Cancel' },
+    {  label: 'Proceed' },
+  ])
+  return (restrictionsDialog.action === 'Cancel')
+    ? Promise.reject(new util.UserCanceled())
+    : Promise.resolve();
+}
+
+interface ICreateCollectionFromProfileResult {
+  id: string;
+  name: string;
+  updated: boolean;
+  submit: boolean;
+}
+
 export async function createCollectionFromProfile(api: types.IExtensionApi,
-                                                  profileId: string)
-    : Promise<{ id: string, name: string, updated: boolean }> {
+                                                  profileId: string,
+                                                  forceName?: string)
+                                                  : Promise<ICreateCollectionFromProfileResult> {
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
-  const id = makeCollectionId(profileId);
+  const id = (forceName)
+    ? makeCollectionId(`${profileId}_${shortid()}`)
+    : makeCollectionId(profileId);
 
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
                                        mod?.rules ?? [], mod?.id);
 
-  let name: string;
+  let name: string = forceName ?? profile.name;
 
+  const submitLabel = 'Create and Submit';
+  let wantsToSubmit = false;
   if (mod === undefined) {
     const t = api.translate;
     const result = await api.showDialog('question', 'New collection from profile', {
@@ -983,26 +1019,29 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
         id: 'name',
         label: 'Please enter a name for your new collection',
         type: 'text',
-        value: profile.name,
+        value: name,
       }],
       condition: content => validateName(t, content),
     }, [
       { label: 'Cancel' },
+      { label: submitLabel },
       { label: 'Create', default: true },
     ]);
 
-    if (result.action === 'Create') {
-      name = result.input['name'];
-      await createCollection(api, profile.gameId, id, name, rules);
-      await createTweaksFromProfile(
-        api, profile, state.persistent.mods[profile.gameId] ?? {}, id);
-    } else {
+    const cancelled = result.action === 'Cancel';
+    if (cancelled) {
       throw new util.UserCanceled();
     }
+
+    wantsToSubmit = result.action === submitLabel;
+    
+    name = result.input['name'];
+    await createCollection(api, profile.gameId, id, name, rules);
+    await createTweaksFromProfile(api, profile, state.persistent.mods[profile.gameId] ?? {}, id);
   } else {
     name = mod.attributes?.name;
     updateCollection(api, profile.gameId, mod, rules);
   }
 
-  return { id, name, updated: mod !== undefined };
+  return { id, name, updated: mod !== undefined, submit: wantsToSubmit };
 }
