@@ -990,7 +990,7 @@ interface ICreateCollectionFromProfileResult {
   id: string;
   name: string;
   updated: boolean;
-  submit: boolean;
+  wantsToUpload: boolean;
 }
 
 export async function createCollectionFromProfile(api: types.IExtensionApi,
@@ -1013,8 +1013,8 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
 
   let name: string = forceName ?? profile.name;
 
-  const submitLabel = 'Create and Submit';
-  let wantsToSubmit = false;
+  const uploadLabel = 'Create and Upload';
+  let wantsToUpload = false;
   if (mod === undefined) {
     const t = api.translate;
     const result = await api.showDialog('question', 'New collection from profile', {
@@ -1028,8 +1028,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
       condition: content => validateName(t, content),
     }, [
       { label: 'Cancel' },
-      { label: submitLabel },
-      { label: 'Create', default: true },
+      { label: forceName ? uploadLabel : 'Create', default: true },
     ]);
 
     const cancelled = result.action === 'Cancel';
@@ -1037,7 +1036,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
       throw new util.UserCanceled();
     }
 
-    wantsToSubmit = result.action === submitLabel;
+    wantsToUpload = result.action === uploadLabel;
     
     name = result.input['name'];
     await createCollection(api, profile.gameId, id, name, rules);
@@ -1047,5 +1046,5 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
     updateCollection(api, profile.gameId, mod, rules);
   }
 
-  return { id, name, updated: mod !== undefined, submit: wantsToSubmit };
+  return { id, name, updated: mod !== undefined, wantsToUpload };
 }

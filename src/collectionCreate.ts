@@ -29,10 +29,10 @@ export async function initFromProfile(api: types.IExtensionApi, profileId?: stri
       })}`;
     }
 
-    const { id, name, updated, submit } = await createCollectionFromProfile(api, profileId, forcedName);
+    const { id, name, updated, wantsToUpload } = await createCollectionFromProfile(api, profileId, forcedName);
     
     api.store.dispatch(actions.setModEnabled(profileId, id, true));
-    if (submit) {
+    if (wantsToUpload) {
       await uploadCollection(api, profileId, id);
     }
     api.sendNotification({
