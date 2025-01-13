@@ -469,7 +469,7 @@ class InstallDriver {
   private startInstall = async () => {
     // suppress plugins-changed event to avoid constantly running expensive callbacks
     // until onStop gets called
-    this.mApi.ext.withSuppressedTests?.(['plugins-changed'], () =>
+    this.mApi.ext.withSuppressedTests?.(['plugins-changed', 'settings-changed', 'mod-activated', 'mod-installed'], () =>
       new Promise(resolve => {
         this.mOnStop = () => {
           resolve(undefined);
@@ -579,7 +579,7 @@ class InstallDriver {
         return accum;
       }, []);
     this.mDependentMods = dependencies;
-    log('debug', 'dependent mods', JSON.stringify(dependencies));
+    // log('debug', 'dependent mods', JSON.stringify(dependencies));
 
     if (this.requiredMods.length === 0) {
       this.mInstallDone = false;
