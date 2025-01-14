@@ -1,13 +1,40 @@
+/* eslint-disable */
 import { MOD_TYPE } from './constants';
-import { createCollectionFromProfile } from './util/transformCollection';
+import { createCollectionFromProfile, showQuickCollectionRestrictionsDialog } from './util/transformCollection';
 
 import * as Redux from 'redux';
 import { actions, selectors, types, util } from 'vortex-api';
 
-export async function initFromProfile(api: types.IExtensionApi, profileId: string) {
+import { uploadCollection } from './util/util';
+
+export async function initFromProfile(api: types.IExtensionApi, profileId?: string) {
   try {
-    const { id, name, updated } = await createCollectionFromProfile(api, profileId);
+    let forcedName: string;
+    const isQuickCollection = profileId === undefined;
+    if (isQuickCollection && selectors.activeProfile(api.getState()) === undefined) {
+      // Should never happen - quick collection button shouldn't even appear if there's no active profile
+      //  but lets just put this here.
+      throw new util.ProcessCanceled('No active profile');
+    }
+    else if (isQuickCollection) {
+      profileId = selectors.activeProfile(api.getState()).id;
+      await showQuickCollectionRestrictionsDialog(api);
+      forcedName = `My mods: ${new Date().toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })}`;
+    }
+
+    const { id, name, updated, wantsToUpload } = await createCollectionFromProfile(api, profileId, forcedName);
+    
     api.store.dispatch(actions.setModEnabled(profileId, id, true));
+    if (wantsToUpload) {
+      await uploadCollection(api, profileId, id);
+    }
     api.sendNotification({
       type: 'success',
       id: 'collection-created',

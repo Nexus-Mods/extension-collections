@@ -772,6 +772,15 @@ function register(context: types.IExtensionContext,
     });
   */
 
+  context.registerAction('global-icons', 100, 'highlight-lab', {}, 'Quick Collection', () => {
+    initFromProfile(context.api)
+      .catch(err => context.api.showErrorNotification('Failed to init collection', err));
+  }, () => {
+    const state = context.api.getState();
+    const activeProfile = selectors.activeProfile(state);
+    return activeProfile !== undefined;
+  });
+
   context.registerAction('profile-actions', 150, 'highlight-lab', {}, 'Init Collection',
     (profileIds: string[]) => {
       initFromProfile(context.api, profileIds[0])
