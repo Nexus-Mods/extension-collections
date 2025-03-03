@@ -717,7 +717,7 @@ function deduceCollectionAttributes(collectionMod: types.IMod,
     saveEdits: {},
   };
 
-  collectionMod.rules.forEach(rule => {
+  (collectionMod.rules ?? []).forEach(rule => {
     const mod = util.findModByRef(rule.reference, mods);
     if (mod === undefined) {
       // allowing mods to be missing, prior to r32 this would throw an exception
