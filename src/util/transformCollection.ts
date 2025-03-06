@@ -14,6 +14,7 @@ import * as _ from 'lodash';
 import { ILookupResult } from 'modmeta-db';
 import * as path from 'path';
 import * as Redux from 'redux';
+import * as semver from 'semver';
 import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
@@ -670,8 +671,7 @@ function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
                                 existingRules: types.IModRule[],
                                 existingId: string,
-                                filterFunc: (mod: types.IMod) => boolean,
-                                isQuickCollection?: boolean): types.IModRule[] {
+                                filterFunc: (mod: types.IMod) => boolean): types.IModRule[] {
   return Object.keys(profile.modState ?? {})
     .filter(modId => profile.modState?.[modId]?.enabled
                   && (mods[modId] !== undefined)
@@ -690,10 +690,6 @@ function createRulesFromProfile(profile: types.IProfile,
         versionMatch = (oldRule.reference.versionMatch === '*')
           ? '*'
           : mods[modId].attributes.version;
-      }
-
-      if (isQuickCollection) {
-        versionMatch = mods[modId].attributes.version;
       }
 
       return {
@@ -1016,8 +1012,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
-  const isQuickCollection = forceName !== undefined;
-  const id = (isQuickCollection)
+  const id = (forceName)
     ? makeCollectionId(`${profileId}_${shortid()}`)
     : makeCollectionId(profileId);
 
@@ -1026,7 +1021,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const isNexusSourced = (m: types.IMod) => (m?.attributes?.source === 'nexus');
   const filterFunc = forceName ? isNexusSourced : () => true;
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
-                                       mod?.rules ?? [], mod?.id, filterFunc, isQuickCollection);
+                                       mod?.rules ?? [], mod?.id, filterFunc);
 
   let name: string = forceName ?? profile.name;
 
@@ -1054,6 +1049,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
     }
 
     wantsToUpload = result.action === uploadLabel;
+    
     name = result.input['name'];
     await createCollection(api, profile.gameId, id, name, rules);
     await createTweaksFromProfile(api, profile, state.persistent.mods[profile.gameId] ?? {}, id);
