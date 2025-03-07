@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { setSortAdded, setSortWorkshop } from '../../actions/settings';
 import { initFromProfile } from '../../collectionCreate';
 import {
@@ -123,6 +124,7 @@ interface ICreateCardProps {
   t: types.TFunction;
   onCreateFromProfile: () => void;
   onCreateEmpty: () => void;
+  onCreateQuickCollection: () => void;
   onTrackClick: (namespace: string, eventName: string) => void;
 }
 
@@ -149,9 +151,16 @@ function CreateCard(props: ICreateCardProps) {
           onTrackClick('Collections', 'Empty');
           props.onCreateEmpty();
         },
+      }, {
+        title: 'Quick Collection',
+        icon: 'highlight-lab',
+        action: () => {
+          onTrackClick('Collections', 'Quick Collection');
+          props.onCreateQuickCollection();
+        },
       },
     ];
-  }, [props.onCreateFromProfile, props.onCreateEmpty]);
+  }, [props.onCreateFromProfile, props.onCreateEmpty, props.onCreateQuickCollection]);
 
   return (
     <Panel className={classes.join(' ')} bsStyle='default'>
@@ -322,6 +331,7 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
                 <CreateCard
                   t={t}
                   onCreateFromProfile={this.fromProfile}
+                  onCreateQuickCollection={this.quickCollection}
                   onCreateEmpty={this.fromEmpty}
                   onTrackClick={this.trackEvent}
                 />
@@ -469,6 +479,17 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
 
   private openBugReport = () => {
     util.opn(BUG_REPORT_URL).catch(() => null);
+  }
+
+  private quickCollection = async () => {
+    try {
+      await initFromProfile(this.context.api);
+      this.refreshImages();
+    } catch (err) {
+      if (!(err instanceof util.UserCanceled)) {
+        this.context.api.showErrorNotification('Failed to create quick collection', err);
+      }
+    }
   }
 
   private fromProfile = async () => {
