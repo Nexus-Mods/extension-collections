@@ -14,6 +14,7 @@ import * as _ from 'lodash';
 import { ILookupResult } from 'modmeta-db';
 import * as path from 'path';
 import * as Redux from 'redux';
+import * as semver from 'semver';
 import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
@@ -670,8 +671,7 @@ function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
                                 existingRules: types.IModRule[],
                                 existingId: string,
-                                filterFunc: (mod: types.IMod) => boolean,
-                                isQuickCollection?: boolean): types.IModRule[] {
+                                filterFunc: (mod: types.IMod) => boolean): types.IModRule[] {
   return Object.keys(profile.modState ?? {})
     .filter(modId => profile.modState?.[modId]?.enabled
                   && (mods[modId] !== undefined)
@@ -690,10 +690,6 @@ function createRulesFromProfile(profile: types.IProfile,
         versionMatch = (oldRule.reference.versionMatch === '*')
           ? '*'
           : mods[modId].attributes.version;
-      }
-
-      if (isQuickCollection) {
-        versionMatch = mods[modId].attributes.version;
       }
 
       return {
@@ -973,14 +969,26 @@ export async function showQuickCollectionRestrictionsDialog(api: types.IExtensio
   if (!profileId) {
     return;
   }
+
   const restrictionsDialog = await api.showDialog('info', 'Quick Collection', {
-    bbcode: t('Quick collections are meant to be used as temporary back ups of your mod list but there are a few restrictions:[br][/br][br][/br]'
+    bbcode: t('Quick Collections create a backup of your mod list for easy import by another PC or mod manager. '
+            + 'They can be created in a few clicks but does not include all the features of a "full" collection. '
+            + 'Your Quick Collection will include:[br][/br][br][/br]'
       + '[list]'
-      + '[*] Only mods that are enabled AND deployed in the active profile will be included in the collection.'
-      + '[*] Only mods that are sourced from the Nexus Mods site will be included in the collection.'
-      + '[*] The collection will look for the exact version of your currently installed mods.'
-      + '[*] Any fomod mods you have in your setup will be exported with the same options you\'ve selected.'
-      + '[/list][br][/br][br][/br]'),
+      + '[*] All mods downloaded from Nexus Mods that are currently enabled and deployed.'
+      + '[*] Installer choices for mods that support installers (such as FOMODs).'
+      + '[*] File conflict rules.'
+      + '[*] Load order rules.'
+      + '[/list][br][/br][br][/br]'
+      + 'Quick Collections do NOT include:[br][/br][br][/br]'
+      + '[list]'
+      + '[*] Mods from sources other than Nexus Mods.'
+      + '[*] Alterations you have made mods after installing them.'
+      + '[*] Outputs of automated tools generated on your PC (FNIS, Script Merger, etc).'
+      + '[*] Mods that you have created on your PC and added to Vortex.'
+      + '[/list][br][/br][br][/br]'
+      + 'If you are using this feature migrate your mod list to the Nexus Mods app, see the '
+      + `[url=https://nexus-mods.github.io/NexusMods.App/users/gettingstarted/MovingToTheApp/]full guide here.[/url]`),
   },[
     {  label: 'Cancel' },
     {  label: 'Proceed' },
@@ -1004,8 +1012,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
-  const isQuickCollection = forceName !== undefined;
-  const id = (isQuickCollection)
+  const id = (forceName)
     ? makeCollectionId(`${profileId}_${shortid()}`)
     : makeCollectionId(profileId);
 
@@ -1014,7 +1021,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const isNexusSourced = (m: types.IMod) => (m?.attributes?.source === 'nexus');
   const filterFunc = forceName ? isNexusSourced : () => true;
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
-                                       mod?.rules ?? [], mod?.id, filterFunc, isQuickCollection);
+                                       mod?.rules ?? [], mod?.id, filterFunc);
 
   let name: string = forceName ?? profile.name;
 
@@ -1042,6 +1049,7 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
     }
 
     wantsToUpload = result.action === uploadLabel;
+    
     name = result.input['name'];
     await createCollection(api, profile.gameId, id, name, rules);
     await createTweaksFromProfile(api, profile, state.persistent.mods[profile.gameId] ?? {}, id);

@@ -12,7 +12,7 @@ import { connect } from 'react-redux';
 import Select from 'react-select';
 import * as Redux from 'redux';
 import { generate as shortid } from 'shortid';
-import { actions, ComponentEx, FlexLayout, Modal, More, types, util } from 'vortex-api';
+import { actions, ComponentEx, FlexLayout, Modal, More, Toggle, types, util } from 'vortex-api';
 import * as ReactMarkdown from 'react-markdown';
 
 interface IInstallDialogProps {
@@ -28,10 +28,12 @@ interface IConnectedProps {
   isPremium: boolean;
   userInfo: { userId: number };
   nextProfileId: string;
+  collectionsInstallWhileDownloading: boolean;
 }
 
 interface IActionProps {
   onAddProfile: (profile: types.IProfile) => void;
+  onSetCollectionConcurrency: (enabled: boolean) => void;
   onSetModAttribute: (gameId: string, modId: string, key: string, value: any) => void;
   onSetModAttributes: (gameId: string, modId: string, attributes: { [key: string]: any }) => void;
   onAddRule: (gameId: string, modId: string, rule: types.IModRule) => void;
@@ -218,9 +220,9 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
           <FlexLayout type='row'>
             <p>
               {t('Profiles allow you to have multiple mod set-ups for a game at once and quickly switch between them.')}
-            <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
-              {util.getText('profile' as any, 'profiles', t)}
-            </More>
+              <More id='more-profile-instcollection' name={t('Profiles')} wikiId='profiles'>
+                {util.getText('profile' as any, 'profiles', t)}
+              </More>
             </p>
 
           </FlexLayout>
@@ -240,6 +242,12 @@ class InstallDialog extends ComponentEx<IProps, IInstallDialogState> {
               recommendedNewProfile={recommendedNewProfile}
             />
           )}
+          <Toggle
+            checked={this.props.collectionsInstallWhileDownloading}
+            onToggle={this.props.onSetCollectionConcurrency}
+          >
+            {t('Install mods during collection downloads')}
+          </Toggle>
         </Modal.Body>
         <Modal.Footer>
           {this.state.confirmProfile ? (
@@ -324,25 +332,17 @@ function mapStateToProps(state: types.IState, ownProps: IInstallDialogProps): IC
   const { editCollectionId } = (state.session as any).collections;
   const gameMode = ownProps.driver?.profile?.gameId;
 
+  const isPremium = util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false);
+  const collectionsInstallWhileDownloading = util.getSafe(state, ['settings', 'downloads', 'collectionsInstallWhileDownloading'], true);
   const { userInfo } = state.persistent['nexus'] ?? {};
-
-  if (editCollectionId !== undefined) {
-    return {
-      allProfiles: state.persistent.profiles,
-      mods: state.persistent.mods[gameMode],
-      isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
-      userInfo,
-      nextProfileId: state.settings.profiles.nextProfileId,
-    };
-  } else {
-    return {
-      allProfiles: state.persistent.profiles,
-      mods: emptyObject,
-      isPremium: util.getSafe(state, ['persistent', 'nexus', 'userInfo', 'isPremium'], false),
-      userInfo,
-      nextProfileId: state.settings.profiles.nextProfileId,
-    };
-  }
+  return {
+    allProfiles: state.persistent.profiles,
+    mods: editCollectionId !== undefined ? state.persistent.mods[gameMode] : emptyObject,
+    isPremium,
+    userInfo,
+    nextProfileId: state.settings.profiles.nextProfileId,
+    collectionsInstallWhileDownloading,
+  };
 }
 
 function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
@@ -359,6 +359,8 @@ function mapDispatchToProps(dispatch: Redux.Dispatch): IActionProps {
       dispatch(actions.setProfile(profile)),
     onSetProfilesVisible: () =>
       dispatch(actions.setProfilesVisible(true)),
+    onSetCollectionConcurrency: (enabled: boolean) =>
+      dispatch(actions.setCollectionConcurrency(enabled)),
   };
 }
 
