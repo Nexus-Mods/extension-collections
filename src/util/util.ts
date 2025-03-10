@@ -177,19 +177,8 @@ export async function uploadCollection(api: types.IExtensionApi, profileId: stri
     return;
   }
 
-  const hasRules = (mods[collectionId]?.rules ?? []).length > 0;
-  if (!hasRules) {
-    await api.showDialog('error', 'Collection is empty', {
-      text: 'You can only upload collections that have at least one mod. If you encountered this as part of a '
-          + '"Quick Collection" operation, please ensure that the selected mods are sourced from Nexus Mods and have '
-          + 'been correctly identified by Vortex.',
-    }, [
-      { label: 'Close' },
-    ]);
-    return;
-  }
-
   api.events.emit('analytics-track-click-event', 'Collections', 'Upload collection');
+
   const missing = (mods[collectionId]?.rules ?? []).filter(rule =>
     ['requires', 'recommends'].includes(rule.type)
     && (util.findModByRef(rule.reference, mods) === undefined));
