@@ -7,14 +7,13 @@ import { ICollection, ICollectionAttributes, ICollectionInfo, ICollectionMod,
 import { scanForDiffs } from './binaryPatching';
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
-import { generateConfig, parseConfig } from './collectionConfig';
+import { generateConfig } from './collectionConfig';
 import { renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
 import { ILookupResult } from 'modmeta-db';
 import * as path from 'path';
 import * as Redux from 'redux';
-import * as semver from 'semver';
 import { generate as shortid } from 'shortid';
 import turbowalk, { IEntry } from 'turbowalk';
 import { actions, fs, log, selectors, types, util } from 'vortex-api';
@@ -671,14 +670,14 @@ function createRulesFromProfile(profile: types.IProfile,
                                 mods: {[modId: string]: types.IMod},
                                 existingRules: types.IModRule[],
                                 existingId: string,
-                                filterFunc: (mod: types.IMod) => boolean): types.IModRule[] {
+                                filterFunc: (mod: types.IMod) => boolean,
+                                isQuickCollection?: boolean): types.IModRule[] {
   return Object.keys(profile.modState ?? {})
     .filter(modId => profile.modState?.[modId]?.enabled
                   && (mods[modId] !== undefined)
                   && (modId !== existingId)
                   // no nested collections allowed
                   && (mods[modId].type !== MOD_TYPE)
-                  && (mods[modId].attributes?.['generated'] !== true)
                   && filterFunc(mods[modId]))
     .map(modId => {
       // don't forget what we set up regarding version matching
@@ -690,6 +689,10 @@ function createRulesFromProfile(profile: types.IProfile,
         versionMatch = (oldRule.reference.versionMatch === '*')
           ? '*'
           : mods[modId].attributes.version;
+      }
+
+      if (isQuickCollection) {
+        versionMatch = mods[modId].attributes.version;
       }
 
       return {
@@ -1012,16 +1015,18 @@ export async function createCollectionFromProfile(api: types.IExtensionApi,
   const state: types.IState = api.store.getState();
   const profile = state.persistent.profiles[profileId];
 
-  const id = (forceName)
+  const isQuickCollection = forceName !== undefined;
+  const id = (isQuickCollection)
     ? makeCollectionId(`${profileId}_${shortid()}`)
     : makeCollectionId(profileId);
 
   const mod: types.IMod = state.persistent.mods[profile.gameId]?.[id];
 
   const isNexusSourced = (m: types.IMod) => (m?.attributes?.source === 'nexus');
-  const filterFunc = forceName ? isNexusSourced : () => true;
+  const isGeneratedMod = (m: types.IMod) => (m?.attributes?.generated === true);
+  const filterFunc = (m: types.IMod) => forceName ? (isNexusSourced(m) && !isGeneratedMod(m)) : true;
   const rules = createRulesFromProfile(profile, state.persistent.mods[profile.gameId] ?? {},
-                                       mod?.rules ?? [], mod?.id, filterFunc);
+                                       mod?.rules ?? [], mod?.id, filterFunc, isQuickCollection);
 
   let name: string = forceName ?? profile.name;
 
