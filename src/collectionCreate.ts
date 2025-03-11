@@ -30,6 +30,21 @@ export async function initFromProfile(api: types.IExtensionApi, profileId?: stri
     }
 
     const { id, name, updated, wantsToUpload } = await createCollectionFromProfile(api, profileId, forcedName);
+    if (isQuickCollection) {
+      const state = api.getState();
+      const activeGameId = selectors.activeGameId(state);
+      const mods: { [modId: string]: types.IMod } = util.getSafe(state, ['persistent', 'mods', activeGameId], {});
+      const hasRules = (mods[id]?.rules ?? []).length > 0;
+      if (!hasRules) {
+        await api.showDialog('error', 'Collection is empty', {
+          text: 'The generated quick collection is empty. Please ensure the Nexus Mods sourced mods you want to include are '
+              + 'enabled and deployed.',
+        }, [
+          { label: 'Close' },
+        ]);
+        return;
+      }
+    }
     
     api.store.dispatch(actions.setModEnabled(profileId, id, true));
     if (wantsToUpload) {
