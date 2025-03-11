@@ -21,7 +21,7 @@ export async function initFromProfile(api: types.IExtensionApi, profileId?: stri
       await showQuickCollectionRestrictionsDialog(api);
       forcedName = `My mods: ${new Date().toLocaleDateString('en-GB', {
         day: '2-digit',
-        month: '2-digit',
+        month: 'short',
         year: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
