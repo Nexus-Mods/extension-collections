@@ -293,7 +293,7 @@ class InstallDriver {
   }
 
   public installRecommended() {
-    this.mApi.emitAndAwait('install-from-dependencies',
+    this.mApi.events.emit('install-from-dependencies',
                            this.mCollection.id, this.mCollection.rules, true);
     this.mStep = 'recommendations';
     this.triggerUpdate();
@@ -569,7 +569,7 @@ class InstallDriver {
       .reduce((accum, rule) => {
         const modRef: any = {
           ...rule.reference,
-          patches: { ...rule?.extra?.patches } ?? undefined,
+          patches: rule?.extra?.patches ? { ...rule.extra.patches } : undefined,
           fileList: rule?.fileList,
         }
         const mod = util.findModByRef(modRef, mods);
