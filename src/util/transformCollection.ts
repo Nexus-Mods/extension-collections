@@ -975,7 +975,7 @@ export async function showQuickCollectionRestrictionsDialog(api: types.IExtensio
 
   const restrictionsDialog = await api.showDialog('info', 'Quick Collection', {
     bbcode: t('Quick Collections create a backup of your mod list for easy import by another PC or mod manager. '
-            + 'They can be created in a few clicks but do not include all the features of a "full" collection. '
+            + 'They can be created in a few clicks but do not include all the features of a "full" collection.[br][/br][br][/br]'
             + 'Your Quick Collection will include:[br][/br]'
       + '[list]'
       + '[*] All mods downloaded from Nexus Mods that are currently enabled and deployed.'
