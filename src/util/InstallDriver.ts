@@ -293,7 +293,7 @@ class InstallDriver {
   }
 
   public installRecommended() {
-    this.mApi.events.emit('install-from-dependencies',
+    this.mApi.emitAndAwait('install-from-dependencies',
                            this.mCollection.id, this.mCollection.rules, true);
     this.mStep = 'recommendations';
     this.triggerUpdate();
