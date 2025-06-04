@@ -21,7 +21,10 @@ import { IINITweak } from '../types/IINITweak';
 
 import { fileMD5Async } from './util';
 
+import { matchChecksums } from './checksumMatcher';
+
 import { importTweaks } from '../initweaks';
+import { ReplicateHashMismatchError } from './errors';
 
 interface IResolvedRule {
   mod: types.IMod;
@@ -204,6 +207,7 @@ async function rulesToCollectionMods(
       const modPath = path.join(stagingPath, mod.installationPath);
 
       if (installMode === 'clone') {
+        await matchChecksums(api, game.id, mod.id);
         await turbowalk(modPath, async input => {
           entries = [].concat(entries, input);
         }, {});
@@ -296,6 +300,26 @@ async function rulesToCollectionMods(
       onError('failed to pack "{{modName}}": {{error}}', {
         modName, error: err.message, stack: err.stack,
       }, err['mayIgnore'] ?? true);
+
+      if (err instanceof ReplicateHashMismatchError) {
+        api.showDialog('error', 'Collection export failed', {
+          bbcode: '"{{modName}}" cannot be exported using the replicate install mode.[br][/br][br][/br]The hashes of '
+                 + 'the below files in your staging folder do not match the hashes of the files in the mod\'s '
+                 + 'archive, which is guaranteed to cause issues for the end user.[br][/br][br][/br] Please consider using '
+                 + 'binary patching or bundle your changes instead.',
+          parameters: {
+            modName: util.renderModName(mod),
+          },
+          message: err.affectedFiles.map(file => util.sanitizeFilename(file)).join('\n'),
+          options: {
+            order: ['bbcode', 'message'],
+          }
+        }, [
+          {
+            label: 'Close',
+          },
+        ], 'replicate-hash-mismatch-error-dialog');
+      }
 
       return undefined;
     }
