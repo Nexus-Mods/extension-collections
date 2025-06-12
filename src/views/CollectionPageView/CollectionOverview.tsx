@@ -34,22 +34,25 @@ function EndorseButton(props: IEndorseButtonProps) {
 
   const context = React.useContext(MainContext);
 
+  
   const endorse = React.useCallback(async () => {
-
+    
     const endorsedStatus: EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
-
+    
     context.api.events.emit('endorse-mod', gameId, mod.id, endorsedStatus);
     context.api.events.emit('analytics-track-click-event', 'Collections', endorsedStatus);
-
+    
     setTimeout(async () => {
       refreshCollection(context.api, collection);
     }, 500);
-
+    
     //const newEndorsementCount = (endorsedStatus === 'Endorsed') ? collection.endorsements - 1 : collection.endorsements + 1;
-
+    
   }, [mod, collection]);
-
+  
   const endorsedStatus: EndorsedStatus = mod.attributes?.endorsed ?? 'Undecided';
+  const isBlocked = collection?.viewerIsBlocked ?? false;
+  const finalStatus = isBlocked ? 'Blocked' : endorsedStatus;
   const endorsed: boolean = (mod.attributes?.endorsed === 'Endorsed');
 
   const classes = `collection-ghost-button ${endorsed ? 'endorse-yes' : 'endorse-maybe'}`;
@@ -59,8 +62,9 @@ function EndorseButton(props: IEndorseButtonProps) {
     abstained: { icon: 'endorse-maybe', toolTip: t('Abstained') },
     endorsed: { icon: 'endorse-yes', toolTip: t('Endorsed') },
     disabled: { icon: 'endorse-disabled', toolTip: t('Endorsement disabled by author') },
-    pending: { icon: 'spinner_new', toolTip: t('Pending') }
-  }[endorsedStatus.toLowerCase()] || { icon: 'like-maybe', toolTip: t('Undecided') };
+    pending: { icon: 'spinner_new', toolTip: t('Pending') },
+    blocked: { icon: 'endorse-disabled', toolTip: t('You have been blocked by the curator.') },
+  }[finalStatus.toLowerCase()] || { icon: 'like-maybe', toolTip: t('Undecided') };
 
   return (
     <tooltip.IconButton
@@ -92,13 +96,16 @@ function CommentButton(props: ICommentButtonProps) {
     }
   }, [collection]);
 
+  const tip = collection?.viewerIsBlocked
+    ? t('You have been blocked by the curator.')
+    : t('Comments');
   return (
     <tooltip.IconButton
       icon='comments'
       className='collection-ghost-button'
-      tooltip={t('Comments')}
+      tooltip={tip}
       onClick={click}
-      disabled={collection?.['commentLink'] === undefined}
+      disabled={collection?.['commentLink'] === undefined || collection?.viewerIsBlocked}
     >
       {collection?.forumTopic?.postsCount ?? 0}
     </tooltip.IconButton>
@@ -216,7 +223,8 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
 
     const timeSinceInstall = Date.now() - new Date(collection.attributes?.installCompleted ? collection.attributes?.installCompleted : collection.attributes?.installTime ?? 0).getTime();
 
-    const voteAllowed = timeSinceInstall >= ENDORSE_DELAY_MS;
+    const viewerIsBlocked = revision.collection?.viewerIsBlocked ?? false;
+    const voteAllowed = !viewerIsBlocked && timeSinceInstall >= ENDORSE_DELAY_MS;
 
     const rating = {
       average: parseFloat(revision.collection?.overallRating ?? '100'),
