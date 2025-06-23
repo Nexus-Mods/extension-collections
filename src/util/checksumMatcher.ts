@@ -65,12 +65,30 @@ export function matchChecksums(api: types.IExtensionApi,
             const srcCRC = sourceChecksums[file.source!];
             let relevantEntries = entries.filter(entry => path.basename(entry) === path.basename(file.source));
             await new Promise<void>(async (resolve, _) => {
+              const computeCRC32Stream = (filePath: string): Promise<string> => {
+                return new Promise((resolve, reject) => {
+                  const stream = fs.createReadStream(filePath);
+                  let crc = 0;
+                  stream.on('data', (chunk: Buffer) => {
+                    crc = crc32.buf(chunk, crc);
+                  });
+                  stream.on('end', () => {
+                    // >>> 0 converts signed to unsigned
+                    resolve((crc >>> 0).toString(16).toUpperCase().padStart(8, '0'));
+                  });
+                  stream.on('error', (err: Error) => {
+                    reject(err);
+                  });
+                });
+              };
+
               for (const entry of relevantEntries) {
-                const data = await fs.readFileAsync(entry);
-                const dstCRC = crcFromBuf(data);
+                const dstCRC = await computeCRC32Stream(entry);
                 if (dstCRC === srcCRC) {
                   log('debug', 'found matching file', { filePath: entry, srcCRC, dstCRC });
-                  matched.add(path.basename(entry));
+                  matched.add(file.source);
+                } else {
+                  log('error', 'found non-matching file', { filePath: entry, srcCRC, dstCRC });
                 }
               }
               return resolve();
@@ -78,8 +96,8 @@ export function matchChecksums(api: types.IExtensionApi,
           }
           if (matched.size !== copyInstructions.length) {
             const mismatched = copyInstructions
-              .filter(instr => !matched.has(path.basename(instr.source)))
-              .map(instr => path.basename(instr.source));
+              .filter(instr => !matched.has(instr.source))
+              .map(instr => instr.source);
             return reject(new ReplicateHashMismatchError(mismatched));
           }
           return resolve();
