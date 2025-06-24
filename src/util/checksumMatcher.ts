@@ -83,6 +83,11 @@ export function matchChecksums(api: types.IExtensionApi,
               };
 
               for (const entry of relevantEntries) {
+                const isDirectory = (await fs.statAsync(entry)).isDirectory();
+                if (isDirectory) {
+                  log('debug', 'skipping directory', { filePath: entry, srcCRC });
+                  continue;
+                }
                 const dstCRC = await computeCRC32Stream(entry);
                 if (dstCRC === srcCRC) {
                   log('debug', 'found matching file', { filePath: entry, srcCRC, dstCRC });
