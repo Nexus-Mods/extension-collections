@@ -4,7 +4,7 @@ import { initFromProfile } from '../../collectionCreate';
 import {
   MAX_COLLECTION_NAME_LENGTH,
   MIN_COLLECTION_NAME_LENGTH,
-  MOD_TYPE, NAMESPACE, NEXUS_NEXT_URL } from '../../constants';
+  MOD_TYPE, NAMESPACE, NEXUS_BASE_GAMES_URL, NEXUS_BASE_URL, NEXUS_NEXT_URL } from '../../constants';
 import InfoCache from '../../util/InfoCache';
 import { validateName } from '../../util/transformCollection';
 
@@ -460,13 +460,13 @@ class StartPage extends ComponentEx<IProps, IComponentState> {
   private openCollections = () => {
     const { game } = this.props;
     this.context.api.events.emit('analytics-track-click-event', 'Collections', 'Discover more');
-    util.opn(`${NEXUS_NEXT_URL}/${(util as any).nexusGameId(game)}/collections`).catch(() => null);
+    util.opn(`${NEXUS_BASE_GAMES_URL}/${(util as any).nexusGameId(game)}/collections`).catch(() => null);
   }
 
   private openMyCollectionsPage = () => {
     this.context.api.events.emit('analytics-track-click-event',
                                  'Collections', 'Open My Collections');
-    util.opn(`${NEXUS_NEXT_URL}/my-collections`).catch(() => null);
+    util.opn(`${NEXUS_BASE_URL}/my-collections`).catch(() => null);
   }
 
   private trackEvent = (namespace: string, eventName: string) => {
