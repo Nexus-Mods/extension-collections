@@ -59,7 +59,8 @@ export function matchChecksums(api: types.IExtensionApi,
             entries = [].concat(entries, input);
           }, {});
 
-          const copyInstructions = instRes.instructions.filter(instr => instr.type === 'copy');
+          const hasFile = (fileName: string): boolean => entries.some(entry => path.basename(entry) === fileName);
+          const copyInstructions = instRes.instructions.filter(instr => instr.type === 'copy' && hasFile(path.basename(instr.source)));
           const matched: Set<string> = new Set();
           for (const file of copyInstructions) {
             const srcCRC = sourceChecksums[file.source!];
