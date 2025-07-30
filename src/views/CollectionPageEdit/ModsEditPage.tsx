@@ -5,7 +5,6 @@ import * as _ from 'lodash';
 import * as path from 'path';
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
-import * as semver from 'semver';
 
 import InstallModeRenderer from './InstallModeRenderer';
 
