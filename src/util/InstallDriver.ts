@@ -42,7 +42,8 @@ class InstallDriver {
   }
   private get recommendedMods() {
     return this.mDependentMods.filter(_ => _.type === 'recommends');
-  }
+    }
+  private mInstallStartTime: Date;
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -379,7 +380,13 @@ class InstallDriver {
             && (util.findModByRef(rule.reference, mods) === undefined);
 
           const incomplete = (this.mCollection.rules ?? []).find(filter);
-          if (incomplete === undefined) {
+            if (incomplete === undefined) {
+            // collection installation complete
+            this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation End', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
+            const installEndTime = new Date();
+            const installTime = installEndTime.getTime() - this.mInstallStartTime.getTime();
+            this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Time Taken', 'Time', installTime)
+            // revisit review screen
             await this.initCollectionInfo();
             this.mStep = 'review';
           } else {
@@ -480,7 +487,9 @@ class InstallDriver {
     return this.startImpl();
   }
 
-  private startImpl = async () => {
+    private startImpl = async () => {
+
+    this.mInstallStartTime = new Date();
     if ((this.mCollection?.archiveId === undefined) || (this.mProfile === undefined)) {
       return false;
     }
