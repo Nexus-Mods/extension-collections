@@ -44,6 +44,10 @@ class InstallDriver {
     return this.mDependentMods.filter(_ => _.type === 'recommends');
     }
   private mInstallStartTime: Date;
+  private mDebounce: util.Debouncer = new util.Debouncer(() => {
+      this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Failure', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
+      return null;
+    }, 1000);
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -381,12 +385,6 @@ class InstallDriver {
 
           const incomplete = (this.mCollection.rules ?? []).find(filter);
             if (incomplete === undefined) {
-            // collection installation complete
-            this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation End', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
-            const installEndTime = new Date();
-            const installTime = installEndTime.getTime() - this.mInstallStartTime.getTime();
-            this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Time Taken', 'Time', installTime)
-            // revisit review screen
             await this.initCollectionInfo();
             this.mStep = 'review';
           } else {
@@ -426,9 +424,14 @@ class InstallDriver {
             this.mApi,
             path.join(stagingPath, mod.installationPath, 'collection.json'));
         await postprocessCollection(this.mApi, gameId, mod, collectionInfo, mods);
+        this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Success', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
+        const installEndTime = new Date();
+        const installTime = installEndTime.getTime() - this.mInstallStartTime.getTime();
+        this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Time Taken', 'Time', installTime)
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
           + 'platform where the collection has been created.');
+        this.mDebounce.schedule();
       }
     }
   }
