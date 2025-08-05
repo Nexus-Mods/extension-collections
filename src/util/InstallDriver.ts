@@ -44,6 +44,10 @@ class InstallDriver {
     return this.mDependentMods.filter(_ => _.type === 'recommends');
     }
   private mInstallStartTime: Date;
+  private mDebounce: util.Debouncer = new util.Debouncer(() => {
+      this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Failure', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
+      return null;
+    }, 1000);
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -427,11 +431,7 @@ class InstallDriver {
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
           + 'platform where the collection has been created.');
-        const debounce = new util.Debouncer(() => {
-          this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Failure', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
-          return null;
-        }, 1000);
-        debounce.schedule();
+        this.mDebounce.schedule();
       }
     }
   }
