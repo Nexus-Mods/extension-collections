@@ -43,10 +43,10 @@ class InstallDriver {
   private get recommendedMods() {
     return this.mDependentMods.filter(_ => _.type === 'recommends');
     }
-  private mDebounce: util.Debouncer = new util.Debouncer(() => {
+  private mDebounce: util.Debouncer = new util.Debouncer((collectionSlug: string, revisionNumber: number) => {
     this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Failed', {
-      collection_slug: this.collectionSlug, 
-      collection_revision_number: this.revisionNumber
+      collection_slug: collectionSlug, 
+      collection_revision_number: revisionNumber
     });      
     return null;
     }, 1000);
@@ -433,7 +433,7 @@ class InstallDriver {
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
           + 'platform where the collection has been created.');
-        this.mDebounce.schedule();
+        this.mDebounce.schedule(undefined, this.collectionSlug, this.revisionNumber);
       }
     }
   }
