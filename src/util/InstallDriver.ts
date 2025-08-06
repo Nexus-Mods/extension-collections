@@ -43,9 +43,8 @@ class InstallDriver {
   private get recommendedMods() {
     return this.mDependentMods.filter(_ => _.type === 'recommends');
     }
-  private mInstallStartTime: Date;
   private mDebounce: util.Debouncer = new util.Debouncer(() => {
-      this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Failure', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
+      this.mApi.events.emit('analytics-track-event', 'Collections', 'Collection Installation Failed', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
       return null;
     }, 1000);
 
@@ -424,10 +423,7 @@ class InstallDriver {
             this.mApi,
             path.join(stagingPath, mod.installationPath, 'collection.json'));
         await postprocessCollection(this.mApi, gameId, mod, collectionInfo, mods);
-        this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Success', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
-        const installEndTime = new Date();
-        const installTime = installEndTime.getTime() - this.mInstallStartTime.getTime();
-        this.mApi.events.emit('analytics-track-event', 'Collections', 'Installation Time Taken', 'Time', installTime)
+        this.mApi.events.emit('analytics-track-event', 'Collections', 'Collection Installation Completed', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
           + 'platform where the collection has been created.');
@@ -492,7 +488,7 @@ class InstallDriver {
 
     private startImpl = async () => {
 
-    this.mInstallStartTime = new Date();
+    this.mApi.events.emit('analytics-track-event', 'Collections', 'Collection Installation Started', 'Slug+Revision', `${this.collectionSlug}+${this.revisionNumber}`);
     if ((this.mCollection?.archiveId === undefined) || (this.mProfile === undefined)) {
       return false;
     }
