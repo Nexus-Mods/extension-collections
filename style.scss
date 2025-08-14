@@ -92,14 +92,14 @@ $collection-mod-image-height: 122px;
         gap: 16px;
 
         #collection-instructions-edit {
-          gap: 8px;      
-        }  
+          gap: 8px;
+        }
 
         #collection-settings-edit {
           padding: $panel-body-padding;
           border-radius: $panel-border-radius;
           border: 1px solid $panel-default-border;
-          flex: 1 2 100%;  
+          flex: 1 2 100%;
 
 
         }
@@ -112,7 +112,7 @@ $collection-mod-image-height: 122px;
 
     }
 
-  
+
   }
 
 
@@ -242,7 +242,7 @@ $collection-mod-image-height: 122px;
       margin: 0;
       font-family: $font-family-base;
     }
-    
+
     p {
       margin: 0;
     }
@@ -256,7 +256,7 @@ $collection-mod-image-height: 122px;
       }
     }
 
-    
+
 
   }
 
@@ -1104,48 +1104,38 @@ ul.collection-mods-page-attrib-tooltip {
   margin-left: $half-gutter;
 }
 
-.collection-premium-banner {
-  padding: $half-gutter;
-  width: 20em;
-  height: 100%;
+#collection-premium-banner {
+  width: 277px;
+  height: 116px;
+  padding: 12px;
 
-  >.layout-container {
+  border-radius: 8px;
+  border: 1px solid rgba(196, 181, 253, 0.40);
+  background: linear-gradient(0deg, rgba(46, 16, 101, 0.25) 25.42%, rgba(92, 32, 203, 0.25) 74.58%), #27272A;
+  backdrop-filter: blur(6px);
+
+  #collection-premium-banner-header {
     align-items: center;
+    gap: 4px;
   }
 
-  .collection-table-container {
-    background: url(assets/images/ad-banner.png);
-    background-size: cover;
-    padding: $half-gutter;
-
-    >table {
-      background: transparent;
-    }
+  img.premium-pictogram {
+    width: 36px;
+    height: 36px;
   }
 
-  th {
-    font-size: x-large;
+  .collections-premium-banner-title {
+    color: var(--Violet-300, #C4B5FD);
   }
 
-  th,
-  td {
-    border: 0 !important;
-    padding: 4px 30px !important;
+  .collections-premium-banner-body {
+    color: var(--Neutral-Strong, #F4F4F5);
   }
 
-  .icon {
-    width: 2em;
-    height: 2em;
-    margin-right: 0.5em;
+  button#get-premium-button {
+    width: -webkit-fill-available;
   }
 
-  .collection-estimate {
-    color: $text-color-disabled;
-  }
-
-  .collection-premium-highlight {
-    color: $brand-primary;
-  }
 }
 
 #collection-start-page {
@@ -1664,7 +1654,7 @@ ul.collection-mods-page-attrib-tooltip {
   }
 }
 
-#install-changelog-dialog {  
+#install-changelog-dialog {
 
   .media-right {
     max-width: 320px;
@@ -1676,7 +1666,7 @@ ul.collection-mods-page-attrib-tooltip {
     .layout-container-row {
       justify-content: space-between;
       display: flex;
-      align-items: center; 
+      align-items: center;
       margin-bottom: 8px;
     }
 
@@ -1685,22 +1675,27 @@ ul.collection-mods-page-attrib-tooltip {
       overflow-y: auto;
       padding-right: 8px;
 
-      h1, h2, h3, h4, h5, h6 {
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
         margin: 4px 0 8px 0;
       }
-    
+
       h1 {
         font-size: 1.5em;
       }
-    
+
       h2 {
         font-size: 1.4em;
       }
-    
+
       h3 {
         font-size: 1.3em;
       }
-    
+
       h4 {
         font-size: 1.2em;
       }
@@ -1741,7 +1736,7 @@ ul.collection-mods-page-attrib-tooltip {
   font-weight: 600;
   font-size: smaller;
   height: fit-content;
-  
+
   .icon {
     margin-right: 0.5em;
   }
@@ -1813,6 +1808,7 @@ ul.collection-mods-page-attrib-tooltip {
 
 #collection-file-overrides {
   overflow-y: auto;
+
   .table {
     width: fit-content;
 
@@ -1828,9 +1824,9 @@ ul.collection-mods-page-attrib-tooltip {
 }
 
 .collection-instructions-buttons {
-    /* align-self: end; */
-    display: flex;
-    justify-content: flex-end;
+  /* align-self: end; */
+  display: flex;
+  justify-content: flex-end;
 }
 
 .collection-instructions-container {

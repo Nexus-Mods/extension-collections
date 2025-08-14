@@ -40,8 +40,8 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
   }
 
   public render(): JSX.Element {
-    const  {t, activity, downloads, isPremium, mods, profile, totalSize,
-            onCancel, onPause, onResume} = this.props;
+    const { t, activity, downloads, isPremium, mods, profile, totalSize,
+      onCancel, onPause, onResume } = this.props;
 
     const group = (mod: types.IMod, download?: types.IDownload): string => {
       if ((mod.state === 'downloading') && (download?.state === 'paused')) {
@@ -79,9 +79,9 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
       }, { pending: [], downloading: [], installing: [], disabled: [], done: [] });
 
     if ((downloading.length === 0)
-        && (installing.length === 0)
-        && (pending.length === 0)
-        && (disabled.length === 0)) {
+      && (installing.length === 0)
+      && (pending.length === 0)
+      && (disabled.length === 0)) {
       return null;
     }
 
@@ -90,9 +90,9 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
         <FlexLayout.Flex>
           <Panel>
             <FlexLayout type='row' className='collection-progress-flex'>
-                {((activity['dependencies'] ?? []).length > 0)
-                  ? this.renderActivity(t('Checking Dependencies'))
-                  : this.renderBars(installing, done)}
+              {((activity['dependencies'] ?? []).length > 0)
+                ? this.renderActivity(t('Checking Dependencies'))
+                : this.renderBars(installing, done)}
               <FlexLayout.Fixed>
                 <FlexLayout type='row' className='collection-pause-cancel-flex'>
                   {(onResume !== undefined) ? (
@@ -103,7 +103,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
                       tooltip={t('Resume')}
                       icon='resume'
                     />
-                    ) : null}
+                  ) : null}
                   {(onPause !== undefined) ? (
                     <tooltip.IconButton
                       className='btn-embed btn-pause-resume'
@@ -111,7 +111,7 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
                       tooltip={t('Pause')}
                       icon='pause'
                     />
-                    ) : null}
+                  ) : null}
                   <tooltip.IconButton
                     className='btn-embed btn-cancel'
                     onClick={onCancel}
@@ -126,11 +126,9 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
           </Panel>
         </FlexLayout.Flex>
         {isPremium ? null : (
-        <FlexLayout.Fixed className='collection-banner-container'>
-          <Panel>
+          <FlexLayout.Fixed className='collection-banner-container'>
             <CollectionBanner t={t} totalSize={totalSize} />
-          </Panel>
-        </FlexLayout.Fixed>
+          </FlexLayout.Fixed>
         )}
       </FlexLayout>
     );
@@ -138,12 +136,12 @@ class CollectionProgress extends ComponentEx<ICollectionProgressProps, ICompStat
 
   private renderActivity(message: string) {
     return (
-      <FlexLayout.Flex><Spinner/>{' '}{message}</FlexLayout.Flex>
+      <FlexLayout.Flex><Spinner />{' '}{message}</FlexLayout.Flex>
     );
   }
 
   private renderBars(installing: IModEx[], done: IModEx[]) {
-    const {t, downloads, mods} = this.props;
+    const { t, downloads, mods } = this.props;
     const { totalSize } = this.state;
 
     const curInstall = (installing.length > 0)
