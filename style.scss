@@ -1110,8 +1110,8 @@ ul.collection-mods-page-attrib-tooltip {
   padding: 12px;
 
   border-radius: 8px;
-  border: 1px solid rgba(196, 181, 253, 0.40);
-  background: linear-gradient(0deg, rgba(46, 16, 101, 0.25) 25.42%, rgba(92, 32, 203, 0.25) 74.58%), #27272A;
+  border: 1px solid var(--Premium-600, #7C3AED);
+  background: linear-gradient(0deg, var(--Premium-950, #2E1065) 25.42%, var(--Premium-900, #4C1D95) 74.58%);
   backdrop-filter: blur(6px);
 
   #collection-premium-banner-header {
