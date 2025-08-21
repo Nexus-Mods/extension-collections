@@ -34,7 +34,7 @@ function InstallChangelogDialogImpl(props: IInstallChangelogDialogProps) {
     context.api.events.emit('analytics-track-click-event', 'Collections', 'View on site Updated Collection');
     util.opn(util.nexusModsURL(
       [revisionInfo.collection.game.domainName, 'collections', revisionInfo.collection.slug], {
-      campaign: util.Campaign.ViewCollection,
+      campaign: util.Campaign.GeneralNavigation,
       section: util.Section.Collections,
     }));
   }, [collection]);
