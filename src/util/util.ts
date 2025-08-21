@@ -226,7 +226,7 @@ export async function uploadCollection(api: types.IExtensionApi, profileId: stri
                 const domainName = util.nexusGameId(game);
                 const url = util.nexusModsURL(
                   [domainName, 'collections', slug, 'revisions', revisionNumber.toString()], {
-                  campaign: util.Campaign.ViewCollection,
+                  campaign: util.Campaign.GeneralNavigation,
                   section: util.Section.Collections,
                 });
                 util.opn(url).catch(() => null);

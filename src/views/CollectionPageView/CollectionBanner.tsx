@@ -52,7 +52,7 @@ class CollectionBanner extends ComponentEx<ICollectionBannerProps, {}> {
       {
         section: util.Section.Users,
         campaign: util.Campaign.BuyPremium,
-        source: util.Source.CollectionsAd
+        content: util.Content.CollectionsDownloadAd
       }))
       .catch(err => undefined);
   }

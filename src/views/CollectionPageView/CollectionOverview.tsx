@@ -381,7 +381,7 @@ class CollectionOverview extends ComponentEx<ICollectionOverviewProps, { selIdx:
             revision.revisionNumber.toString(),
           ],
           {
-            campaign: util.Campaign.ViewCollection,
+            campaign: util.Campaign.GeneralNavigation,
             section: util.Section.Collections,
           },
         ),
