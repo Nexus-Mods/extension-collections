@@ -58,7 +58,7 @@ function HealthDownvoteDialog(props: IHealthDownvoteDialogProps) {
 
       collectionInfo = state.persistent.collections.collections?.[revisionInfo.collection.id]?.info;
       commentLink = collectionInfo?.['commentLink'] ?? '#';
-      bugLink = `https://next.nexusmods.com/${collectionInfo.game.domainName}/collections/${collectionInfo.slug}?tab=Bugs` ?? '#';    
+      bugLink = !!collectionInfo ? `https://next.nexusmods.com/${collectionInfo.game.domainName}/collections/${collectionInfo.slug}?tab=Bugs` : '#';
     }
   }  
 
