@@ -1278,30 +1278,23 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
 
   api.events.on('gamemode-activated', updateOwnCollectionsCB);
 
-  let userInfoChanged = false;
   api.onStateChange(['persistent', 'nexus', 'userInfo'], (prev, cur) => {
     const gameMode = selectors.activeGameId(api.getState());
     updateOwnCollectionsCB(gameMode)
     if (prev?.isPremium !== cur?.isPremium) {
-      userInfoChanged = true;
+      restartDebouncer.schedule();
     }
   });
 
   const restartDebouncer = new util.Debouncer(async () => {
-    if (userInfoChanged && (driver?.collection !== undefined)) {
+    if ((driver?.collection !== undefined)) {
       // user info changed, so we need to update the collection info
-      userInfoChanged = false;
       await api.emitAndAwait('reset-dependency-installs');
       const profile = selectors.activeProfile(api.getState());
       await driver.start(profile, driver.collection);
     }
     return Promise.resolve();
   }, 2000, true, false);
-  api.onAsync('did-deploy', async () => {
-    // Oddly enough, the deployment event is triggered twice here, hence the debounce
-    restartDebouncer.schedule();
-    return Promise.resolve();
-  });
   
 
   driver.infoCache.clearCache();
