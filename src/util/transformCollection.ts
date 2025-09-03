@@ -304,13 +304,12 @@ async function rulesToCollectionMods(
       if (err instanceof ReplicateHashMismatchError) {
         api.showDialog('error', 'Collection export failed', {
           bbcode: '"{{modName}}" cannot be exported using the replicate install mode.[br][/br][br][/br]The hashes of '
-                 + 'the below files in your staging folder do not match the hashes of the files in the mod\'s '
+                 + 'some of the files in your staging folder do not match the hashes of the files in the mod\'s '
                  + 'archive, which is guaranteed to cause issues for the end user.[br][/br][br][/br] Please consider using '
                  + 'binary patching or bundle your changes instead.',
           parameters: {
             modName: util.renderModName(mod),
           },
-          message: err.affectedFiles.map(file => util.sanitizeFilename(file)).join('\n'),
           options: {
             order: ['bbcode', 'message'],
           }
