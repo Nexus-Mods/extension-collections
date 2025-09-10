@@ -2,7 +2,7 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
-import { actions, log, selectors, types, util } from 'vortex-api';
+import { actions, log, selectors, types, util,  } from 'vortex-api';
 import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
@@ -14,6 +14,7 @@ import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
 
 import * as _ from 'lodash';
+import { CollectionsDownloadStartedEvent } from 'vortex-api/lib/extensions/analytics/mixpanel/MixpanelEvents';
 
 export type Step = 'prepare' | 'changelog' | 'query' | 'start' | 'disclaimer' | 'installing' | 'recommendations' | 'review';
 
@@ -47,7 +48,10 @@ class InstallDriver {
     this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Failed', {
       collection_slug: collectionSlug, 
       collection_revision_number: revisionNumber
-    });      
+    });       
+      this.mApi.events.emit('analytics-track-mixpanel-event',
+        new CollectionsDownloadStartedEvent(collectionSlug, 4321, '1234', revisionNumber.toString()));
+
     return null;
     }, 1000);
 
