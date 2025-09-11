@@ -1640,7 +1640,7 @@ void-elements@3.1.0:
 
 vortex-api@Nexus-Mods/vortex-api#analytics-mixpanel:
   version "1.8.16"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/b8f923c1b09fd5f93b4857cd902fcd66a060e80a"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/68401117f1345a7ab93a86f71729ea9f4ae26d7d"
 
 warning@^3.0.0:
   version "3.0.0"
