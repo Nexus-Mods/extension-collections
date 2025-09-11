@@ -53,7 +53,7 @@ class InstallDriver {
     const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
 
     this.mApi.events.emit('analytics-track-mixpanel-event',
-       new util.CollectionsInstallationFailedEvent(collectionSlug, '', error?.message, nexusIds.numericGameId, revisionNumber.toString()));
+       new util.CollectionsInstallationFailedEvent(collectionSlug, nexusIds.revisionId, nexusIds.numericGameId, '', error?.message));
 
     return null;
   }, 1000);
