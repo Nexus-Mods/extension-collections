@@ -22,7 +22,9 @@ export async function matchChecksums(api: types.IExtensionApi,
     throw new util.ProcessCanceled('Archive not found');
   }
 
-  const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
+  const rawGame = Array.isArray(archive.game) ? archive.game[0] : archive.game;
+  const internalId = rawGame ? (util.convertGameIdReverse(selectors.knownGames(state), rawGame) || rawGame) : rawGame;
+  const dlPath = selectors.downloadPathForGame(state, internalId);
   const archivePath = path.join(dlPath, archive.localPath!);
 
   const sourceChecksums: Set<string> = new Set();

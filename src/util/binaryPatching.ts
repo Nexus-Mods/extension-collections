@@ -43,7 +43,9 @@ export async function scanForDiffs(api: types.IExtensionApi, gameId: string,
     api.events.emit('simulate-installer', gameId, mod.archiveId, { choices },
       async (instRes: types.IInstallResult, tempPath: string) => {
       try {
-        const dlPath = selectors.downloadPathForGame(state, archive.game[0]);
+        const rawGame = Array.isArray(archive.game) ? archive.game[0] : archive.game;
+        const internalId = rawGame ? (util.convertGameIdReverse(selectors.knownGames(state), rawGame) || rawGame) : rawGame;
+        const dlPath = selectors.downloadPathForGame(state, internalId);
         const archivePath = path.join(dlPath, archive.localPath);
 
         const sourceChecksums: { [fileName: string]: string } = {};
