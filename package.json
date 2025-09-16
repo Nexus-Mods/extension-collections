@@ -11,7 +11,9 @@
     "bundle7z": "7z a -t7z collections.7z .\\dist\\index.js .\\dist\\info.json .\\dist\\language.json .\\dist\\*.svg .\\dist\\style.scss",
     "update_validation": "generate-validation .",
     "_postinstall": "npm run update_validation",
-    "build": "npm run webpack && npm run copy_assets && extractInfo"
+    "build": "npm run webpack && npm run copy_assets && extractInfo",
+    "test": "npm run test:build",
+    "test:build": "node scripts/validate-build.js"
   },
   "devDependencies": {
     "7z-bin": "Nexus-Mods/7z-bin",

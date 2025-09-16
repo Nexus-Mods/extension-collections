@@ -1,0 +1,134 @@
+name: Test Build
+
+on:
+  push:
+    branches: [ main, master, fix-node22 ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [22.x]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run TypeScript compiler check
+      run: npx tsc --noEmit
+    
+    - name: Run webpack build
+      run: npm run webpack
+    
+    - name: Copy assets
+      run: npm run copy_assets
+    
+    - name: Extract info
+      run: npx extractInfo || echo "extractInfo command not found, skipping..."
+    
+    - name: Validate build outputs
+      run: npm run test:build
+    
+    - name: Check for required files
+      run: |
+        echo "Checking for required build outputs..."
+        ls -la dist/ || echo "dist directory not found"
+        ls -la out/ || echo "out directory not found"
+        
+        # Check for main output file
+        if [ -f "out/index.js" ]; then
+          echo "✅ Main output file exists: out/index.js"
+        else
+          echo "❌ Main output file missing: out/index.js"
+          exit 1
+        fi
+        
+        # Check for webpack bundle in dist
+        if [ -f "dist/index.js" ]; then
+          echo "✅ Webpack bundle exists: dist/index.js"
+        else
+          echo "❌ Webpack bundle missing: dist/index.js"
+          exit 1
+        fi
+        
+        # Check for copied assets
+        if [ -f "dist/language.json" ]; then
+          echo "✅ Language file copied: dist/language.json"
+        else
+          echo "❌ Language file missing: dist/language.json"
+          exit 1
+        fi
+        
+        if [ -f "dist/icons.svg" ]; then
+          echo "✅ Icons file copied: dist/icons.svg"
+        else
+          echo "❌ Icons file missing: dist/icons.svg"
+          exit 1
+        fi
+
+  test-windows:
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        node-version: [22.x]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run TypeScript compiler check
+      run: npx tsc --noEmit
+    
+    - name: Run full build
+      run: npm run build
+    
+    - name: Validate build outputs (Windows)
+      run: npm run test:build
+    
+    - name: Check for required files (Windows)
+      run: |
+        echo "Checking for required build outputs on Windows..."
+        dir dist\ 2>nul || echo "dist directory not found"
+        dir out\ 2>nul || echo "out directory not found"
+        
+        if (Test-Path "out/index.js") {
+          Write-Host "✅ Main output file exists: out/index.js" -ForegroundColor Green
+        } else {
+          Write-Host "❌ Main output file missing: out/index.js" -ForegroundColor Red
+          exit 1
+        }
+        
+        if (Test-Path "dist/index.js") {
+          Write-Host "✅ Webpack bundle exists: dist/index.js" -ForegroundColor Green
+        } else {
+          Write-Host "❌ Webpack bundle missing: dist/index.js" -ForegroundColor Red
+          exit 1
+        }
+      shell: powershell
