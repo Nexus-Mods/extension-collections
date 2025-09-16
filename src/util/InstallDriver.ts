@@ -45,10 +45,10 @@ class InstallDriver {
     return this.mDependentMods.filter(m => m.type === 'recommends');
   }
   private mDebounce: util.Debouncer = new util.Debouncer((collectionSlug: string, revisionNumber: number, error: Error | undefined) => {
-    this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Failed', {
-      collection_slug: collectionSlug,
-      collection_revision_number: revisionNumber,
-    });
+    // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Failed', {
+    //   collection_slug: collectionSlug,
+    //   collection_revision_number: revisionNumber,
+    // });
 
     const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
 
@@ -443,10 +443,10 @@ class InstallDriver {
         this.mApi.events.emit('analytics-track-mixpanel-event',
           new util.CollectionsInstallationCompletedEvent(this.collectionSlug, nexusIds.revisionId, nexusIds.numericGameId, this.installedMods.length, duration_ms  ));
 
-        this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Completed', {
-          collection_slug: this.collectionSlug,
-          collection_revision_number: this.revisionNumber
-        });
+        // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Completed', {
+        //   collection_slug: this.collectionSlug,
+        //   collection_revision_number: this.revisionNumber
+        // });
 
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
@@ -618,10 +618,10 @@ class InstallDriver {
     
     this.mTimeStarted = Date.now();
 
-    this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Started', {
-      collection_slug: this.collectionSlug,
-      collection_revision_number: this.revisionNumber
-    });
+    // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Started', {
+    //   collection_slug: this.collectionSlug,
+    //   collection_revision_number: this.revisionNumber
+    // });
 
     const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
 
