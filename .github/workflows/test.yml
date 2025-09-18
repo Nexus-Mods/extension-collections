@@ -34,3 +34,6 @@ jobs:
     
     - name: Validate build outputs (Windows)
       run: yarn test:build
+
+    - name: Run unit tests
+      run: yarn test
