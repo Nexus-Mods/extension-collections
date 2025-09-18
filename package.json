@@ -19,8 +19,8 @@
     "7z-bin": "Nexus-Mods/7z-bin",
     "@types/node": "^22.0.0",
     "@types/react": "16.14.66",
-    "@types/react-dom": "16.9.25",
     "@types/react-bootstrap": "^0.32.16",
+    "@types/react-dom": "16.9.25",
     "@types/react-redux": "^7.1.16",
     "@types/redux": "3.6.0",
     "bluebird": "^3.5.3",
@@ -51,5 +51,8 @@
   "resolutions": {
     "@types/react": "16.14.66",
     "@types/react-dom": "16.9.25"
+  },
+  "dependencies": {
+    "react-markdown": "6.0.2"
   }
 }
