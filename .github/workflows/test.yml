@@ -34,17 +34,3 @@ jobs:
     
     - name: Validate build outputs (Windows)
       run: yarn test:build
-    
-    - name: Check for required files (Windows)
-      run: |
-        echo "Checking for required build outputs on Windows..."
-        dir dist\ 2>nul || echo "dist directory not found"
-        dir out\ 2>nul || echo "out directory not found"
-        
-        if (Test-Path "dist/index.js") {
-          Write-Host "✅ Webpack bundle exists: dist/index.js" -ForegroundColor Green
-        } else {
-          Write-Host "❌ Webpack bundle missing: dist/index.js" -ForegroundColor Red
-          exit 1
-        }
-      shell: powershell
