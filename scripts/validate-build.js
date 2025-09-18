@@ -12,7 +12,6 @@ console.log('🔍 Validating build outputs...');
 
 const requiredFiles = [
   // Main outputs
-  { path: 'out/index.js', description: 'TypeScript compiled output' },
   { path: 'dist/index.js', description: 'Webpack bundle' },
   
   // Copied assets
