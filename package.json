@@ -25,7 +25,7 @@
     "@types/react-redux": "^7.1.16",
     "@types/redux": "3.6.0",
     "bluebird": "^3.5.3",
-    "bsdiff-node": "Nexus-Mods/bsdiff-node#fix-node22",
+    "bsdiff-node": "Nexus-Mods/bsdiff-node",
     "copyfiles": "^2.1.0",
     "crc-32": "^1.2.1",
     "i18next": "^15.0.9",

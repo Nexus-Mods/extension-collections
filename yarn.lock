@@ -1367,9 +1367,9 @@ bs-logger@^0.2.6:
   dependencies:
     fast-json-stable-stringify "2.x"
 
-bsdiff-node@Nexus-Mods/bsdiff-node#fix-node22:
+bsdiff-node@Nexus-Mods/bsdiff-node:
   version "2.6.0"
-  resolved "https://codeload.github.com/Nexus-Mods/bsdiff-node/tar.gz/c57084730403e5d16190fe1695f15f732c87d290"
+  resolved "https://codeload.github.com/Nexus-Mods/bsdiff-node/tar.gz/a2bd60f5f96d172892b7f6708fb9a7a212b3b2e5"
   dependencies:
     node-addon-api "^7.0.0"
 
