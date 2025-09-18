@@ -53,7 +53,7 @@ class InstallDriver {
     const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
 
     this.mApi.events.emit('analytics-track-mixpanel-event',
-       new util.CollectionsInstallationFailedEvent(collectionSlug, nexusIds.revisionId, nexusIds.numericGameId, '', error?.message));
+       new util.CollectionsInstallationFailedEvent(nexusIds.collectionId, nexusIds.revisionId, nexusIds.numericGameId, '', error?.message));
 
     return null;
   }, 1000);
@@ -441,7 +441,7 @@ class InstallDriver {
         const duration_ms = Date.now() - this.mTimeStarted;
 
         this.mApi.events.emit('analytics-track-mixpanel-event',
-          new util.CollectionsInstallationCompletedEvent(this.collectionSlug, nexusIds.revisionId, nexusIds.numericGameId, this.installedMods.length, duration_ms  ));
+          new util.CollectionsInstallationCompletedEvent(nexusIds.collectionId, nexusIds.revisionId, nexusIds.numericGameId, this.installedMods.length, duration_ms  ));
 
         // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Completed', {
         //   collection_slug: this.collectionSlug,
@@ -626,7 +626,7 @@ class InstallDriver {
     const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
 
     this.mApi.events.emit('analytics-track-mixpanel-event',
-      new util.CollectionsInstallationStartedEvent(this.collectionSlug, nexusIds.revisionId, nexusIds.numericGameId, this.numRequired));
+      new util.CollectionsInstallationStartedEvent(nexusIds.collectionId, nexusIds.revisionId, nexusIds.numericGameId, this.numRequired));
 
 
     if (this.requiredMods.length === 0) {
