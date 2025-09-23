@@ -78,7 +78,6 @@ function makeWillRemoveMods(api: types.IExtensionApi) {
     const state = api.getState();
     const mods = state.persistent.mods[gameId];
     const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
-    alert(JSON.stringify(collections));
     collections.forEach(coll => api.dismissNotification(getUnfulfilledNotificationId(coll.id)));
     modIds.forEach(modId => modsBeingRemoved.add(makeModKey(gameId, modId)));
     return Promise.resolve();
