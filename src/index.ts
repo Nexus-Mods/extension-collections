@@ -73,8 +73,12 @@ function makeModKey(gameId: string, modId: string): string {
   return `${gameId}_${modId}`;
 }
 
-function makeWillRemoveMods() {
+function makeWillRemoveMods(api: types.IExtensionApi) {
   return (gameId: string, modIds: string[]) => {
+    const state = api.getState();
+    const mods = state.persistent.mods[gameId];
+    const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
+    collections.forEach(coll => api.dismissNotification(getUnfulfilledNotificationId(coll.id)));
     modIds.forEach(modId => modsBeingRemoved.add(makeModKey(gameId, modId)));
     return Promise.resolve();
   };
@@ -1149,7 +1153,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.onAsync('will-remove-mods', makeWillRemoveMods());
+  api.onAsync('will-remove-mods', makeWillRemoveMods(api));
   api.onAsync('did-remove-mods', makeDidRemoveMods());
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
