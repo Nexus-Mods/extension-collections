@@ -40,7 +40,15 @@ class InstallDriver {
   private mOnStop: () => void;
   private mPrepare: Promise<void> = Promise.resolve();
   private mTimeStarted: number;
-  
+
+  private mStateUpdates: any[] = [];
+  private mModStatusDebouncer: util.Debouncer = new util.Debouncer(() => {
+    const actions = this.mStateUpdates.slice();
+    this.mStateUpdates = [];
+    util.batchDispatch(this.mApi.store, actions);
+    return Promise.resolve();
+  }, 1000, false, false);
+
   // Collection installation tracking
   private mCurrentSessionId: string;
   private mTrackingEnabled: boolean = true;
@@ -57,11 +65,12 @@ class InstallDriver {
     }
 
     const ruleId = modRuleId(rule);
-    this.mApi.store.dispatch(installActions.updateModStatus(
+    this.mStateUpdates.push(installActions.updateModStatus(
       this.mCurrentSessionId,
       ruleId,
       status
     ));
+    this.mModStatusDebouncer.schedule();
   }
 
   public markModInstalledInTracking(rule: types.IModRule, modId: string) {
@@ -70,22 +79,24 @@ class InstallDriver {
     }
 
     const ruleId = modRuleId(rule);
-    this.mApi.store.dispatch(installActions.markModInstalled(
+    this.mStateUpdates.push(installActions.markModInstalled(
       this.mCurrentSessionId,
       ruleId,
       modId
     ));
+    this.mModStatusDebouncer.schedule();
   }
 
   private completeInstallationTracking(success: boolean) {
     if (!this.mTrackingEnabled || !this.mCurrentSessionId) {
       return;
     }
-    
-    this.mApi.store.dispatch(installActions.finishInstallSession(
+
+    this.mStateUpdates.push(installActions.finishInstallSession(
       this.mCurrentSessionId,
       success
     ));
+    this.mModStatusDebouncer.schedule();
     this.mCurrentSessionId = undefined;
   }
 
@@ -152,10 +163,25 @@ class InstallDriver {
       this.triggerUpdate();
     });
 
-    api.events.on('did-finish-download', () => {
+    api.events.on('did-finish-download', (downloadId: string, downloadState: string) => {
       // not checking whether the download is actually part of this collection because
       // that check may be more expensive than the ui update
       this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
+
+      // Update mod status to 'downloaded' when download completes successfully
+      if (downloadState === 'finished') {
+        const state = api.getState();
+        const download = state.persistent.downloads.files[downloadId];
+        if (download) {
+          const rule = this.mDependentMods.find(r =>
+            r.reference.tag === download.modInfo?.referenceTag ||
+            r.reference.logicalFileName === download.modInfo?.logicalFileName ||
+            r.reference.md5Hint === download.fileMD5);
+          if (rule) {
+            this.updateModTracking(rule, 'downloaded');
+          }
+        }
+      }
     });
 
     api.events.on('free-user-skipped-download', (fileName: string) => {
@@ -738,6 +764,7 @@ class InstallDriver {
           rule,
           status: installed.find(r => modRuleId(r) === modRuleId(rule)) != null ? 'installed' : download != null ? 'downloaded' : 'pending',
           type: rule.type as 'requires' | 'recommends',
+          phase: rule.extra?.phase ?? 0,
         };
         return acc;
       }, {});
