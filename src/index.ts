@@ -3,6 +3,7 @@ import { clearPendingVote, updateSuccessRate } from './actions/persistent';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import settingsReducer from './reducers/settings';
+import trackingReducer from './reducers/installTracking';
 import { ICollection } from './types/ICollection';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { genDefaultsAction } from './util/defaults';
@@ -14,6 +15,8 @@ import AddModsDialog from './views/AddModsDialog';
 import HealthDownvoteDialog from './views/CollectionPageView/HealthDownvoteDialog';
 import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
+
+import { isInstallationActive, getActiveInstallSession } from './util/selectors'
 
 import { IPathTools } from './views/CollectionPageEdit/FileOverrides';
 
@@ -73,8 +76,12 @@ function makeModKey(gameId: string, modId: string): string {
   return `${gameId}_${modId}`;
 }
 
-function makeWillRemoveMods() {
+function makeWillRemoveMods(api: types.IExtensionApi) {
   return (gameId: string, modIds: string[]) => {
+    const state = api.getState();
+    const mods = state.persistent.mods[gameId];
+    const collections = Object.values(mods).filter(mod => mod.type === MOD_TYPE);
+    collections.forEach(coll => api.dismissNotification(getUnfulfilledNotificationId(coll.id)));
     modIds.forEach(modId => modsBeingRemoved.add(makeModKey(gameId, modId)));
     return Promise.resolve();
   };
@@ -95,6 +102,9 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
     const profile = selectors.profileById(state, profileId);
     const gameId = profile.gameId;
+    if (gameId !== selectors.activeGameId(state)) {
+      return PromiseBB.resolve(false);
+    }
 
     if (modsBeingRemoved.has(makeModKey(gameId, modId))) {
       return PromiseBB.resolve(false);
@@ -580,6 +590,7 @@ const localState = util.makeReactive<{
 function register(context: types.IExtensionContext,
                   collectionsCB: ICallbackMap) {
   context.registerReducer(['session', 'collections'], sessionReducer);
+  context.registerReducer(['session', 'collections'], trackingReducer);
   context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
@@ -822,6 +833,8 @@ function register(context: types.IExtensionContext,
 
   context.registerInstaller('collection', 5,
                             bbProm(testSupported), bbProm(makeInstall(context.api)));
+
+  context.registerAPI('getActiveCollectionInstallSession', () => getActiveInstallSession(context.api.getState()), { minArguments: 0 });
 
   context['registerCollectionFeature'] =
     (id: string,
@@ -1121,15 +1134,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     } else if (driver.collection !== undefined) {
       const { collection, revisionId } = driver;
 
-      const isDependency = (collection?.rules ?? []).find(rule => {
+      const dependency = (collection?.rules ?? []).find(rule => {
         const validType = ['requires', 'recommends'].includes(rule.type);
         if (!validType) {
           return false;
         }
         const matchedRule = util.testModReference(mod, rule.reference);
         return matchedRule;
-      }) !== undefined;
+      });
+      const isDependency = dependency !== undefined;
       if (isDependency) {
+        driver.updateModTracking(dependency, 'installed');
         const modRules =
           await driver.infoCache.getCollectionModRules(
             revisionId, collection, gameId);
@@ -1149,7 +1164,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     }
   });
 
-  api.onAsync('will-remove-mods', makeWillRemoveMods());
+  api.onAsync('will-remove-mods', makeWillRemoveMods(api));
   api.onAsync('did-remove-mods', makeDidRemoveMods());
 
   api.onAsync('unfulfilled-rules', makeOnUnfulfilledRules(api));
@@ -1246,7 +1261,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     changedIds.forEach(collId => {
       const coll: nexusApi.ICollection = cur[collId].info;
       const gameId = util.convertGameIdReverse(knownGames, coll.game.domainName);
-      const collModId = Object.keys(mods[gameId])
+      const collModId = Object.keys(mods[gameId] ?? {})
         .find(modId => mods[gameId][modId].attributes['collectionId'] === coll.id);
       // don't set a "newestVersion" on own collections because we don't allow an update on those
       // anyway

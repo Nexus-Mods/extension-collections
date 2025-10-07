@@ -2,7 +2,7 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
-import { actions, log, selectors, types, util } from 'vortex-api';
+import { actions, log, selectors, types, util, } from 'vortex-api';
 import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
@@ -12,6 +12,8 @@ import { applyPatches } from './binaryPatching';
 import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
+import * as installActions from '../actions/installTracking';
+import { CollectionModStatus, generateSessionId } from '../types/ICollectionInstallState';
 
 import * as _ from 'lodash';
 
@@ -37,19 +39,83 @@ class InstallDriver {
   private mTotalSize: number;
   private mOnStop: () => void;
   private mPrepare: Promise<void> = Promise.resolve();
+  private mTimeStarted: number;
+
+  private mStateUpdates: any[] = [];
+  private mModStatusDebouncer: util.Debouncer = new util.Debouncer(() => {
+    const actions = this.mStateUpdates.slice();
+    this.mStateUpdates = [];
+    util.batchDispatch(this.mApi.store, actions);
+    return Promise.resolve();
+  }, 1000, false, false);
+
+  // Collection installation tracking
+  private mCurrentSessionId: string;
+  private mTrackingEnabled: boolean = true;
   private get requiredMods() {
-    return this.mDependentMods.filter(_ => _.type === 'requires');
+    return this.mDependentMods.filter(m => m.type === 'requires');
   }
   private get recommendedMods() {
-    return this.mDependentMods.filter(_ => _.type === 'recommends');
+    return this.mDependentMods.filter(m => m.type === 'recommends');
+  }
+
+  public updateModTracking(rule: types.IModRule, status: CollectionModStatus) {
+    if (!this.mTrackingEnabled || !this.mCurrentSessionId) {
+      return;
     }
-  private mDebounce: util.Debouncer = new util.Debouncer((collectionSlug: string, revisionNumber: number) => {
-    this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Failed', {
-      collection_slug: collectionSlug, 
-      collection_revision_number: revisionNumber
-    });      
+
+    const ruleId = modRuleId(rule);
+    this.mStateUpdates.push(installActions.updateModStatus(
+      this.mCurrentSessionId,
+      ruleId,
+      status
+    ));
+    this.mModStatusDebouncer.schedule();
+  }
+
+  public markModInstalledInTracking(rule: types.IModRule, modId: string) {
+    if (!this.mTrackingEnabled || !this.mCurrentSessionId) {
+      return;
+    }
+
+    const ruleId = modRuleId(rule);
+    this.mStateUpdates.push(installActions.markModInstalled(
+      this.mCurrentSessionId,
+      ruleId,
+      modId
+    ));
+    this.mModStatusDebouncer.schedule();
+  }
+
+  private completeInstallationTracking(success: boolean) {
+    if (!this.mTrackingEnabled || !this.mCurrentSessionId) {
+      return;
+    }
+
+    this.mStateUpdates.push(installActions.finishInstallSession(
+      this.mCurrentSessionId,
+      success
+    ));
+    this.mModStatusDebouncer.schedule();
+    this.mCurrentSessionId = undefined;
+  }
+
+  private mDebounce: util.Debouncer = new util.Debouncer((collectionSlug: string, revisionNumber: number, error: Error | undefined) => {
+    // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Failed', {
+    //   collection_slug: collectionSlug,
+    //   collection_revision_number: revisionNumber,
+    // });
+
+    const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
+
+    this.mApi.events.emit('analytics-track-mixpanel-event',
+       new util.CollectionsInstallationFailedEvent(nexusIds.collectionId, nexusIds.revisionId, nexusIds.numericGameId, '', error?.message));
+
+    // Complete tracking with failure
+    this.completeInstallationTracking(false);
+
     return null;
-    }, 1000);
+  }, 1000);
 
   constructor(api: types.IExtensionApi) {
     this.mApi = api;
@@ -75,13 +141,18 @@ class InstallDriver {
         if (dependent.type === 'requires') {
           this.mInstalledMods.push(mod);
         }
+
+        // Update tracking for the installed mod
+        this.updateModTracking(dependent, 'installed');
+        this.markModInstalledInTracking(dependent, modId);
+        
         if ((this.mCollection?.installationPath !== undefined)
-            && (dependent.reference.description !== undefined)) {
+          && (dependent.reference.description !== undefined)) {
           if (dependent.type === 'requires') {
             this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
           }
           applyPatches(api, this.mCollection,
-                       gameId, dependent.reference.description, modId, dependent.extra?.patches);
+            gameId, dependent.reference.description, modId, dependent.extra?.patches);
           util.batchDispatch(api.store, [
             actions.setFileOverride(gameId, modId, dependent.extra?.fileOverrides),
             actions.setModAttribute(gameId, modId, 'patches', dependent.extra?.patches),
@@ -92,10 +163,39 @@ class InstallDriver {
       this.triggerUpdate();
     });
 
-    api.events.on('did-finish-download', () => {
+    api.events.on('did-finish-download', (downloadId: string, downloadState: string) => {
       // not checking whether the download is actually part of this collection because
       // that check may be more expensive than the ui update
       this.updateProgress(this.mProfile, this.mGameId, this.mCollection);
+
+      // Update mod status to 'downloaded' when download completes successfully
+      if (downloadState === 'finished') {
+        const state = api.getState();
+        const download = state.persistent.downloads.files[downloadId];
+        if (download) {
+          const rule = this.mDependentMods.find(r =>
+            r.reference.tag === download.modInfo?.referenceTag ||
+            r.reference.logicalFileName === download.modInfo?.logicalFileName ||
+            r.reference.md5Hint === download.fileMD5);
+          if (rule) {
+            this.updateModTracking(rule, 'downloaded');
+          }
+        }
+      }
+    });
+
+    api.events.on('free-user-skipped-download', (fileName: string) => {
+      const rule = this.mDependentMods.find(r => r.reference.logicalFileName === fileName);
+      if (rule) {
+        this.updateModTracking(rule, 'skipped');
+      }
+    });
+
+    api.events.on('did-start-download', (info: { id: string, tag: string, urls: string[], fileName: string }) => {
+      const rule = this.mDependentMods.find(r => r.reference.tag === info.tag || r.reference.logicalFileName === info.fileName);
+      if (rule) {
+        this.updateModTracking(rule, 'downloading');
+      }
     });
 
     api.events.on(
@@ -110,8 +210,8 @@ class InstallDriver {
         }
         const mods = state.persistent.mods[gameId];
         if ((this.mCollection === undefined)
-            && (mods[modId]?.type === MOD_TYPE)
-            && recommendations) {
+          && (mods[modId]?.type === MOD_TYPE)
+          && recommendations) {
           // When installing optional mods, it's possible for the mCollection
           //  property to be undefined - we need to ensure that the driver is
           //  aware that it's installing mods that are part of the collection
@@ -120,12 +220,12 @@ class InstallDriver {
           this.mLastCollection = this.mCollection = mods[modId];
           this.mStep = 'installing';
         }
-        
+
         const isCollectionMod = rule => util.findModByRef(rule.reference, mods)?.id === modId;
 
         if ((this.mCollection !== undefined)
-            && recommendations
-            && (this.mCollection.rules ?? []).find(isCollectionMod)) {
+          && recommendations
+          && (this.mCollection.rules ?? []).find(isCollectionMod)) {
           onCancel();
         }
       });
@@ -190,6 +290,7 @@ class InstallDriver {
 
     await this.startInstall();
     await this.initCollectionInfo();
+    
     this.triggerUpdate();
   }
 
@@ -301,7 +402,7 @@ class InstallDriver {
 
   public installRecommended() {
     this.mApi.emitAndAwait('install-from-dependencies',
-                           this.mCollection.id, this.mCollection.rules, true);
+      this.mCollection.id, this.mCollection.rules, true);
     this.mStep = 'recommendations';
     this.triggerUpdate();
   }
@@ -346,6 +447,18 @@ class InstallDriver {
     return ['disclaimer', 'installing'].indexOf(this.mStep) !== -1;
   }
 
+  public enableTracking(enabled: boolean = true) {
+    this.mTrackingEnabled = enabled;
+  }
+
+  public get isTrackingEnabled(): boolean {
+    return this.mTrackingEnabled;
+  }
+
+  public get currentSessionId(): string | undefined {
+    return this.mCurrentSessionId;
+  }
+
   private async initCollectionInfo() {
     if (this.mCollection?.archiveId === undefined) {
       return;
@@ -365,8 +478,8 @@ class InstallDriver {
   }
 
   private async onDidInstallDependencies(gameId: string,
-                                         modId: string,
-                                         recommendations: boolean) {
+    modId: string,
+    recommendations: boolean) {
     const mods = this.mApi.getState().persistent.mods[gameId];
 
     if (mods[modId]?.type === MOD_TYPE) {
@@ -386,7 +499,7 @@ class InstallDriver {
             && (util.findModByRef(rule.reference, mods) === undefined);
 
           const incomplete = (this.mCollection.rules ?? []).find(filter);
-            if (incomplete === undefined) {
+          if (incomplete === undefined) {
             await this.initCollectionInfo();
             this.mStep = 'review';
           } else {
@@ -426,14 +539,25 @@ class InstallDriver {
             this.mApi,
             path.join(stagingPath, mod.installationPath, 'collection.json'));
         await postprocessCollection(this.mApi, gameId, mod, collectionInfo, mods);
-        this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Completed', {
-          collection_slug: this.collectionSlug, 
-          collection_revision_number: this.revisionNumber
-        });
+
+        /* COLLECTIONS COMPLETED ANALYTICS */        
+        
+        const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
+
+        const duration_ms = Date.now() - this.mTimeStarted;
+
+        this.mApi.events.emit('analytics-track-mixpanel-event',
+          new util.CollectionsInstallationCompletedEvent(nexusIds.collectionId, nexusIds.revisionId, nexusIds.numericGameId, this.installedMods.length, duration_ms  ));
+
+        // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Completed', {
+        //   collection_slug: this.collectionSlug,
+        //   collection_revision_number: this.revisionNumber
+        // });
+
       } catch (err) {
         log('info', 'Failed to apply mod rules from collection. This is normal if this is the '
           + 'platform where the collection has been created.');
-        this.mDebounce.schedule(undefined, this.collectionSlug, this.revisionNumber);
+        this.mDebounce.schedule(undefined, this.collectionSlug, this.revisionNumber, err);
       }
     }
   }
@@ -442,6 +566,10 @@ class InstallDriver {
     if (this.mCollection !== undefined) {
       this.mApi.dismissNotification(INSTALLING_NOTIFICATION_ID + this.mCollection.id);
     }
+    
+    // Complete the installation tracking as cancelled/failed
+    this.completeInstallationTracking(false);
+    
     this.mCollection = undefined;
     this.mProfile = undefined;
     this.mGameId = undefined;
@@ -451,7 +579,7 @@ class InstallDriver {
   }
 
   private getModsEx(profile: types.IProfile, gameId: string, collection: types.IMod)
-      : { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
+    : { [id: string]: types.IMod & { collectionRule: types.IModRule } } {
     if (profile === undefined) {
       profile = this.mProfile;
     }
@@ -492,16 +620,12 @@ class InstallDriver {
     return this.startImpl();
   }
 
-    private startImpl = async () => {
-
-    this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Started', {
-      collection_slug: this.collectionSlug, 
-      collection_revision_number: this.revisionNumber
-    });
+  private startImpl = async () => {
 
     if ((this.mCollection?.archiveId === undefined) || (this.mProfile === undefined)) {
       return false;
     }
+
 
     this.mInstalledMods = [];
     this.mInstallingMod = undefined;
@@ -526,7 +650,8 @@ class InstallDriver {
           ?? await this.mInfoCache.getRevisionInfo(revisionId, slug, this.revisionNumber);
       } catch (err) {
         log('error', 'failed to get remote info for revision', {
-          revisionId, slug, revisionNumber: this.revisionNumber, error: err.message });
+          revisionId, slug, revisionNumber: this.revisionNumber, error: err.message
+        });
       }
     }
 
@@ -544,18 +669,18 @@ class InstallDriver {
     const gvMatch = gv => gv.reference === gameVersion;
     const revGameVersions = this.mRevisionInfo?.gameVersions ?? [];
     if ((revGameVersions.length ?? 0 !== 0)
-        && (revGameVersions.find(gvMatch) === undefined)) {
+      && (revGameVersions.find(gvMatch) === undefined)) {
       const choice = await this.mApi.showDialog('question', 'Game version mismatch', {
         bbcode: 'The version of the game you have installed is different to the one the curator used when creating this collection.'
-            + '[br][/br][br][/br]'
-            + 'Your game version: [style=dialog-success-text]{{actual}}[/style][br][/br]'
-            + 'Recommended game version: [style=dialog-danger-text]{{intended}}[/style]'            
-            + '[br][/br][br][/br]'
-            + 'If you choose to continue, some or all of the mods included in the collection may not work properly for you. This will '
-            + 'require manual troubleshooting to correct. For users who are not familiar with modding, we do not recommend continuing with installation.'
-            + '[br][/br][br][/br]'
-            + 'You can also check the description, comments and bug reports on the Collection page to see if others have been successful'
-            + 'while playing with the game version you have installed or to request advice from the curator.',
+          + '[br][/br][br][/br]'
+          + 'Your game version: [style=dialog-success-text]{{actual}}[/style][br][/br]'
+          + 'Recommended game version: [style=dialog-danger-text]{{intended}}[/style]'
+          + '[br][/br][br][/br]'
+          + 'If you choose to continue, some or all of the mods included in the collection may not work properly for you. This will '
+          + 'require manual troubleshooting to correct. For users who are not familiar with modding, we do not recommend continuing with installation.'
+          + '[br][/br][br][/br]'
+          + 'You can also check the description, comments and bug reports on the Collection page to see if others have been successful'
+          + 'while playing with the game version you have installed or to request advice from the curator.',
         parameters: {
           actual: gameVersion,
           intended: revGameVersions.map(gv => gv.reference).join(' or '),
@@ -581,6 +706,7 @@ class InstallDriver {
     this.mApi.dismissNotification(getUnfulfilledNotificationId(collection.id));
     this.mApi.store.dispatch(actions.setModEnabled(profile.id, collection.id, true));
 
+    const installed = [];
     const required = (collection?.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type));
     const dependencies: types.IModRule[] = required
@@ -593,14 +719,66 @@ class InstallDriver {
         const mod = util.findModByRef(modRef, mods);
         if (mod === undefined) {
           accum.push(rule);
+        } else {
+          installed.push(rule);
         }
         return accum;
       }, []);
     this.mDependentMods = dependencies;
     // log('debug', 'dependent mods', JSON.stringify(dependencies));
 
+    /* COLLECTIONS START ANALYTICS */
+    
+    this.mTimeStarted = Date.now();
+
+    // this.mApi.events.emit('analytics-track-event-with-payload', 'Collection Installation Started', {
+    //   collection_slug: this.collectionSlug,
+    //   collection_revision_number: this.revisionNumber
+    // });
+
+    const nexusIds = selectors.nexusIdsFromDownloadId(this.mApi.getState(), this.mCollection.archiveId);
+    if (nexusIds?.collectionId != null) {
+      this.mApi.events.emit('analytics-track-mixpanel-event',
+        new util.CollectionsInstallationStartedEvent(nexusIds.collectionId, nexusIds.revisionId, nexusIds.numericGameId, this.numRequired));
+    }
+
     if (this.requiredMods.length === 0) {
       this.mInstallDone = false;
+    }
+
+    if (this.mTrackingEnabled) {
+      const collectionId = collection.id;
+      const optional = required.filter(r => r.type === 'recommends');
+      const totalOptional = optional.length;
+      const totalRequired = required.length - optional.length;
+
+      // Generate unique session ID
+      this.mCurrentSessionId = generateSessionId(collectionId, profile.id);
+
+      const downloads = state.persistent.downloads.files;
+      // Create mod info map
+      const mods = required.reduce((acc, rule) => {
+        const ruleId = modRuleId(rule);
+        const download = util.findDownloadByRef(rule.reference, downloads);
+        acc[ruleId] = {
+          rule,
+          status: installed.find(r => modRuleId(r) === modRuleId(rule)) != null ? 'installed' : download != null ? 'downloaded' : 'pending',
+          type: rule.type as 'requires' | 'recommends',
+          phase: rule.extra?.phase ?? 0,
+        };
+        return acc;
+      }, {});
+
+      // Dispatch start session action (omitting computed properties)
+      this.mApi.store.dispatch(installActions.startInstallSession({
+        sessionId: this.mCurrentSessionId,
+        collectionId,
+        profileId: profile.id,
+        gameId: this.mGameId,
+        mods,
+        totalRequired,
+        totalOptional,
+      }));
     }
 
     log('info', 'starting install of collection', {
@@ -618,7 +796,7 @@ class InstallDriver {
     const fileId = rule.reference.repo?.fileId;
 
     if ((modId === undefined) || (fileId === undefined)
-        || !ref.modId || !ref.fileId) {
+      || !ref.modId || !ref.fileId) {
       return false;
     }
 
@@ -638,7 +816,7 @@ class InstallDriver {
         return actions.addModRule(gameId, collection.id, newRule);
       }
     })
-    .filter(rule => rule !== undefined));
+      .filter(rule => rule !== undefined));
   }
 
   private begin = () => {
@@ -664,6 +842,8 @@ class InstallDriver {
     if ((this.mGameId !== undefined) && (this.mCollection !== undefined)) {
       this.mApi.events.emit('did-install-collection', this.mGameId, this.mCollection.id);
     }
+    
+    this.completeInstallationTracking(true);
     this.mCollection = undefined;
     this.mInstallDone = true;
     this.triggerUpdate();
@@ -682,7 +862,11 @@ class InstallDriver {
 
     const downloadProgress = Object.values(mods).reduce((prev, mod) => {
       let size = 0;
+      if (mod.state === 'downloaded') {
+        this.updateModTracking(mod.collectionRule, 'downloaded');
+      }
       if ((mod.state === 'downloading') || (mod.state === null)) {
+        this.updateModTracking(mod.collectionRule, 'downloading');
         const download = downloads[mod.archiveId];
         size += download?.received || 0;
       } else {
@@ -691,7 +875,13 @@ class InstallDriver {
       return prev + size;
     }, 0);
 
-    const installedMods = Object.values(mods).filter(mod => mod.state === 'installed');
+    const installedMods = Object.values(mods).filter(mod => {
+      const isInstalled = mod.state === 'installed';
+      if (isInstalled) {
+        this.updateModTracking(mod.collectionRule, 'installed');
+      }
+      return isInstalled;
+    });
     const totalMods = Object.values(mods).filter(isRelevant);
 
     const dlPerc = downloadProgress / this.mTotalSize;
