@@ -3,6 +3,7 @@ import { clearPendingVote, updateSuccessRate } from './actions/persistent';
 import persistentReducer from './reducers/persistent';
 import sessionReducer from './reducers/session';
 import settingsReducer from './reducers/settings';
+import trackingReducer from './reducers/installTracking';
 import { ICollection } from './types/ICollection';
 import { IExtendedInterfaceProps } from './types/IExtendedInterfaceProps';
 import { genDefaultsAction } from './util/defaults';
@@ -14,6 +15,8 @@ import AddModsDialog from './views/AddModsDialog';
 import HealthDownvoteDialog from './views/CollectionPageView/HealthDownvoteDialog';
 import CollectionsMainPage from './views/CollectionList';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
+
+import { isInstallationActive, getActiveInstallSession } from './util/selectors'
 
 import { IPathTools } from './views/CollectionPageEdit/FileOverrides';
 
@@ -99,6 +102,9 @@ function makeOnUnfulfilledRules(api: types.IExtensionApi) {
 
     const profile = selectors.profileById(state, profileId);
     const gameId = profile.gameId;
+    if (gameId !== selectors.activeGameId(state)) {
+      return PromiseBB.resolve(false);
+    }
 
     if (modsBeingRemoved.has(makeModKey(gameId, modId))) {
       return PromiseBB.resolve(false);
@@ -584,6 +590,7 @@ const localState = util.makeReactive<{
 function register(context: types.IExtensionContext,
                   collectionsCB: ICallbackMap) {
   context.registerReducer(['session', 'collections'], sessionReducer);
+  context.registerReducer(['session', 'collections'], trackingReducer);
   context.registerReducer(['settings', 'collections'], settingsReducer);
   context.registerReducer(['persistent', 'collections'], persistentReducer);
 
@@ -826,6 +833,8 @@ function register(context: types.IExtensionContext,
 
   context.registerInstaller('collection', 5,
                             bbProm(testSupported), bbProm(makeInstall(context.api)));
+
+  context.registerAPI('getActiveCollectionInstallSession', () => getActiveInstallSession(context.api.getState()), { minArguments: 0 });
 
   context['registerCollectionFeature'] =
     (id: string,
@@ -1125,15 +1134,17 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
     } else if (driver.collection !== undefined) {
       const { collection, revisionId } = driver;
 
-      const isDependency = (collection?.rules ?? []).find(rule => {
+      const dependency = (collection?.rules ?? []).find(rule => {
         const validType = ['requires', 'recommends'].includes(rule.type);
         if (!validType) {
           return false;
         }
         const matchedRule = util.testModReference(mod, rule.reference);
         return matchedRule;
-      }) !== undefined;
+      });
+      const isDependency = dependency !== undefined;
       if (isDependency) {
+        driver.updateModTracking(dependency, 'installed');
         const modRules =
           await driver.infoCache.getCollectionModRules(
             revisionId, collection, gameId);
