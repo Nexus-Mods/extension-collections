@@ -371,7 +371,7 @@ async function removeCollection(api: types.IExtensionApi,
         const download = state.persistent.downloads.files[dlId];
         if ((download !== undefined)
           && (deleteArchives || (download.state !== 'finished'))) {
-          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb, { silent: true }));
         }
       }
       doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
