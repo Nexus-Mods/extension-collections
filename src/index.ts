@@ -306,6 +306,10 @@ async function removeCollection(api: types.IExtensionApi,
     ? 'Are you sure you want to cancel the installation?'
     : 'Are you sure you want to remove the collection?';
 
+  const confirmButtonText: string = cancel && incomplete
+    ? 'Cancel installation'
+    : 'Remove collection';
+
   const result = await api.showDialog(
     'question',
     message, {
@@ -322,12 +326,12 @@ async function removeCollection(api: types.IExtensionApi,
         { id: 'delete_archives', text: t('Delete mod archives'), value: false },
       ],
     }, [
-      { label: 'Cancel' },
-      { label: 'Remove Collection' },
+      { label: 'Close' },
+      { label: confirmButtonText },
     ]);
 
   // apparently one can't cancel out of the cancellation...
-  if (result.action === 'Cancel') {
+  if (result.action === 'Close') {
     return;
   }
 
