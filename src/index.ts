@@ -392,7 +392,9 @@ async function removeCollection(api: types.IExtensionApi,
 
       await util.toPromise(cb =>
         api.events.emit('remove-mods', gameId, removeMods, cb, {
+          silent: true,
           progressCB: (idx: number, length: number, name: string) => {
+            // Progress will still be reported via activity notification
             doProgress(name, 50 + (50 * idx) / length);
           },
         }));
@@ -405,6 +407,7 @@ async function removeCollection(api: types.IExtensionApi,
         await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb, { silent: true }));
       }
       await util.toPromise(cb => api.events.emit('remove-mod', gameId, modId, cb, {
+        silent: true,
         incomplete: true,
       }));
     }
