@@ -398,7 +398,7 @@ async function removeCollection(api: types.IExtensionApi,
       doProgress('Removing collection', 0.99);
       const download = state.persistent.downloads.files[collection.archiveId];
       if (download !== undefined) {
-        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb, { silent: true }));
       }
       await util.toPromise(cb => api.events.emit('remove-mod', gameId, modId, cb, {
         incomplete: true,
