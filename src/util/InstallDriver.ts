@@ -184,8 +184,8 @@ class InstallDriver {
       }
     });
 
-    api.events.on('free-user-skipped-download', (fileName: string) => {
-      const rule = this.mDependentMods.find(r => r.reference.logicalFileName === fileName);
+    api.events.on('free-user-skipped-download', (identifiers: { name: string, gameId: string, modId: number, fileId: number }) => {
+      const rule = this.mDependentMods.find(r => util.testRefByIdentifiers(identifiers, r.reference));
       if (rule) {
         this.updateModTracking(rule, 'skipped');
       }
