@@ -306,6 +306,10 @@ async function removeCollection(api: types.IExtensionApi,
     ? 'Are you sure you want to cancel the installation?'
     : 'Are you sure you want to remove the collection?';
 
+  const confirmButtonText: string = cancel && incomplete
+    ? 'Cancel installation'
+    : 'Remove collection';
+
   const result = await api.showDialog(
     'question',
     message, {
@@ -322,12 +326,12 @@ async function removeCollection(api: types.IExtensionApi,
         { id: 'delete_archives', text: t('Delete mod archives'), value: false },
       ],
     }, [
-      { label: 'Cancel' },
-      { label: 'Remove Collection' },
+      { label: 'Close' },
+      { label: confirmButtonText },
     ]);
 
   // apparently one can't cancel out of the cancellation...
-  if (result.action === 'Cancel') {
+  if (result.action === 'Close') {
     return;
   }
 
@@ -371,7 +375,7 @@ async function removeCollection(api: types.IExtensionApi,
         const download = state.persistent.downloads.files[dlId];
         if ((download !== undefined)
           && (deleteArchives || (download.state !== 'finished'))) {
-          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb));
+          await util.toPromise(cb => api.events.emit('remove-download', dlId, cb, { silent: true }));
         }
       }
       doProgress('Removing downloads', 50 * ((completed++) / collection.rules.length));
@@ -388,7 +392,9 @@ async function removeCollection(api: types.IExtensionApi,
 
       await util.toPromise(cb =>
         api.events.emit('remove-mods', gameId, removeMods, cb, {
+          silent: true,
           progressCB: (idx: number, length: number, name: string) => {
+            // Progress will still be reported via activity notification
             doProgress(name, 50 + (50 * idx) / length);
           },
         }));
@@ -398,9 +404,10 @@ async function removeCollection(api: types.IExtensionApi,
       doProgress('Removing collection', 0.99);
       const download = state.persistent.downloads.files[collection.archiveId];
       if (download !== undefined) {
-        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb));
+        await util.toPromise(cb => api.events.emit('remove-download', collection.archiveId, cb, { silent: true }));
       }
       await util.toPromise(cb => api.events.emit('remove-mod', gameId, modId, cb, {
+        silent: true,
         incomplete: true,
       }));
     }
