@@ -277,6 +277,7 @@ async function pauseCollection(api: types.IExtensionApi,
       type: 'success',
       title: 'Collection pausing',
       message: 'Already queued mod installations will still finish',
+      displayMS: 3000,
     });
   }
 }
