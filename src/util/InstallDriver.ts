@@ -134,9 +134,18 @@ class InstallDriver {
     api.events.on('did-install-mod', (gameId: string, archiveId: string, modId: string) => {
       const state: types.IState = api.store.getState();
       const mod = util.getSafe(state.persistent.mods, [gameId, modId], undefined);
+      const downloads = state.persistent.downloads.files;
       // verify the mod installed is actually one required by this collection
-      const dependent = this.mDependentMods.find(iter =>
-        util.testModReference(mod, iter.reference));
+      const dependent = this.mDependentMods.find(iter => {
+        const identifiers = {
+          gameId,
+          modId: mod?.attributes?.modId,
+          fileId: mod?.attributes?.fileId,
+          name: downloads[archiveId]?.localPath,
+        }
+        return util.testModReference(mod, iter.reference) || util.testRefByIdentifiers(identifiers, iter.reference);
+      });
+
       if ((mod !== undefined) && (dependent !== undefined)) {
         if (dependent.type === 'requires') {
           this.mInstalledMods.push(mod);
@@ -155,6 +164,7 @@ class InstallDriver {
             gameId, dependent.reference.description, modId, dependent.extra?.patches);
           util.batchDispatch(api.store, [
             actions.setFileOverride(gameId, modId, dependent.extra?.fileOverrides),
+            actions.setModAttribute(gameId, modId, 'installerChoices', dependent.extra?.choices),
             actions.setModAttribute(gameId, modId, 'patches', dependent.extra?.patches),
             actions.setModAttribute(gameId, modId, 'fileList', dependent.fileList),
           ]);
@@ -493,10 +503,14 @@ class InstallDriver {
 
       if (this.mCollection !== undefined) {
         if (!recommendations) {
+          const isInstalled = (rule: any) => {
+            const mod = util.findModByRef(rule.reference, mods);
+            return (mod != null) && (mod?.state === 'installed');
+          };
           const filter = rule =>
             (rule.type === 'requires')
             && (rule['ignored'] !== true)
-            && (util.findModByRef(rule.reference, mods) === undefined);
+            && isInstalled(rule) === false;
 
           const incomplete = (this.mCollection.rules ?? []).find(filter);
           if (incomplete === undefined) {
