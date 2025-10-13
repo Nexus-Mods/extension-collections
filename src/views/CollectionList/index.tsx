@@ -306,6 +306,7 @@ class CollectionsMainPage extends ComponentEx<ICollectionsMainPageProps, ICompon
         type: 'success',
         title: 'Collection pausing',
         message: 'Already queued mod installations will still finish',
+        displayMS: 3000,
       });
     }
   }
