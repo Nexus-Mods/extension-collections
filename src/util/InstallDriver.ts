@@ -47,7 +47,7 @@ class InstallDriver {
     this.mStateUpdates = [];
     util.batchDispatch(this.mApi.store, actions);
     return Promise.resolve();
-  }, 1000, false, false);
+  }, 100, true, false);
 
   // Collection installation tracking
   private mCurrentSessionId: string;
@@ -194,10 +194,18 @@ class InstallDriver {
       }
     });
 
-    api.events.on('free-user-skipped-download', (identifiers: { name: string, gameId: string, modId: number, fileId: number }) => {
+    api.events.on('free-user-skipped-download', (identifiers: {
+      gameId: string,
+      modId?: number,
+      fileId?: number,
+      fileNames?: string[],
+      fileIds?: string[],
+    }) => {
       const rule = this.mDependentMods.find(r => util.testRefByIdentifiers(identifiers, r.reference));
       if (rule) {
         this.updateModTracking(rule, 'skipped');
+      } else {
+        log('error', 'could not find rule for skipped free user download', { identifiers });
       }
     });
 
