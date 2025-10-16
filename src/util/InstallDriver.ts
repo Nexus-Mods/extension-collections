@@ -47,7 +47,7 @@ class InstallDriver {
     this.mStateUpdates = [];
     util.batchDispatch(this.mApi.store, actions);
     return Promise.resolve();
-  }, 1000, false, false);
+  }, 100, true, false);
 
   // Collection installation tracking
   private mCurrentSessionId: string;
@@ -65,6 +65,18 @@ class InstallDriver {
     }
 
     const ruleId = modRuleId(rule);
+
+    // Check current status to prevent downgrades from terminal states
+    const state = this.mApi.getState();
+    const currentSession = state.session['collections']?.activeSession;
+    const currentStatus = currentSession?.mods?.[ruleId]?.status;
+
+    // Don't downgrade from terminal states (installed, skipped, failed)
+    const terminalStates: CollectionModStatus[] = ['installed', 'skipped', 'failed'];
+    if (currentStatus && terminalStates.includes(currentStatus)) {
+      return;
+    }
+
     this.mStateUpdates.push(installActions.updateModStatus(
       this.mCurrentSessionId,
       ruleId,
@@ -137,11 +149,16 @@ class InstallDriver {
       const downloads = state.persistent.downloads.files;
       // verify the mod installed is actually one required by this collection
       const dependent = this.mDependentMods.find(iter => {
+        const nameSet = new Set<string>();
+        const fileIdSet = new Set<string>();
+        fileIdSet.add(mod?.attributes?.fileId?.toString());
+        nameSet.add(downloads[archiveId]?.localPath);
         const identifiers = {
           gameId,
           modId: mod?.attributes?.modId,
           fileId: mod?.attributes?.fileId,
-          name: downloads[archiveId]?.localPath,
+          fileIds: Array.from(fileIdSet).filter(id => id !== undefined) as string[],
+          fileNames: Array.from(nameSet).filter(n => n !== undefined) as string[],
         }
         return util.testModReference(mod, iter.reference) || util.testRefByIdentifiers(identifiers, iter.reference);
       });
@@ -194,10 +211,18 @@ class InstallDriver {
       }
     });
 
-    api.events.on('free-user-skipped-download', (identifiers: { name: string, gameId: string, modId: number, fileId: number }) => {
+    api.events.on('free-user-skipped-download', (identifiers: {
+      gameId: string,
+      modId?: number,
+      fileId?: number,
+      fileNames?: string[],
+      fileIds?: string[],
+    }) => {
       const rule = this.mDependentMods.find(r => util.testRefByIdentifiers(identifiers, r.reference));
       if (rule) {
         this.updateModTracking(rule, 'skipped');
+      } else {
+        log('error', 'could not find rule for skipped free user download', { identifiers });
       }
     });
 
