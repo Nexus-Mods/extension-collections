@@ -58,6 +58,8 @@ export interface ICollectionInstallSession {
 export interface ICollectionInstallState {
   /** Current active installation session (if any) */
   activeSession?: ICollectionInstallSession;
+  /** ID of the last completed installation session */
+  lastActiveSessionId?: string;
   /** History of completed/failed installation sessions */
   sessionHistory: { [sessionId: string]: ICollectionInstallSession };
 }
