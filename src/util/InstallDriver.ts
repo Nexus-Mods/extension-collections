@@ -64,6 +64,12 @@ class InstallDriver {
       return;
     }
 
+    if (status === 'installed') {
+      // 'installed' status should be set via markModInstalledInTracking
+      log('warn', 'use markModInstalledInTracking to set status to installed');
+      return;
+    }
+
     const ruleId = modRuleId(rule);
     this.mStateUpdates.push(installActions.updateModStatus(
       this.mCurrentSessionId,
@@ -151,8 +157,7 @@ class InstallDriver {
           this.mInstalledMods.push(mod);
         }
 
-        // Update tracking for the installed mod
-        this.updateModTracking(dependent, 'installed');
+        // Mark as installed in tracking
         this.markModInstalledInTracking(dependent, modId);
         
         if ((this.mCollection?.installationPath !== undefined)
@@ -889,13 +894,7 @@ class InstallDriver {
       return prev + size;
     }, 0);
 
-    const installedMods = Object.values(mods).filter(mod => {
-      const isInstalled = mod.state === 'installed';
-      if (isInstalled) {
-        this.updateModTracking(mod.collectionRule, 'installed');
-      }
-      return isInstalled;
-    });
+    const installedMods = Object.values(mods).filter(mod => mod.state === 'installed');
     const totalMods = Object.values(mods).filter(isRelevant);
 
     const dlPerc = downloadProgress / this.mTotalSize;
