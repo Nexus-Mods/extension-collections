@@ -3897,9 +3897,9 @@ void-elements@3.1.0:
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-3.1.0.tgz#614f7fbf8d801f0bb5f0661f5b2f5785750e4f09"
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
 
-vortex-api@Nexus-Mods/vortex-api:
-  version "1.9.1-r7"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/b896554fcd02b8384650377dc468e565117a608a"
+vortex-api@Nexus-Mods/vortex-api#browse-collections:
+  version "1.9.1-r10"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/7097838615a99010713979dfc40e52b8013f487b"
 
 walker@^1.0.8:
   version "1.0.8"

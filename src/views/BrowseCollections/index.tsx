@@ -2,7 +2,7 @@ import { ICollection } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { MainPage, selectors, types, util } from 'vortex-api';
+import { CollectionTile, MainPage, selectors, types, util } from 'vortex-api';
 
 interface IBrowseCollectionsProps {
   api: types.IExtensionApi;
@@ -255,162 +255,47 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
           </div>
 
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+            display: 'flex',
+            flexDirection: 'column',
             gap: '15px',
+            alignItems: 'flex-start',
           }}>
-            {collections.map((collection) => (
-              <div
-                key={collection.id}
-                style={{
-                  border: '1px solid #444',
-                  borderRadius: '4px',
-                  backgroundColor: '#2a2a2a',
-                  display: 'flex',
-                  overflow: 'hidden',
-                  height: '190px',
-                }}
-              >
-                {/* Left column - Portrait Image */}
-                <div style={{
-                  flexShrink: 0,
-                  width: '120px',
-                  backgroundColor: '#1a1a1a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  {(collection as any).tileImage?.thumbnailUrl ? (
-                    <img
-                      src={(collection as any).tileImage.thumbnailUrl}
-                      alt={collection.name}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : (
-                    <div style={{ color: '#666', fontSize: '11px', textAlign: 'center', padding: '10px' }}>
-                      No Image
-                    </div>
-                  )}
-                </div>
+            {collections.map((collection) => {
+              const tileImage = (collection as any).tileImage?.thumbnailUrl || 'https://placehold.co/166x207/1f1f1f/666?text=No+Image';
+              const latestRevision = (collection as any).latestPublishedRevision;
+              const tags: string[] = [];
 
-                {/* Right column - Metadata */}
-                <div style={{
-                  flex: 1,
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{ marginBottom: '8px' }}>
-                    <h3 style={{
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      margin: '0 0 2px 0',
-                      color: '#fff',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      lineHeight: '1.3',
-                    }}>
-                      {collection.name}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                      {collection.user?.avatar && (
-                        <img
-                          src={collection.user.avatar}
-                          alt={collection.user?.name || 'User'}
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                          }}
-                        />
-                      )}
-                      <p style={{ fontSize: '11px', color: '#aaa', margin: 0 }}>
-                        by {collection.user?.name || 'Unknown'}
-                      </p>
-                    </div>
-                  </div>
+              // Extract tags from collection (you may need to adjust this based on actual API data)
+              if ((collection as any).category) {
+                tags.push((collection as any).category);
+              }
+              if ((collection as any).adultContent) {
+                tags.push('Adult');
+              }
 
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '4px 10px',
-                    fontSize: '11px',
-                    color: '#bbb',
-                    flex: 1,
-                  }}>
-                    {(collection as any).totalDownloads !== undefined && (
-                      <div>
-                        <strong>Downloads:</strong> {formatNumber((collection as any).totalDownloads)}
-                      </div>
-                    )}
-                    {collection.endorsements !== undefined && (
-                      <div>
-                        <strong>Endorsements:</strong> {formatNumber(collection.endorsements)}
-                      </div>
-                    )}
-                    {(collection as any).latestPublishedRevision && (
-                      <>
-                        <div>
-                          <strong>Mods:</strong> {(collection as any).latestPublishedRevision.modCount}
-                        </div>
-                        <div>
-                          <strong>Size:</strong> {formatFileSize((collection as any).latestPublishedRevision.totalSize)}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                    marginTop: '8px',
-                  }}>
-                    <button
-                      onClick={() => handleAddCollection(collection)}
-                      style={{
-                        flex: 1,
-                        padding: '6px 12px',
-                        borderRadius: '4px',
-                        border: '1px solid #d87d00',
-                        backgroundColor: '#d87d00',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      Add Collection
-                    </button>
-                    <button
-                      onClick={() => handleViewOnNexus(collection)}
-                      style={{
-                        flex: 1,
-                        padding: '6px 12px',
-                        borderRadius: '4px',
-                        border: '1px solid #444',
-                        backgroundColor: '#3a3a3a',
-                        color: '#ccc',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      View on Nexus Mods
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              return (
+                <CollectionTile
+                  key={collection.id}
+                  id={collection.id.toString()}
+                  title={collection.name}
+                  author={{
+                    name: collection.user?.name || 'Unknown',
+                    avatar: collection.user?.avatar,
+                  }}
+                  coverImage={tileImage}
+                  tags={tags}
+                  stats={{
+                    downloads: (collection as any).totalDownloads || 0,
+                    size: latestRevision ? formatFileSize(latestRevision.totalSize) : '0 MB',
+                    endorsements: collection.endorsements || 0,
+                  }}
+                  description={(collection as any).summary || 'No description available.'}
+                  version={latestRevision?.revisionNumber?.toString()}
+                  onAddCollection={() => handleAddCollection(collection)}
+                  onViewPage={() => handleViewOnNexus(collection)}
+                />
+              );
+            })}
           </div>
         </div>
       </MainPage.Body>
