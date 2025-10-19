@@ -256,20 +256,21 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
 
           <div style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexWrap: 'wrap',
             gap: '15px',
             alignItems: 'flex-start',
+            justifyContent: 'flex-start',
           }}>
             {collections.map((collection) => {
               const tileImage = (collection as any).tileImage?.thumbnailUrl || 'https://placehold.co/166x207/1f1f1f/666?text=No+Image';
               const latestRevision = (collection as any).latestPublishedRevision;
               const tags: string[] = [];
 
-              // Extract tags from collection (you may need to adjust this based on actual API data)
-              if ((collection as any).category) {
-                tags.push((collection as any).category);
+              // Extract tags from collection - ensure all tags are strings
+              if ((collection as any).category?.name) {
+                tags.push((collection as any).category.name);
               }
-              if ((collection as any).adultContent) {
+              if (latestRevision?.adultContent) {
                 tags.push('Adult');
               }
 
