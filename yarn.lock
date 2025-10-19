@@ -3899,7 +3899,7 @@ void-elements@3.1.0:
 
 vortex-api@Nexus-Mods/vortex-api#browse-collections:
   version "1.9.1-r10"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/7097838615a99010713979dfc40e52b8013f487b"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/77d7fa3f7f5bf8948199b567b9dfc9ea92c061f2"
 
 walker@^1.0.8:
   version "1.0.8"

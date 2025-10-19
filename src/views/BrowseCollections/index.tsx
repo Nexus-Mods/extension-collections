@@ -286,7 +286,7 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
                   coverImage={tileImage}
                   tags={tags}
                   stats={{
-                    downloads: (collection as any).totalDownloads || 0,
+                    modCount: latestRevision?.modCount || 0,
                     size: latestRevision ? formatFileSize(latestRevision.totalSize) : '0 MB',
                     endorsements: collection.endorsements || 0,
                   }}
