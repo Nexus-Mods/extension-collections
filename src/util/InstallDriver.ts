@@ -587,6 +587,7 @@ class InstallDriver {
             this.onStop();
           }
         }
+        this.mApi.events.emit('trigger-test-run', 'collections-changed');
       }
     }
 
