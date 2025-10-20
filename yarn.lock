@@ -3898,8 +3898,8 @@ void-elements@3.1.0:
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
 
 vortex-api@Nexus-Mods/vortex-api#browse-collections:
-  version "1.9.1-r13"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/dbc646a4a67152ad70e96ea2fed1d5b0ac519921"
+  version "1.9.1-r14"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/81d38e0c88137544c6843be169a870b2c9e2f48b"
 
 walker@^1.0.8:
   version "1.0.8"

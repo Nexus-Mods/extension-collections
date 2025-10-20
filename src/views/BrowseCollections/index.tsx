@@ -2,7 +2,7 @@ import { ICollection } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { CollectionTile, MainPage, selectors, types, util } from 'vortex-api';
+import { MainPage, selectors, types, util, Tailwind } from 'vortex-api';
 
 interface IBrowseCollectionsProps {
   api: types.IExtensionApi;
@@ -275,7 +275,7 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
               }
 
               return (
-                <CollectionTile
+                <Tailwind.CollectionTile
                   key={collection.id}
                   id={collection.id.toString()}
                   title={collection.name}
