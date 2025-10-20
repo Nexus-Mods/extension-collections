@@ -2,7 +2,7 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
-import { actions, log, selectors, types, util, } from 'vortex-api';
+import { actions, log, selectors, types, util } from 'vortex-api';
 import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
@@ -47,7 +47,7 @@ class InstallDriver {
     this.mStateUpdates = [];
     util.batchDispatch(this.mApi.store, actions);
     return Promise.resolve();
-  }, 1000, false, false);
+  }, 100, true, false);
 
   // Collection installation tracking
   private mCurrentSessionId: string;
@@ -71,6 +71,18 @@ class InstallDriver {
     }
 
     const ruleId = modRuleId(rule);
+
+    // Check current status to prevent downgrades from terminal states
+    const state = this.mApi.getState();
+    const currentSession = state.session['collections']?.activeSession;
+    const currentStatus = currentSession?.mods?.[ruleId]?.status;
+
+    // Don't downgrade from terminal states (installed, skipped, failed)
+    const terminalStates: CollectionModStatus[] = ['installed', 'skipped', 'failed'];
+    if (currentStatus && terminalStates.includes(currentStatus)) {
+      return;
+    }
+
     this.mStateUpdates.push(installActions.updateModStatus(
       this.mCurrentSessionId,
       ruleId,
@@ -143,11 +155,16 @@ class InstallDriver {
       const downloads = state.persistent.downloads.files;
       // verify the mod installed is actually one required by this collection
       const dependent = this.mDependentMods.find(iter => {
+        const nameSet = new Set<string>();
+        const fileIdSet = new Set<string>();
+        fileIdSet.add(mod?.attributes?.fileId?.toString());
+        nameSet.add(downloads[archiveId]?.localPath);
         const identifiers = {
           gameId,
           modId: mod?.attributes?.modId,
           fileId: mod?.attributes?.fileId,
-          name: downloads[archiveId]?.localPath,
+          fileIds: Array.from(fileIdSet).filter(id => id !== undefined) as string[],
+          fileNames: Array.from(nameSet).filter(n => n !== undefined) as string[],
         }
         return util.testModReference(mod, iter.reference) || util.testRefByIdentifiers(identifiers, iter.reference);
       });
@@ -199,10 +216,39 @@ class InstallDriver {
       }
     });
 
-    api.events.on('free-user-skipped-download', (identifiers: { name: string, gameId: string, modId: number, fileId: number }) => {
-      const rule = this.mDependentMods.find(r => util.testRefByIdentifiers(identifiers, r.reference));
+    api.events.on('free-user-skipped-download', (identifiers: {
+      gameId: string,
+      modId?: number,
+      fileId?: number,
+      fileNames?: string[],
+      fileIds?: string[],
+    }) => {
+      const sanitize = (fileName: string) => fileName.toLowerCase().replace(/[^a-z]+/gi, '');
+      const rule = this.mDependentMods.find(r => {
+        const condition = () => {
+          // So this is shit, but we need to account for the fact that the fileId may never match
+          //  due to incorrect update chains.
+          if (r.reference.versionMatch != null && util.isFuzzyVersion(r.reference.versionMatch)) {
+            if (identifiers.modId == null || r.reference.repo?.modId !== identifiers.modId.toString()) {
+              return false;
+            }
+            const nameSet = new Set(identifiers.fileNames.map(sanitize));
+            if (identifiers.fileNames) {
+              if (!nameSet.has(sanitize(r.reference.logicalFileName))) {
+                return false;
+              }
+            }
+            // If we made it this far, we have the correct modId and logicalFileName
+            //  should be good enough...
+            return true;
+          }
+        }
+        return util.testRefByIdentifiers({ ...identifiers, condition } as any, r.reference)
+      });
       if (rule) {
         this.updateModTracking(rule, 'skipped');
+      } else {
+        log('error', 'could not find rule for skipped free user download', { identifiers });
       }
     });
 
@@ -546,6 +592,7 @@ class InstallDriver {
             this.onStop();
           }
         }
+        this.mApi.events.emit('trigger-test-run', 'collections-changed');
       }
     }
 
