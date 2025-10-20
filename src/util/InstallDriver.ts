@@ -2,7 +2,7 @@
 import * as nexusApi from '@nexusmods/nexus-api';
 import * as Promise from 'bluebird';
 import * as path from 'path';
-import { actions, log, selectors, types, util, } from 'vortex-api';
+import { actions, log, selectors, types, util } from 'vortex-api';
 import { setPendingVote } from '../actions/persistent';
 import { postprocessCollection } from '../collectionInstall';
 import { INSTALLING_NOTIFICATION_ID, MOD_TYPE } from '../constants';
@@ -218,7 +218,28 @@ class InstallDriver {
       fileNames?: string[],
       fileIds?: string[],
     }) => {
-      const rule = this.mDependentMods.find(r => util.testRefByIdentifiers(identifiers, r.reference));
+      const sanitize = (fileName: string) => fileName.toLowerCase().replace(/[^a-z]+/gi, '');
+      const rule = this.mDependentMods.find(r => {
+        const condition = () => {
+          // So this is shit, but we need to account for the fact that the fileId may never match
+          //  due to incorrect update chains.
+          if (r.reference.versionMatch != null && util.isFuzzyVersion(r.reference.versionMatch)) {
+            if (identifiers.modId == null || r.reference.repo?.modId !== identifiers.modId.toString()) {
+              return false;
+            }
+            const nameSet = new Set(identifiers.fileNames.map(sanitize));
+            if (identifiers.fileNames) {
+              if (!nameSet.has(sanitize(r.reference.logicalFileName))) {
+                return false;
+              }
+            }
+            // If we made it this far, we have the correct modId and logicalFileName
+            //  should be good enough...
+            return true;
+          }
+        }
+        return util.testRefByIdentifiers({ ...identifiers, condition } as any, r.reference)
+      });
       if (rule) {
         this.updateModTracking(rule, 'skipped');
       } else {
@@ -566,6 +587,7 @@ class InstallDriver {
             this.onStop();
           }
         }
+        this.mApi.events.emit('trigger-test-run', 'collections-changed');
       }
     }
 
