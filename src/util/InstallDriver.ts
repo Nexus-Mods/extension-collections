@@ -13,7 +13,6 @@ import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
 import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
 import * as installActions from '../actions/installTracking';
-import { CollectionModStatus, generateSessionId } from '../types/ICollectionInstallState';
 
 import * as _ from 'lodash';
 
@@ -59,7 +58,7 @@ class InstallDriver {
     return this.mDependentMods.filter(m => m.type === 'recommends');
   }
 
-  public updateModTracking(rule: types.IModRule, status: CollectionModStatus) {
+  public updateModTracking(rule: types.IModRule, status: types.CollectionModStatus) {
     if (!this.mTrackingEnabled || !this.mCurrentSessionId) {
       return;
     }
@@ -78,7 +77,7 @@ class InstallDriver {
     const currentStatus = currentSession?.mods?.[ruleId]?.status;
 
     // Don't downgrade from terminal states (installed, skipped, failed)
-    const terminalStates: CollectionModStatus[] = ['installed', 'skipped', 'failed'];
+    const terminalStates: types.CollectionModStatus[] = ['installed', 'skipped', 'failed'];
     if (currentStatus && terminalStates.includes(currentStatus)) {
       return;
     }
@@ -819,7 +818,7 @@ class InstallDriver {
       const totalRequired = required.length - optional.length;
 
       // Generate unique session ID
-      this.mCurrentSessionId = generateSessionId(collectionId, profile.id);
+      this.mCurrentSessionId = util.generateCollectionSessionId(collectionId, profile.id);
 
       const downloads = state.persistent.downloads.files;
       // Create mod info map
