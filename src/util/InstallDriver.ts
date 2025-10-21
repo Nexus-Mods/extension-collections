@@ -11,7 +11,7 @@ import { IRevisionEx } from '../types/IRevisionEx';
 import { applyPatches } from './binaryPatching';
 import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
-import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
+import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, walkPath } from './util';
 import * as installActions from '../actions/installTracking';
 
 import * as _ from 'lodash';
@@ -69,7 +69,7 @@ class InstallDriver {
       return;
     }
 
-    const ruleId = modRuleId(rule);
+    const ruleId = util.modRuleId(rule);
 
     // Check current status to prevent downgrades from terminal states
     const state = this.mApi.getState();
@@ -95,7 +95,7 @@ class InstallDriver {
       return;
     }
 
-    const ruleId = modRuleId(rule);
+    const ruleId = util.modRuleId(rule);
     this.mStateUpdates.push(installActions.markModInstalled(
       this.mCurrentSessionId,
       ruleId,
@@ -665,7 +665,7 @@ class InstallDriver {
       }
 
       const mod = util.findModByRef(rule.reference, mods);
-      prev[modRuleId(rule)] = { ...mod, collectionRule: rule };
+      prev[util.modRuleId(rule)] = { ...mod, collectionRule: rule };
 
       return prev;
     }, {});
@@ -823,11 +823,11 @@ class InstallDriver {
       const downloads = state.persistent.downloads.files;
       // Create mod info map
       const mods = required.reduce((acc, rule) => {
-        const ruleId = modRuleId(rule);
+        const ruleId = util.modRuleId(rule);
         const download = util.findDownloadByRef(rule.reference, downloads);
         acc[ruleId] = {
           rule,
-          status: installed.find(r => modRuleId(r) === modRuleId(rule)) != null ? 'installed' : download != null ? 'downloaded' : 'pending',
+          status: installed.find(r => util.modRuleId(r) === ruleId) != null ? 'installed' : download != null ? 'downloaded' : 'pending',
           type: rule.type as 'requires' | 'recommends',
           phase: rule.extra?.phase ?? 0,
         };
