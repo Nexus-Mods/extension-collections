@@ -5,6 +5,7 @@ import { ICollectionInstallState, ICollectionInstallSession, generateSessionId }
 // Initial state
 const initialState: ICollectionInstallState = {
   activeSession: undefined,
+  lastActiveSessionId: undefined,
   sessionHistory: {},
 };
 
@@ -77,6 +78,7 @@ const collectionInstallReducer = {
       }
       
       let newState = util.setSafe(state, ['sessionHistory', payload.sessionId], state.activeSession);
+      newState = util.setSafe(newState, ['lastActiveSessionId'], payload.sessionId);
       newState = util.setSafe(newState, ['activeSession'], undefined);
       
       return newState;
