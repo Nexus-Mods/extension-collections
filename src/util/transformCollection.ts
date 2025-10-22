@@ -8,7 +8,7 @@ import { scanForDiffs } from './binaryPatching';
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
 import { generateConfig } from './collectionConfig';
-import { renderReference, ruleId } from './util';
+import { hasEditPermissions, renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
 import { ILookupResult } from 'modmeta-db';
@@ -826,7 +826,7 @@ export async function cloneCollection(api: types.IExtensionApi,
     });
   };
 
-  const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.userId;
+  const ownCollection: boolean = hasEditPermissions(existingCollection.attributes?.permissions || []);
   let name = 'Copy of ' + existingCollection.attributes?.name;
   if (name.length > MAX_COLLECTION_NAME_LENGTH) {
     name = name.slice(0, MAX_COLLECTION_NAME_LENGTH) + '...';
@@ -838,8 +838,10 @@ export async function cloneCollection(api: types.IExtensionApi,
 
   const ownCollectionAttributes = ownCollection ? ({
     pictureUrl: existingCollection.attributes.pictureUrl,
-    uploader: userInfo.name,
+    uploader: existingCollection.attributes.uploader ?? userInfo?.name ?? 'Anonymous',
     uploaderAvatar: existingCollection.attributes.uploaderAvatar,
+    author: existingCollection.attributes?.author ?? userInfo?.name ?? 'Anonymous',
+    uploaderId: existingCollection.attributes?.uploaderId ?? userInfo?.userId,
   }) : {};
   const mod: types.IMod = {
     id,

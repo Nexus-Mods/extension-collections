@@ -194,8 +194,9 @@ async function cloneInstalledCollection(api: types.IExtensionApi,
     { label: 'Cancel' },
     { label: 'Clone' },
   ]);
-
+  
   if (result.action === 'Clone') {
+    await updateMeta(api, collectionId);
     const id = makeCollectionId(shortid());
     return cloneCollection(api, gameMode, id, collectionId);
   } else {
@@ -500,12 +501,13 @@ function generateCollectionOptions(mods: { [modId: string]: types.IMod })
     .map(mod => ({ label: util.renderModName(mod), value: mod.id }));
 }
 
-async function updateMeta(api: types.IExtensionApi) {
+async function updateMeta(api: types.IExtensionApi, collectionId?: string) {
   const state = api.getState();
   const gameMode = selectors.activeGameId(state);
   const mods = state.persistent.mods[gameMode] ?? {};
   const collections = Object.keys(mods)
-    .filter(modId => mods[modId].type === MOD_TYPE);
+    .filter(modId => (mods[modId].type === MOD_TYPE)
+      && (collectionId != null ? mods[modId].id === collectionId : true));
 
   const notiId = shortid();
 
@@ -538,6 +540,7 @@ async function updateMeta(api: types.IExtensionApi) {
           // revision (i.e. the users own draft revision)
 
           api.store.dispatch(actions.setModAttributes(gameMode, modId, {
+            permissions: info.collection.permissions,
             collectionSlug: info.collection.slug,
             revisionNumber: info.revisionNumber,
             author: info.collection.user?.name,
