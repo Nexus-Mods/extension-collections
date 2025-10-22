@@ -826,10 +826,30 @@ export async function cloneCollection(api: types.IExtensionApi,
     });
   };
 
-  const ownCollection: boolean = hasEditPermissions(existingCollection.attributes?.permissions || []);
-  let name = 'Copy of ' + existingCollection.attributes?.name;
-  if (name.length > MAX_COLLECTION_NAME_LENGTH) {
-    name = name.slice(0, MAX_COLLECTION_NAME_LENGTH) + '...';
+  let editPermissions: boolean = hasEditPermissions(existingCollection.attributes?.permissions || []);
+  let ownCollection: boolean = userInfo?.userId != null && existingCollection.attributes?.uploaderId === userInfo.userId;
+  if (editPermissions && !ownCollection) {
+    const result: types.IDialogResult = await api.showDialog('question', 'Clone Collection',
+      {
+        bbcode: 'You have edit permissions for the collection "{{name}}", but you are not the owner.[br][/br]'
+                + 'Would you like to clone it as your own collection, or contribute to the existing one?[br][/br][br][/br]',
+        parameters: {
+          name: util.renderModName(existingCollection),
+
+        },
+      }, [
+        { label: 'Contribute' },
+        { label: 'Clone', default: true },
+      ]);
+    if (result.input === 'Clone') {
+      ownCollection = false;
+    }
+  }
+  if (ownCollection) {
+    let name = 'Copy of ' + existingCollection.attributes?.name;
+    if (name.length > MAX_COLLECTION_NAME_LENGTH) {
+      name = name.slice(0, MAX_COLLECTION_NAME_LENGTH) + '...';
+    }
   }
 
   const customFileName = ownCollection
