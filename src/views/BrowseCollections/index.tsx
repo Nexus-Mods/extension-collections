@@ -1,4 +1,4 @@
-import { ICollection } from '@nexusmods/nexus-api';
+import { ICollection, ICollectionSearchOptions, CollectionSortField, SortDirection } from '@nexusmods/nexus-api';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -8,11 +8,8 @@ interface IBrowseCollectionsProps {
   api: types.IExtensionApi;
 }
 
-type SortField = 'createdAt' | 'endorsements' | 'recentRating' | 'downloads';
-type SortDirection = 'ASC' | 'DESC';
-
 interface ISortOption {
-  field: SortField;
+  field: CollectionSortField;
   direction: SortDirection;
   label: string;
 }
@@ -75,9 +72,8 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     setLoading(true);
     setError(null);
 
-    // Fetch collections using the new search API with sorting and search
-    Promise.resolve(api.ext.nexusSearchCollections({
-      gameId,
+    const options: ICollectionSearchOptions = {
+      gameId: util.nexusGameId(util.getGame(gameId), gameId),
       count: 20,
       offset: 0,
       sort: {
@@ -85,7 +81,10 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
         direction: sortBy.direction,
       },
       search: activeSearch || undefined,
-    }))
+    };
+
+    // Fetch collections using the new search API with sorting and search
+    Promise.resolve(api.ext.nexusSearchCollections(options))        
       .then((result: { nodes: ICollection[]; totalCount: number }) => {
         setCollections(result.nodes || []);
         setTotalCount(result.totalCount || 0);
