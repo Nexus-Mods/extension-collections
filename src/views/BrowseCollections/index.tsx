@@ -1,4 +1,5 @@
 import { ICollection, ICollectionSearchOptions, CollectionSortField, SortDirection } from '@nexusmods/nexus-api';
+import numeral = require('numeral');
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -28,11 +29,16 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
 
   const [collections, setCollections] = React.useState<ICollection[]>([]);
   const [totalCount, setTotalCount] = React.useState<number>(0);
+  const [allCollectionsTotal, setAllCollectionsTotal] = React.useState<number>(0);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<Error | null>(null);
   const [sortBy, setSortBy] = React.useState<ISortOption>(SORT_OPTIONS[1]); // Default to "Most Endorsed"
   const [searchQuery, setSearchQuery] = React.useState<string>('');
   const [activeSearch, setActiveSearch] = React.useState<string>(''); // The search term actually being used
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageInput, setPageInput] = React.useState<string>('1');
+  const itemsPerPage = 20;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleSearch = () => {
     setActiveSearch(searchQuery);
@@ -75,7 +81,7 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     const options: ICollectionSearchOptions = {
       gameId: util.nexusGameId(util.getGame(gameId), gameId),
       count: 20,
-      offset: 0,
+      offset: (currentPage - 1) * itemsPerPage,
       sort: {
         field: sortBy.field,
         direction: sortBy.direction,
@@ -84,17 +90,26 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     };
 
     // Fetch collections using the new search API with sorting and search
-    Promise.resolve(api.ext.nexusSearchCollections(options))        
+    Promise.resolve(api.ext.nexusSearchCollections(options))
       .then((result: { nodes: ICollection[]; totalCount: number }) => {
         setCollections(result.nodes || []);
         setTotalCount(result.totalCount || 0);
+        // Store unfiltered total when no search is active
+        if (!activeSearch) {
+          setAllCollectionsTotal(result.totalCount || 0);
+        }
         setLoading(false);
       })
       .catch((err: Error) => {
         setError(err);
         setLoading(false);
       });
-  }, [gameId, sortBy, activeSearch, api]);
+  }, [gameId, sortBy, activeSearch, currentPage, api]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+    setPageInput('1');
+  }, [sortBy, activeSearch]);
 
   const formatFileSize = (bytes: string): string => {
     const size = parseInt(bytes, 10);
@@ -115,11 +130,47 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     return num.toString();
   };
 
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      setPageInput(newPage.toString());
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      setPageInput(newPage.toString());
+    }
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+    setPageInput(page.toString());
+  };
+
+  const handleGoToPage = () => {
+    const page = parseInt(pageInput, 10);
+    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    } else {
+      setPageInput(currentPage.toString());
+    }
+  };
+
+  const handlePageInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGoToPage();
+    }
+  };
+
   if (!gameId) {
     return (
       <MainPage id='browse-collections-page'>
         <MainPage.Body>
-          <div style={{ padding: '20px', textAlign: 'center' }}>
+          <div className="tw:p-5 tw:text-center">
             <p>{t('Please select a game to browse collections.')}</p>
           </div>
         </MainPage.Body>
@@ -131,7 +182,7 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     return (
       <MainPage id='browse-collections-page'>
         <MainPage.Body>
-          <div style={{ padding: '20px', textAlign: 'center' }}>
+          <div className="tw:p-5 tw:text-center">
             <p>{t('Loading collections...')}</p>
           </div>
         </MainPage.Body>
@@ -143,7 +194,7 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     return (
       <MainPage id='browse-collections-page'>
         <MainPage.Body>
-          <div style={{ padding: '20px', color: '#d9534f' }}>
+          <div className="tw:p-5 tw:text-red-600">
             <p><strong>{t('Error loading collections:')}</strong></p>
             <p>{error.message}</p>
           </div>
@@ -156,7 +207,7 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     return (
       <MainPage id='browse-collections-page'>
         <MainPage.Body>
-          <div style={{ padding: '20px', textAlign: 'center' }}>
+          <div className="tw:p-5 tw:text-center">
             <p>{t('No collections found for this game.')}</p>
           </div>
         </MainPage.Body>
@@ -166,83 +217,45 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
 
   return (
     <MainPage id='browse-collections-page'>
-      <MainPage.Body>
-        <div style={{
-          height: '100%',
-          overflow: 'auto',
-          padding: '20px',
-        }}>
-          <h2>{t('Browse Collections')}</h2>
+      <MainPage.Body style={{ overflowY: 'auto' }}>
+        <div className="tw:h-full tw:p-5">
+
+          <h2>{t('Browse Collections ({{total}})', { total: numeral(allCollectionsTotal).format('0,0') })}</h2>
 
           {/* Search Bar */}
-          <div style={{
-            display: 'flex',
-            gap: '10px',
-            marginBottom: '15px',
-          }}>
-            <input
+          <div className="tw:flex tw:gap-2.5 tw:mb-4 tw:items-start">
+            
+            <Tailwind.Input
               type="text"
-              placeholder={t('Search collections...')}
-              value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery}
+              placeholder={t('Search collections...')}              
               onKeyDown={handleKeyDown}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid #444',
-                backgroundColor: '#2a2a2a',
-                color: '#ccc',
-                fontSize: '14px',
-              }}
+              className='tw:max-w-64'
             />
-            <button
+
+            <Tailwind.Button
+              buttonType="secondary"
+              size="md"
+              filled="strong"
               onClick={handleSearch}
-              style={{
-                padding: '8px 20px',
-                borderRadius: '4px',
-                border: '1px solid #444',
-                backgroundColor: '#3a3a3a',
-                color: '#ccc',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-              }}
             >
               {t('Search')}
-            </button>
+            </Tailwind.Button>
           </div>
 
           {/* Results count and sort */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-          }}>
-            <p style={{ color: '#888', margin: 0 }}>
-              {t('Showing {{showing}} of {{total}} collections', {
-                showing: collections.length,
-                total: totalCount,
-              })}
-            </p>
+          <div className="tw:flex tw:justify-between tw:items-center tw:mb-5">
+            <Tailwind.Typography typographyType="body-md" appearance="moderate" isTranslucent>
+              {t('{{total}} results', { total: numeral(totalCount).format('0,0') })}
+            </Tailwind.Typography>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <label htmlFor="sort-select" style={{ color: '#888' }}>
-                {t('Sort by:')}
-              </label>
+            <div className="tw:flex tw:items-center tw:gap-2.5">
               <select
                 id="sort-select"
                 value={SORT_OPTIONS.indexOf(sortBy)}
                 onChange={(e) => setSortBy(SORT_OPTIONS[parseInt(e.target.value, 10)])}
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  border: '1px solid #444',
-                  backgroundColor: '#2a2a2a',
-                  color: '#ccc',
-                  cursor: 'pointer',
-                }}
+                className="tw:px-2.5 tw:py-1 tw:rounded tw:border tw:border-gray-600 tw:bg-gray-800 tw:text-gray-300 tw:cursor-pointer"
               >
                 {SORT_OPTIONS.map((option, index) => (
                   <option key={option.field} value={index}>
@@ -253,13 +266,8 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
             </div>
           </div>
 
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '15px',
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
-          }}>
+          {/* Collection Tiles */}
+          <div className="tw:grid tw:grid-cols-[repeat(auto-fit,minmax(465px,1fr))] tw:gap-4">
             {collections.map((collection) => {
               const tileImage = (collection as any).tileImage?.thumbnailUrl || 'https://placehold.co/166x207/1f1f1f/666?text=No+Image';
               const latestRevision = (collection as any).latestPublishedRevision;
@@ -286,17 +294,102 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
                   tags={tags}
                   stats={{
                     modCount: latestRevision?.modCount || 0,
-                    size: latestRevision ? formatFileSize(latestRevision.totalSize) : '0 MB',
+                    size: latestRevision?.totalSize || 0,
                     endorsements: collection.endorsements || 0,
                   }}
                   description={(collection as any).summary || 'No description available.'}
                   version={latestRevision?.revisionNumber?.toString()}
                   onAddCollection={() => handleAddCollection(collection)}
                   onViewPage={() => handleViewOnNexus(collection)}
+                  className="tw:max-w-none"
                 />
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="tw:flex tw:items-center tw:justify-center tw:gap-2.5 tw:mt-8 tw:pb-5">
+              {/* Previous Button */}
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className={`tw:px-3 tw:py-2 tw:border tw:rounded ${currentPage === 1
+                  ? 'tw:bg-gray-900 tw:text-gray-600 tw:cursor-not-allowed'
+                  : 'tw:bg-gray-700 tw:text-gray-300 tw:cursor-pointer hover:tw:bg-gray-600'
+                  } tw:border-gray-600`}
+              >
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              <div className="tw:flex tw:gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    // Show first page, last page, current page, and 2 pages on each side of current
+                    if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2) {
+                      return true;
+                    }
+                    return false;
+                  })
+                  .map((page, idx, array) => {
+                    // Add ellipsis if there's a gap
+                    const prevPage = array[idx - 1];
+                    const showEllipsis = prevPage && page - prevPage > 1;
+
+                    return (
+                      <React.Fragment key={page}>
+                        {showEllipsis && (
+                          <span className="tw:px-1 tw:py-2 tw:text-gray-500">...</span>
+                        )}
+                        <button
+                          onClick={() => handlePageClick(page)}
+                          className={`tw:px-3 tw:py-2 tw:border tw:rounded tw:cursor-pointer tw:border-gray-600 ${page === currentPage
+                            ? 'tw:bg-gray-600 tw:text-white tw:font-bold'
+                            : 'tw:bg-gray-700 tw:text-gray-300 hover:tw:bg-gray-600'
+                            }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className={`tw:px-3 tw:py-2 tw:border tw:rounded ${currentPage === totalPages
+                  ? 'tw:bg-gray-900 tw:text-gray-600 tw:cursor-not-allowed'
+                  : 'tw:bg-gray-700 tw:text-gray-300 tw:cursor-pointer hover:tw:bg-gray-600'
+                  } tw:border-gray-600`}
+              >
+                Next
+              </button>
+
+              {/* Direct Page Input */}
+              <div className="tw:flex tw:items-center tw:gap-1 tw:ml-5">
+                <span className="tw:text-gray-500 tw:text-sm">Go to:</span>
+                <input
+                  type="text"
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onKeyDown={handlePageInputKeyDown}
+                  className="tw:w-12 tw:px-2 tw:py-1.5 tw:border tw:bg-gray-800 tw:text-gray-300 tw:rounded tw:text-center tw:border-gray-600"
+                />
+                <Tailwind.Button
+                  buttonType="secondary"
+                  size="md"
+                  filled="weak"
+                  onClick={handleGoToPage}
+                >
+                  {t('Go')}
+                </Tailwind.Button>
+
+              </div>
+            </div>
+          )}
         </div>
       </MainPage.Body>
     </MainPage>
