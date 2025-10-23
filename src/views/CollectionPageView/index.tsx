@@ -5,7 +5,6 @@ import InstallDriver from '../../util/InstallDriver';
 
 import { IModEx } from '../../types/IModEx';
 import { IStateEx } from '../../types/IStateEx';
-import { modRuleId } from '../../util/util';
 
 import CollectionInstructions from './CollectionInstructions';
 import CollectionItemStatus from './CollectionItemStatus';
@@ -884,7 +883,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
 
     const genRuleMap = (rules: types.IModRule[]) => {
       return (rules || []).reduce((prev, rule) => {
-        prev[modRuleId(rule)] = rule;
+        prev[util.modRuleId(rule)] = rule;
         return prev;
       }, {});
     };
@@ -922,7 +921,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     (collection.rules || [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .forEach(rule => {
-        const id = modRuleId(rule);
+        const id = util.modRuleId(rule);
         if ((result[id] === undefined) || (modifiedRules[id] !== undefined)) {
           result[id] = this.modFromRule(newProps, rule);
         }
@@ -1134,7 +1133,7 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
     return (collection?.rules ?? [])
       .filter(rule => ['requires', 'recommends'].includes(rule.type))
       .reduce<{ [modId: string]: IModEx }> ((prev, rule) => {
-        const id = modRuleId(rule);
+        const id = util.modRuleId(rule);
         prev[id] = this.modFromRule(props, rule);
         return prev;
       }, {});

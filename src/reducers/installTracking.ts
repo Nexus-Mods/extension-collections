@@ -1,9 +1,8 @@
 import { types, util } from 'vortex-api';
 import * as actions from '../actions/installTracking';
-import { ICollectionInstallState, ICollectionInstallSession, generateSessionId } from '../types/ICollectionInstallState';
 
 // Initial state
-const initialState: ICollectionInstallState = {
+const initialState: types.ICollectionInstallState = {
   activeSession: undefined,
   lastActiveSessionId: undefined,
   sessionHistory: {},
@@ -11,12 +10,12 @@ const initialState: ICollectionInstallState = {
 
 const collectionInstallReducer = {
   reducers: {
-    [actions.startInstallSession as any]: (state: ICollectionInstallState, payload: any) => {
-      const sessionId = generateSessionId(payload.collectionId, payload.profileId);
+    [actions.startInstallSession as any]: (state: types.ICollectionInstallState, payload: any) => {
+      const sessionId = util.generateCollectionSessionId(payload.collectionId, payload.profileId);
       const mods = payload.mods as { [ruleId: string]: any };
       const downloadedCount = Object.values(mods).filter(mod => ['downloaded', 'downloading', 'installed', 'installing', 'skipped'].includes(mod.status)).length;
       const installedCount = Object.values(mods).filter(mod => mod.status === 'installed').length;
-      const session: ICollectionInstallSession = {
+      const session: types.ICollectionInstallSession = {
         ...payload,
         sessionId,
         downloadedCount,
@@ -28,7 +27,7 @@ const collectionInstallReducer = {
       return util.setSafe(state, ['activeSession'], session);
     },
 
-    [actions.updateModStatus as any]: (state: ICollectionInstallState, payload: any) => {
+    [actions.updateModStatus as any]: (state: types.ICollectionInstallState, payload: any) => {
       if (!state.activeSession || state.activeSession.sessionId !== payload.sessionId) {
         return state;
       }
@@ -53,7 +52,7 @@ const collectionInstallReducer = {
       return newState;
     },
 
-    [actions.markModInstalled as any]: (state: ICollectionInstallState, payload: any) => {
+    [actions.markModInstalled as any]: (state: types.ICollectionInstallState, payload: any) => {
       if (!state.activeSession || state.activeSession.sessionId !== payload.sessionId) {
         return state;
       }
@@ -72,7 +71,7 @@ const collectionInstallReducer = {
       return newState;
     },
 
-    [actions.finishInstallSession as any]: (state: ICollectionInstallState, payload: any) => {
+    [actions.finishInstallSession as any]: (state: types.ICollectionInstallState, payload: any) => {
       if (!state.activeSession || state.activeSession.sessionId !== payload.sessionId) {
         return state;
       }

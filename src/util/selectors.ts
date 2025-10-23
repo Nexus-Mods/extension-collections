@@ -1,16 +1,16 @@
 import { createSelector } from 'reselect';
 import { types } from 'vortex-api';
-import { ICollectionInstallSession, ICollectionInstallState, CollectionModStatus } from '../types/ICollectionInstallState';
 
-const getCollectionInstallState = (state: types.IState): ICollectionInstallState => 
+const getCollectionInstallState = (state: types.IState): types.ICollectionInstallState => 
   (state as any).session?.collections || {
     activeSession: undefined,
+    lastActiveSessionId: undefined,
     sessionHistory: {},
   };
 
 export const getActiveInstallSession = createSelector(
   [getCollectionInstallState],
-  (installState): ICollectionInstallSession | undefined => installState.activeSession
+  (installState): types.ICollectionInstallSession | undefined => installState.activeSession
 );
 
 export const isInstallationActive = createSelector(

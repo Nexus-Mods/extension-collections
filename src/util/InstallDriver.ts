@@ -11,9 +11,8 @@ import { IRevisionEx } from '../types/IRevisionEx';
 import { applyPatches } from './binaryPatching';
 import { readCollection } from './importCollection';
 import InfoCache from './InfoCache';
-import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, modRuleId, walkPath } from './util';
+import { calculateCollectionSize, getUnfulfilledNotificationId, isRelevant, walkPath } from './util';
 import * as installActions from '../actions/installTracking';
-import { CollectionModStatus, generateSessionId } from '../types/ICollectionInstallState';
 
 import * as _ from 'lodash';
 
@@ -59,7 +58,7 @@ class InstallDriver {
     return this.mDependentMods.filter(m => m.type === 'recommends');
   }
 
-  public updateModTracking(rule: types.IModRule, status: CollectionModStatus) {
+  public updateModTracking(rule: types.IModRule, status: types.CollectionModStatus) {
     if (!this.mTrackingEnabled || !this.mCurrentSessionId) {
       return;
     }
@@ -70,7 +69,7 @@ class InstallDriver {
       return;
     }
 
-    const ruleId = modRuleId(rule);
+    const ruleId = util.modRuleId(rule);
 
     // Check current status to prevent downgrades from terminal states
     const state = this.mApi.getState();
@@ -78,7 +77,7 @@ class InstallDriver {
     const currentStatus = currentSession?.mods?.[ruleId]?.status;
 
     // Don't downgrade from terminal states (installed, skipped, failed)
-    const terminalStates: CollectionModStatus[] = ['installed', 'skipped', 'failed'];
+    const terminalStates: types.CollectionModStatus[] = ['installed', 'skipped', 'failed'];
     if (currentStatus && terminalStates.includes(currentStatus)) {
       return;
     }
@@ -96,7 +95,7 @@ class InstallDriver {
       return;
     }
 
-    const ruleId = modRuleId(rule);
+    const ruleId = util.modRuleId(rule);
     this.mStateUpdates.push(installActions.markModInstalled(
       this.mCurrentSessionId,
       ruleId,
@@ -666,7 +665,7 @@ class InstallDriver {
       }
 
       const mod = util.findModByRef(rule.reference, mods);
-      prev[modRuleId(rule)] = { ...mod, collectionRule: rule };
+      prev[util.modRuleId(rule)] = { ...mod, collectionRule: rule };
 
       return prev;
     }, {});
@@ -819,16 +818,16 @@ class InstallDriver {
       const totalRequired = required.length - optional.length;
 
       // Generate unique session ID
-      this.mCurrentSessionId = generateSessionId(collectionId, profile.id);
+      this.mCurrentSessionId = util.generateCollectionSessionId(collectionId, profile.id);
 
       const downloads = state.persistent.downloads.files;
       // Create mod info map
       const mods = required.reduce((acc, rule) => {
-        const ruleId = modRuleId(rule);
+        const ruleId = util.modRuleId(rule);
         const download = util.findDownloadByRef(rule.reference, downloads);
         acc[ruleId] = {
           rule,
-          status: installed.find(r => modRuleId(r) === modRuleId(rule)) != null ? 'installed' : download != null ? 'downloaded' : 'pending',
+          status: installed.find(r => util.modRuleId(r) === ruleId) != null ? 'installed' : download != null ? 'downloaded' : 'pending',
           type: rule.type as 'requires' | 'recommends',
           phase: rule.extra?.phase ?? 0,
         };
