@@ -54,6 +54,11 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
     const revisionNumber = (collection as any).latestPublishedRevision?.revisionNumber || 'latest';
     // Use the game domain name from the collection data (already converted)
     const nxmUrl = `nxm://${collection.game.domainName}/collections/${collection.slug}/revisions/${revisionNumber}`;
+  
+
+    // Track the download click event
+    api.events.emit('analytics-track-mixpanel-event',
+      new util.CollectionsDownloadClickedEvent(collection.slug, collection.game.id));
 
     // Use the Vortex API to handle the NXM link
     api.events.emit('start-download', [nxmUrl], {}, undefined,
@@ -224,12 +229,12 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
 
           {/* Search Bar */}
           <div className="tw:flex tw:gap-2.5 tw:mb-4 tw:items-start">
-            
+
             <Tailwind.Input
               type="text"
               onChange={(e) => setSearchQuery(e.target.value)}
               value={searchQuery}
-              placeholder={t('Search collections...')}              
+              placeholder={t('Search collections...')}
               onKeyDown={handleKeyDown}
               className='tw:max-w-64'
             />
@@ -250,20 +255,21 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
               {t('{{total}} results', { total: numeral(totalCount).format('0,0') })}
             </Tailwind.Typography>
 
-            <div className="tw:flex tw:items-center tw:gap-2.5">
-              <select
-                id="sort-select"
-                value={SORT_OPTIONS.indexOf(sortBy)}
-                onChange={(e) => setSortBy(SORT_OPTIONS[parseInt(e.target.value, 10)])}
-                className="tw:px-2.5 tw:py-1 tw:rounded tw:border tw:border-gray-600 tw:bg-gray-800 tw:text-gray-300 tw:cursor-pointer"
-              >
-                {SORT_OPTIONS.map((option, index) => (
-                  <option key={option.field} value={index}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+
+            <Tailwind.Select
+              id="sort-select"
+              label={t('Sort by')}
+              hideLabel={true}
+              value={SORT_OPTIONS.indexOf(sortBy)}
+              onChange={(e) => setSortBy(SORT_OPTIONS[parseInt(e.target.value, 10)])}
+              className="tw:flex tw:items-center tw:gap-2.5 tw:max-w-64"
+            >
+              {SORT_OPTIONS.map((option, index) => (
+                <option key={option.field} value={index}>
+                  {option.label}
+                </option>
+              ))}
+            </Tailwind.Select>
           </div>
 
           {/* Collection Tiles */}
@@ -309,18 +315,16 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="tw:flex tw:items-center tw:justify-center tw:gap-2.5 tw:mt-8 tw:pb-5">
+            <div className="tw:flex tw:items-center tw:justify-start tw:gap-2.5 tw:mt-8 tw:pb-5">
               {/* Previous Button */}
-              <button
+              <Tailwind.Button
+                buttonType="tertiary"
+                size="md"
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}
-                className={`tw:px-3 tw:py-2 tw:border tw:rounded ${currentPage === 1
-                  ? 'tw:bg-gray-900 tw:text-gray-600 tw:cursor-not-allowed'
-                  : 'tw:bg-gray-700 tw:text-gray-300 tw:cursor-pointer hover:tw:bg-gray-600'
-                  } tw:border-gray-600`}
-              >
-                Previous
-              </button>
+                leftIconPath="mdiChevronLeft"
+                className=""
+              />
 
               {/* Page Numbers */}
               <div className="tw:flex tw:gap-1">
@@ -342,41 +346,46 @@ function BrowseCollections(props: IBrowseCollectionsProps) {
                         {showEllipsis && (
                           <span className="tw:px-1 tw:py-2 tw:text-gray-500">...</span>
                         )}
-                        <button
+                        <Tailwind.Button
+                          buttonType="tertiary"
+                          size="md"
+                          filled={page === currentPage ? 'weak' : undefined}
                           onClick={() => handlePageClick(page)}
-                          className={`tw:px-3 tw:py-2 tw:border tw:rounded tw:cursor-pointer tw:border-gray-600 ${page === currentPage
-                            ? 'tw:bg-gray-600 tw:text-white tw:font-bold'
-                            : 'tw:bg-gray-700 tw:text-gray-300 hover:tw:bg-gray-600'
-                            }`}
+                          className=""
                         >
-                          {page}
-                        </button>
+                          {page.toString()}
+                        </Tailwind.Button>
                       </React.Fragment>
                     );
                   })}
               </div>
 
               {/* Next Button */}
-              <button
+              <Tailwind.Button
+                buttonType="tertiary"
+                size="md"
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                className={`tw:px-3 tw:py-2 tw:border tw:rounded ${currentPage === totalPages
-                  ? 'tw:bg-gray-900 tw:text-gray-600 tw:cursor-not-allowed'
-                  : 'tw:bg-gray-700 tw:text-gray-300 tw:cursor-pointer hover:tw:bg-gray-600'
-                  } tw:border-gray-600`}
-              >
-                Next
-              </button>
+                leftIconPath="mdiChevronRight"
+                className=""
+              />
 
               {/* Direct Page Input */}
               <div className="tw:flex tw:items-center tw:gap-1 tw:ml-5">
-                <span className="tw:text-gray-500 tw:text-sm">Go to:</span>
-                <input
-                  type="text"
+                <Tailwind.Typography typographyType="body-md" appearance="subdued">
+                  {t('Go to:')}
+                </Tailwind.Typography>
+                <Tailwind.Input
+                  type="number"
                   value={pageInput}
                   onChange={(e) => setPageInput(e.target.value)}
                   onKeyDown={handlePageInputKeyDown}
-                  className="tw:w-12 tw:px-2 tw:py-1.5 tw:border tw:bg-gray-800 tw:text-gray-300 tw:rounded tw:text-center tw:border-gray-600"
+                  className="tw:min-w-10 tw:text-center"
+                  id="page-input"
+                  label={t('Page number')}
+                  hideLabel={true}
+                  min={1}
+                  max={totalPages}
                 />
                 <Tailwind.Button
                   buttonType="secondary"
