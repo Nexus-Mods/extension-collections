@@ -56,7 +56,6 @@
     "@types/react-dom": "16.9.25"
   },
   "dependencies": {
-    "numeral": "^2.0.6",
     "react-markdown": "6.0.2",
     "reselect": "^5.1.1"
   }
