@@ -14,7 +14,6 @@ import { bbProm, getUnfulfilledNotificationId } from './util/util';
 import AddModsDialog from './views/AddModsDialog';
 import HealthDownvoteDialog from './views/CollectionPageView/HealthDownvoteDialog';
 import CollectionsMainPage from './views/CollectionList';
-import BrowseCollections from './views/BrowseCollections';
 import { InstallChangelogDialog, InstallFinishDialog, InstallStartDialog } from './views/InstallDialog';
 
 import { isInstallationActive, getActiveInstallSession } from './util/selectors'
@@ -686,16 +685,6 @@ function register(context: types.IExtensionContext,
     }),
     onReset: () => resetPageCB?.(),
     priority: 90,
-  });
-
-  context.registerMainPage('search', 'Browse', BrowseCollections, {
-    hotkey: 'B',
-    group: 'per-game',
-    visible: () => selectors.activeGameId(context.api.store.getState()) !== undefined,
-    props: () => ({
-      api: context.api,
-    }),
-    priority: 0, // force top of game section?
   });
 
   context.registerModType(MOD_TYPE, 200, () => true,
