@@ -94,16 +94,6 @@ export function ruleId(rule: ICollectionModRuleEx): string {
   return md5sum(`${rule.sourceName}-${rule.type}-${rule.referenceName}`);
 }
 
-export function modRuleId(input: types.IModRule): string {
-  return input.type + '_' + (
-    input.reference.fileMD5
-    || input.reference.id
-    || input.reference.logicalFileName
-    || input.reference.fileExpression
-    || input.reference.description
-  );
-}
-
 export function isRelevant(mod: IModEx) {
   if (!!mod.state) {
     // consider any mod that's already being downloaded/installed

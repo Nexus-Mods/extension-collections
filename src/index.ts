@@ -1152,7 +1152,7 @@ function once(api: types.IExtensionApi, collectionsCB: () => ICallbackMap) {
       });
       const isDependency = dependency !== undefined;
       if (isDependency) {
-        driver.updateModTracking(dependency, 'installed');
+        driver.markModInstalledInTracking(dependency, modId);
         const modRules =
           await driver.infoCache.getCollectionModRules(
             revisionId, collection, gameId);
