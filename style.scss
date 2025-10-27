@@ -1844,6 +1844,7 @@ ul.collection-mods-page-attrib-tooltip {
   border: 1px solid $border-color;
   overflow: auto;
   border-radius: $border-radius-base;
+  word-break: break-word;
 }
 
 .textarea-install-collection-instructions p {
