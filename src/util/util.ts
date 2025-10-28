@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as PromiseBB from 'bluebird';
 import { createHash } from 'crypto';
+import { ICollectionPermission, CollectionPermission, ICollection } from '@nexusmods/nexus-api';
 import { selectors, types, util } from 'vortex-api';
 import { doExportToAPI } from '../collectionExport'; 
 import { ICollectionModRuleEx } from '../types/ICollection';
@@ -9,6 +10,15 @@ import { IModEx } from '../types/IModEx';
 import { fileMD5 } from 'vortexmt';
 import turbowalk, { IEntry, IWalkOptions } from 'turbowalk';
 import { TOS_URL } from '../constants';
+
+export function hasEditPermissions(permissions: ICollectionPermission[]): boolean {
+  if (!permissions) {
+    return false;
+  }
+  const allPermissions: CollectionPermission[] = permissions
+    .map(perm => perm.key as CollectionPermission);
+  return allPermissions.includes('collection:edit');
+}
 
 export function makeProgressFunction(api: types.IExtensionApi) {
   const notificationId = api.sendNotification({

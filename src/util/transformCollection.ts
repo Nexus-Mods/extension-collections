@@ -8,7 +8,7 @@ import { scanForDiffs } from './binaryPatching';
 import { findExtensions, IExtensionFeature } from './extension';
 import { generateGameSpecifics } from './gameSupport';
 import { generateConfig } from './collectionConfig';
-import { renderReference, ruleId } from './util';
+import { hasEditPermissions, renderReference, ruleId } from './util';
 
 import * as _ from 'lodash';
 import { ILookupResult } from 'modmeta-db';
@@ -826,10 +826,26 @@ export async function cloneCollection(api: types.IExtensionApi,
     });
   };
 
-  const ownCollection: boolean = existingCollection.attributes?.uploaderId === userInfo?.userId;
-  let name = 'Copy of ' + existingCollection.attributes?.name;
-  if (name.length > MAX_COLLECTION_NAME_LENGTH) {
-    name = name.slice(0, MAX_COLLECTION_NAME_LENGTH) + '...';
+  let editPermissions: boolean = hasEditPermissions(existingCollection.attributes?.permissions || []);
+  let ownCollection: boolean = userInfo?.userId != null && existingCollection.attributes?.uploaderId === userInfo.userId;
+  if (editPermissions && !ownCollection) {
+    const result: types.IDialogResult = await api.showDialog('question', 'Clone Collection',
+      {
+        bbcode: 'You have edit permissions for the collection "{{name}}", but you are not the owner.[br][/br]'
+                + 'Would you like to clone it as your own collection, or contribute to the existing one?[br][/br][br][/br]',
+        parameters: {
+          name: util.renderModName(existingCollection),
+
+        },
+      }, [
+        { label: 'Contribute' },
+        { label: 'Clone', default: true },
+      ]);
+    if (result.input === 'Clone') {
+      ownCollection = false;
+    } else {
+      ownCollection = true;
+    }
   }
 
   const customFileName = ownCollection
@@ -838,8 +854,11 @@ export async function cloneCollection(api: types.IExtensionApi,
 
   const ownCollectionAttributes = ownCollection ? ({
     pictureUrl: existingCollection.attributes.pictureUrl,
-    uploader: userInfo.name,
+    uploader: existingCollection.attributes.uploader ?? userInfo?.name ?? 'Anonymous',
     uploaderAvatar: existingCollection.attributes.uploaderAvatar,
+    author: existingCollection.attributes?.author ?? userInfo?.name ?? 'Anonymous',
+    uploaderId: existingCollection.attributes?.uploaderId ?? userInfo?.userId,
+    permissions: existingCollection.attributes?.permissions,
   }) : {};
   const mod: types.IMod = {
     id,
