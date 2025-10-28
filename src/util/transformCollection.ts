@@ -858,6 +858,7 @@ export async function cloneCollection(api: types.IExtensionApi,
     uploaderAvatar: existingCollection.attributes.uploaderAvatar,
     author: existingCollection.attributes?.author ?? userInfo?.name ?? 'Anonymous',
     uploaderId: existingCollection.attributes?.uploaderId ?? userInfo?.userId,
+    permissions: existingCollection.attributes?.permissions,
   }) : {};
   const mod: types.IMod = {
     id,

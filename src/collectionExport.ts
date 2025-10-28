@@ -1,7 +1,7 @@
 import { BUNDLED_PATH, PATCHES_PATH } from './constants';
 import { ICollection, ICollectionMod, ICollectionSourceInfo } from './types/ICollection';
 import { modToCollection as modToCollection } from './util/transformCollection';
-import { makeProgressFunction } from './util/util';
+import { hasEditPermissions, makeProgressFunction } from './util/util';
 
 import { ICreateCollectionResult, IGraphErrorDetail } from '@nexusmods/nexus-api';
 import * as PromiseBB from 'bluebird';
@@ -228,7 +228,7 @@ export async function doExportToAPI(api: types.IExtensionApi,
       // collection api doesn't (currently) distinguish between uploader & author so
       // the expectation is that the fields contain the same value anyway
       const modUploader = mod.attributes?.uploader ?? mod.attributes?.author;
-      if ((collectionId !== undefined) && (modUploader !== uploaderName)) {
+      if ((collectionId !== undefined) && (modUploader !== uploaderName) && !hasEditPermissions(mod.attributes?.permissions)) {
         log('info', 'user doesn\'t match original author, creating new collection');
         collectionId = undefined;
       }
