@@ -12,6 +12,9 @@ import turbowalk, { IEntry, IWalkOptions } from 'turbowalk';
 import { TOS_URL } from '../constants';
 
 export function hasEditPermissions(permissions: ICollectionPermission[]): boolean {
+  if (!permissions) {
+    return false;
+  }
   const allPermissions: CollectionPermission[] = permissions
     .map(perm => perm.key as CollectionPermission);
   return allPermissions.includes('collection:edit');
