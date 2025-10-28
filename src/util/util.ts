@@ -13,7 +13,6 @@ import { TOS_URL } from '../constants';
 
 export function hasEditPermissions(permissions: ICollectionPermission[]): boolean {
   const allPermissions: CollectionPermission[] = permissions
-    .filter(perm => perm.global === true)
     .map(perm => perm.key as CollectionPermission);
   return allPermissions.includes('collection:edit');
 }

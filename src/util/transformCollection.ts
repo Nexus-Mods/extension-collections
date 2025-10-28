@@ -843,6 +843,8 @@ export async function cloneCollection(api: types.IExtensionApi,
       ]);
     if (result.input === 'Clone') {
       ownCollection = false;
+    } else {
+      ownCollection = true;
     }
   }
   if (ownCollection) {
