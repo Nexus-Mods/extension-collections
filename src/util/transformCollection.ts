@@ -847,12 +847,6 @@ export async function cloneCollection(api: types.IExtensionApi,
       ownCollection = true;
     }
   }
-  if (ownCollection) {
-    let name = 'Copy of ' + existingCollection.attributes?.name;
-    if (name.length > MAX_COLLECTION_NAME_LENGTH) {
-      name = name.slice(0, MAX_COLLECTION_NAME_LENGTH) + '...';
-    }
-  }
 
   const customFileName = ownCollection
     ? existingCollection.attributes?.customFileName
