@@ -23,7 +23,7 @@ import ReactDOM = require('react-dom');
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import * as semver from 'semver';
-import { actions, ComponentEx, FlexLayout, ITableRowAction, log, OptionsFilter, Table,
+import { actions, ComponentEx, FlexLayout, ITableRowAction, log, OptionsFilter, selectors, Table,
          TableTextFilter, tooltip, types, util } from 'vortex-api';
 
 export interface ICollectionPageProps {
@@ -139,6 +139,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         title: 'Install',
         action: this.installManually,
         condition: instanceIds => {
+          const isInstallingCollection = selectors.getCollectionActiveSession(this.context.api.getState());
+          if (isInstallingCollection) {
+            return false;
+          }
           const instanceId: string = Array.isArray(instanceIds) ? instanceIds[0] : instanceIds;
           const mod = this.state.modsEx[instanceId];
           return [null, 'downloaded'].includes(mod.state);
@@ -148,9 +152,15 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
         icon: 'delete',
         title: 'Remove',
         action: this.removeSelected,
-        condition: instanceId => (typeof(instanceId) === 'string')
+        condition: instanceId => {
+          const isInstallingCollection = selectors.getCollectionActiveSession(this.context.api.getState());
+          if (isInstallingCollection) {
+            return false;
+          }
+          return (typeof(instanceId) === 'string')
           ? (['downloaded', 'installed'].includes(this.state.modsEx[instanceId].state))
-          : true,
+          : true;
+        },
         hotKey: { code: 46 },
       },
       {
@@ -763,6 +773,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private installManually = (modIds: string[]) => {
+    const isInstallingCollection = selectors.getCollectionActiveSession(this.context.api.getState());
+    if (isInstallingCollection) {
+      return;
+    }
     const { collection } = this.props;
     const { modsEx } = this.state;
     const rules = modIds.map(modId => modsEx[modId].collectionRule);
@@ -770,6 +784,10 @@ class CollectionPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private removeSelected = (modIds: string[]) => {
+    const isInstallingCollection = selectors.getCollectionActiveSession(this.context.api.getState());
+    if (isInstallingCollection) {
+      return;
+    }
     const { t, collection, profile, onRemoveRule } = this.props;
     const { modsEx } = this.state;
 
