@@ -27,6 +27,10 @@ $collection-mod-image-height: 122px;
   width: 200px;
 }
 
+#table-collection-mods .header-required {
+  width: 100px;
+}
+
 #table-collection-mods .cell-name {
   white-space: nowrap;
   max-width: 40em;
@@ -996,6 +1000,7 @@ ul.collection-mods-page-attrib-tooltip {
         width: 24px;
         height: 24px;
         margin-right: 0.5em;
+        display: inline;
       }
     }
   }
