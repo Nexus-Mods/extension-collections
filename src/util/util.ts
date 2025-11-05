@@ -177,6 +177,19 @@ export async function uploadCollection(api: types.IExtensionApi, profileId: stri
     return;
   }
 
+  // Make sure the mod conflicts are up to date and block upload if there are any outstanding.
+  await api.emitAndAwait('update-conflicts-and-rules', false);
+  const conflictsDetected = util.getSafe(api.store.getState(), ['session', 'dependencies', 'conflicts'], {});
+  if (Object.keys(conflictsDetected).length > 0) {
+    await api.showDialog('error', 'Resolve conflicts before uploading', {
+      text: 'You have unresolved mod conflicts in your current mods setup. Please resolve them before '
+          + 'uploading a collection.',
+    }, [
+      { label: 'Close' },
+    ]);
+    return;
+  }
+
   api.events.emit('analytics-track-click-event', 'Collections', 'Upload collection');
 
   const missing = (mods[collectionId]?.rules ?? []).filter(rule =>
