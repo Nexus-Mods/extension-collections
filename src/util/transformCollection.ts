@@ -826,6 +826,8 @@ export async function cloneCollection(api: types.IExtensionApi,
     });
   };
 
+  let isContributing: boolean = false;
+  let isCloning: boolean = false;
   let editPermissions: boolean = hasEditPermissions(existingCollection.attributes?.permissions || []);
   let ownCollection: boolean = userInfo?.userId != null && existingCollection.attributes?.uploaderId === userInfo.userId;
   if (editPermissions && !ownCollection) {
@@ -841,18 +843,22 @@ export async function cloneCollection(api: types.IExtensionApi,
         { label: 'Contribute' },
         { label: 'Clone', default: true },
       ]);
-    if (result.input === 'Clone') {
-      ownCollection = false;
-    } else {
+    if (result.action === 'Clone') {
       ownCollection = true;
+      isCloning = true;
+    } else {
+      ownCollection = false;
+      isContributing = true;
     }
   }
 
-  const customFileName = ownCollection
-    ? existingCollection.attributes?.customFileName
-    : t('Copy of {{name}}', { replace: { name: existingCollection.attributes?.customFileName } });
+  const cloneName = t('Copy of {{name}}', { replace: { name: existingCollection.attributes?.customFileName } });
+  const existingName = existingCollection.attributes?.customFileName;
+  const customFileName = isCloning ? cloneName : existingName;
 
-  const ownCollectionAttributes = ownCollection ? ({
+  const shouldCopyAttributes = () => !isCloning && (ownCollection || isContributing);
+
+  const ownCollectionAttributes = shouldCopyAttributes() ? ({
     pictureUrl: existingCollection.attributes.pictureUrl,
     uploader: existingCollection.attributes.uploader ?? userInfo?.name ?? 'Anonymous',
     uploaderAvatar: existingCollection.attributes.uploaderAvatar,
@@ -867,16 +873,16 @@ export async function cloneCollection(api: types.IExtensionApi,
     attributes: {
       name,
       customFileName,
-      version: ownCollection ? existingCollection.attributes?.version : '0',
+      version: shouldCopyAttributes() ? existingCollection.attributes?.version : '0',
       installTime: new Date(),
       author: userInfo?.name ?? 'Anonymous',
       uploader: userInfo?.name ?? 'Anonymous',
       uploaderId: userInfo?.userId,
       editable: true,
-      collectionId: ownCollection ? existingCollection.attributes?.collectionId : undefined,
-      revisionId: ownCollection ? existingCollection.attributes?.revisionId : undefined,
-      collectionSlug: ownCollection ? existingCollection.attributes?.collectionSlug : undefined,
-      revisionNumber: ownCollection
+      collectionId: shouldCopyAttributes() ? existingCollection.attributes?.collectionId : undefined,
+      revisionId: shouldCopyAttributes() ? existingCollection.attributes?.revisionId : undefined,
+      collectionSlug: shouldCopyAttributes() ? existingCollection.attributes?.collectionSlug : undefined,
+      revisionNumber: shouldCopyAttributes()
         ? (existingCollection.attributes?.revisionNumber + 1) : undefined,
       collection: deduceCollectionAttributes(existingCollection, collection, mods),
       ...ownCollectionAttributes,
