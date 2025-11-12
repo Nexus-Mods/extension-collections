@@ -852,11 +852,10 @@ export async function cloneCollection(api: types.IExtensionApi,
     }
   }
 
+  const shouldCopyAttributes = () => !isCloning && (ownCollection || isContributing);
   const cloneName = t('Copy of {{name}}', { replace: { name: existingCollection.attributes?.customFileName } });
   const existingName = existingCollection.attributes?.customFileName;
-  const customFileName = isCloning ? cloneName : existingName;
-
-  const shouldCopyAttributes = () => !isCloning && (ownCollection || isContributing);
+  const customFileName = shouldCopyAttributes() ? existingName : cloneName;
 
   const ownCollectionAttributes = shouldCopyAttributes() ? ({
     pictureUrl: existingCollection.attributes.pictureUrl,
