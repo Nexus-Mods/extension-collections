@@ -28,7 +28,7 @@ import {
   initFromProfile,
   removeCollectionAction, removeCollectionCondition,
 } from './collectionCreate';
-import { makeInstall, testSupported } from './collectionInstall';
+import { makeInstall, postprocessCollection, testSupported } from './collectionInstall';
 import { DELAY_FIRST_VOTE_REQUEST, INSTALLING_NOTIFICATION_ID, MOD_TYPE, TIME_BEFORE_VOTE } from './constants';
 import { onCollectionUpdate } from './eventHandlers';
 import initIniTweaks from './initweaks';
@@ -45,6 +45,7 @@ import { generate as shortid } from 'shortid';
 import { pathToFileURL } from 'url';
 import { actions, log, OptionsFilter, selectors, types, util } from 'vortex-api';
 import { IRevision } from '@nexusmods/nexus-api';
+import { readCollection } from './util/importCollection';
 
 function isEditableCollection(state: types.IState, modIds: string[]): boolean {
   const gameMode = selectors.activeGameId(state);
@@ -766,15 +767,30 @@ function register(context: types.IExtensionContext,
     (modIds: string[]) => {
       const state = context.api.getState();
       const gameId = selectors.activeGameId(state);
-      context.api.events.emit('did-install-dependencies', gameId, modIds[0], false);
+      const mods = state.persistent.mods[gameId];
+      const stagingPath = selectors.installPathForGame(context.api.getState(), gameId);
+      const mod = mods[modIds[0]];
+      if ((mod !== undefined) && (mod.type === MOD_TYPE)) {
+        readCollection(
+            context.api,
+            path.join(stagingPath, mod.installationPath, 'collection.json')
+        ).then(async (collectionInfo: ICollection) => {
+          try {
+            await postprocessCollection(context.api, gameId, mod, collectionInfo, mods);
+          } catch (err) {
+            context.api.showErrorNotification(
+              'Failed to apply collection rules', err, { message: util.renderModName(mod) });
+          }
+        }).catch(err => {
+          context.api.showErrorNotification(
+            'Failed to read collection info', err, { message: util.renderModName(mod) });
+        })
+      }
     }, (modIds: string[]) => {
       const state = context.api.getState();
       const gameId = selectors.activeGameId(state);
       const mod = state.persistent.mods[gameId][modIds[0]];
-      if (mod === undefined) {
-        return false;
-      }
-      return (mod.type === MOD_TYPE);
+      return (mod?.type === MOD_TYPE);
     });
   /*
   context.registerAction('mods-action-icons', 75, 'start-install', {}, 'Install Optional Mods...',

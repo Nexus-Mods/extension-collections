@@ -167,9 +167,9 @@ export async function postprocessCollection(api: types.IExtensionApi,
                                             mods: { [modId: string]: types.IMod }) {
   log('info', 'postprocess collection');
   applyCollectionRules(api, gameId, collection, mods);
-
   try {
-    await util.toPromise(cb => api.events.emit('deploy-mods', cb));
+    // TODO: replace this with a call to the awaitModsDeployment API extension method
+    await util.toPromise(cb => api.events.emit('deploy-mods', cb, undefined, undefined, { isCollectionPostprocessCall: true }));
   } catch (err) {
     log('warn', 'Failed to deploy during collection post processing');
   }
@@ -181,4 +181,5 @@ export async function postprocessCollection(api: types.IExtensionApi,
   }
 
   await parseGameSpecifics(api, gameId, collection, collectionMod);
+  api.events.emit('collection-postprocess-complete', gameId, collectionMod.id);
 }
